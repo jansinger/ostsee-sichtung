@@ -74,6 +74,16 @@ test.describe('Sprache bleibt bei interner Navigation erhalten', () => {
 		await expect(page.getByTestId('report-kind-choice')).toBeVisible();
 		await expect(page).toHaveURL(/\/en\//);
 		await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+		// Review-Fund: `localizedHomeHref()` hängte das `?` bedingungslos an —
+		// bei leeren `URLSearchParams` (hier: `meldung` war der einzige
+		// Parameter und wurde gerade gelöscht) entstand `/en/?`. `/\/en\//`
+		// allein hätte das nicht gemerkt, denn `/en/?` enthält `/en/` als
+		// Teilstring. `new URL(...).search` taugt hier ebenfalls nicht: Der
+		// Getter normalisiert eine leere Query auf `''`, unabhängig davon, ob
+		// die `href` selbst noch ein waisiges `?` trägt (`new URL('https://x/?')
+		// .search === ''`, aber `.href` endet weiter auf `?`) — deshalb die
+		// rohe URL-Zeichenkette prüfen, nicht den geparsten Query-Teil.
+		expect(page.url()).not.toMatch(/\?$/);
 	});
 
 	/**

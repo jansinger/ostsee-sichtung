@@ -21,6 +21,7 @@
 		writeReportKind,
 		type ReportKind
 	} from '$lib/report/reportKind';
+	import { buildHomeQueryPath } from '$lib/report/homeQueryPath';
 	import { loadFromStorage, saveToStorage, STORAGE_KEYS } from '$lib/storage/localStorage';
 	import type { SightingFormValues } from '$lib/types/Form';
 	import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
@@ -107,9 +108,20 @@
 	 * Anwendung deutsch, ohne dass ein Klick das ausgelöst hätte. Eine
 	 * gemeinsame Funktion statt drei einzelner `localizeHref`-Aufrufe, damit
 	 * ein viertes Vorkommen nicht denselben Fehler wiederholt.
+	 *
+	 * Das `?` wird nur angehängt, wenn nach `toString()` überhaupt etwas übrig
+	 * bleibt — `returnToSelection()` löscht `meldung` und übergibt hier leere
+	 * `URLSearchParams`, wenn das der einzige Parameter war. Ohne die Prüfung
+	 * entstünde der nicht-kanonische String `/?` (Review-Fund). Der
+	 * Query-Erhalt im nicht-leeren Fall bleibt dabei unverändert — er hing
+	 * schon dreimal als Critical-Fund an genau dieser Funktion. Die Prüfung
+	 * selbst steckt in `buildHomeQueryPath` (`$lib/report/homeQueryPath.ts`),
+	 * ausgelagert, damit sie ohne die restliche Seite unit-testbar ist — der
+	 * eigentliche Effekt eines fehlenden `?` wäre über `localizeHref()` selbst
+	 * nicht beobachtbar, siehe Kommentar dort.
 	 */
 	function localizedHomeHref(searchParams: URLSearchParams): string {
-		return localizeHref(`/?${searchParams.toString()}`);
+		return localizeHref(buildHomeQueryPath(searchParams));
 	}
 
 	/**
