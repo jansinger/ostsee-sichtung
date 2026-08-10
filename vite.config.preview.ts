@@ -17,7 +17,11 @@ export default defineConfig({
 			// Ohne `preferredLanguage`: präfixlos ist immer Deutsch. Sonst rendert
 			// dieselbe URL je nach Browser-Header zwei Inhalte — nicht cachebar und
 			// für Suchmaschinen ein Duplikat. Begründung: Entwurf, Abschnitt 4.5.
-			strategy: ['url', 'cookie', 'baseLocale']
+			strategy: ['url', 'cookie', 'baseLocale'],
+			// Nagelt den Dev-Sonderfall des Plugins fest (`locale-modules` statt
+			// `message-modules` außerhalb von `NODE_ENV=production`) — Begründung in
+			// vite.config.ts.
+			outputStructure: 'message-modules'
 		}),
 		sveltekit()
 		// No basicSsl plugin for preview in CI to avoid HTTPS certificate issues

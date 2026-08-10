@@ -41,7 +41,16 @@ export default defineConfig({
 			// Ohne `preferredLanguage`: präfixlos ist immer Deutsch. Sonst rendert
 			// dieselbe URL je nach Browser-Header zwei Inhalte — nicht cachebar und
 			// für Suchmaschinen ein Duplikat. Begründung: Entwurf, Abschnitt 4.5.
-			strategy: ['url', 'cookie', 'baseLocale']
+			strategy: ['url', 'cookie', 'baseLocale'],
+			// Ohne explizite Angabe wechselt das Plugin außerhalb von `NODE_ENV=production`
+			// (also in jedem lokalen Dev-Lauf) automatisch auf `locale-modules` statt
+			// `message-modules` (unplugin.js: "default to locale-modules for development
+			// to speed up the dev server"). Die CLI (`npm run i18n:compile`) kennt diesen
+			// Sonderfall nicht und erzeugt immer `message-modules` — ohne diese Zeile
+			// hinge die Dateistruktur unter `src/lib/paraglide/messages/` davon ab, wer
+			// zuletzt kompiliert hat. `scripts/i18nGate.test.ts` sichert die
+			// Übereinstimmung ab.
+			outputStructure: 'message-modules'
 		}),
 		sveltekit(),
 		Icons({
