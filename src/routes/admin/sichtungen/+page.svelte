@@ -29,13 +29,9 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import { BALTIC_SEA_STATUS_PRESENTATION } from '$lib/utils/geo/balticSeaStatus';
 	import { MEDIA_UPLOAD_ANNOUNCED_MISSING } from '$lib/utils/media/photoAnnouncement';
+	import { AUFNAHME_LABEL, MELDEART_LABEL } from '$lib/components/admin/filterLabels';
 	import { readFilterParams, type FilterParams } from './activeFilters';
-	import {
-		AUFNAHME_LABEL,
-		buildFilterChips,
-		MELDEART_LABEL,
-		removeFilterParam
-	} from './filterChips';
+	import { buildFilterChips, removeFilterParam } from './filterChips';
 	import SichtungenCards from './SichtungenCards.svelte';
 	import StatusTabs from './StatusTabs.svelte';
 	import type { StatusTabValue } from './statusTabs';

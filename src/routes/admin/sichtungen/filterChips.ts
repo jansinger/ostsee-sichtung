@@ -11,13 +11,15 @@
  * denselben Quellen wie die `<select>`-Felder des Panels:
  * `getEntryChannelOptions()`, `DEAD_FINDING_PRESENTATION`,
  * `BALTIC_SEA_STATUS_PRESENTATION`, `SIGHTING_STATUS_PRESENTATION` und
- * `MEDIA_UPLOAD_ANNOUNCED_MISSING`. Für die beiden Ja/Nein-Wortpaare ohne
- * eigenes Präsentationsmodul — „Mit"/„Ohne" und „Lebendsichtung" — ist diese
- * Datei selbst die Quelle: `AUFNAHME_LABEL` und `MELDEART_LABEL` sind exportiert,
- * und das Panel (`+page.svelte`) rendert seine `<option>`-Beschriftungen daraus,
+ * `MEDIA_UPLOAD_ANNOUNCED_MISSING`. Die beiden Ja/Nein-Wortpaare ohne eigenes
+ * Präsentationsmodul — „Mit"/„Ohne" und „Lebendsichtung" — standen dafür bis
+ * 2026-08-10 in dieser Datei; sie liegen jetzt in
+ * `$lib/components/admin/filterLabels.ts`, weil mit dem Export-Dialog eine
+ * Aufrufstelle in `$lib` dazugekommen ist (Begründung dort). Das Panel
+ * (`+page.svelte`) rendert seine `<option>`-Beschriftungen weiterhin daraus,
  * statt sie ein zweites Mal zu tippen. Ein eigener Wortschatz an einer der
- * beiden Stellen hieße, dass Chip und Panel denselben Filter verschieden
- * benennen, sobald eine der beiden angefasst wird — derselbe Fehler, gegen den
+ * Stellen hieße, dass Chip, Panel und Export denselben Filter verschieden
+ * benennen, sobald eine davon angefasst wird — derselbe Fehler, gegen den
  * `deadFinding.ts` und `balticSeaStatus.ts` angelegt wurden.
  *
  * Client-sicher: **kein** Import aus `$lib/server/**`. Die Seite ist eine
@@ -26,15 +28,19 @@
  * Der Filterzustand kommt aus `activeFilters.ts` und damit aus der URL — hier
  * entsteht kein zweiter gemerkter Zustand.
  */
-import { DEAD_FINDING_PRESENTATION } from '$lib/components/admin/deadFinding';
+import {
+	AUFNAHME_LABEL,
+	isAufnahmeFilterWert,
+	isMeldeartFilterWert,
+	kanalLabel,
+	MELDEART_LABEL
+} from '$lib/components/admin/filterLabels';
 import {
 	SIGHTING_STATUS_PRESENTATION,
 	type SightingStatus
 } from '$lib/components/admin/sightingStatus';
-import { getEntryChannelOptions } from '$lib/report/formOptions/entryChannel';
 import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 import { BALTIC_SEA_STATUS_PRESENTATION, isBalticSeaStatus } from '$lib/utils/geo/balticSeaStatus';
-import { MEDIA_UPLOAD_ANNOUNCED_MISSING } from '$lib/utils/media/photoAnnouncement';
 import type { FilterParams } from './activeFilters';
 
 export type FilterChip = {
@@ -79,10 +85,6 @@ function datum(value: string): string {
 	return formatLocalDateTime(value, 'date');
 }
 
-function kanalLabel(value: string): string {
-	return getEntryChannelOptions().find((option) => String(option.value) === value)?.label ?? value;
-}
-
 function statusLabel(value: string): string {
 	return isSightingStatus(value) ? SIGHTING_STATUS_PRESENTATION[value].label : value;
 }
@@ -90,30 +92,6 @@ function statusLabel(value: string): string {
 function isSightingStatus(value: string): value is SightingStatus {
 	return Object.hasOwn(SIGHTING_STATUS_PRESENTATION, value);
 }
-
-/**
- * „Mit"/„Ohne" sind keine Auszeichnung eines Datensatzes, sondern nur die zwei
- * Seiten eines Ja/Nein-Filters — kein `deadFinding.ts`/`balticSeaStatus.ts`-Modul
- * nimmt sie auf. Diese Datei ist deshalb selbst die Quelle, exportiert für das
- * `<select>` des Panels (`+page.svelte`), das seine `<option>`-Beschriftungen von
- * hier bezieht statt sie ein zweites Mal zu tippen. Der Sonderwert kommt aus
- * seinem eigenen Modul — er trägt eine fachliche Aussage (`photoAnnouncement.ts`).
- */
-export const AUFNAHME_LABEL: Record<string, string> = {
-	'1': 'Mit',
-	'0': 'Ohne',
-	[MEDIA_UPLOAD_ANNOUNCED_MISSING]: 'Angekündigt, fehlt noch'
-};
-
-/**
- * Gegenstück zum Totfund; `deadFinding.ts` führt für den Normalfall bewusst kein
- * Wort, deshalb steht „Lebendsichtung" hier. Exportiert aus demselben Grund wie
- * `AUFNAHME_LABEL`: Das Panel rendert seine Option daraus.
- */
-export const MELDEART_LABEL: Record<string, string> = {
-	'1': DEAD_FINDING_PRESENTATION.label,
-	'0': 'Lebendsichtung'
-};
 
 /**
  * Ein Wert, den keine Quelle kennt (veraltetes Lesezeichen, von Hand getippte
@@ -125,9 +103,11 @@ const CHIP_LABEL: Record<keyof FilterParams, (value: string) => string> = {
 	fromDate: (value) => `Sichtung von ${datum(value)}`,
 	toDate: (value) => `Sichtung bis ${datum(value)}`,
 	verified: (value) => `Status: ${statusLabel(value)}`,
-	deadFinding: (value) => `Meldeart: ${MELDEART_LABEL[value] ?? value}`,
+	deadFinding: (value) =>
+		`Meldeart: ${isMeldeartFilterWert(value) ? MELDEART_LABEL[value] : value}`,
 	entryChannel: (value) => `Kanal: ${kanalLabel(value)}`,
-	mediaUpload: (value) => `Aufnahme: ${AUFNAHME_LABEL[value] ?? value}`,
+	mediaUpload: (value) =>
+		`Aufnahme: ${isAufnahmeFilterWert(value) ? AUFNAHME_LABEL[value] : value}`,
 	balticSea: (value) =>
 		`Ostsee: ${isBalticSeaStatus(value) ? BALTIC_SEA_STATUS_PRESENTATION[value].label : value}`,
 	q: (value) => `Suche: „${value}“`
