@@ -122,29 +122,31 @@ dieselbe, deshalb steht sie einmal.
 
 ## Admin-Komponenten
 
-| Komponente                     | Zweck                                       |
-| ------------------------------ | ------------------------------------------- |
-| `AdminSightingEditForm.svelte` | Sichtung bearbeiten                         |
-| `AdminSightingView.svelte`     | Sichtung anzeigen (read-only)               |
-| `SightingInboxCard.svelte`     | Karte der Eingangsseite (`/admin`)          |
-| `inboxVerdict.ts`              | Verdict-Logik der Eingangsseite             |
-| `adminTriageShortcuts.ts`      | Tastatur-Triage (Eingang + Detailansicht)   |
-| `InboxShortcutHelp.svelte`     | Overlay mit der Kürzel-Übersicht            |
-| `adminReturn.ts`               | Herkunft `?from=inbox` + Karten-Anker       |
-| `SightingQueueNav.svelte`      | Navigationsleiste des Arbeitsmodus          |
-| `sightingQueue.ts`             | Queue-Typen, Ziel-Href, Advance-Ziel        |
-| `queueAdvance.ts`              | Sprung + Undo-Toast nach einer Entscheidung |
-| `queueOrder.ts`                | Client-sichere Auswertung von `?order`      |
-| `undoMemory.svelte.ts`         | Zustand hinter „Rückgängig" (Detailansicht) |
-| `DataTableRow.svelte`          | Tabellen-Zeile                              |
-| `BooleanStatus.svelte`         | Boolean-Status Anzeige                      |
-| `ExportModal.svelte`           | Export-Dialog                               |
-| `deadFinding.ts`               | Totfund-Auszeichnung                        |
-| `sightingStatus.ts`            | Statusableitung + Wort/Farbe/Icon/Verdict   |
-| `spamScorePresentation.ts`     | Spam-Risikostufe + Wort/Farbe/Icon          |
-| `SpamFinding.svelte`           | Ein Spam-Befund (Modal + Detailkarte)       |
-| `sightingStatusFilter.ts`      | Statuswert ↔ Filter-Query (`?verified=`)    |
-| `SightingStatusControl.svelte` | Segmented Control für den Statuswechsel     |
+| Komponente                       | Zweck                                       |
+| -------------------------------- | ------------------------------------------- |
+| `AdminSightingEditForm.svelte`   | Sichtung bearbeiten                         |
+| `AdminSightingView.svelte`       | Sichtung anzeigen (read-only)               |
+| `SightingInboxCard.svelte`       | Karte der Eingangsseite (`/admin`)          |
+| `inboxVerdict.ts`                | Verdict-Logik der Eingangsseite             |
+| `adminTriageShortcuts.ts`        | Tastatur-Triage (Eingang + Detailansicht)   |
+| `InboxShortcutHelp.svelte`       | Overlay mit der Kürzel-Übersicht            |
+| `adminReturn.ts`                 | Herkunft `?from=inbox` + Karten-Anker       |
+| `SightingQueueNav.svelte`        | Navigationsleiste des Arbeitsmodus          |
+| `sightingQueue.ts`               | Queue-Typen, Ziel-Href, Advance-Ziel        |
+| `queueAdvance.ts`                | Sprung + Undo-Toast nach einer Entscheidung |
+| `queueOrder.ts`                  | Client-sichere Auswertung von `?order`      |
+| `undoMemory.svelte.ts`           | Zustand hinter „Rückgängig" (Detailansicht) |
+| `DataTableRow.svelte`            | Tabellen-Zeile                              |
+| `BooleanStatus.svelte`           | Boolean-Status Anzeige                      |
+| `ExportModal.svelte`             | Export-Dialog                               |
+| `deadFinding.ts`                 | Totfund-Auszeichnung                        |
+| `sightingStatus.ts`              | Statusableitung + Wort/Farbe/Icon/Verdict   |
+| `spamScorePresentation.ts`       | Spam-Risikostufe + Wort/Farbe/Icon          |
+| `SpamFinding.svelte`             | Ein Spam-Befund (Modal + Detailkarte)       |
+| `sightingStatusFilter.ts`        | Statuswert ↔ Filter-Query (`?verified=`)    |
+| `SightingStatusControl.svelte`   | Segmented Control für den Statuswechsel     |
+| `reporterHistoryPresentation.ts` | Stufe der Melder-Historie + Wort/Farbe/Icon |
+| `ReporterHistoryBadge.svelte`    | Das Badge (Eingang + Detailansicht)         |
 
 ### Spam-Score: vier Anzeigestellen, eine Schwelle
 
@@ -170,6 +172,22 @@ Die Flächen- und Icon-Farbe der Detail-Karte steht als `SpamRisk`-Record an
 ihrer Aufrufstelle — ein Leser, gleiche Begründung wie bei `deadFinding.ts`.
 Über die Stufe und nicht über den Score aufgeschlüsselt, damit die Schwellen
 nicht doch wieder auseinanderlaufen.
+
+### Melder-Historie: zwei Anzeigestellen, eine Quelle
+
+Eingangskarte und Kontakt-Karte der Detailansicht zeigen dasselbe Badge aus
+`ReporterHistoryBadge.svelte`; Stufen und Schwellen stehen in
+`reporterHistoryPresentation.ts`. Drei Dinge dabei nicht zurückdrehen:
+
+- **Sie ist kein Teil des Spam-Scores und darf keiner werden.** Begründung mit
+  Messwerten in `docs/SPAM_DETECTION.md` („Melder-Historie — daneben, nicht
+  darin"). Persistiert wird nichts.
+- **`null` heißt „nicht ermittelt" und bekommt kein Badge** — nicht „keine
+  Vorgeschichte". Die Detailansicht führt den Fehlschlag zusätzlich als eigenen
+  Text, gleiche Konstruktion wie beim Status-Log.
+- **Kein `badge-success` und keine Filter/Sortierung im Eingang.** Grün neben
+  dem Freigeben-Knopf läse sich als Urteil über die Meldung, und der Eingang
+  bleibt eine Task-Liste ohne Filter (dafür gibt es `/admin/sichtungen`).
 
 ### Modal und Detailkarte zeigen zwei Befunde, nicht einen
 
