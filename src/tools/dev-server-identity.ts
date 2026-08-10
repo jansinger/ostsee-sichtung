@@ -408,17 +408,28 @@ export async function assertServerIdentity({
 }
 
 /**
+ * Wo Worktrees liegen — je Ort das Pfadstück und das passende Glob-Muster.
+ *
+ * Beide sind unabhängig: `/.claude/worktrees/` enthält **nicht** `/.worktrees/`
+ * (der Punkt sitzt direkt hinter dem Schrägstrich). Deshalb lässt sich je Ort
+ * einzeln entscheiden, ob sein Muster gelten darf.
+ */
+const WORKTREE_ORTE = [
+	{ pfadstueck: '/.claude/worktrees/', glob: '**/.claude/worktrees/**' },
+	{ pfadstueck: '/.worktrees/', glob: '**/.worktrees/**' }
+] as const;
+
+/**
  * Glob-Muster, mit denen der Datei-Watcher die Worktrees heraushält.
  *
  * Worktrees liegen unter `.claude/worktrees/` **innerhalb** des Repo-Roots.
  * Ohne diese Muster beobachtete ein Watcher im Haupt-Repo ein Vielfaches an
  * Dateien, sobald die `.gitignore`-Zeile einmal wegfällt.
  */
-export const WORKTREE_WATCH_GLOBS = ['**/.claude/worktrees/**', '**/.worktrees/**'] as const;
+export const WORKTREE_WATCH_GLOBS = WORKTREE_ORTE.map(({ glob }) => glob);
 
 /**
- * Dieselben Muster — aber **nur**, wenn der Dev-Server nicht selbst in einem
- * Worktree läuft.
+ * Dieselben Muster — aber ohne das, das den eigenen Standort trifft.
  *
  * **Warum die Fallunterscheidung nötig ist.** Chokidar vergleicht `ignored`
  * gegen den *absoluten* Pfad. Startet der Server im Worktree, liegt jede
@@ -429,12 +440,17 @@ export const WORKTREE_WATCH_GLOBS = ['**/.claude/worktrees/**', '**/.worktrees/*
  *
  * Das Muster war als Absicherung gedacht (falls die `.gitignore`-Zeile
  * wegfällt) und hat in dieser Rolle genau den Arbeitsablauf lahmgelegt, für den
- * es die Worktrees gibt. Im Haupt-Repo greift es unverändert weiter.
+ * es die Worktrees gibt.
+ *
+ * **Im Haupt-Repo ändert sich nichts:** Dort trifft kein Pfadstück zu, beide
+ * Muster gelten unverändert weiter. Und aussortiert wird nur das Muster, das
+ * den eigenen Standort trifft — wer in `.claude/worktrees/x` arbeitet, hält
+ * ein `.worktrees/` daneben weiterhin heraus. Ein pauschales „im Worktree gar
+ * nichts ignorieren" wäre bequemer und würde mehr wegnehmen als nötig.
  */
 export function worktreeWatchIgnore(cwd: string = process.cwd()): string[] {
 	const normalisiert = cwd.replaceAll('\\', '/');
-	const imWorktree = ['/.claude/worktrees/', '/.worktrees/'].some((teil) =>
-		normalisiert.includes(teil)
+	return WORKTREE_ORTE.filter(({ pfadstueck }) => !normalisiert.includes(pfadstueck)).map(
+		({ glob }) => glob
 	);
-	return imWorktree ? [] : [...WORKTREE_WATCH_GLOBS];
 }

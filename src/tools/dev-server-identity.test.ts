@@ -584,11 +584,26 @@ describe('worktreeWatchIgnore', () => {
 		]);
 	});
 
-	it('ignoriert nichts, wenn der Server selbst in einem Worktree läuft', () => {
+	/* Aussortiert wird nur das Muster, das den eigenen Standort trifft — nicht
+	   pauschal alles. Wer in `.claude/worktrees/x` arbeitet, hält ein
+	   `.worktrees/` daneben weiterhin heraus; ein pauschales Leerräumen nähme
+	   mehr weg als nötig. */
+	it('nimmt im Worktree nur das Muster heraus, das den eigenen Pfad trifft', () => {
 		expect(
 			worktreeWatchIgnore('/Users/jan/Code/ostsee-sichtung/.claude/worktrees/feature-x')
-		).toEqual([]);
-		expect(worktreeWatchIgnore('/Users/jan/Code/ostsee-sichtung/.worktrees/feature-y')).toEqual([]);
+		).toEqual(['**/.worktrees/**']);
+		expect(worktreeWatchIgnore('/Users/jan/Code/ostsee-sichtung/.worktrees/feature-y')).toEqual([
+			'**/.claude/worktrees/**'
+		]);
+	});
+
+	/* Die beiden Pfadstücke dürfen sich nicht überschneiden, sonst räumte der
+	   eine Standort das Muster des anderen mit ab: `/.claude/worktrees/` enthält
+	   `worktrees/`, aber nicht `/.worktrees/` — der Punkt sitzt direkt hinter
+	   dem Schrägstrich. */
+	it('verwechselt die beiden Worktree-Orte nicht', () => {
+		expect(worktreeWatchIgnore('/repo/.claude/worktrees/x')).toContain('**/.worktrees/**');
+		expect(worktreeWatchIgnore('/repo/.worktrees/y')).toContain('**/.claude/worktrees/**');
 	});
 
 	/* Der Verzeichnisname allein genügt nicht: Ein Projekt, das zufällig
