@@ -211,6 +211,13 @@ map=(
 	# (Storage-Nachtrag) bzw. über „Ändern" geschrieben wird. Vier Tests, echte
 	# Browser-Navigation, lokal ~5 s.
 	e2e/i18n-links.spec.ts
+	# Direkt bei den beiden Specs darüber: prüft denselben Auslieferungs-Riegel
+	# um `/en`, hier aber den Antwort-Header statt der Routen-Existenz — reine
+	# `request`-Aufrufe, kein Browser, keine eigene Route (die drei Pfade sind
+	# durch i18n-routing.spec.ts und legacy-language-prefix.spec.ts bereits kalt
+	# kompiliert). Vorübergehend, solange der Riegel existiert (siehe
+	# `src/lib/server/middleware/noindexEnglishPages.ts`).
+	e2e/noindex-english-pages.spec.ts
 )
 
 # design-tokens.spec.ts gehört hierher, nicht zu form: es prüft das

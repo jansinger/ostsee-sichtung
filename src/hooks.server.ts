@@ -8,6 +8,7 @@ import { assertProductionSecrets } from '$lib/server/config/secretGuard';
 import { closeDb } from '$lib/server/db';
 import { databaseCheck } from '$lib/server/middleware/databaseCheck';
 import { maintenanceMode } from '$lib/server/middleware/maintenanceMode';
+import { noindexEnglishPages } from '$lib/server/middleware/noindexEnglishPages';
 import { createSecurityHeadersHandler } from '$lib/server/middleware/securityHeaders';
 import { warnIfBodySizeLimitTooLow } from '$lib/server/startup/bodySizeLimit';
 import { formatStartupBanner, getBuildInfo } from '$lib/server/startup/versionInfo';
@@ -178,8 +179,21 @@ export const handle: Handle = sequence(
 	maintenanceMode, // Second: Check maintenance mode
 	authentication, // Third: Handle authentication
 	setAdditionalHeaders, // Fourth: Set security headers
-	handleStartseitenSprache, // Fifth: einmalige Sprachweiterleitung auf "/"
-	handleParaglide // Sixth: Resolve locale and fill %lang% placeholder
+	// Fünfter Platz, direkt neben `setAdditionalHeaders`: Beide setzen nur
+	// Antwort-Header über `resolve(event)` und lesen dafür ausschließlich
+	// `event.url.pathname` — dieselbe Grundlage, an der auch `authentication`
+	// und `handleStartseitenSprache` hängen, und die bis hierher unverändert
+	// ist (`reroute` fasst `event.url` nicht an, und die spätere
+	// Locale-Auflösung in `handleParaglide` setzt nur `event.request` neu).
+	// Der Riegel muss NICHT nach `handleStartseitenSprache` stehen: Eine 302
+	// von dort betrifft nur `/` (siehe deren Kommentar), nie `/en/...` — ein
+	// Redirect-Response bekäme den Header ohnehin harmlos mit. Er ist
+	// vorübergehend (Etappe 0 der Mehrsprachigkeit, siehe
+	// `noindexEnglishPages.ts` für die vollständige Begründung und die
+	// Entfernungsbedingung).
+	noindexEnglishPages,
+	handleStartseitenSprache, // Sechstes: einmalige Sprachweiterleitung auf "/"
+	handleParaglide // Siebtes: Resolve locale and fill %lang% placeholder
 );
 
 /**
