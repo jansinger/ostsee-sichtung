@@ -12,7 +12,9 @@
 	   Karte leer da (Begründung in `inboxColumns.ts`). */
 	import type { InboxSighting } from '$lib/server/db/inboxColumns';
 	import type { DuplicateCandidate } from '$lib/server/db/duplicateCandidates';
+	import type { ReporterHistory } from '$lib/types/reporterHistory';
 	import Icon from '$lib/components/Icon.svelte';
+	import ReporterHistoryBadge from './ReporterHistoryBadge.svelte';
 	import { inboxDetailHref } from './adminReturn';
 	import { SIGHTING_STATUS_PRESENTATION } from './sightingStatus';
 	import { SPAM_RISK_PRESENTATION, getSpamRisk } from './spamScorePresentation';
@@ -24,12 +26,23 @@
 		duplicates?: DuplicateCandidate[];
 		/** Sortierung des Eingangs — reist mit in die Detailansicht und zurück. */
 		order?: 'asc' | 'desc';
+		/** Was über den Melder bekannt ist — `null`, wenn nicht ermittelbar. */
+		reporterHistory?: ReporterHistory | null;
 		busy: boolean;
 		onApprove: () => void;
 		onReject: () => void;
 	}
 
-	let { sighting, images, duplicates = [], order, busy, onApprove, onReject }: Props = $props();
+	let {
+		sighting,
+		images,
+		duplicates = [],
+		order,
+		reporterHistory = null,
+		busy,
+		onApprove,
+		onReject
+	}: Props = $props();
 
 	/* „1 ähnliche Meldung" statt „1 ähnliche Meldungen": Die Karte ist die
 	   Arbeitsfläche des Museums, nicht eine Log-Zeile. */
@@ -79,6 +92,7 @@
 					</span>
 				</span>
 			{/if}
+			<ReporterHistoryBadge history={reporterHistory} />
 			<span class="badge badge-sm {balticSea.badgeClass}">{balticSea.label}</span>
 		</div>
 

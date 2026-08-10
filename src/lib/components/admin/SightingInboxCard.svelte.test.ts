@@ -1,4 +1,5 @@
 import { render } from 'vitest-browser-svelte';
+import { page } from 'vitest/browser';
 import { describe, expect, it, vi } from 'vitest';
 import SightingInboxCard from './SightingInboxCard.svelte';
 import { inboxDetailHref } from './adminReturn';
@@ -40,15 +41,21 @@ const basisSichtung = {
 
 const noop = () => {};
 
+/* Props des ersten Aufrufs — Grundlage für den Rest der Datei. Neue Tests
+   bauen darauf auf, statt die Props erneut abzuschreiben. */
+function basisProps() {
+	return {
+		sighting: basisSichtung,
+		images: [],
+		busy: false,
+		onApprove: noop,
+		onReject: noop
+	};
+}
+
 describe('SightingInboxCard', () => {
 	it('zeigt Tierart, Anzahl, E-Mail und Meldedatum', async () => {
-		const screen = render(SightingInboxCard, {
-			sighting: basisSichtung,
-			images: [],
-			busy: false,
-			onApprove: noop,
-			onReject: noop
-		});
+		const screen = render(SightingInboxCard, basisProps());
 		await expect.element(screen.getByText(/Schweinswal/)).toBeInTheDocument();
 		await expect.element(screen.getByText('melder@example.com')).toBeInTheDocument();
 	});
@@ -279,5 +286,31 @@ describe('SightingInboxCard', () => {
 		});
 		const img = screen.getByRole('img', { name: 'foo.jpg' });
 		await expect.element(img).toHaveAttribute('src', '/api/media/2026/08/foo.jpg');
+	});
+
+	it('zeigt die Melder-Historie neben dem Spam-Badge', async () => {
+		render(SightingInboxCard, {
+			...basisProps(),
+			reporterHistory: { approved: 23, rejected: 0, open: 1, since: '2019-03-04T08:00:00Z' }
+		});
+
+		await expect
+			.element(page.getByTestId('reporter-badge'))
+			.toHaveTextContent('Melder: 23 freigegeben');
+	});
+
+	/* Die Historie ist Zusatzinformation und wird fail-open geladen: Ohne sie
+	   muss die Karte vollständig bedienbar bleiben. */
+	it('bleibt ohne Melder-Historie vollständig', async () => {
+		render(SightingInboxCard, { ...basisProps(), reporterHistory: null });
+
+		await expect.element(page.getByTestId('reporter-badge')).not.toBeInTheDocument();
+		// Literal 'Freigeben' träfe nicht: die Datei mockt den Beschriftungstext
+		// weiter oben bewusst auf 'TESTFREIGABE' (Begründung im Kommentar dort).
+		await expect
+			.element(
+				page.getByRole('button', { name: SIGHTING_STATUS_PRESENTATION.approved.actionLabel })
+			)
+			.toBeVisible();
 	});
 });
