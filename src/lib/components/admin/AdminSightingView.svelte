@@ -393,22 +393,35 @@
 	   Datum, und „Melder seit 08/2026" liest sich als Aussage über eine
 	   Vorgeschichte, die es nicht gibt. Ab `pending` ebenfalls nicht: Auch dort
 	   ist noch nichts bearbeitet worden. */
+	/**
+	 * „Melder seit" als `MM/JJJJ`, aus den UTC-Feldern zusammengesetzt.
+	 *
+	 * **Nicht `toLocaleDateString('de-DE', …)`.** Das Trennzeichen kommt dort aus
+	 * den ICU-Daten der Laufzeit und ist keine Zusage: Je nach Browser- und
+	 * ICU-Version steht dort `03/2019` oder `03.2019`. Die Oberfläche kündigt
+	 * aber `MM/JJJJ` an, und der Test prüft genau darauf — die Formatierung
+	 * gehört deshalb hierher und nicht in eine Bibliotheksentscheidung, die sich
+	 * unter uns ändern kann (Befund aus dem Review zu PR #852).
+	 *
+	 * `getUTC*` statt der lokalen Getter, weil `since` UTC ist (`to_char(… "Z")`
+	 * in `reporterHistory.ts`): `2019-03-31T23:00:00Z` ergäbe in Berliner
+	 * Ortszeit sonst „04/2019".
+	 */
+	function formatiereMelderSeit(since: string | null | undefined): string | null {
+		if (!since) return null;
+		const zeitpunkt = new Date(since);
+		/* Ein unbrauchbares Datum wird verschwiegen statt als „NaN/NaN" gezeigt.
+		   Die Gestaltprüfung im Loader lässt jede Zeichenkette durch — sie prüft
+		   den Typ, nicht das Format. */
+		if (Number.isNaN(zeitpunkt.getTime())) return null;
+		const monat = String(zeitpunkt.getUTCMonth() + 1).padStart(2, '0');
+		return `${monat}/${zeitpunkt.getUTCFullYear()}`;
+	}
+
 	const reporterLevel = $derived(getReporterLevel(reporterHistory));
 	const reporterSince = $derived(
-		reporterHistory?.since &&
-			reporterLevel &&
-			reporterLevel !== 'first' &&
-			reporterLevel !== 'pending'
-			? new Date(reporterHistory.since).toLocaleDateString('de-DE', {
-					month: '2-digit',
-					year: 'numeric',
-					// `since` ist UTC (`to_char(… "Z")` in reporterHistory.ts). Ohne
-					// `timeZone: 'UTC'` liest `toLocaleDateString` den Zeitstempel in
-					// Browser-Ortszeit — `2019-03-31T23:00:00Z` erschiene als „04/2019".
-					// Für eine reine Monatsangabe folgenlos in der Regel, aber dieselbe
-					// Falle, gegen die das Server-Modul sein `to_char` extra baut.
-					timeZone: 'UTC'
-				})
+		reporterLevel && reporterLevel !== 'first' && reporterLevel !== 'pending'
+			? formatiereMelderSeit(reporterHistory?.since)
 			: null
 	);
 

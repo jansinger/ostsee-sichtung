@@ -276,6 +276,33 @@ describe('AdminSightingView — Melder-Historie', () => {
 			.toHaveAttribute('href', '/admin/sichtungen?q=melder%40example.org');
 	});
 
+	/* Der Monat wird aus den UTC-Feldern zusammengesetzt und nicht über
+	   `toLocaleDateString` formatiert: Dort käme das Trennzeichen aus den
+	   ICU-Daten der Laufzeit („03/2019" oder „03.2019", je nach Version), und
+	   die Zeitzone aus der des Browsers. Ein `since` am Monatsletzten kurz vor
+	   Mitternacht UTC ist der Fall, an dem beides auffällt. */
+	it('nennt den Monat in UTC, nicht in Browser-Ortszeit', async () => {
+		render(AdminSightingView, {
+			...basisProps(),
+			reporterHistory: { approved: 23, rejected: 0, open: 0, since: '2019-03-31T23:00:00Z' }
+		});
+
+		await expect.element(page.getByText('Melder seit 03/2019')).toBeVisible();
+	});
+
+	/* Die Gestaltprüfung im Loader prüft den Typ von `since`, nicht sein Format.
+	   Eine unbrauchbare Zeichenkette darf deshalb nicht als „NaN/NaN" auf der
+	   Arbeitsfläche landen — dann lieber gar keine Angabe. */
+	it('verschweigt ein unbrauchbares Datum, statt NaN anzuzeigen', async () => {
+		render(AdminSightingView, {
+			...basisProps(),
+			reporterHistory: { approved: 23, rejected: 0, open: 0, since: 'kein Datum' }
+		});
+
+		await expect.element(page.getByTestId('reporter-badge')).toBeVisible();
+		await expect.element(page.getByText(/Melder seit/)).not.toBeInTheDocument();
+	});
+
 	/* „Nicht ermittelt" ist nicht „keine Vorgeschichte" — der Fehlschlag muss
 	   als dritter Fall sichtbar sein, sonst liest sich eine Lücke wie ein
 	   Befund (gleiche Konstruktion wie beim Status-Log). */
