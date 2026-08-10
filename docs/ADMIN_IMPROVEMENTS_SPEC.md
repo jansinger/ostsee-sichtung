@@ -70,6 +70,33 @@ den Default zurück; SSR rendert ohne Fehler.
 (`columnPreferences.ts`) mit Unit-Tests (kaputtes JSON, unbekannte Schlüssel,
 neue Spalte).
 
+**Umgesetzt (2026-08-10)** in `src/routes/admin/sichtungen/columnPreferences.ts`
+plus Spalten-Dropdown in `+page.svelte`; Regressionstest in
+`tableColumns.svelte.test.ts`.
+
+Das Akzeptanzkriterium „Auswahl übersteht Reload" galt bis dahin **nicht** —
+und zwar nicht, weil die Persistenz fehlte, sondern weil sie nie lief. Der eine
+`$effect`, der schreiben sollte, kehrte in seinem ersten Durchlauf zurück,
+_bevor_ er `columnVisibility` gelesen hatte. Svelte 5 ermittelt die
+Abhängigkeiten eines Effekts aus den Werten, die er tatsächlich gelesen hat —
+der Effekt hatte damit gar keine, lief genau einmal und schrieb nie nach
+`localStorage`. Die Spalten fielen für jeden Bearbeiter bei jedem Reload auf den
+Default zurück, ohne dass irgendetwas brach. Drei Festlegungen aus der
+Umsetzung:
+
+- **Zwei Effekte statt einem.** Einer lädt (einmalig), einer schreibt (bei
+  Änderung). Die Trennung ist nicht Kosmetik: Sie ist die einzige Form, in der
+  der schreibende Effekt seinen Wert unbedingt liest und damit überhaupt
+  abonniert. Wer sie wieder zusammenlegt, stellt den Bug her.
+- **Der Lesezugriff steht vor jedem `return`.** Auch im getrennten Effekt gilt
+  das: Ein Guard oberhalb des `serializeColumnPreferences(columnVisibility)`
+  bringt denselben Fehler zurück, nur unauffälliger.
+- **Ein bloßer Seitenaufruf schreibt nichts.** Der Speicher wird erst berührt,
+  wenn der Bearbeiter etwas ändert (`letzterPersistierterStand`). Sonst würde
+  der Default beim ersten Besuch festgeschrieben, und eine spätere Änderung an
+  `DEFAULT_COLUMN_VISIBILITY` erreichte niemanden mehr, der die Seite je offen
+  hatte — `mergeColumnPreferences` behält gespeicherte Schlüssel.
+
 ### U3 — Suche über Sichtungen (**Follow-Up-Chip**)
 
 **Befund:** Es gibt keinen Weg, eine Sichtung per E-Mail, Name, Referenz-ID
@@ -241,6 +268,38 @@ Dezimalpunkt, direkt neben deutsch formatierten Zahlen (`19.284`).
 **Akzeptanz:** Alle Prozentwerte der Seite mit Komma; kein „Mortalität" mehr.
 **Tests:** `formatPercentage` als reine Funktion extrahieren + Unit-Tests
 (0, 9.2, 100, String-Input).
+
+---
+
+### X5 — Statusreiter, Filter-Chips und URL als einzige Filterquelle
+
+Nachgetragen aus dem UX-Review der Sichtungstabelle vom 2026-08-09; nicht Teil
+des ursprünglichen Reviews vom 2026-08-08.
+
+**Umgesetzt (2026-08-10)** in `activeFilters.ts`, `statusTabs.ts` /
+`StatusTabs.svelte` und `filterChips.ts`, jeweils neben `+page.svelte`; E2E in
+`e2e/admin-status-tabs.spec.ts`.
+
+- **Der Filterzustand steht ausschließlich in `page.url`.** `currentFilters` las
+  vorher nur `q` aus der URL und die übrigen sieben Filter aus dem Feld-State
+  des Panels. Wer ein Datum eintippte, nicht „Anwenden" klickte und dann
+  exportierte, exportierte eine Menge, die die Tabelle nie gezeigt hatte. Die
+  Feld-States sind seither reiner Editier-Puffer und speisen nur `applyFilters()`.
+- **Die Statusreiter zählen über die gefilterte Menge _ohne_ den Statusfilter
+  selbst** — sonst stünde auf jedem inaktiven Reiter eine 0. Die Bedingungen
+  kommen aus `approvalFilter.ts`; „offen" ist nicht ein zweites Mal formuliert.
+- **Die Reiter sind kein zweiter Zustand.** Sie schreiben denselben
+  `?verified=`-Parameter wie das `<select>` im Panel, das bewusst stehen bleibt.
+- **Chips zeigen keinen Status-Chip**, solange die Reiter eingebunden sind
+  (`skipVerified`) — der aktive Reiter sagt dasselbe bereits.
+- **Beschriftungen haben genau eine Quelle.** Chips, Reiter und die
+  `<option>`-Listen des Panels lesen aus denselben Presentation-Modulen;
+  `AUFNAHME_LABEL`/`MELDEART_LABEL` liegen in `filterChips.ts`, und das Panel
+  rendert daraus, statt die Wörter ein zweites Mal zu tippen.
+
+Bewusst **nicht** umgesetzt (Entscheidung aus dem Review): Löschen-Knopf in ein
+Overflow-Menü, Zeilenklick → Detail, „Springe zu Seite N", Schnellbereiche im
+Datumsfilter.
 
 ---
 
