@@ -3,16 +3,21 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import Icon from '$lib/components/Icon.svelte';
+	import { localizeHref } from '$lib/paraglide/runtime';
 
 	// Error-Informationen aus der page store (Runes Mode)
 	const error = $derived(page.error);
 	const status = $derived(page.status);
 
 	/**
-	 * Navigiert zurück zur Startseite
+	 * Navigiert zurück zur Startseite. `localizeHref`, nicht `goto('/')`
+	 * direkt: Ein Tippfehler in `/en/<pfad>` landete sonst auf `/`, und der
+	 * Nutzer verlor damit die Sprache genau in dem Moment, in dem etwas
+	 * schiefgegangen ist (Important-Fund, Task-8-Review — `goto(...)` stand
+	 * nicht als `href` im Markup und fiel deshalb durchs erste Raster).
 	 */
 	const goHome = (): void => {
-		goto('/');
+		goto(localizeHref('/'));
 	};
 
 	/**

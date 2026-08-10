@@ -207,7 +207,9 @@ map=(
 	e2e/i18n-routing.spec.ts
 	# Direkt daneben: prüft nicht das Routing selbst, sondern dass ein Klick
 	# auf `/en` in `/en/...` bleibt statt auf den deutschen Pfad zurückzufallen
-	# (Task 8). Ein Test, echte Browser-Navigation, lokal ~1 s.
+	# (Task 8) — inklusive der beiden Stellen, an denen die URL ohne Klick
+	# (Storage-Nachtrag) bzw. über „Ändern" geschrieben wird. Vier Tests, echte
+	# Browser-Navigation, lokal ~5 s.
 	e2e/i18n-links.spec.ts
 )
 

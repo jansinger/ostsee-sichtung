@@ -88,6 +88,31 @@
 	}
 
 	/**
+	 * Einziger Ort, der `/` + Query-String + `localizeHref` zusammensetzt.
+	 *
+	 * `localizeHref` um den fertigen Pfad herum, nicht um `/` allein: Die
+	 * Funktion hängt Sprachpräfix und Query-String getrennt an
+	 * (`localized.pathname + localized.search + localized.hash`, `runtime.js`),
+	 * ein `localizeHref('/') + '?...'` verlöre also nichts — aber erst
+	 * `params.toString()` in den fertigen Pfad zu bauen und danach zu
+	 * lokalisieren hält den Query-String an genau einer Stelle, statt ihn ein
+	 * zweites Mal zusammenzusetzen.
+	 *
+	 * Genutzt von `reportKindHref()` (Klick auf eine Zweig-Wahl),
+	 * `returnToSelection()` (Rücksprung über „Ändern"/„Formular zurücksetzen")
+	 * und dem `$effect` weiter unten, das den Zweig aus dem Storage nachträgt.
+	 * Alle drei bauen `/?meldung=…` — als Review-Fund zu Task 8 lokalisierte
+	 * ursprünglich nur `reportKindHref()`; die anderen beiden sprangen beim
+	 * Schreiben der URL von `/en/…` zurück auf `/…`, und ab da blieb die
+	 * Anwendung deutsch, ohne dass ein Klick das ausgelöst hätte. Eine
+	 * gemeinsame Funktion statt drei einzelner `localizeHref`-Aufrufe, damit
+	 * ein viertes Vorkommen nicht denselben Fehler wiederholt.
+	 */
+	function localizedHomeHref(searchParams: URLSearchParams): string {
+		return localizeHref(`/?${searchParams.toString()}`);
+	}
+
+	/**
 	 * Ziel der beiden Links auf der Einstiegsseite — der Weg, den ein Klick VOR
 	 * der Hydration nimmt, und zugleich das Ziel, das `choose()` oben nach der
 	 * Hydration per `pushState` setzt. Bestehende Query-Parameter (Kampagnen-
@@ -98,14 +123,6 @@
 	 * `page.url` statt `window.location`: Diese Funktion läuft auch im SSR, wo es
 	 * kein `window` gibt. Der ausgelieferte `href` ist damit von Anfang an
 	 * richtig und nicht erst nach der Hydration.
-	 *
-	 * `localizeHref` um den fertigen Pfad herum, nicht um `/` allein: Die
-	 * Funktion hängt Sprachpräfix und Query-String getrennt an
-	 * (`localized.pathname + localized.search + localized.hash`, `runtime.js`),
-	 * ein `localizeHref('/') + '?...'` verlöre also nichts — aber erst
-	 * `params.toString()` in den fertigen Pfad zu bauen und danach zu
-	 * lokalisieren hält den Query-String an genau einer Stelle, statt ihn ein
-	 * zweites Mal zusammenzusetzen.
 	 */
 	function reportKindHref(kind: ReportKind): string {
 		// Wirft weg, keine Komponenten-Reaktivität nötig — dasselbe Muster wie in
@@ -113,7 +130,7 @@
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const params = new URLSearchParams(page.url.searchParams);
 		params.set(REPORT_KIND_PARAM, reportKindToParam(kind));
-		return localizeHref(`/?${params.toString()}`);
+		return localizedHomeHref(params);
 	}
 
 	/**
@@ -163,11 +180,14 @@
 			}
 		}
 		// Bestehende Query-Parameter bleiben erhalten — nur `meldung` entfällt.
-		// Gleiches Muster wie in `choose()`.
+		// Gleiches Muster wie in `choose()`, über dieselbe `localizedHomeHref()`:
+		// Auf `/en` sonst der Weg zurück in die deutsche Fassung, ohne dass der
+		// Nutzer etwas angeklickt hätte, das nicht „Ändern" oder „Formular
+		// zurücksetzen" hieße (Critical-Fund, Task-8-Review).
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const params = new URLSearchParams(window.location.search);
 		params.delete(REPORT_KIND_PARAM);
-		pushState(`/?${params.toString()}`, {});
+		pushState(localizedHomeHref(params), {});
 	}
 
 	/**
@@ -253,6 +273,13 @@
 	 * dann mit einer nicht abgefangenen Rejection ab (`root.$set is not a
 	 * function`, empirisch reproduziert). `tick()` verschiebt den Aufruf hinter
 	 * den aktuellen Konstruktionsdurchlauf.
+	 *
+	 * `localizedHomeHref()`, nicht `` `/?${params}` `` direkt: Dieser Effekt
+	 * feuert ohne jede Nutzeraktion, sobald der Zweig aus dem Storage aufgelöst
+	 * wird — auf `/en` sprang die URL dadurch still auf `/…` zurück und
+	 * `getLocale()` lieferte ab dann `de`, obwohl niemand geklickt hatte
+	 * (Critical-Fund, Task-8-Review). Dieselbe Funktion wie in `choose()` und
+	 * `returnToSelection()`, damit die drei Aufbauten nicht wieder auseinanderlaufen.
 	 */
 	$effect(() => {
 		if (!browser || reportKind === null) return;
@@ -262,7 +289,7 @@
 		if (params.get(REPORT_KIND_PARAM) === target) return;
 		tick().then(() => {
 			params.set(REPORT_KIND_PARAM, target);
-			replaceState(`/?${params.toString()}`, {});
+			replaceState(localizedHomeHref(params), {});
 		});
 	});
 
