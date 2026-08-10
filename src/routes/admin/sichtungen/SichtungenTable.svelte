@@ -135,6 +135,15 @@
 			{label}
 			{#if isActive}
 				<span aria-hidden="true">{isDesc ? '↓' : '↑'}</span>
+			{:else}
+				<!-- Affordance im Ruhezustand: ohne sie war ein sortierbarer Kopf von
+				     einem reinen Textkopf nicht zu unterscheiden — der Richtungspfeil
+				     stand nur an der aktiven Spalte. -->
+				<Icon
+					icon="lucide:chevrons-up-down"
+					class="text-base-content/70 h-3 w-3"
+					aria-hidden="true"
+				/>
 			{/if}
 		</button>
 	</th>

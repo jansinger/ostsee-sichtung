@@ -5,6 +5,7 @@ import { mediaUploadCondition } from '$lib/server/db/mediaUploadFilter';
 import { balticSeaCondition } from '$lib/server/db/balticSeaFilter';
 import { deadFindingCondition } from '$lib/server/db/deadFindingFilter';
 import { searchCondition, normalizeSearchTerm } from '$lib/server/db/sightingSearchFilter';
+import { approvedOnly, openOnly, rejectedOnly } from '$lib/server/db/approvalFilter';
 import { and, eq, sql, type SQL } from 'drizzle-orm';
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import { redirect } from '@sveltejs/kit';
@@ -15,6 +16,7 @@ import { isValidDateParam } from './dateParam';
 import { SIGHTING_LIST_COLUMNS } from './listColumns';
 import { resolveSort, type SortColumn } from './sortParams';
 import { statusCondition } from './statusFilter';
+import type { StatusCounts } from './statusTabs';
 
 export const load: PageServerLoad = async ({ url }) => {
 	const page = Math.max(1, Number(url.searchParams.get('page')) || 1);
@@ -101,12 +103,20 @@ export const load: PageServerLoad = async ({ url }) => {
 	}
 
 	// Kombinierte WHERE-Bedingung erstellen
-	const whereCondition =
-		conditions.length > 0
-			? conditions.length === 1
-				? conditions[0]
-				: and(...conditions)
-			: undefined;
+	const kombiniere = (liste: SQL[]): SQL | undefined =>
+		liste.length === 0 ? undefined : liste.length === 1 ? liste[0] : and(...liste);
+
+	const whereCondition = kombiniere(conditions);
+
+	// Grundmenge der Statusreiter: dieselben Filter **ohne** den Statusfilter
+	// selbst. Zählte er mit, stünde auf jedem inaktiven Reiter eine 0 — die
+	// Leiste soll aber gerade sagen, wie viel hinter den anderen Reitern liegt.
+	// Herausgefiltert wird die Bedingung, statt sie in einer zweiten Liste
+	// nachzubauen: So bleibt die Reihenfolge der übrigen Bedingungen dieselbe
+	// wie in der Hauptabfrage.
+	const statusCountsWhere = kombiniere(
+		conditions.filter((condition) => condition !== statusFilter)
+	);
 
 	// Sortierungs-Mapping. Als `Record<SortColumn, …>` typisiert: Die Liste der
 	// sortierbaren Spalten steht in `sortParams.ts` und speist auch die
@@ -173,6 +183,23 @@ export const load: PageServerLoad = async ({ url }) => {
 	// WHERE-Klausel zur Count-Abfrage hinzufügen
 	const countQuery = whereCondition ? countBaseQuery.where(whereCondition) : countBaseQuery;
 
+	// Zähler der Statusreiter — eine Abfrage mit bedingten Aggregaten statt drei
+	// Rundreisen. Die Prädikate kommen aus `approvalFilter.ts`, also aus
+	// derselben Quelle wie `statusCondition()` oben: Reiterzahl und
+	// Trefferliste können damit nicht auseinanderlaufen.
+	const statusCountsBaseQuery = db
+		.select({
+			all: sql<number>`count(*)`,
+			open: sql<number>`count(*) filter (where ${openOnly()})`,
+			approved: sql<number>`count(*) filter (where ${approvedOnly()})`,
+			rejected: sql<number>`count(*) filter (where ${rejectedOnly()})`
+		})
+		.from(sightings);
+
+	const statusCountsQuery = statusCountsWhere
+		? statusCountsBaseQuery.where(statusCountsWhere)
+		: statusCountsBaseQuery;
+
 	// Abfragen ausführen — voneinander unabhängig, deshalb parallel statt
 	// sequenziell (zwei Round-Trips gleichzeitig statt hintereinander).
 	//
@@ -180,12 +207,27 @@ export const load: PageServerLoad = async ({ url }) => {
 	// Knopf im Kopf entfallen (Begründung in `+page.svelte`): Er kostete auf
 	// jedem Seitenaufruf dieser Tabelle eine eigene Abfrage über den gesamten
 	// Bestand, für eine Zahl, die der Eingang ohnehin führt.
-	const [data, countResult] = await Promise.all([paginatedQuery, countQuery]);
+	const [data, countResult, statusCountsResult] = await Promise.all([
+		paginatedQuery,
+		countQuery,
+		statusCountsQuery
+	]);
 	// `count(*)` ist bigint und kommt je nach PG-Treiber als String zurück. Der
 	// Loader-Vertrag sagt `number`, also wird hier normalisiert und nicht in
 	// jeder Aufrufstelle einzeln: `"1" === 1` ist falsch und ergab in der
 	// Kopfzeile „1 Fotos ausstehend".
 	const count = Number(countResult[0]?.count ?? 0);
+
+	// Dieselbe bigint-Falle wie beim Pagination-Zähler: `count(*) filter (…)`
+	// kommt je nach Treiber als String, und `'7' === 7` ist falsch. Der
+	// Loader-Vertrag sagt `number`, also wird hier normalisiert.
+	const statusCountsRow = statusCountsResult[0];
+	const statusCounts: StatusCounts = {
+		all: Number(statusCountsRow?.all ?? 0),
+		open: Number(statusCountsRow?.open ?? 0),
+		approved: Number(statusCountsRow?.approved ?? 0),
+		rejected: Number(statusCountsRow?.rejected ?? 0)
+	};
 
 	// Wer eine ganze Referenz-ID einfügt (aus einer Bestätigungsmail, einer
 	// Rückfrage), will die Sichtung sehen — nicht eine Trefferliste mit einer
@@ -222,6 +264,7 @@ export const load: PageServerLoad = async ({ url }) => {
 
 	return {
 		sightings: data,
+		statusCounts,
 		pagination: {
 			page,
 			perPage,

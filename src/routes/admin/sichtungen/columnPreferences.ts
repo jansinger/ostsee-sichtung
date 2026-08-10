@@ -77,3 +77,27 @@ export function serializeColumnPreferences(columns: Record<string, boolean>): st
 	const preferences: ColumnPreferences = { v: CURRENT_VERSION, columns };
 	return JSON.stringify(preferences);
 }
+
+/**
+ * Prüft, ob die aktuelle Auswahl exakt dem kuratierten Default entspricht —
+ * steuert den „Standard wiederherstellen"-Knopf im Spalten-Dropdown (nur aktiv
+ * bei Abweichung).
+ *
+ * Schlüsselzahl **und** Werte müssen übereinstimmen. Der Schlüsselzahl-Vergleich
+ * ist reine Verteidigung: `mergeColumnPreferences` (oben) baut sein Ergebnis
+ * immer als `{ ...defaults }` und überschreibt darin nur Schlüssel, die in
+ * `defaults` existieren — der zurückgegebene Schlüsselsatz ist damit immer
+ * exakt der Default-Schlüsselsatz, nie mehr, nie weniger. Ein `current`, das
+ * hier abweicht, kann also nur über einen anderen Aufrufpfad entstehen. Diese
+ * Funktion prüft trotzdem beide Seiten, statt sich auf den einen bekannten
+ * Aufrufer zu verlassen.
+ */
+export function isDefaultVisibility(
+	current: Record<string, boolean>,
+	defaults: Record<string, boolean>
+): boolean {
+	const currentKeys = Object.keys(current);
+	const defaultKeys = Object.keys(defaults);
+	if (currentKeys.length !== defaultKeys.length) return false;
+	return defaultKeys.every((key) => current[key] === defaults[key]);
+}

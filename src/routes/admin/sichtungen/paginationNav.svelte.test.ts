@@ -60,6 +60,9 @@ function sichtung(): SightingSelect {
 function daten(pagination: Partial<PageData['pagination']>): PageData {
 	return {
 		sightings: [sichtung()],
+		/* Die Statusreiter über der Tabelle lesen diese Zahlen; ohne sie liefe
+		   die Seite hier gar nicht erst durch. */
+		statusCounts: { all: 1, open: 1, approved: 0, rejected: 0 },
 		pagination: { page: 1, perPage: 20, total: 1, totalPages: 1, maxPerPage: 100, ...pagination }
 	} as unknown as PageData;
 }

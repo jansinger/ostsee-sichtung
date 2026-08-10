@@ -2,6 +2,7 @@ import { render } from 'vitest-browser-svelte';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import type { SightingSelect } from '$lib/server/db/schema';
 import type { PageData } from './$types';
+import { COLUMN_PREFERENCES_STORAGE_KEY } from './columnPreferences';
 
 vi.mock('$app/navigation', () => ({
 	goto: vi.fn(() => Promise.resolve()),
@@ -39,6 +40,9 @@ function sichtung(overrides: Partial<SightingSelect>): SightingSelect {
 function daten(rows: SightingSelect[]): PageData {
 	return {
 		sightings: rows,
+		/* Die Statusreiter über der Tabelle lesen diese Zahlen; ohne sie liefe
+		   die Seite hier gar nicht erst durch. */
+		statusCounts: { all: rows.length, open: rows.length, approved: 0, rejected: 0 },
 		pagination: { page: 1, perPage: 20, total: rows.length, totalPages: 1, maxPerPage: 100 }
 	} as unknown as PageData;
 }
@@ -59,6 +63,11 @@ describe('Sichtungstabelle — Spalten', () => {
 	beforeEach(() => {
 		document.documentElement.style.setProperty('--color-base-100', BASE_100);
 		document.documentElement.style.setProperty('--color-base-200', BASE_200);
+		// Ohne das hier: Der Round-Trip-Test unten schreibt eine geänderte
+		// Spaltenauswahl in denselben `localStorage` (jsdom teilt ihn über alle
+		// Tests der Datei), und ein davor oder danach laufender Test bekäme sie
+		// ungefragt untergeschoben.
+		window.localStorage.clear();
 	});
 
 	afterEach(async () => {
@@ -154,6 +163,28 @@ describe('Sichtungstabelle — Spalten', () => {
 		expect(kopf.querySelector('button')?.getAttribute('aria-label')).toContain('absteigend');
 	});
 
+	it('zeigt an inaktiven sortierbaren Köpfen ein dezentes Sortier-Icon, an nicht sortierbaren keins', () => {
+		// Default-Sortierung ist Sichtungsdatum absteigend — Meldedatum ist damit
+		// ein sortierbarer, aber inaktiver Kopf; Aufnahme ist gar nicht sortierbar.
+		const screen = render(SichtungenSeite, { data: daten([sichtung({})]) });
+
+		const köpfe = [...screen.container.querySelectorAll('thead th')];
+		const meldedatum = köpfe.find((th) => th.textContent?.includes('Meldedatum')) as HTMLElement;
+		const aufnahme = köpfe.find((th) => th.textContent?.trim() === 'Aufnahme') as HTMLElement;
+
+		expect(meldedatum.getAttribute('aria-sort')).toBe('none');
+		expect(
+			meldedatum.querySelector('svg[aria-hidden="true"]'),
+			'inaktiver sortierbarer Kopf zeigt das Affordance-Icon'
+		).toBeTruthy();
+
+		expect(aufnahme.querySelector('button'), 'Aufnahme ist nicht sortierbar').toBeFalsy();
+		expect(
+			aufnahme.querySelector('svg'),
+			'nicht sortierbarer Kopf bekommt kein Sortier-Icon'
+		).toBeFalsy();
+	});
+
 	it('zentriert die Auswahl-Checkbox in ihrer Zelle', () => {
 		// `app.css` setzt für jedes `label:has(> .checkbox)` ungelayert
 		// `align-items: flex-start` — richtig für mehrzeilige Feld-Labels, in
@@ -199,5 +230,59 @@ describe('Sichtungstabelle — Spalten', () => {
 		for (const th of nichtSortierbar) {
 			expect([...th.classList]).not.toContain('hover:bg-base-300');
 		}
+	});
+
+	it('lässt localStorage unangetastet, solange niemand die Spaltenauswahl ändert', () => {
+		// Fix-Runde-2-Regression: Die Effekt-Aufspaltung setzte
+		// `hatGespeicherteSpaltenGeladen` synchron im Lade-Effekt, bevor der
+		// Speicher-Effekt zum ersten Mal lief — dessen erster Durchlauf schrieb
+		// dadurch den (unveränderten) Default sofort zurück. Jeder Seitenaufruf
+		// seedete damit `localStorage`, nicht nur der einer Person, die die
+		// Spaltenauswahl tatsächlich ändert.
+		render(SichtungenSeite, { data: daten([sichtung({})]) });
+
+		expect(window.localStorage.getItem(COLUMN_PREFERENCES_STORAGE_KEY)).toBeNull();
+	});
+
+	/* WP7-Bugfix-Regression: Begründung der Effekt-Aufspaltung steht in
+	   `+page.svelte` beim Speicher-Effekt. Der mittlere Schritt unten —
+	   `localStorage` nach einer Checkbox-Änderung — reproduziert genau den
+	   Bug, den die Aufspaltung behoben hat; gegen die unaufgespaltene Fassung
+	   schlägt er fehl (siehe Fix-Report). */
+	it('speichert die Spaltenauswahl bei jeder Änderung und setzt sie per Reset-Button zurück', async () => {
+		const screen = render(SichtungenSeite, { data: daten([sichtung({})]) });
+
+		const resetButton = [...screen.container.querySelectorAll('button')].find(
+			(button) => button.textContent?.trim() === 'Standard wiederherstellen'
+		) as HTMLButtonElement;
+		expect(resetButton, 'Reset-Button existiert').toBeTruthy();
+		expect(resetButton.disabled, 'Ruhezustand entspricht dem Default').toBe(true);
+
+		const sichtungsdatumCheckbox = [...screen.container.querySelectorAll('label')]
+			.find((label) => label.textContent?.includes('Sichtungsdatum'))
+			?.querySelector('input[type="checkbox"]') as HTMLInputElement;
+		expect(sichtungsdatumCheckbox, 'Checkbox „Sichtungsdatum" existiert').toBeTruthy();
+		expect(sichtungsdatumCheckbox.checked, 'Spalte ist per Default sichtbar').toBe(true);
+
+		sichtungsdatumCheckbox.click();
+
+		// Reproduziert den Bug: Vor der Effekt-Aufspaltung blieb `localStorage`
+		// hier dauerhaft leer, weil der Speicher-Effekt nie eine Abhängigkeit
+		// auf `columnVisibility` trackte.
+		await vi.waitFor(() => expect(resetButton.disabled).toBe(false));
+		await vi.waitFor(() => {
+			const gespeichert = window.localStorage.getItem(COLUMN_PREFERENCES_STORAGE_KEY);
+			expect(gespeichert).toBeTruthy();
+			expect(JSON.parse(gespeichert as string).columns.sightingDate).toBe(false);
+		});
+
+		resetButton.click();
+
+		await vi.waitFor(() => expect(resetButton.disabled).toBe(true));
+		await vi.waitFor(() => {
+			const gespeichert = window.localStorage.getItem(COLUMN_PREFERENCES_STORAGE_KEY);
+			expect(JSON.parse(gespeichert as string).columns.sightingDate).toBe(true);
+		});
+		expect(sichtungsdatumCheckbox.checked, 'Checkbox folgt dem Reset').toBe(true);
 	});
 });
