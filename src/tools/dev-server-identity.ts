@@ -414,9 +414,9 @@ export async function assertServerIdentity({
  * (der Punkt sitzt direkt hinter dem Schrägstrich). Deshalb lässt sich je Ort
  * einzeln entscheiden, ob sein Muster gelten darf.
  */
-const WORKTREE_ORTE = [
-	{ pfadstueck: '/.claude/worktrees/', glob: '**/.claude/worktrees/**' },
-	{ pfadstueck: '/.worktrees/', glob: '**/.worktrees/**' }
+const WORKTREE_LOCATIONS = [
+	{ pathSegment: '/.claude/worktrees/', glob: '**/.claude/worktrees/**' },
+	{ pathSegment: '/.worktrees/', glob: '**/.worktrees/**' }
 ] as const;
 
 /**
@@ -426,7 +426,7 @@ const WORKTREE_ORTE = [
  * Ohne diese Muster beobachtete ein Watcher im Haupt-Repo ein Vielfaches an
  * Dateien, sobald die `.gitignore`-Zeile einmal wegfällt.
  */
-export const WORKTREE_WATCH_GLOBS = WORKTREE_ORTE.map(({ glob }) => glob);
+export const WORKTREE_WATCH_GLOBS = WORKTREE_LOCATIONS.map(({ glob }) => glob);
 
 /**
  * Dieselben Muster — aber ohne das, das den eigenen Standort trifft.
@@ -449,8 +449,8 @@ export const WORKTREE_WATCH_GLOBS = WORKTREE_ORTE.map(({ glob }) => glob);
  * nichts ignorieren" wäre bequemer und würde mehr wegnehmen als nötig.
  */
 export function worktreeWatchIgnore(cwd: string = process.cwd()): string[] {
-	const normalisiert = cwd.replaceAll('\\', '/');
-	return WORKTREE_ORTE.filter(({ pfadstueck }) => !normalisiert.includes(pfadstueck)).map(
+	const normalized = cwd.replaceAll('\\', '/');
+	return WORKTREE_LOCATIONS.filter(({ pathSegment }) => !normalized.includes(pathSegment)).map(
 		({ glob }) => glob
 	);
 }
