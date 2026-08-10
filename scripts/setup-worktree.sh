@@ -73,10 +73,19 @@ fi
 # Paraglide erzeugt src/lib/paraglide/ — nicht im Repository, aber von
 # type-check, lint und check vorausgesetzt. Ohne diesen Schritt ist ein frischer
 # Worktree rot, und zwar mit Fehlern, die nach kaputtem Setup aussehen.
-if npx --no-install paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide >/dev/null 2>&1; then
-	say "worktree-setup: src/lib/paraglide/ erzeugt (paraglide-js compile)"
-else
-	warn "paraglide-js compile fehlgeschlagen — 'npm install' im Haupt-Repo nötig?"
+#
+# --strategy/--emit-ts-declarations müssen exakt die Werte aus den drei
+# Vite-Configs spiegeln (`npm run i18n:compile` in package.json ebenso) — sonst
+# schreiben CLI-Lauf und Plugin-Lauf zwei unterschiedliche Laufzeiten in dasselbe
+# outdir, je nachdem wer zuletzt lief. `scripts/i18nGate.test.ts` hält diese
+# Übereinstimmung fest.
+if [ ! -f src/lib/paraglide/runtime.js ]; then
+	if npx --no-install paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide --strategy url cookie baseLocale --emit-ts-declarations >/dev/null 2>&1; then
+		say "worktree-setup: src/lib/paraglide/ erzeugt (paraglide-js compile)"
+		DID_SOMETHING=1
+	else
+		warn "paraglide-js compile fehlgeschlagen — 'npm install' im Haupt-Repo nötig?"
+	fi
 fi
 
 # --- Abhängigkeiten prüfen ---------------------------------------------------

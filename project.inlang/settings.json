@@ -2,10 +2,9 @@
 	"$schema": "https://inlang.com/schema/project-settings",
 	"baseLocale": "de",
 	"locales": ["de", "en"],
-	"modules": [
-		"https://cdn.jsdelivr.net/npm/@inlang/plugin-message-format@4.4.0/dist/index.js"
-	],
+	"modules": ["https://cdn.jsdelivr.net/npm/@inlang/plugin-message-format@4.4.0/dist/index.js"],
 	"plugin.inlang.messageFormat": {
 		"pathPattern": "./messages/{locale}.json"
-	}
+	},
+	"x-buildRiskNote": "Die Modul-URL oben ist Paraglides eigener Default (siehe node_modules/@inlang/paraglide-js/dist/cli/defaults.js, getNewProjectTemplate()), auf eine konkrete Version gepinnt statt @latest — aber ohne Integritätsprüfung (kein Subresource-Integrity-Hash) über einen CDN-Abruf (cdn.jsdelivr.net) geladen. `npm run build`, `npm run i18n:compile`, `npm run check`, `npm run test:quick`, `scripts/setup-worktree.sh` und der Docker-Build brauchen damit Netz-Egress zu jsdelivr — bewusst akzeptiertes Build-Risiko, kein Fehler in dieser Konfiguration. Bei Bedarf durch einen lokalen Modul-Pfad (`./local-plugin.js`) ersetzbar, sobald Paraglide das Message-Format fest einbaut oder ein Offline-Mirror gebraucht wird."
 }
