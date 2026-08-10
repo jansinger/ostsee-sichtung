@@ -49,7 +49,14 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
 		const byId = await findReporterHistory([row]);
 		/* `null` und nicht `{approved: 0, …}`: Ohne Adresse oder nach einem
 		   Fehlschlag der Abfrage ist nichts ermittelt worden, und ein Nullaggregat
-		   behauptete das Gegenteil. */
+		   behauptete das Gegenteil.
+		   `null` fasst dabei zwei Ursachen zusammen, die von hier aus nicht zu
+		   unterscheiden sind: keine E-Mail-Adresse hinterlegt, oder die Abfrage in
+		   `findReporterHistory` ist fail-open fehlgeschlagen. Beides zeigt die
+		   Detailansicht identisch (kein Badge) — das ist der Preis des Fail-open
+		   und bewusst so. Ein eigener Fehlertext existiert dort nur für den
+		   Transportfehler (Endpunkt nicht erreichbar, Antwort ohne `history`),
+		   nicht für diesen Fall. */
 		const history: ReporterHistory | null = byId[row.id] ?? null;
 
 		return json({ history }, { headers: { 'Cache-Control': 'no-store' } });

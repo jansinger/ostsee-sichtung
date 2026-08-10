@@ -114,7 +114,15 @@ export async function findReporterHistory(
 			let rejected = Number(aggregate.rejected);
 			let open = Number(aggregate.open);
 
-			// Die eigene Zeile aus dem Topf abziehen, in dem sie steckt.
+			/* Die eigene Zeile aus dem Topf abziehen, in dem sie steckt.
+			   Voraussetzung: `approvedAt` und `rejectedAt` sind nie gleichzeitig
+			   gesetzt. Das hält ausschließlich `PATCH /api/sightings/[id]/verify`
+			   ein (es setzt beim Freigeben `rejectedAt: null` und umgekehrt, in
+			   einem Update) — dieses Modul selbst erzwingt es nicht. Verletzt eine
+			   künftige Schreibstelle die Annahme, wandert der Zähler für diese
+			   eine Zeile um eins in den falschen Topf (hier `else if`: `approved`
+			   gewinnt); `Math.max(0, …)` unten verhindert immerhin, dass daraus ein
+			   negativer Zähler wird. */
 			if (row.approvedAt) approved -= 1;
 			else if (row.rejectedAt) rejected -= 1;
 			else open -= 1;

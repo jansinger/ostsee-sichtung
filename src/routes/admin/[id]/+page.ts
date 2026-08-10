@@ -63,6 +63,28 @@ async function ladeStatusLog(fetchFn: FetchFn, id: string): Promise<StatusLogRes
 }
 
 /**
+ * Prüft die Gestalt von `history`, statt sie zu casten.
+ *
+ * `null` ist zulässig (nicht ermittelbar). Ein Objekt muss die drei Zählfelder
+ * als `number` mitbringen — ohne diese Prüfung fiele `getReporterLevel` bei
+ * einem kaputten Wert (`"kaputt"`, `{}`, …) auf `undefined`-Vergleiche zurück
+ * und würde `'first'` liefern: die Oberfläche behauptete dann „Erstmeldung",
+ * wo ein Vertragsbruch des Endpunkts vorliegt — die Verwechslung, gegen die
+ * dieses Feature antritt.
+ */
+function istGueltigeMelderHistorie(value: unknown): value is ReporterHistory | null {
+	if (value === null) return true;
+	if (typeof value !== 'object') return false;
+
+	const kandidat = value as Partial<Record<keyof ReporterHistory, unknown>>;
+	return (
+		typeof kandidat.approved === 'number' &&
+		typeof kandidat.rejected === 'number' &&
+		typeof kandidat.open === 'number'
+	);
+}
+
+/**
  * Melder-Historie der Detailansicht.
  *
  * Gleiche Konstruktion wie beim Status-Log: Ein Fehlschlag darf die Seite nicht
@@ -71,7 +93,10 @@ async function ladeStatusLog(fetchFn: FetchFn, id: string): Promise<StatusLogRes
  * gegen den die Anzeige antritt.
  *
  * Eine Antwort ohne das Feld `history` zählt als Fehlschlag: Sie ist ein
- * Vertragsbruch des Endpunkts, kein Altbestand.
+ * Vertragsbruch des Endpunkts, kein Altbestand. Dasselbe gilt für eine
+ * Antwort, deren `history` zwar existiert, aber nicht die erwartete Gestalt
+ * hat (`istGueltigeMelderHistorie`) — auch das ist ein Vertragsbruch und kein
+ * leeres Ergebnis.
  */
 async function ladeMelderHistorie(fetchFn: FetchFn, id: string): Promise<ReporterHistoryResult> {
 	try {
@@ -81,12 +106,12 @@ async function ladeMelderHistorie(fetchFn: FetchFn, id: string): Promise<Reporte
 		}
 
 		const body = await response.json();
-		if (!('history' in (body ?? {}))) {
+		if (!('history' in (body ?? {})) || !istGueltigeMelderHistorie(body.history)) {
 			return { reporterHistory: null, reporterHistoryFailed: true };
 		}
 
 		return {
-			reporterHistory: body.history as ReporterHistory | null,
+			reporterHistory: body.history,
 			reporterHistoryFailed: false
 		};
 	} catch {

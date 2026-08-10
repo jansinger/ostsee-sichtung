@@ -183,8 +183,14 @@ Eingangskarte und Kontakt-Karte der Detailansicht zeigen dasselbe Badge aus
   Messwerten in `docs/SPAM_DETECTION.md` („Melder-Historie — daneben, nicht
   darin"). Persistiert wird nichts.
 - **`null` heißt „nicht ermittelt" und bekommt kein Badge** — nicht „keine
-  Vorgeschichte". Die Detailansicht führt den Fehlschlag zusätzlich als eigenen
-  Text, gleiche Konstruktion wie beim Status-Log.
+  Vorgeschichte". Die Detailansicht führt einen **Transportfehler** (Endpunkt
+  nicht erreichbar, Antwort ohne `history`) zusätzlich als eigenen Text,
+  gleiche Konstruktion wie beim Status-Log. Scheitert dagegen die Abfrage
+  selbst — `findReporterHistory` ist fail-open —, kommt sie ebenfalls als
+  `history: null` zurück, und das ist von „keine Adresse hinterlegt" nicht zu
+  unterscheiden: kein Badge, kein Fehlertext. Das ist der Preis des Fail-open
+  und bewusst so, nicht nachzurüsten ohne die Fail-open-Eigenschaft selbst
+  aufzugeben.
 - **Kein `badge-success` und keine Filter/Sortierung im Eingang.** Grün neben
   dem Freigeben-Knopf läse sich als Urteil über die Meldung, und der Eingang
   bleibt eine Task-Liste ohne Filter (dafür gibt es `/admin/sichtungen`).

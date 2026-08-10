@@ -69,10 +69,15 @@ export const load: PageServerLoad = async ({ url }) => {
 		   Leerfall fängt `findDuplicateCandidates` selbst ab. */
 		const duplicatesPromise = findDuplicateCandidates(ids);
 		/* Melder-Historie (ein Query für alle Karten, wie der Duplikat-Hinweis).
-		   `approvedAt`/`rejectedAt` sind hier konstant `null`: Die Liste ist über
-		   `openOnly()` gefiltert. Sie stehen trotzdem im Aufruf, weil
-		   `findReporterHistory` daran die eigene Zeile abzieht und der Vertrag
-		   nicht an dieser Filterung hängen soll. */
+		   `approvedAt`/`rejectedAt` sind hier konstant `null` — das ist zulässig,
+		   *weil* diese Liste über `openOnly()` gefiltert ist: Jede gelistete
+		   Sichtung ist per Definition weder freigegeben noch abgelehnt, `null` ist
+		   also der korrekte Wert und keine Verkürzung. `findReporterHistory` zieht
+		   daran die eigene Zeile aus dem Topf ab, in dem sie steckt (approved/
+		   rejected/open) — würde der Filter je gelockert (z. B. `openOnly()` durch
+		   eine schwächere Bedingung ersetzt), müssten hier die echten Spalten
+		   mitgelesen werden, sonst zöge eine bereits entschiedene Sichtung ihre
+		   eigene Zeile aus dem falschen Topf ab. */
 		const reporterHistoryPromise = findReporterHistory(
 			open.map((s) => ({ id: s.id, email: s.email, approvedAt: null, rejectedAt: null }))
 		);

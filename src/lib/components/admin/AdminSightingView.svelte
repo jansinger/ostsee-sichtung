@@ -401,11 +401,23 @@
 			reporterLevel !== 'pending'
 			? new Date(reporterHistory.since).toLocaleDateString('de-DE', {
 					month: '2-digit',
-					year: 'numeric'
+					year: 'numeric',
+					// `since` ist UTC (`to_char(… "Z")` in reporterHistory.ts). Ohne
+					// `timeZone: 'UTC'` liest `toLocaleDateString` den Zeitstempel in
+					// Browser-Ortszeit — `2019-03-31T23:00:00Z` erschiene als „04/2019".
+					// Für eine reine Monatsangabe folgenlos in der Regel, aber dieselbe
+					// Falle, gegen die das Server-Modul sein `to_char` extra baut.
+					timeZone: 'UTC'
 				})
 			: null
 	);
 
+	/* Der Link trifft eine andere Menge als das Badge zählt: Die Tabellensuche
+	   dahinter (`/admin/sichtungen?q=…`) arbeitet mit `ILIKE '%…%'` über mehrere
+	   Spalten, das Badge dagegen mit exakter, normalisierter Adressgleichheit
+	   (`normalizeReporterKey` in reporterHistory.ts). `a@b.de` listet dort z. B.
+	   auch `xa@b.de` mit. Kein Fehler, aber eine Ungenauigkeit — nicht mit einem
+	   Zählfehler des Badges verwechseln. */
 	const reporterSearchHref = $derived(
 		currentSighting.email
 			? `/admin/sichtungen?q=${encodeURIComponent(currentSighting.email.trim().toLowerCase())}`
