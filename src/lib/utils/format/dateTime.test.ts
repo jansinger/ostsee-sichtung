@@ -670,4 +670,23 @@ describe('dateTime - Zentrale Zeitzonenverwaltung', () => {
 			expect(berlinCalendarDayIso()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 		});
 	});
+
+	describe('Locale und Zeitzone', () => {
+		it('formatiert unter englischer Locale englisch', () => {
+			const datum = '2026-07-15T12:00:00Z';
+			expect(formatLocalDateTime(datum, 'date', 'en-GB')).not.toBe(
+				formatLocalDateTime(datum, 'date', 'de-DE')
+			);
+		});
+
+		it('bleibt in beiden Sprachen auf Europe/Berlin', () => {
+			// 2026-07-15 23:30 UTC ist in Berlin bereits der 16. Juli. Koppelt jemand
+			// die Zeitzone an die Locale, zeigt eine Sichtung den falschen Tag — ein
+			// Datenfehler, keine Darstellungsfrage. Siehe docs/ENVIRONMENT.md,
+			// Abschnitt TZ, und den Kommentar an berlinToday() im Sichtungsschema.
+			const spaet = '2026-07-15T23:30:00Z';
+			expect(formatLocalDateTime(spaet, 'date', 'de-DE')).toContain('16');
+			expect(formatLocalDateTime(spaet, 'date', 'en-GB')).toContain('16');
+		});
+	});
 });

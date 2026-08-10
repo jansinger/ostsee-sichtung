@@ -45,6 +45,16 @@ const APP_LOCALE = 'de-DE';
  * formatLocalDateTime(utcTime, 'time')
  * // Ausgabe: "10:57"
  * ```
+ *
+ * Die `locale` steuert **nur** die Darstellung. Die Zeitzone bleibt fest auf
+ * `Europe/Berlin`, weil der Sichtungstag fachlich Berliner Ortszeit ist.
+ *
+ * Ausdrücklich NICHT an die Locale zu koppeln, auch wenn sie beim Aufräumen der
+ * `de-DE`-Fundstellen danach aussehen:
+ *   - `berlinCalendarDayIso()` unten und `berlinToday()` im Sichtungsschema
+ *     benutzen `sv-SE` für ISO-Reihenfolge — Rechnung, keine Darstellung.
+ *   - `formatForExport`, `formatForKmlExport`, `formatForXmlExport` bedienen
+ *     Datenformate mit festem Vertrag (Entwurf, Abschnitt 6).
  */
 export function formatLocalDateTime(
 	utcDateTime: string | Date | null | undefined,
