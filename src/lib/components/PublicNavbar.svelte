@@ -7,6 +7,7 @@
 	import { localizeHref } from '$lib/paraglide/runtime';
 	import type { PublicUser } from '$lib/types/User';
 	import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
+	import LanguageSwitcher from './LanguageSwitcher.svelte';
 	import OstseeTiereLogo from './OstseeTiereLogo.svelte';
 	import UserMenu from './UserMenu.svelte';
 	import UserMenuMobile from './UserMenuMobile.svelte';
@@ -113,6 +114,16 @@
 						nichts und kostet keinen Platz.
 					-->
 					<ConnectionBadge compact />
+
+					<!--
+						Bequemlichkeit für Direktaufrufer, kein tragender Weg zur
+						englischen Fassung: Innerhalb desselben `isNotIFrame`-Blocks
+						platziert wie der Rest der Navigation, also im iframe auf
+						meeresmuseum.de ebenso unsichtbar — dort liefert die Einbettung
+						der Elternseite die Sprache. Details zur Begründung und den
+						Ausschlussrouten stehen in `LanguageSwitcher.svelte`.
+					-->
+					<LanguageSwitcher />
 
 					<!-- Desktop menu -->
 					<div class="hidden lg:flex lg:items-center lg:gap-4">
