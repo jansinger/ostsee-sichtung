@@ -106,7 +106,7 @@ export const REPORTER_LEVEL_PRESENTATION: Record<ReporterLevel, ReporterLevelPre
 	flagged: {
 		badgeClass: 'badge-warning',
 		icon: 'lucide:user-x',
-		description: 'Ein erheblicher Teil der Meldungen dieser Adresse wurde abgelehnt'
+		description: 'Ein erheblicher Teil der bearbeiteten Meldungen dieser Adresse wurde abgelehnt'
 	}
 };
 

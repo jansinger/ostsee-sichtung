@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 import type { ReporterHistory } from '$lib/types/reporterHistory';
 import {
 	REPORTER_ESTABLISHED_THRESHOLD,
+	REPORTER_FLAGGED_RATIO,
 	REPORTER_KNOWN_THRESHOLD,
 	REPORTER_LEVEL_PRESENTATION,
 	getReporterLevel,
@@ -47,11 +48,26 @@ describe('getReporterLevel', () => {
 		);
 	});
 
+	/* Der Fall oben prüft nur die Ordnung der Schwellen (Konstante - 1 / Konstante) —
+	   er bliebe grün, wenn jemand REPORTER_KNOWN_THRESHOLD versehentlich auf 5 setzt.
+	   Dieser Fall nagelt stattdessen die tatsächlichen Produktentscheidungs-Werte fest,
+	   damit eine verschobene Konstante hier sichtbar bricht und nicht erst beim nächsten
+	   Umbau unbemerkt durchrutscht. */
+	it('legt die Schwellenwerte selbst fest — nicht nur ihre Ordnung', () => {
+		expect(REPORTER_KNOWN_THRESHOLD).toBe(3);
+		expect(REPORTER_ESTABLISHED_THRESHOLD).toBe(10);
+		expect(REPORTER_FLAGGED_RATIO).toBe(1 / 3);
+	});
+
 	/* Eine einzelne Ablehnung unter vielen Freigaben ist kein Warnsignal —
 	   sonst trüge jeder langjährige Melder nach einem Fehlgriff dauerhaft ein
 	   gelbes Badge. Ausschlaggebend ist der Anteil, nicht das Vorkommen. */
 	it('warnt erst ab einem Drittel abgelehnter Meldungen', () => {
 		expect(getReporterLevel(historie({ approved: 29, rejected: 1 }))).toBe('established');
+		/* Nächstliegender realistischer Wert unterhalb der Schwelle (1/4 = 0,25 < 1/3):
+		   deckt die Richtung ab, die 29/1, 2/1 und 0/1 offenlassen — mit
+		   REPORTER_FLAGGED_RATIO = 1/4 bliebe sonst jeder Fixture-Wert grün. */
+		expect(getReporterLevel(historie({ approved: 3, rejected: 1 }))).toBe('known');
 		expect(getReporterLevel(historie({ approved: 2, rejected: 1 }))).toBe('flagged');
 		expect(getReporterLevel(historie({ approved: 0, rejected: 1 }))).toBe('flagged');
 	});
@@ -71,6 +87,7 @@ describe('reporterBadgeText', () => {
 		expect(reporterBadgeText('first', historie())).toBe('Erstmeldung');
 		expect(reporterBadgeText('pending', historie({ open: 4 }))).toBe('Melder: 4 offen');
 		expect(reporterBadgeText('new', historie({ approved: 2 }))).toBe('Melder: 2 freigegeben');
+		expect(reporterBadgeText('known', historie({ approved: 5 }))).toBe('Melder: 5 freigegeben');
 		expect(reporterBadgeText('established', historie({ approved: 23 }))).toBe(
 			'Melder: 23 freigegeben'
 		);
