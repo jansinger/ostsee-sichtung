@@ -27,9 +27,16 @@ export const handle = sequence(
 	databaseCheck, // 1. DB-Verfügbarkeit
 	maintenanceMode, // 2. Wartungsmodus
 	authentication, // 3. JWT-Verifizierung + Cookie-Session
-	setAdditionalHeaders // 4. Security Headers
+	setAdditionalHeaders, // 4. Security Headers
+	noindexEnglishPages, // 5. Vorübergehender Riegel, Etappe 0 der Mehrsprachigkeit
+	handleStartseitenSprache, // 6. Einmalige Sprachweiterleitung auf "/"
+	handleParaglide // 7. Locale auflösen, %lang%-Platzhalter ersetzen
 );
 ```
+
+Die drei letzten Glieder gehören zur Mehrsprachigkeits-Umstellung (siehe
+`docs/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md`) und stehen bewusst nach `authentication`:
+Die Auth-Prüfung hängt an `event.url.pathname`, das keines der drei verschiebt.
 
 **Schlüsseldateien:**
 

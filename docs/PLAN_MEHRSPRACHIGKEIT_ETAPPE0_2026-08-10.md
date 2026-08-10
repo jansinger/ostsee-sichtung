@@ -41,24 +41,24 @@ nachtragen.
 
 ## Dateiübersicht
 
-| Datei                                  | Verantwortung                                                       | Task |
-| -------------------------------------- | ------------------------------------------------------------------- | ---- |
-| `project.inlang/settings.json`         | Locale-Liste und Nachrichtenquelle (neu)                            | 1    |
-| `messages/de.json`, `messages/en.json` | Botschaften; in Etappe 0 nur ein Platzhalter-Eintrag (neu)          | 1    |
-| `package.json`                         | `i18n:compile`, eingehängt in `test:quick`, `check`, `build`, `dev` | 1    |
-| `vite.config*.ts` (3×)                 | `paraglideVitePlugin`                                               | 1    |
-| `.gitignore`                           | `src/lib/paraglide` ausschließen                                    | 1    |
-| `scripts/setup-worktree.sh`            | Compile-Schritt neben `svelte-kit sync`                             | 1    |
-| `scripts/i18nGate.test.ts`             | Guard: `test:quick` fährt den Compile-Schritt (neu)                 | 1    |
-| `src/lib/legacy-api/languagePrefix.ts` | zusätzlich: Ausschlussliste `istAusgeschlossen`                     | 2    |
-| `src/hooks.ts`                         | `reroute`-Komposition aus drei Schritten                            | 3    |
-| `src/hooks.server.ts`                  | `paraglideMiddleware`, `/`-Weiterleitung                            | 4, 5 |
-| `src/app.html`                         | `%lang%` statt `lang="de"`, `<meta name="language">` entfällt       | 4    |
-| `e2e/i18n-routing.spec.ts`             | Guard: Ausschlüsse liefern 404 (neu)                                | 6    |
-| `src/lib/utils/format/dateTime.ts`     | Zeitzonen-Invariante festgenagelt                                   | 7    |
-| `PublicNavbar`, `PublicFooter`, `+layout` | interne Verweise über `localizeHref`                             | 8    |
-| `src/lib/components/LanguageSwitcher.svelte` | Sprachumschalter, nur außerhalb des iframes (neu)             | 9    |
-| `eslint.config.js`, `.prettierignore`, `vitest.config.ts` | erzeugten Code ausnehmen                          | 1    |
+| Datei                                                     | Verantwortung                                                       | Task |
+| --------------------------------------------------------- | ------------------------------------------------------------------- | ---- |
+| `project.inlang/settings.json`                            | Locale-Liste und Nachrichtenquelle (neu)                            | 1    |
+| `messages/de.json`, `messages/en.json`                    | Botschaften; in Etappe 0 nur ein Platzhalter-Eintrag (neu)          | 1    |
+| `package.json`                                            | `i18n:compile`, eingehängt in `test:quick`, `check`, `build`, `dev` | 1    |
+| `vite.config*.ts` (3×)                                    | `paraglideVitePlugin`                                               | 1    |
+| `.gitignore`                                              | `src/lib/paraglide` ausschließen                                    | 1    |
+| `scripts/setup-worktree.sh`                               | Compile-Schritt neben `svelte-kit sync`                             | 1    |
+| `scripts/i18nGate.test.ts`                                | Guard: `test:quick` fährt den Compile-Schritt (neu)                 | 1    |
+| `src/lib/legacy-api/languagePrefix.ts`                    | zusätzlich: Ausschlussliste `istAusgeschlossen`                     | 2    |
+| `src/hooks.ts`                                            | `reroute`-Komposition aus drei Schritten                            | 3    |
+| `src/hooks.server.ts`                                     | `paraglideMiddleware`, `/`-Weiterleitung                            | 4, 5 |
+| `src/app.html`                                            | `%lang%` statt `lang="de"`, `<meta name="language">` entfällt       | 4    |
+| `e2e/i18n-routing.spec.ts`                                | Guard: Ausschlüsse liefern 404 (neu)                                | 6    |
+| `src/lib/utils/format/dateTime.ts`                        | Zeitzonen-Invariante festgenagelt                                   | 7    |
+| `PublicNavbar`, `PublicFooter`, `+layout`                 | interne Verweise über `localizeHref`                                | 8    |
+| `src/lib/components/LanguageSwitcher.svelte`              | Sprachumschalter, nur außerhalb des iframes (neu)                   | 9    |
+| `eslint.config.js`, `.prettierignore`, `vitest.config.ts` | erzeugten Code ausnehmen                                            | 1    |
 
 ---
 
@@ -96,17 +96,33 @@ import { flattenScript, readScripts } from './testGate';
  * ausgecheckter Worktree rot, und die Ursache sieht nach einem kaputten Setup
  * aus statt nach einem fehlenden Build-Schritt. Dieser Test hält fest, dass der
  * Schritt in `test:quick` läuft, bevor die prüfenden Kommandos starten.
+ *
+ * Geprüft wird gegen `'paraglide-js compile'`, nicht gegen den Skriptnamen
+ * `i18n:compile`: `flattenScript` löst jeden `npm run <name>`-Verweis rekursiv
+ * bis zum tatsächlichen Shell-Kommando auf — ein Skriptname taucht im Ergebnis
+ * grundsätzlich nie auf, nur das Kommando, das er ausführt. Eine Assertion auf
+ * `'i18n:compile'` wäre mit keiner lauffähigen `package.json` erfüllbar.
  */
 describe('i18n-Compile-Schritt', () => {
 	it('läuft in test:quick', () => {
 		const scripts = readScripts();
-		expect(flattenScript('test:quick', scripts)).toContain('i18n:compile');
+		const flat = flattenScript('test:quick', scripts);
+		expect(flat.some((command) => command.includes('paraglide-js compile'))).toBe(true);
 	});
 
 	it('läuft vor type-check', () => {
 		const scripts = readScripts();
 		const flat = flattenScript('test:quick', scripts);
-		expect(flat.indexOf('i18n:compile')).toBeLessThan(flat.indexOf('tsc --noEmit'));
+		const compileIndex = flat.findIndex((command) => command.includes('paraglide-js compile'));
+		const typeCheckIndex = flat.indexOf('tsc --noEmit');
+
+		// Ein fehlender Treffer liefert -1 und wäre sonst immer "kleiner" als
+		// jeder echte Index — die reine Reihenfolgeprüfung bestünde dann auch,
+		// wenn der Compile-Schritt gar nicht liefe. Beide Indizes müssen also
+		// zuerst tatsächlich gefunden worden sein.
+		expect(compileIndex).toBeGreaterThanOrEqual(0);
+		expect(typeCheckIndex).toBeGreaterThanOrEqual(0);
+		expect(compileIndex).toBeLessThan(typeCheckIndex);
 	});
 });
 ```
@@ -117,7 +133,7 @@ describe('i18n-Compile-Schritt', () => {
 npx vitest run --project server scripts/i18nGate.test.ts
 ```
 
-Erwartet: FAIL — `expected '…' to contain 'i18n:compile'`.
+Erwartet: FAIL — kein Kommando enthält `'paraglide-js compile'`.
 
 - [ ] **Schritt 3: Paraglide über das offizielle Init einrichten**
 
@@ -365,9 +381,21 @@ An `src/lib/legacy-api/languagePrefix.ts` anhängen:
  * `e2e/i18n-routing.spec.ts`. Ein sichtbarer Fehlschlag ist einem stillen
  * vorzuziehen.
  *
- * `/admin` steht hier nicht nur, weil der Bereich einsprachig deutsch bleibt:
- * Der Schutz in `hooks.server.ts` hängt an `event.url.pathname`, den `reroute`
- * nicht verändert. Ein zweiter Pfad auf geschützte Routen wäre eine echte Lücke.
+ * `/admin` steht hier, weil der Bereich einsprachig deutsch bleibt: Ein `/en/`
+ * davor wäre ein Sprachversprechen, das die Oberfläche nicht einlöst — ein
+ * zweiter kanonischer Pfad auf dieselbe Ansicht, nur ohne Übersetzung.
+ * (Kein Sicherheitsargument: Der Zugriffsschutz auf `/admin` ist route-basiert
+ * — `requireUserRole(url, locals.user, [...])` in
+ * `src/routes/admin/+layout.server.ts` — und griffe unverändert auch unter
+ * `/en/admin`. `event.url.pathname` in `hooks.server.ts` dient dort nur dem
+ * `/rest_sichtungen`-CSRF-Hinweis und dem Error-Logging, nicht der Autorisierung.)
+ *
+ * Bewusst **ohne** `/sichtungen`: Unter `src/routes/sichtungen/` liegt zwar eine
+ * reale Route, aber nur der Legacy-API-Endpunkt `showreports.json` (bereits über
+ * `/rest_sichtungen` und `LEGACY_PFADE` abgedeckt) — keine Seitenroute. Ein
+ * Präfix hier hätte `istAusgeschlossen('/sichtungen')` fälschlich
+ * ausgeschlossen; der bloße Pfad `/sichtungen` existiert als Seite nicht und
+ * muss lokalisierbar bleiben.
  */
 const NICHT_LOKALISIERT = [
 	'/api',
@@ -377,8 +405,7 @@ const NICHT_LOKALISIERT = [
 	'/maintenance',
 	'/docs',
 	'/styleguide',
-	'/rest_sichtungen',
-	'/sichtungen'
+	'/rest_sichtungen'
 ] as const;
 
 /**
@@ -437,6 +464,16 @@ import { reroute } from './hooks';
  * `languagePrefix.test.ts` und bei Paraglide geprüft. Hier geht es darum, dass
  * der Legacy-Vertrag vor der Lokalisierung greift: `/en/rest_sichtungen` muss
  * die deutsche Route treffen, nicht eine englische Oberfläche.
+ *
+ * Ein Pfad wie `/en/api/sightings` beweist die Reihenfolge NICHT: Er berührt
+ * ausschließlich Schritt 2 (Ausschlussliste) und Schritt 3 (Lokalisierung),
+ * ein vollständig entfernter Schritt 1 ließe diesen Test unverändert grün.
+ * Echte Divergenz zwischen den Schritten entsteht nur bei einem Legacy-Pfad
+ * **mit** `/de/`-Präfix: Liefe die `/de/`-Ablehnung (Schritt 2) vor dem
+ * Legacy-Präfix (Schritt 1), bekäme `/de/rest_sichtungen/antworten.json`
+ * fälschlich `undefined` (404) statt der deutschen Legacy-Antwort — für alle
+ * vier Legacy-Pfade unter `/de/`, mit einem live angebundenen iOS-Client der
+ * teuerste denkbare Regress.
  */
 const pfadNach = (url: string): string | undefined => {
 	const ergebnis = reroute({ url: new URL(url, 'https://example.test') } as never);
@@ -467,6 +504,19 @@ describe('reroute', () => {
 		expect(pfadNach('/de/sichtungen')).toBeUndefined();
 		expect(pfadNach('/de')).toBeUndefined();
 	});
+
+	it('schneidet /de/ vor einem Legacy-Pfad ab, statt ihn per /de/-Ablehnung zu blockieren', () => {
+		// Der eigentliche Reihenfolge-Wächter (siehe Docstring oben) — nicht die
+		// beiden /en/-Fälle weiter oben.
+		expect(pfadNach('/de/rest_sichtungen/antworten.json')).toBe('/rest_sichtungen/antworten.json');
+	});
+
+	it('lehnt /de/ case-insensitiv ab, analog zu Paraglides toLocale()', () => {
+		// toLocale() in runtime.js vergleicht per toLowerCase() — ein rein
+		// kleingeschriebener Regex ließe /DE/... durch, und deLocalizeUrl würde
+		// es trotzdem als Deutsch erkennen: zwei URLs für dieselbe Seite.
+		expect(pfadNach('/DE/sichtungen')).toBeUndefined();
+	});
 });
 ```
 
@@ -481,7 +531,7 @@ Erwartet: FAIL — `/en/api/sightings` wird umgeschrieben statt `undefined` zu l
 - [ ] **Schritt 3: `src/hooks.ts` ersetzen**
 
 ```ts
-import { deLocalizeUrl } from '$lib/paraglide/runtime';
+import { baseLocale, deLocalizeUrl, toLocale } from '$lib/paraglide/runtime';
 import { istAusgeschlossen, stripLegacyLanguagePrefix } from '$lib/legacy-api/languagePrefix';
 import type { Reroute } from '@sveltejs/kit';
 
@@ -508,7 +558,15 @@ export const reroute: Reroute = ({ url }) => {
 	// präfixlos. `deLocalizeUrl` räumt das Präfix bereitwillig ab und lieferte
 	// damit zwei URLs für denselben Inhalt aus. Die vier Legacy-Pfade behalten
 	// ihr `/de/` über Schritt 1 oben — sie sind hier schon durch.
-	if (/^\/de(\/|$)/.test(url.pathname)) return undefined;
+	//
+	// Über `toLocale` geprüft, nicht über einen eigenen Regex: `toLocale`
+	// vergleicht case-insensitiv (`toLowerCase()`, runtime.js), genau wie
+	// Paraglides eigene Präfix-Erkennung. Ein eigener kleingeschriebener Regex
+	// hätte `/DE/...` durchgelassen, obwohl `deLocalizeUrl` es trotzdem als
+	// Deutsch erkannt hätte — zwei URLs für dieselbe Seite, exakt der Fehler,
+	// den diese Ablehnung verhindern soll.
+	const erstesSegment = url.pathname.split('/')[1];
+	if (toLocale(erstesSegment) === baseLocale) return undefined;
 
 	const entlokalisiert = deLocalizeUrl(url).pathname;
 	if (istAusgeschlossen(entlokalisiert)) return undefined;
@@ -523,7 +581,7 @@ export const reroute: Reroute = ({ url }) => {
 npx vitest run --project server src/hooks.test.ts
 ```
 
-Erwartet: PASS, 4 Tests.
+Erwartet: PASS, 7 Tests.
 
 - [ ] **Schritt 5: Commit**
 
@@ -630,7 +688,7 @@ git commit -m "feat(ui): resolve locale server-side and fill the lang placeholde
 
 **Schnittstellen:**
 
-- Erzeugt: `export function zielFuerStartseite(pfad: string, acceptLanguage: string | null, cookieLocale: string | null): string | null` — Zielpfad oder `null`, wenn nicht weitergeleitet wird.
+- Erzeugt: `export function zielFuerStartseite(pfad: string, search: string, acceptLanguage: string | null, cookieLocale: string | null): string | null` — Zielpfad (inkl. erhaltenem Query-String) oder `null`, wenn nicht weitergeleitet wird.
 
 - [ ] **Schritt 1: Fehlschlagende Tests schreiben**
 
@@ -642,25 +700,34 @@ import { zielFuerStartseite } from './startseitenWeiterleitung';
 
 describe('zielFuerStartseite', () => {
 	it('leitet bei englischem Header auf /en', () => {
-		expect(zielFuerStartseite('/', 'en-GB,en;q=0.9', null)).toBe('/en');
+		expect(zielFuerStartseite('/', '', 'en-GB,en;q=0.9', null)).toBe('/en');
 	});
 
 	it('leitet bei deutschem Header nicht', () => {
-		expect(zielFuerStartseite('/', 'de-DE,de;q=0.9', null)).toBeNull();
+		expect(zielFuerStartseite('/', '', 'de-DE,de;q=0.9', null)).toBeNull();
 	});
 
 	it('respektiert eine ausdrückliche Wahl im Cookie', () => {
-		expect(zielFuerStartseite('/', 'en-GB,en;q=0.9', 'de')).toBeNull();
+		expect(zielFuerStartseite('/', '', 'en-GB,en;q=0.9', 'de')).toBeNull();
 	});
 
 	it('wirkt nur auf der Startseite', () => {
 		// Sonst wäre jede präfixlose URL je nach Browser zweierlei Inhalt — nicht
 		// cachebar und für Suchmaschinen ein Duplikat.
-		expect(zielFuerStartseite('/sichtungen', 'en-GB,en;q=0.9', null)).toBeNull();
+		expect(zielFuerStartseite('/sichtungen', '', 'en-GB,en;q=0.9', null)).toBeNull();
 	});
 
 	it('leitet ohne Header nicht', () => {
-		expect(zielFuerStartseite('/', null, null)).toBeNull();
+		expect(zielFuerStartseite('/', '', null, null)).toBeNull();
+	});
+
+	it('erhält bestehende Query-Parameter (z. B. einen Kampagnen-Marker aus einem Museums-Link)', () => {
+		// Ein Redirect, der den Query-String verschluckt, wirft einen solchen
+		// Marker weg — dieselbe Zusage gilt für reportKindHref() in +page.svelte
+		// für jeden Klick nach der Hydration.
+		expect(zielFuerStartseite('/', '?meldung=totfund', 'en-GB,en;q=0.9', null)).toBe(
+			'/en?meldung=totfund'
+		);
 	});
 });
 ```
@@ -692,12 +759,15 @@ Erwartet: FAIL — Modul nicht gefunden.
  * Antwort trägt `Vary: Accept-Language`.
  *
  * @param pfad            Pfad der Anfrage, ohne Query-String
+ * @param search          Query-String der Anfrage, inkl. führendem `?` oder leer
  * @param acceptLanguage  Header-Wert oder `null`
  * @param cookieLocale    Ausdrückliche frühere Wahl oder `null`
- * @returns Zielpfad, oder `null` wenn nicht weitergeleitet wird
+ * @returns Zielpfad (inkl. erhaltenem Query-String), oder `null` wenn nicht
+ *          weitergeleitet wird
  */
 export function zielFuerStartseite(
 	pfad: string,
+	search: string,
 	acceptLanguage: string | null,
 	cookieLocale: string | null
 ): string | null {
@@ -707,7 +777,12 @@ export function zielFuerStartseite(
 	if (!acceptLanguage) return null;
 
 	const bevorzugt = acceptLanguage.split(',')[0]?.trim().toLowerCase() ?? '';
-	return bevorzugt.startsWith('en') ? '/en' : null;
+	if (!bevorzugt.startsWith('en')) return null;
+
+	// Query-String erhalten: Ein Kampagnen-Marker aus einem Museums-Link (siehe
+	// reportKindHref() in +page.svelte) darf die Weiterleitung nicht wegwerfen.
+	// Ein Literal `'/en'` täte das stillschweigend.
+	return `/en${search}`;
 }
 ```
 
@@ -717,7 +792,7 @@ export function zielFuerStartseite(
 npx vitest run --project server src/lib/i18n/startseitenWeiterleitung.test.ts
 ```
 
-Erwartet: PASS, 5 Tests.
+Erwartet: PASS, 6 Tests.
 
 - [ ] **Schritt 5: In `hooks.server.ts` verwenden**
 
@@ -732,6 +807,7 @@ const LOCALE_COOKIE = '<aus Task 1, Schritt 3 eintragen>';
 const handleStartseitenSprache: Handle = async ({ event, resolve }) => {
 	const ziel = zielFuerStartseite(
 		event.url.pathname,
+		event.url.search,
 		event.request.headers.get('accept-language'),
 		event.cookies.get(LOCALE_COOKIE) ?? null
 	);
@@ -781,9 +857,13 @@ import { expect, test } from '@playwright/test';
  *
  * Die Liste ist bewusst eine Ausschluss- und keine Positivliste: Ein vergessener
  * Eintrag erzeugt einen zusätzlichen, erreichbaren Pfad — sichtbar hier, statt
- * still im Betrieb. `/en/admin` ist dabei kein Umfangs-, sondern ein
- * Sicherheitsbefund: Der Schutz in `hooks.server.ts` hängt an
- * `event.url.pathname`.
+ * still im Betrieb. `/en/admin` steht dabei aus einem Umfangsgrund auf der
+ * Liste, nicht aus einem Sicherheitsgrund: Der Zugriffsschutz auf `/admin` ist
+ * route-basiert (`requireUserRole(...)` in
+ * `src/routes/admin/+layout.server.ts`) und griffe unverändert auch unter
+ * `/en/admin`, wäre der Pfad lokalisiert. Ohne den Eintrag entstünde trotzdem
+ * ein zweiter, unübersetzter kanonischer Pfad auf dieselbe Ansicht — deshalb
+ * bleibt er ausgeschlossen.
  */
 test.describe('Sprachpräfix-Routing', () => {
 	for (const pfad of [
@@ -891,13 +971,29 @@ describe('Locale und Zeitzone', () => {
 	});
 
 	it('bleibt in beiden Sprachen auf Europe/Berlin', () => {
-		// 2026-07-15 23:30 UTC ist in Berlin bereits der 16. Juli. Koppelt jemand
-		// die Zeitzone an die Locale, zeigt eine Sichtung den falschen Tag — ein
-		// Datenfehler, keine Darstellungsfrage. Siehe docs/ENVIRONMENT.md,
-		// Abschnitt TZ, und den Kommentar an berlinToday() im Sichtungsschema.
-		const spaet = '2026-07-15T23:30:00Z';
+		// 22:30 UTC, NICHT 23:30: Um 23:30 UTC zeigen Berlin (Sommerzeit, 00:30)
+		// UND London (Sommerzeit, 23:30) noch denselben Kalendertag — eine
+		// versehentliche Kopplung en → Europe/London wäre an diesem Zeitpunkt
+		// unsichtbar grün geblieben. Um 22:30 UTC ist Berlin bereits der 16.
+		// (00:30), London noch der 15. (23:30) — die Zonen fallen also
+		// tatsächlich auseinander, und der Test wird bei einer
+		// Locale→Zone-Kopplung wirklich rot. Koppelt jemand die Zeitzone an die
+		// Locale, zeigt eine Sichtung den falschen Tag — ein Datenfehler, keine
+		// Darstellungsfrage. Siehe docs/ENVIRONMENT.md, Abschnitt TZ, und den
+		// Kommentar an berlinToday() im Sichtungsschema.
+		const spaet = '2026-07-15T22:30:00Z';
+
+		// `de-DE`/`en-GB` allein reichen nicht: Eine Zone-Map, die nur nach den
+		// kurzen Tags schlüsselt (`{ de: 'Europe/Berlin', en: 'Europe/London' }`),
+		// träfe bei den langen BCP-47-Tags keinen Schlüssel, fiele auf den
+		// Berlin-Default zurück und bliebe grün — während die Anwendung mit dem
+		// kurzen Tag (`de`/`en`, so wie sie in `project.inlang/settings.json`
+		// konfiguriert sind und ab Etappe 2 durchgereicht werden) den falschen
+		// Tag zeigt. Beide Tag-Formen sind deshalb Teil dieses Tests.
 		expect(formatLocalDateTime(spaet, 'date', 'de-DE')).toContain('16');
 		expect(formatLocalDateTime(spaet, 'date', 'en-GB')).toContain('16');
+		expect(formatLocalDateTime(spaet, 'date', 'de')).toContain('16');
+		expect(formatLocalDateTime(spaet, 'date', 'en')).toContain('16');
 	});
 });
 ```
@@ -969,7 +1065,10 @@ import { expect, test } from '@playwright/test';
 
 test('bleibt beim Navigieren in der englischen Fassung', async ({ page }) => {
 	await page.goto('/en');
-	await page.getByRole('link', { name: /map|karte/i }).first().click();
+	await page
+		.getByRole('link', { name: /map|karte/i })
+		.first()
+		.click();
 	await expect(page).toHaveURL(/\/en\//);
 	await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 });
@@ -1115,7 +1214,11 @@ git commit -m "feat(ui): add a language switcher to the public navbar"
       [LEGACY_API_SPECIFICATION.md](LEGACY_API_SPECIFICATION.md) steht die
       Begründung „`/en/` vor der Startseite bleibt 404, weil die Anwendung
       einsprachig deutsch ist". Die Prämisse gilt nicht mehr — umschreiben. Die
-      Begründung zu `/en/admin` bleibt unverändert stehen.
+      Begründung zu `/en/admin` ist ebenfalls zu korrigieren: `/admin` bleibt
+      dort aus einem Umfangsgrund ausgeschlossen (einsprachig deutsches Team),
+      nicht aus einem Sicherheitsgrund — der Zugriffsschutz ist route-basiert
+      (`requireUserRole` in `src/routes/admin/+layout.server.ts`) und
+      unabhängig von `hooks.server.ts`.
 - [ ] **`docs/WORKTREES.md`** um den Paraglide-Compile-Schritt ergänzen.
 - [ ] **Vollständiger E2E-Lauf**: `npm run test:e2e` (ohne `CI=1`, ohne
       parallelen Lauf in einem Nachbar-Worktree).
@@ -1133,9 +1236,16 @@ Gesamtschätzung steigt entsprechend auf 16–23 Personentage; `hreflang` wander
 im Gegenzug nach Etappe 2. Beides ist im Entwurf nachgetragen.
 
 **`/en` ist damit öffentlich erreichbar, aber vollständig deutschsprachig.** Das
-ist beabsichtigt und in diesem Zustand **nicht auslieferbar** — siehe Entwurf,
-Abschnitt 9.1: Bis Etappe 3 abgeschlossen ist, wird `/en` zusätzlich in die
-Ausschlussliste aufgenommen, wenn nach `main` geliefert wird.
+ist beabsichtigt. Der ursprüngliche Plan sah vor, `/en` bis Etappe 3
+zusätzlich in die Ausschlussliste aufzunehmen und den Pfad damit 404 zu
+liefern; umgesetzt wurde stattdessen Entwurf Abschnitt 9.1, Option C: ein
+Header-Riegel (`noindexEnglishPages` in `src/hooks.server.ts`) sendet
+`X-Robots-Tag: noindex, follow` für alle `/en`-Antworten, solange die
+Übersetzung aussteht. Grund für den Wechsel: `/en` steckt bereits in mehreren
+E2E-Tests aus Task 6, ein nachträgliches Sperren hätte rund zehn davon rot
+gemacht. Der Riegel muss beim Abschluss der Übersetzung entfernt werden — und
+im selben Schritt `hreflang` ergänzt werden, sonst kippt das
+Duplicate-Content-Risiko nur in die andere Richtung.
 
 ---
 

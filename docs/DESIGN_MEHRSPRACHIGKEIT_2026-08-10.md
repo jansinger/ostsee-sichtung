@@ -158,7 +158,7 @@ nicht.
 | ------------------------------------ | ---------------------------------------- | --------------------------------- |
 | `/en/rest_sichtungen/antworten.json` | Präfix abschneiden, **deutsche** Antwort | **unverändert**                   |
 | `/en`                                | 404                                      | englisches Meldeformular          |
-| `/en/sichtungen`, `/en/map`, …       | 404                                      | englische Oberfläche              |
+| `/en/map`, `/en/about`, …            | 404                                      | englische Oberfläche              |
 | `/de`, `/de/sichtungen`              | 404                                      | **bleibt 404** — siehe unten      |
 | `/en/api/**`                         | 404                                      | **bleibt 404**                    |
 | `/en/admin/**`                       | 404                                      | **bleibt 404**                    |
@@ -580,15 +580,33 @@ schützen genau die Pfade, die während der Umstellung am ehesten brechen.
 
 ### 9.1 Auslieferung
 
-**`/en` wird erst erreichbar, wenn die Etappen 0–3 abgeschlossen sind.** Bis
-dahin bleibt die Ausschlussliste aus Abschnitt 4.2 um `/en` erweitert — der Pfad
-ist dann schlicht 404, wie heute. Damit kann in kleinen Schritten auf `main`
-geliefert werden, ohne dass ein halb übersetzter englischer Zustand öffentlich
-wird.
+**`/en` ist von Etappe 0 an öffentlich erreichbar, trägt aber bis zum Abschluss
+der Übersetzung `X-Robots-Tag: noindex, follow`.** Der ursprüngliche Plan sah
+vor, `/en` bis Etappe 3 zusätzlich in die Ausschlussliste aus Abschnitt 4.2
+aufzunehmen und damit 404 zu liefern. Umgesetzt wurde stattdessen Option C: ein
+Header-Riegel (`noindexEnglishPages` in `src/hooks.server.ts`) hält die noch
+deutschsprachige `/en`-Fassung aus dem Suchmaschinenindex, ohne den Pfad selbst
+zu sperren.
 
-Etappe 4 (Inhaltsseiten) darf danach folgen: Bis englische Fachtexte vorliegen,
-zeigen `/en/about` und `/en/bestimmungshilfe` die deutsche Fassung mit sichtbarem
-Hinweis (Abschnitt 5.5). Ein erkennbarer Zwischenstand, kein stiller Rückfall.
+**Grund für den Wechsel.** Etappe 0 hat `/en` bereits über mehrere E2E-Tests
+verankert (Task 6, `e2e/i18n-routing.spec.ts`, u. a. „`/en` liefert die Seite
+aus"). Ein nachträgliches Aufnehmen von `/en` in die Ausschlussliste hätte rund
+zehn dieser Tests rot gemacht — keine Ein-Zeilen-Maßnahme mehr. `noindex,
+follow` erfüllt die eigentliche Absicht — kein halb übersetzter englischer
+Zustand wird öffentlich indexierbar — mit weniger Bruch als eine 404-Sperre.
+
+**Der Riegel muss beim Abschluss der Übersetzung entfernt werden — und im
+selben Schritt `hreflang` ergänzt werden (Abschnitt 4.6, Etappe 2).** Nur den
+Riegel zu entfernen, ohne `hreflang` nachzuziehen, kippt das Problem in die
+andere Richtung: Google indexiert dann die englische Fassung, aber ohne
+Sprachzuordnung zur deutschen — wieder Duplicate-Content-Risiko, nur
+andersherum. Die Entfernungsbedingung ist auch im Quelltext festgehalten
+([noindexEnglishPages.ts](../src/lib/server/middleware/noindexEnglishPages.ts)).
+
+Etappe 4 (Inhaltsseiten) darf unabhängig davon folgen: Bis englische Fachtexte
+vorliegen, zeigen `/en/about` und `/en/bestimmungshilfe` die deutsche Fassung
+mit sichtbarem Hinweis (Abschnitt 5.5). Ein erkennbarer Zwischenstand, kein
+stiller Rückfall.
 
 ---
 
