@@ -1126,11 +1126,11 @@ hin und zurück, alle Ausschlüsse und `/de/…` liefern 404, die Legacy-API
 antwortet unverändert deutsch, und `npm run test:quick` ist in einem frisch
 aufgesetzten Worktree grün.
 
-**Aufwand dieser Etappe: 5 Tage** statt der im Entwurf genannten 3–4. Die
+**Aufwand dieser Etappe: 4–5 Tage** statt der zuerst genannten 3–4. Die
 Verweis-Lokalisierung (Task 8) und der Umschalter (Task 9) waren dort
 fälschlich später einsortiert; sie sind Routing und gehören hierher. Die
-Gesamtschätzung steigt entsprechend auf 16–23 Personentage — im Entwurf
-nachzutragen.
+Gesamtschätzung steigt entsprechend auf 16–23 Personentage; `hreflang` wandert
+im Gegenzug nach Etappe 2. Beides ist im Entwurf nachgetragen.
 
 **`/en` ist damit öffentlich erreichbar, aber vollständig deutschsprachig.** Das
 ist beabsichtigt und in diesem Zustand **nicht auslieferbar** — siehe Entwurf,

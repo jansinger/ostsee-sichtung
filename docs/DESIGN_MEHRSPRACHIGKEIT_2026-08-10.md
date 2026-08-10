@@ -111,8 +111,9 @@ Sprachversprechen.
 ```
 reroute(url):
   1. stripLegacyLanguagePrefix(pathname)  → Treffer? zurückgeben, fertig.
-  2. istAusgeschlossen(pathname)          → ja? undefined (keine Umschreibung).
-  3. deLocalizeUrl(url)                   → alles Übrige.
+  2. /de/…                                → undefined (Deutsch ist präfixlos).
+  3. istAusgeschlossen(pathname)          → ja? undefined (keine Umschreibung).
+  4. deLocalizeUrl(url)                   → alles Übrige.
 ```
 
 Schritt 1 zuerst, weil `LEGACY_PFADE` bereits eine enge Positivliste von genau
@@ -164,7 +165,10 @@ nicht.
 | `/en/uploads/**`, `/en/health`       | 404                                      | **bleibt 404**                    |
 | `/en/rest_sichtungen/view/1840.json` | 404                                      | **bleibt 404** (kein Legacy-Pfad) |
 
-**`/de/…` bleibt für Seitenrouten 404.** Bei `baseLocale: 'de'` ist Deutsch
+**`/de/…` bleibt für Seitenrouten 404 — und das kostet eine eigene Zeile Code.**
+`deLocalizeUrl` entfernt das Präfix **jeder** konfigurierten Locale, `de`
+eingeschlossen; ohne ausdrückliche Ablehnung in Schritt 2 räumt es `/de/` ab und
+liefert die deutsche Seite unter einer zweiten URL aus. Bei `baseLocale: 'de'` ist Deutsch
 präfixlos; wären `/sichtungen` und `/de/sichtungen` beide erreichbar, gäbe es
 zwei URLs für denselben Inhalt. Erwogen und verworfen: eine dauerhafte
 Weiterleitung `/de/x → /x`. Sie wäre nur nötig, wenn Lesezeichen auf die
@@ -245,7 +249,8 @@ Betrifft den Umschalter und jeden Verweis, der die Sprache wechselt.
   `<meta name="language">` in [app.html](../src/app.html) entfällt ersatzlos —
   es ist ohnehin kein von Suchmaschinen ausgewertetes Merkmal und wäre nur eine
   zweite, potenziell widersprüchliche Quelle.
-- `hreflang`-Verweise je Seite, im Kopf-Block der jeweiligen Route. Der gehört
+- `hreflang`-Verweise je Seite, im Kopf-Block der jeweiligen Route — umgesetzt
+  in **Etappe 2**, zusammen mit dem übrigen Markup. Der Kopf-Block gehört
   laut bestehender Regel dorthin und nicht in `app.html`; `e2e/seo-meta.spec.ts`
   wacht weiterhin darüber.
 - **Es gibt weder `sitemap.xml` noch `robots.txt`** in `static/`. Die
@@ -530,13 +535,22 @@ Personentage, ohne die Übersetzungsleistung selbst (Fachinhalt vom DMM).
 
 | Etappe | Inhalt                                                                                                                                    | Aufwand   |
 | ------ | ----------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| 0      | Paraglide (Vite-Plugin, `reroute`, `paraglideMiddleware`, `%lang%`), Ausschlussliste, Locale-Erkennung, `hreflang`, Formatierung/Zeitzone | 3–4       |
+| 0      | Paraglide (Vite-Plugin, `reroute`, `paraglideMiddleware`, `%lang%`), Ausschlussliste, Locale-Erkennung, **lokalisierte Verweise, Sprachumschalter**, Zeitzonen-Guard | 4–5 |
 | 1      | Schichten A + B — Schema und `formOptions`; deckt Formular, Karte, Popups, Liste ab                                                       | 3–4       |
-| 2      | Schicht C — öffentliches Markup, Navigation, Toasts, Fehlerseiten                                                                         | 3–4       |
+| 2      | Schicht C — öffentliches Markup, Plurale, `hreflang` je Route, Toasts, Fehlerseiten | 3–4 |
 | 3      | Einwilligung und Nachweis (Abschnitt 7)                                                                                                   | 1–3       |
 | 4      | Schicht E — Inhaltsseiten, struktureller Umbau                                                                                            | 2–3       |
 | 5      | Guards inkl. Hartcodiert-Scan (8.3), Vollständigkeitsprüfung, EN-Rauchtest                                                                | 3–4       |
-|        | **Summe**                                                                                                                                 | **15–22** |
+|        | **Summe** | **16–23** |
+
+**Korrektur gegenüber der ersten Fassung (15–22).** Beim Ausarbeiten von
+Etappe 0 stellte sich heraus, dass zwei Punkte dort falsch einsortiert waren:
+Die **Lokalisierung interner Verweise** und der **Sprachumschalter** sind
+Routing, nicht Text. Ohne sie fällt `/en` beim ersten Klick zurück auf Deutsch,
+und im iframe gibt es keine Navigation zum Zurückfinden — Etappe 0 lieferte
+sonst eine erreichbare, aber unbenutzbare englische Fassung. Im Gegenzug wandert
+`hreflang` nach Etappe 2, weil die Verweise in die Kopf-Blöcke der zwölf
+`+page.svelte` gehören, die dort ohnehin geöffnet werden.
 
 Die Spannen sind echt, nicht kosmetisch: Etappe 2 hängt an der tatsächlichen
 Botschaftszahl (Abschnitt 3), Etappe 3 an der Rückmeldung zum
