@@ -16,9 +16,10 @@ const LOCALE_COOKIE = 'PARAGLIDE_LOCALE';
  *
  * Die Liste ist bewusst eine Ausschluss- und keine Positivliste: Ein vergessener
  * Eintrag erzeugt einen zusätzlichen, erreichbaren Pfad — sichtbar hier, statt
- * still im Betrieb. `/en/admin` ist dabei kein Umfangs-, sondern ein
- * Sicherheitsbefund: Der Schutz in `hooks.server.ts` hängt an
- * `event.url.pathname`.
+ * still im Betrieb. `/en/admin` ist dabei ein Umfangsbefund, kein
+ * Sicherheitsbefund: Der Zugriffsschutz auf `/admin` ist route-basiert
+ * (`requireUserRole` in `src/routes/admin/+layout.server.ts`) und griffe
+ * unverändert auch unter `/en/admin`.
  */
 test.describe('Sprachpräfix-Routing', () => {
 	for (const pfad of [

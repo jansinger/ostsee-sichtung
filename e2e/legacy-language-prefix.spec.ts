@@ -43,9 +43,11 @@ test.describe('Legacy-API: Sprachpräfix /de/ und /en/', () => {
 		expect(await mit.body()).toEqual(await ohne.body());
 	});
 
-	test('vor Seitenrouten und /admin gilt das Präfix bewusst nicht', async ({ request }) => {
-		// Die Anwendung ist einsprachig deutsch; /admin hängt zusätzlich an
-		// event.url.pathname, das reroute nicht verändert.
+	test('vor /admin und /api gilt das Präfix bewusst nicht', async ({ request }) => {
+		// /admin und /api stehen in NICHT_LOKALISIERT — eine Umfangsentscheidung,
+		// kein Sicherheitsmechanismus: Der Zugriffsschutz auf /admin ist
+		// route-basiert (requireUserRole in src/routes/admin/+layout.server.ts)
+		// und griffe unverändert auch unter /en/admin.
 		for (const pfad of ['/en/admin', '/en/api/sightings']) {
 			const antwort = await request.get(pfad, { maxRedirects: 0 });
 			expect(antwort.status(), pfad).toBe(404);

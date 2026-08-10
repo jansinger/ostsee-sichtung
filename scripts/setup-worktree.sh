@@ -77,8 +77,10 @@ fi
 # --strategy/--emit-ts-declarations müssen exakt die Werte aus den drei
 # Vite-Configs spiegeln (`npm run i18n:compile` in package.json ebenso) — sonst
 # schreiben CLI-Lauf und Plugin-Lauf zwei unterschiedliche Laufzeiten in dasselbe
-# outdir, je nachdem wer zuletzt lief. `scripts/i18nGate.test.ts` hält diese
-# Übereinstimmung fest.
+# outdir, je nachdem wer zuletzt lief. `scripts/i18nGate.test.ts` hält die
+# Übereinstimmung zwischen `package.json` und den drei Vite-Configs fest — dieses
+# Shell-Skript hier prüft der Guard nicht mit, die Werte müssen von Hand
+# synchron gehalten werden.
 if [ ! -f src/lib/paraglide/runtime.js ]; then
 	if npx --no-install paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide --strategy url cookie baseLocale --emit-ts-declarations >/dev/null 2>&1; then
 		say "worktree-setup: src/lib/paraglide/ erzeugt (paraglide-js compile)"

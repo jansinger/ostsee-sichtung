@@ -142,7 +142,7 @@ Abschnitt 8.2. Ein sichtbarer Fehlschlag ist einem stillen vorzuziehen.
 | Präfix                                             | Warum ausgeschlossen                                                              |
 | -------------------------------------------------- | --------------------------------------------------------------------------------- |
 | `/api/**`                                          | Maschinenschnittstelle, 12 Verzeichnisse. Antworten sind Daten, keine Oberfläche. |
-| `/admin/**`                                        | Nicht im Umfang — **und** Auth-Schutz an `event.url.pathname`, siehe 4.3.         |
+| `/admin/**`                                        | Nicht im Umfang, siehe 4.3.                                                       |
 | `/rest_sichtungen`, `/sichtungen/showreports.json` | Legacy-Vertrag, von Schritt 1 abgefangen.                                         |
 | `/uploads/**`                                      | Auslieferung von Mediendateien.                                                   |
 | `/health`, `/maintenance`                          | Betriebsendpunkte.                                                                |
@@ -175,11 +175,17 @@ Weiterleitung `/de/x → /x`. Sie wäre nur nötig, wenn Lesezeichen auf die
 CakePHP-Anwendung zeigten — die es nicht mehr gibt; die vier Legacy-API-Pfade
 behalten ihr `/de/` ohnehin über Schritt 1.
 
-**`/en/admin/**` bleibt 404 — das ist eine Sicherheitsanforderung, keine
-Umfangsentscheidung.** Der Schutz in `hooks.server.ts` hängt an
-`event.url.pathname`, den `reroute` nicht verändert. Ein zweiter Pfad auf
-geschützte Routen wäre eine echte Lücke. Diese Begründung steht bereits in
-`languagePrefix.ts` und bleibt dort unverändert stehen.
+**`/en/admin/**` bleibt 404 — das ist eine Umfangsentscheidung, keine
+Sicherheitsanforderung.** `/admin` steht auf der Ausschlussliste
+(`NICHT_LOKALISIERT` in `languagePrefix.ts`), weil der Bereich einsprachig
+deutsch bleibt — nicht weil ein zweiter Pfad eine Lücke im Zugriffsschutz wäre.
+Der Zugriffsschutz auf `/admin` ist route-basiert
+(`requireUserRole(url, locals.user, [...])` in
+`src/routes/admin/+layout.server.ts`) und griffe unverändert auch unter
+`/en/admin`, wenn der Pfad lokalisiert wäre. `event.url.pathname` in
+`hooks.server.ts` dient dort nur dem `/rest_sichtungen`-CSRF-Hinweis und dem
+Error-Logging, nicht der Autorisierung. Diese Begründung wurde in
+`languagePrefix.ts` inzwischen entsprechend korrigiert.
 
 Die andere dort dokumentierte Begründung fällt dagegen weg: „`/en/` vor der
 Startseite bleibt 404, weil die Anwendung einsprachig deutsch ist." Die Prämisse
@@ -202,8 +208,11 @@ Paraglide braucht **zwei** Einhängepunkte, und der zweite wird leicht übersehe
 
 Ohne die Middleware gibt es keine serverseitig aufgelöste Locale — also kein
 korrektes SSR und keinen ersetzten Platzhalter. Die Middleware ist so einzuhängen,
-dass sie den bestehenden Auth-Ablauf in `hooks.server.ts` nicht verschiebt; der
-prüft `event.url.pathname` und muss das weiterhin vor jeder Umschreibung tun.
+dass sie den bestehenden `authentication`-Handler in `hooks.server.ts` nicht
+verschiebt; der prüft `event.url.pathname` für den `/rest_sichtungen`-CSRF-Hinweis
+und muss das weiterhin vor jeder Umschreibung tun. Das ist eine reine
+Ordering-Anforderung, kein Bezug zum `/admin`-Zugriffsschutz — der ist
+route-basiert und von `reroute`/dieser Middleware unabhängig (siehe 4.3).
 
 ### 4.5 Spracherkennung
 
@@ -533,15 +542,15 @@ den Rückfall: die Zeile, die drei Monate später jemand schnell noch einfügt.
 
 Personentage, ohne die Übersetzungsleistung selbst (Fachinhalt vom DMM).
 
-| Etappe | Inhalt                                                                                                                                    | Aufwand   |
-| ------ | ----------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| 0      | Paraglide (Vite-Plugin, `reroute`, `paraglideMiddleware`, `%lang%`), Ausschlussliste, Locale-Erkennung, **lokalisierte Verweise, Sprachumschalter**, Zeitzonen-Guard | 4–5 |
-| 1      | Schichten A + B — Schema und `formOptions`; deckt Formular, Karte, Popups, Liste ab                                                       | 3–4       |
-| 2      | Schicht C — öffentliches Markup, Plurale, `hreflang` je Route, Toasts, Fehlerseiten | 3–4 |
-| 3      | Einwilligung und Nachweis (Abschnitt 7)                                                                                                   | 1–3       |
-| 4      | Schicht E — Inhaltsseiten, struktureller Umbau                                                                                            | 2–3       |
-| 5      | Guards inkl. Hartcodiert-Scan (8.3), Vollständigkeitsprüfung, EN-Rauchtest                                                                | 3–4       |
-|        | **Summe** | **16–23** |
+| Etappe | Inhalt                                                                                                                                                               | Aufwand   |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| 0      | Paraglide (Vite-Plugin, `reroute`, `paraglideMiddleware`, `%lang%`), Ausschlussliste, Locale-Erkennung, **lokalisierte Verweise, Sprachumschalter**, Zeitzonen-Guard | 4–5       |
+| 1      | Schichten A + B — Schema und `formOptions`; deckt Formular, Karte, Popups, Liste ab                                                                                  | 3–4       |
+| 2      | Schicht C — öffentliches Markup, Plurale, `hreflang` je Route, Toasts, Fehlerseiten                                                                                  | 3–4       |
+| 3      | Einwilligung und Nachweis (Abschnitt 7)                                                                                                                              | 1–3       |
+| 4      | Schicht E — Inhaltsseiten, struktureller Umbau                                                                                                                       | 2–3       |
+| 5      | Guards inkl. Hartcodiert-Scan (8.3), Vollständigkeitsprüfung, EN-Rauchtest                                                                                           | 3–4       |
+|        | **Summe**                                                                                                                                                            | **16–23** |
 
 **Korrektur gegenüber der ersten Fassung (15–22).** Beim Ausarbeiten von
 Etappe 0 stellte sich heraus, dass zwei Punkte dort falsch einsortiert waren:

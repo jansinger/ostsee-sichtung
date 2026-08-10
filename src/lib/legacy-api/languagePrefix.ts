@@ -24,11 +24,11 @@ const SPRACHKUERZEL = ['de', 'en'] as const;
  * Pfade, für die das Sprachkürzel weiterhin gilt — die vier Legacy-Endpunkte
  * aus `docs/LEGACY_API_SPECIFICATION.md` und sonst nichts.
  *
- * Bewusst **nicht** generisch über alle Routen: Die Anwendung ist einsprachig
- * deutsch, ein `/en/` vor der Startseite wäre ein Sprachversprechen, das sie
- * nicht einlöst. Und `/en/admin/...` wäre ein zweiter Pfad auf geschützte
- * Routen, deren Schutz in `hooks.server.ts` an `event.url.pathname` hängt —
- * die URL bleibt bei `reroute` die vom Client gesendete.
+ * Bewusst **nicht** generisch über alle Routen: Seitenrouten haben ihre eigene
+ * Lokalisierung über Paraglide (`/en` liefert die Startseite auf Englisch),
+ * getrennt von diesem Legacy-Sprachpräfix. `/en/admin/...` bleibt trotzdem
+ * ausgeschlossen (siehe `NICHT_LOKALISIERT` unten) — nicht aus Sicherheitsgründen,
+ * der Zugriffsschutz auf `/admin` ist route-basiert und unabhängig davon.
  *
  * Bewusst auch **nicht** als Verzeichnis-Präfix (`/sichtungen/**`): Sonst bekäme
  * jeder künftige Pfad unter `/sichtungen/` oder `/rest_sichtungen/` das
