@@ -48,4 +48,33 @@ describe('ReporterHistoryBadge', () => {
 			.element(page.getByText('Viele frühere Meldungen dieser Adresse wurden freigegeben'))
 			.toBeInTheDocument();
 	});
+
+	/* Fünf der sechs Stufen teilen sich `badge-ghost` — das Icon ist die
+	   farbunabhängige Unterscheidung (WCAG 1.4.1). Eine reine Text-Assertion
+	   bemerkt es nicht, wenn die `<Icon>`-Zeile verschwindet: Der Badge-Text
+	   bliebe unverändert. Geprüft wird deshalb im DOM (`<svg>` im Badge), nicht
+	   über den Quelltext. */
+	it('rendert ein Icon im Badge', async () => {
+		render(ReporterHistoryBadge, { history: historie({ approved: 23 }) });
+
+		const badge = page.getByTestId('reporter-badge');
+		await expect.element(badge).toBeInTheDocument();
+		expect(badge.element().querySelector('svg')).not.toBeNull();
+	});
+
+	/* Zwei Stufen mit unterschiedlichem Icon — die Unterscheidung muss nicht
+	   nur „irgendein Icon", sondern ein je nach Stufe verschiedenes sein. */
+	it('zeigt bei flagged ein anderes Icon als bei first', async () => {
+		const { container: flaggedContainer } = render(ReporterHistoryBadge, {
+			history: historie({ approved: 1, rejected: 2 })
+		});
+		const flaggedIcon = flaggedContainer.querySelector('[data-testid="reporter-badge"] svg');
+
+		const { container: firstContainer } = render(ReporterHistoryBadge, { history: historie() });
+		const firstIcon = firstContainer.querySelector('[data-testid="reporter-badge"] svg');
+
+		expect(flaggedIcon).not.toBeNull();
+		expect(firstIcon).not.toBeNull();
+		expect(flaggedIcon?.outerHTML).not.toBe(firstIcon?.outerHTML);
+	});
 });

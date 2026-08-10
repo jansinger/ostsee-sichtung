@@ -83,4 +83,20 @@ describe('GET /api/sightings/[id]/reporter-history', () => {
 
 		await expect(response.json()).resolves.toEqual({ history: null });
 	});
+
+	/* Die Gegenprobe zum Test oben: Ein **echtes** Nullaggregat — ein Melder mit
+	   Adresse, aber ohne weitere Meldungen — muss als Objekt durchgereicht
+	   werden und nicht mit dem Fail-open-Fall zu `null` kollabieren. Das ist die
+	   Testseite der zentralen Aussage des Endpunkts (`byId[row.id] ?? null`). */
+	it('unterscheidet ein echtes Nullaggregat von nicht ermittelt', async () => {
+		findReporterHistory.mockResolvedValue({
+			42: { approved: 0, rejected: 0, open: 0, since: '2026-08-10T08:00:00Z' }
+		});
+
+		const response = await aufruf('42');
+
+		await expect(response.json()).resolves.toEqual({
+			history: { approved: 0, rejected: 0, open: 0, since: '2026-08-10T08:00:00Z' }
+		});
+	});
 });
