@@ -77,15 +77,21 @@ export function stripLegacyLanguagePrefix(pathname: string): string | undefined 
  * `e2e/i18n-routing.spec.ts`. Ein sichtbarer Fehlschlag ist einem stillen
  * vorzuziehen.
  *
- * `/admin` steht hier nicht nur, weil der Bereich einsprachig deutsch bleibt:
- * Der Schutz in `hooks.server.ts` hängt an `event.url.pathname`, den `reroute`
- * nicht verändert. Ein zweiter Pfad auf geschützte Routen wäre eine echte Lücke.
+ * `/admin` steht hier, weil der Bereich einsprachig deutsch bleibt: Ein `/en/`
+ * davor wäre ein Sprachversprechen, das die Oberfläche nicht einlöst — ein
+ * zweiter kanonischer Pfad auf dieselbe Ansicht, nur ohne Übersetzung.
+ * (Kein Sicherheitsargument: Der Zugriffsschutz auf `/admin` ist route-basiert
+ * — `requireUserRole(url, locals.user, ['admin', 'superadmin'])` in
+ * `src/routes/admin/+layout.server.ts` — und griffe unverändert auch unter
+ * `/en/admin`. `event.url.pathname` in `hooks.server.ts` dient dort nur dem
+ * `/rest_sichtungen`-CSRF-Hinweis und dem Error-Logging, nicht der Autorisierung.)
  *
- * Bewusst **ohne** `/sichtungen`: Unter `src/routes/sichtungen/` liegt nur der
- * Legacy-Endpunkt `showreports.json` (bereits über `/rest_sichtungen` und
- * `LEGACY_PFADE` oben abgedeckt), keine Seitenroute. Ein Präfix hier hätte
- * `istAusgeschlossen('/sichtungen')` fälschlich ausgeschlossen — der Pfad ist
- * keine reale, geschützte oder technische Route und muss lokalisierbar bleiben.
+ * Bewusst **ohne** `/sichtungen`: Unter `src/routes/sichtungen/` liegt zwar eine
+ * reale Route, aber nur der Legacy-API-Endpunkt `showreports.json` (bereits über
+ * `/rest_sichtungen` und `LEGACY_PFADE` oben abgedeckt) — keine Seitenroute.
+ * Ein Präfix hier hätte `istAusgeschlossen('/sichtungen')` fälschlich
+ * ausgeschlossen; der bloße Pfad `/sichtungen` existiert als Seite nicht und
+ * muss lokalisierbar bleiben.
  */
 const NICHT_LOKALISIERT = [
 	'/api',

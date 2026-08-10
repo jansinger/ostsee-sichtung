@@ -111,7 +111,8 @@ describe('istAusgeschlossen', () => {
 		'/maintenance',
 		'/docs',
 		'/docs/api',
-		'/styleguide'
+		'/styleguide',
+		'/rest_sichtungen'
 	])('schließt %s aus', (pfad) => {
 		expect(istAusgeschlossen(pfad)).toBe(true);
 	});
