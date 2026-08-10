@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.16.0](https://github.com/jansinger/ostsee-tiere/compare/v2.15.0...v2.16.0) (2026-08-10)
+
+
+### Features
+
+* **admin:** meldekanal-auswertung und abgelehnte in der statistik ([#837](https://github.com/jansinger/ostsee-tiere/issues/837)) ([633be7e](https://github.com/jansinger/ostsee-tiere/commit/633be7e54422523668f07635bd8750dfc9bb19e3))
+* **admin:** status tabs, filter chips and url-driven filter state for the sightings table ([#845](https://github.com/jansinger/ostsee-tiere/issues/845)) ([a01a0fe](https://github.com/jansinger/ostsee-tiere/commit/a01a0fea3a27b5d527683902f75771b52eb78df8))
+
+
+### Bug Fixes
+
+* **admin:** linke Tabellenkante aufräumen und mediaUpload beim Bearbeiten ableiten ([#834](https://github.com/jansinger/ostsee-tiere/issues/834)) ([0611069](https://github.com/jansinger/ostsee-tiere/commit/06110695bad4672b6f8e6b882fecd15f331b2ce2))
+* **admin:** resolve entry channel id and unify export filter labels ([#847](https://github.com/jansinger/ostsee-tiere/issues/847)) ([bd7642d](https://github.com/jansinger/ostsee-tiere/commit/bd7642dd5d323d9c6dbe44367dd2900258d46957))
+
+
+### Code Refactoring
+
+* **admin:** type the status filter param as the status union ([#846](https://github.com/jansinger/ostsee-tiere/issues/846)) ([4124040](https://github.com/jansinger/ostsee-tiere/commit/412404001df01b85882115994149baaa4a9a8875))
+
+
+### Dependencies
+
+* **deps:** bump daisyui from 5.7.4 to 5.7.16 ([#843](https://github.com/jansinger/ostsee-tiere/issues/843)) ([a293d7a](https://github.com/jansinger/ostsee-tiere/commit/a293d7a8bec726119d6b1d5b90705d755e4a89bd))
+* **deps:** bump github/codeql-action in the github-actions group ([#842](https://github.com/jansinger/ostsee-tiere/issues/842)) ([e4a24a1](https://github.com/jansinger/ostsee-tiere/commit/e4a24a1a3e949a21808de7ddcbb4389a35277c46))
+* **deps:** bump globals from 17.8.0 to 17.9.0 ([#841](https://github.com/jansinger/ostsee-tiere/issues/841)) ([9b488d8](https://github.com/jansinger/ostsee-tiere/commit/9b488d83eab3fa47402fb6fb121b7b64582ee8ca))
+* **deps:** bump the dev-tooling group with 2 updates ([#839](https://github.com/jansinger/ostsee-tiere/issues/839)) ([7f6053e](https://github.com/jansinger/ostsee-tiere/commit/7f6053e2d4acc09ebb06df895e8c8e19a53e5ea0))
+* **deps:** bump the legacy-inbox-dependencies group ([#844](https://github.com/jansinger/ostsee-tiere/issues/844)) ([fcc1092](https://github.com/jansinger/ostsee-tiere/commit/fcc109240d93caf2fe1b68cf18c0a30614da963d))
+* **deps:** bump the production-dependencies group with 6 updates ([#838](https://github.com/jansinger/ostsee-tiere/issues/838)) ([51f78b6](https://github.com/jansinger/ostsee-tiere/commit/51f78b6390015fe6aaa54aa107066f2712ade1a5))
+* **deps:** bump vite from 8.2.0 to 8.2.1 in the svelte-framework group ([#840](https://github.com/jansinger/ostsee-tiere/issues/840)) ([813e2e8](https://github.com/jansinger/ostsee-tiere/commit/813e2e8f10cd8fab3bf1d57b31031fabc70d8ebb))
+
 ## [2.15.0](https://github.com/jansinger/ostsee-tiere/compare/v2.14.0...v2.15.0) (2026-08-09)
 
 
