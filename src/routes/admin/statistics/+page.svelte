@@ -1,5 +1,6 @@
 <script lang="ts">
 	import BarChart from '$lib/components/charts/BarChart.svelte';
+	import { getEntryChannelLabel } from '$lib/report/formOptions/entryChannel';
 	import { getSpeciesLabel } from '$lib/report/formOptions/species';
 	import Icon from '$lib/components/Icon.svelte';
 	import { WEEKDAY_LABELS, buildActivityHeatmap, type HeatmapStep } from './activityHeatmap';
@@ -40,6 +41,18 @@
 			label,
 			value: Number(data.monthlyStats.find((m) => Number(m.month) === index + 1)?.sightings ?? 0)
 		}))
+	);
+
+	/**
+	 * Bezugsgröße der Kanal-Balken.
+	 *
+	 * Die Summe der Kanäle und nicht die Kopfzahl `approved.totalSightings`:
+	 * Beide zählen zwar dieselbe Grundmenge, aber wenn eine der beiden Abfragen
+	 * einmal abweicht, ergäben die Anteile hier nicht mehr 100 %. Der Balken
+	 * bezieht sich damit auf genau die Zahlen, die daneben stehen.
+	 */
+	const channelTotal = $derived(
+		data.channelStats.reduce((summe, kanal) => summe + Number(kanal.count), 0) || 1
 	);
 
 	/** Jahrestrends über alle Jahre; das gewählte Jahr ist hervorgehoben. */
@@ -144,8 +157,21 @@
 					     dieselbe Menge wie der Eingang auf `/admin`. Wer hier „nicht
 					     freigegeben" schreibt, verspricht die Gegenmenge der Freigabe und
 					     weicht damit wieder um die Abgelehnten vom Eingang ab. -->
+					<!-- Der Trennpunkt trägt keine Bedeutung und gehört deshalb nicht in die
+					     Vorlesereihenfolge (`design-system.md`, Abschnitt „Beim Beheben nicht
+					     mechanisch ersetzen"). Ohne `aria-hidden` liest der Screenreader
+					     zwischen den Zahlen „Mittelpunkt". Gilt für beide Zahlen. -->
 					<span class="text-base-content/70">
-						· {formatNumber(data.basicStats?.open.totalSightings || 0)} noch offen
+						<span aria-hidden="true">·</span>
+						{formatNumber(data.basicStats?.open.totalSightings || 0)} noch offen
+					</span>
+					<!-- Die dritte Zahl steht auch bei 0 da. Wegzulassen, was gerade leer ist,
+					     macht das Fehlen zweideutig: Wer „5 abgelehnt" kennt und es beim
+					     nächsten Jahr nicht sieht, kann nicht unterscheiden, ob keine
+					     abgelehnt wurden oder ob die Anzeige die Zahl nicht mehr führt. -->
+					<span class="text-base-content/70">
+						<span aria-hidden="true">·</span>
+						{formatNumber(data.basicStats?.rejected || 0)} abgelehnt
 					</span>
 				</p>
 			</div>
@@ -399,6 +425,71 @@
 				</div>
 			</div>
 
+			<!-- Meldekanal -->
+			<div class="card bg-base-100 shadow-raised">
+				<div class="card-body">
+					<h2 class="card-title">
+						<Icon icon="lucide:inbox" class="h-6 w-6" />
+						Meldekanal (freigegebene Sichtungen{yearSuffix})
+					</h2>
+					<!-- Anteil statt bloßer Anzahl als führende Aussage: Web und App tragen
+					     zusammen über 90 %, die absoluten Zahlen der kleinen Kanäle sagen
+					     ohne diesen Bezug wenig. Balken statt Diagramm, weil sechs
+					     benannte Kategorien in eine Tabelle passen und die Bezeichnung
+					     („Fax") neben der Zahl stehen soll — anders als bei zwölf Monaten
+					     auf einer Achse.
+
+					     Dass hier wieder `progress` steht, ist kein Rückfall hinter die
+					     Umstellung der Saisonalität (Begründung weiter oben an ihrem
+					     Diagramm): Dort waren es zwölf gleichrangige Werte ohne
+					     Bezugsgröße, ein Fortschrittsbalken behauptete ein Ziel, das es
+					     nicht gab. Ein Anteil am Ganzen hat dieses Ziel — 100 % —, und
+					     genau dafür stehen die Balken der Datenqualität darunter seit
+					     jeher. -->
+					{#if data.channelStats.length === 0}
+						<p class="text-base-content/70">
+							Für diesen Zeitraum liegen keine freigegebenen Sichtungen vor.
+						</p>
+					{:else}
+						<div class="overflow-x-auto">
+							<table class="table-zebra table">
+								<thead>
+									<tr>
+										<th>Kanal</th>
+										<th>Sichtungen</th>
+										<th>Anteil</th>
+									</tr>
+								</thead>
+								<tbody>
+									{#each data.channelStats as kanal (kanal.channel)}
+										<tr>
+											<td class="font-medium">{getEntryChannelLabel(kanal.channel)}</td>
+											<td>{formatNumber(kanal.count)}</td>
+											<td>
+												<div class="flex items-center gap-3">
+													<!-- Der Balken wiederholt nur die Prozentzahl daneben und hat
+													     keinen eigenen Namen — als `progressbar` ohne Beschriftung
+													     läse ihn ein Screenreader als zweite, unbenannte Angabe
+													     derselben Zahl. Gleiche Auszeichnung wie an den beiden
+													     Balken der Datenqualität weiter unten. -->
+													<progress
+														class="progress progress-primary w-24"
+														value={kanal.count}
+														max={channelTotal}
+														aria-hidden="true"
+													></progress>
+													<span class="min-w-16">{formatPercentage(kanal.percentage)}</span>
+												</div>
+											</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
+					{/if}
+				</div>
+			</div>
+
 			<!-- Data Quality & User Engagement -->
 			<div class="card bg-base-100 shadow-raised">
 				<div class="card-body">
@@ -447,6 +538,7 @@
 										class="progress progress-primary w-full"
 										value={data.qualityStats?.withCoordinates || 0}
 										max={total}
+										aria-hidden="true"
 									></progress>
 								</div>
 								<span class="min-w-16 text-sm font-medium">
@@ -460,6 +552,7 @@
 										class="progress progress-accent w-full"
 										value={data.qualityStats?.withBehavior || 0}
 										max={total}
+										aria-hidden="true"
 									></progress>
 								</div>
 								<span class="min-w-16 text-sm font-medium">
