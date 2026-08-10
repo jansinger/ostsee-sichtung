@@ -54,7 +54,8 @@ function daten(ids: number[]): PageData {
 		order: 'asc' as const,
 		imagesBySighting: {},
 		pendingPhotoAnnouncements: 0,
-		duplicatesBySighting: {}
+		duplicatesBySighting: {},
+		reporterHistoryBySighting: {}
 	} as unknown as PageData;
 }
 
