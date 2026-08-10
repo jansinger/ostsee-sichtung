@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.17.0](https://github.com/jansinger/ostsee-tiere/compare/v2.16.0...v2.17.0) (2026-08-10)
+
+
+### Features
+
+* **admin:** melder-historie im eingang und in der detailansicht ([#852](https://github.com/jansinger/ostsee-tiere/issues/852)) ([481e204](https://github.com/jansinger/ostsee-tiere/commit/481e2044d47d4e48c2dfe0514beddeec7be689e3))
+* **admin:** move rare row actions into an overflow menu ([#850](https://github.com/jansinger/ostsee-tiere/issues/850)) ([704c995](https://github.com/jansinger/ostsee-tiere/commit/704c995e4bcd377e22e26ef548dded34646b1d6e))
+
+
+### Bug Fixes
+
+* **a11y:** enforce 44px touch targets on menu entries ([#851](https://github.com/jansinger/ostsee-tiere/issues/851)) ([5e97c28](https://github.com/jansinger/ostsee-tiere/commit/5e97c28242d902f786f0e635658e2def7fd3d3cb))
+
+
+### Documentation
+
+* **docs:** document the production cleanup cron setup on dmm ([#848](https://github.com/jansinger/ostsee-tiere/issues/848)) ([e8a1583](https://github.com/jansinger/ostsee-tiere/commit/e8a158383ee806be3ab0b7f4776d44c0e225088e))
+
 ## [2.16.0](https://github.com/jansinger/ostsee-tiere/compare/v2.15.0...v2.16.0) (2026-08-10)
 
 
