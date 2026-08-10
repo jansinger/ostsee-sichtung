@@ -57,9 +57,12 @@ describe('getReporterLevel', () => {
 	});
 
 	/* Offene Meldungen gehen in den Anteil nicht ein: Bis 2026-08 gab es die
-	   Ablehnung gar nicht, unbearbeitete Altmeldungen sind Bearbeitungsstau. */
+	   Ablehnung gar nicht, unbearbeitete Altmeldungen sind Bearbeitungsstau.
+	   1 von 3 bearbeiteten Meldungen liegt genau an der Drittel-Schwelle und
+	   ergibt `flagged` — zählten die 40 offenen mit, läge der Anteil bei 1/43
+	   und der Test schlüge fehl. */
 	it('rechnet offene Meldungen nicht in den Anteil ein', () => {
-		expect(getReporterLevel(historie({ approved: 3, rejected: 1, open: 40 }))).toBe('flagged');
+		expect(getReporterLevel(historie({ approved: 2, rejected: 1, open: 40 }))).toBe('flagged');
 	});
 });
 

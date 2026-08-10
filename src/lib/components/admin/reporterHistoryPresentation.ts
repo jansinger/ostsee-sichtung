@@ -25,20 +25,20 @@ export const REPORTER_KNOWN_THRESHOLD = 3;
 export const REPORTER_ESTABLISHED_THRESHOLD = 10;
 
 /**
- * Ab diesem Verhältnis von Ablehnungen zu Freigaben wird gewarnt.
+ * Ab diesem Verhältnis von Ablehnungen zu bearbeiteten Meldungen wird gewarnt.
  *
  * Verhältnis und nicht Vorkommen: Eine einzelne Ablehnung unter 29 Freigaben
  * ist ein Fehlgriff, kein Muster — ein dauerhaftes Warn-Badge dafür wäre
- * schlicht falsch. Offene Meldungen gehen nicht ein: Die Ablehnung existiert
- * erst seit 2026-08, unbearbeitete Altmeldungen sind Bearbeitungsstau.
+ * schlicht falsch. Offene Meldungen gehen nicht in den Nenner ein: Die
+ * Ablehnung existiert erst seit 2026-08, unbearbeitete Altmeldungen sind
+ * Bearbeitungsstau und kein Qualitätsurteil.
  *
- * Bezugsgröße sind die Freigaben, nicht alle bearbeiteten Meldungen: Bei drei
- * Freigaben und einer Ablehnung greift die Warnung genau an der
- * Drittel-Schwelle (1 Ablehnung auf 3 Freigaben) — bezöge man stattdessen auf
- * alle vier bearbeiteten Meldungen, läge der Anteil bei einem Viertel und
- * bliebe unter der Schwelle. Ein Melder ohne jede Freigabe und mit
- * mindestens einer Ablehnung gilt immer als `flagged` (Division durch 0
- * ergibt `Infinity`, das jede endliche Schwelle übertrifft).
+ * Bezugsgröße sind die bearbeiteten Meldungen (Freigaben + Ablehnungen), nicht
+ * allein die Freigaben: Bei zwei Freigaben und einer Ablehnung greift die
+ * Warnung genau an der Drittel-Schwelle (1 Ablehnung auf 3 bearbeitete
+ * Meldungen). `rejected > 0` ist Vorbedingung, damit ein Melder ohne jede
+ * bearbeitete Meldung nicht durch eine Division durch 0 fälschlich als
+ * `flagged` gilt.
  */
 export const REPORTER_FLAGGED_RATIO = 1 / 3;
 
@@ -57,7 +57,7 @@ export function getReporterLevel(
 
 	const { approved, rejected, open } = history;
 
-	if (rejected > 0 && rejected / approved >= REPORTER_FLAGGED_RATIO) return 'flagged';
+	if (rejected > 0 && rejected / (approved + rejected) >= REPORTER_FLAGGED_RATIO) return 'flagged';
 	if (approved >= REPORTER_ESTABLISHED_THRESHOLD) return 'established';
 	if (approved >= REPORTER_KNOWN_THRESHOLD) return 'known';
 	if (approved > 0) return 'new';
