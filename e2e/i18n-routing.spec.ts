@@ -93,18 +93,19 @@ test.describe('/ ohne Präferenz', () => {
  * hier denselben blinden Fleck reproduzieren; deshalb ausschließlich über
  * `page.goto`, das als echte Chromium-Top-Level-Navigation den Header setzt.
  *
- * **Befund, der die ursprünglich erwartete erste Prüfung ersetzt:** Ein
- * `PARAGLIDE_LOCALE=en`-Cookie leitet `/` NICHT nach `/en` um — auch mit
- * echtem `Sec-Fetch-Dest: document`. Grund: `strategy: ['url', 'cookie',
- * 'baseLocale']` in `vite.config.ts` prüft die `url`-Strategie zuerst, und die
- * unpräfigierte `/` erfüllt deren Muster für `baseLocale` ('de') bereits
- * vollständig — die `cookie`-Strategie kommt für diesen Pfad nie zum Zug.
- * Direkt nachvollzogen über `runtime.shouldRedirect({ request })` (liefert
- * `{ shouldRedirect: false, locale: 'de' }` trotz gesetztem Cookie) und über
- * `curl -sk -H "Cookie: PARAGLIDE_LOCALE=en" -H "Sec-Fetch-Dest: document"
- * https://localhost:4000/` (liefert `lang="de"`, kein Redirect). Der Test
- * unten sichert dieses tatsächliche Verhalten ab, nicht die ursprünglich
- * angenommene Weiterleitung — Details im Task-6-Bericht.
+ * Der ursprüngliche erste Test dieser Gruppe hielt einen inzwischen
+ * überholten Befund fest: Ein `PARAGLIDE_LOCALE=en`-Cookie leite `/` NICHT
+ * nach `/en` um, weil Paraglides eigene `strategy: ['url', 'cookie',
+ * 'baseLocale']` in `vite.config.ts` die `url`-Strategie zuerst prüft und die
+ * unpräfigierte `/` deren Muster für `baseLocale` bereits erfüllt. Das
+ * beschrieb Paraglides eigenes Verhalten korrekt, aber nicht mehr das der
+ * Anwendung: `zielFuerStartseite()` in `src/lib/i18n/startseitenWeiterleitung.ts`
+ * wird VOR Paraglide in `handleStartseitenSprache` (`hooks.server.ts`)
+ * aufgerufen und leitet bei `cookieLocale === 'en'` jetzt selbst weiter,
+ * unabhängig vom `Accept-Language`-Header. Begründung laut Entwurf: Eine
+ * ausdrückliche frühere Sprachwahl schlägt die Header-Vermutung — wer einmal
+ * auf Englisch umgeschaltet hat, darf auf `/` nicht wieder auf Deutsch
+ * landen. Der erste Test unten prüft entsprechend das neue Verhalten.
  */
 test.describe('Cookie-gesteuerte Sprachwahl (Browser-Navigation)', () => {
 	// `en-GB` für die ganze Gruppe: Der erste Test ist davon unabhängig (das
@@ -116,7 +117,7 @@ test.describe('Cookie-gesteuerte Sprachwahl (Browser-Navigation)', () => {
 	// `test.use({ locale })` schon.
 	test.use({ locale: 'en-GB' });
 
-	test('Cookie PARAGLIDE_LOCALE=en allein leitet / nicht nach /en um', async ({
+	test('Cookie PARAGLIDE_LOCALE=en allein leitet / nach /en um', async ({
 		page,
 		context,
 		baseURL
@@ -131,10 +132,24 @@ test.describe('Cookie-gesteuerte Sprachwahl (Browser-Navigation)', () => {
 			}
 		]);
 
-		await page.goto('/');
+		// Bewusst geändertes Verhalten: Die ausdrückliche frühere Wahl (Cookie)
+		// schlägt die Vermutung aus Accept-Language — in beide Richtungen. Wer
+		// einmal auf Englisch umgeschaltet hat, darf auf `/` nicht wieder auf
+		// Deutsch landen, auch wenn (wie hier über `test.use({ locale: 'en-GB' })`
+		// oben) der Accept-Language-Header ohnehin Englisch nahelegen würde.
+		// `zielFuerStartseite()` in `startseitenWeiterleitung.ts` fängt das ab,
+		// bevor Paraglide zum Zug kommt — Paraglides eigene Strategie
+		// (`strategy: ['url', 'cookie', 'baseLocale']`) würde das nicht leisten,
+		// weil die `url`-Strategie vorn steht und der präfixlose Pfad `/` immer
+		// auf `baseLocale` trifft.
+		await page.goto('/?ref=museum');
 
-		expect(new URL(page.url()).pathname).toBe('/');
-		await expect(page.locator('html')).toHaveAttribute('lang', 'de');
+		const ziel = new URL(page.url());
+		expect(ziel.pathname).toBe('/en');
+		// Der Query-String muss über die Weiterleitung erhalten bleiben — sein
+		// Verlust war zuvor ein Critical-Befund und darf nicht zurückkehren.
+		expect(ziel.search).toBe('?ref=museum');
+		await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 	});
 
 	test('Cookie PARAGLIDE_LOCALE=de schlägt englischen Accept-Language-Header', async ({
