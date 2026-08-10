@@ -68,6 +68,27 @@ export function getReporterLevel(
 export interface ReporterLevelPresentation {
 	/** Flächenfarbe — ohne `-strong`-Suffix (`.claude/rules/design-system.md`). */
 	badgeClass: string;
+	/**
+	 * Rahmen, der die Stufe sichtbar macht — leer, wo es nichts zu unterscheiden
+	 * gibt.
+	 *
+	 * **Warum es das Feld gibt.** `new`, `known` und `established` trugen
+	 * dieselbe Fläche, dasselbe Icon und denselben Text („Melder: N
+	 * freigegeben"); die Schwellen 3 und 10 änderten damit nur das Adjektiv im
+	 * Tooltip. Ein Bearbeiter sah bei 3 Freigaben dasselbe Badge wie bei 30
+	 * (Entscheidung Jan, 2026-08-10).
+	 *
+	 * **Warum ein Rahmen und keine Fläche.** Eine Vollton- oder Tint-Fläche wäre
+	 * ein Urteil über die Meldung („grün = kann durch"); der Rahmen ist eine
+	 * Auszeichnung der Adresse und drängt sich neben Spam- und Statusbadge nicht
+	 * vor. Er ist zudem **redundant**: Die Zahl im Text trägt die Aussage
+	 * weiterhin allein, der Rahmen verstärkt sie nur (WCAG 1.4.1 — die Bedeutung
+	 * hängt an keiner Stelle allein an ihm).
+	 *
+	 * Deshalb steht hier auch kein Rahmen an `flagged`: Dort trägt die
+	 * Warnfläche, ein zusätzlicher Rahmen wäre doppelt gemoppelt.
+	 */
+	borderClass: string;
 	/** Icon-Name für `$lib/components/Icon.svelte` — die farbunabhängige Unterscheidung. */
 	icon: string;
 	/** Was die Stufe bedeutet — als `title` und für Screenreader. */
@@ -77,26 +98,31 @@ export interface ReporterLevelPresentation {
 export const REPORTER_LEVEL_PRESENTATION: Record<ReporterLevel, ReporterLevelPresentation> = {
 	first: {
 		badgeClass: 'badge-ghost',
+		borderClass: '',
 		icon: 'lucide:user-plus',
 		description: 'Erste Meldung dieser E-Mail-Adresse — keine Vorgeschichte im Bestand'
 	},
 	pending: {
 		badgeClass: 'badge-ghost',
+		borderClass: '',
 		icon: 'lucide:users',
 		description: 'Weitere Meldungen dieser Adresse sind selbst noch unbearbeitet'
 	},
 	new: {
 		badgeClass: 'badge-ghost',
+		borderClass: '',
 		icon: 'lucide:user-check',
 		description: 'Einzelne frühere Meldungen dieser Adresse wurden freigegeben'
 	},
 	known: {
 		badgeClass: 'badge-ghost',
+		borderClass: 'border border-base-content/25',
 		icon: 'lucide:user-check',
 		description: 'Mehrere frühere Meldungen dieser Adresse wurden freigegeben'
 	},
 	established: {
 		badgeClass: 'badge-ghost',
+		borderClass: 'border border-primary/45',
 		/* Nicht „langjährig": Die Stufe zählt Freigaben, nicht Dauer — zehn
 		   Meldungen können aus einer Woche stammen. Wie lange die Adresse meldet,
 		   sagt `since` in der Detailansicht, und zwar getrennt davon. */
@@ -105,6 +131,7 @@ export const REPORTER_LEVEL_PRESENTATION: Record<ReporterLevel, ReporterLevelPre
 	},
 	flagged: {
 		badgeClass: 'badge-warning',
+		borderClass: '',
 		icon: 'lucide:user-x',
 		description: 'Ein erheblicher Teil der bearbeiteten Meldungen dieser Adresse wurde abgelehnt'
 	}

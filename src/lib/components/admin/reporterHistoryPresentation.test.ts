@@ -108,6 +108,29 @@ describe('REPORTER_LEVEL_PRESENTATION', () => {
 		}
 	});
 
+	/* Ohne den Rahmen waren `new`, `known` und `established` ununterscheidbar:
+	   gleiche Fläche, gleiches Icon, gleicher Text („Melder: N freigegeben").
+	   Die Schwellen 3 und 10 änderten damit nur das Adjektiv im Tooltip — ein
+	   Bearbeiter sah bei 3 Freigaben dasselbe Badge wie bei 30. */
+	it('macht die drei Freigabe-Stufen am Rahmen unterscheidbar', () => {
+		const rahmen = (['new', 'known', 'established'] as const).map(
+			(level) => REPORTER_LEVEL_PRESENTATION[level].borderClass
+		);
+
+		expect(new Set(rahmen).size).toBe(3);
+		expect(REPORTER_LEVEL_PRESENTATION.new.borderClass).toBe('');
+	});
+
+	/* Der Rahmen ist Verstärkung, nicht Träger: `flagged` hat die Warnfläche,
+	   ein zusätzlicher Rahmen wäre doppelt. Und keine Stufe darf ihre Fläche
+	   über den Rahmen doch noch einfärben. */
+	it('lässt die Warnstufe ohne Rahmen und hält ihn aus den Flächenklassen heraus', () => {
+		expect(REPORTER_LEVEL_PRESENTATION.flagged.borderClass).toBe('');
+		for (const presentation of Object.values(REPORTER_LEVEL_PRESENTATION)) {
+			expect(presentation.borderClass).not.toMatch(/\bbg-|\bbadge-/);
+		}
+	});
+
 	it('gibt jeder Stufe ein Icon — Farbe trägt die Bedeutung nicht allein', () => {
 		for (const presentation of Object.values(REPORTER_LEVEL_PRESENTATION)) {
 			expect(presentation.icon).toMatch(/^lucide:/);
