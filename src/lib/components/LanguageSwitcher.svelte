@@ -31,12 +31,7 @@
 	);
 
 	function sprachePersistieren(event: MouseEvent): void {
-		// Cmd/Ctrl-Klick öffnet den Verweis in einem neuen Tab — der aktuelle
-		// Tab bleibt auf der bisherigen Sprache stehen. Das Cookie dürfte dann
-		// nicht geschrieben werden, sonst würde ein späterer normaler Klick im
-		// selben Tab (z. B. auf `/`) die dort gar nicht vollzogene Umschaltung
-		// nachträglich behaupten.
-		if (event.metaKey || event.ctrlKey) return;
+		if (event.metaKey || event.ctrlKey || event.shiftKey || event.button === 1) return;
 		const domain = cookieDomain ? `; domain=${cookieDomain}` : '';
 		document.cookie = `${LOCALE_COOKIE}=${andere}; path=/; max-age=${cookieMaxAge}${domain}`;
 	}
@@ -55,6 +50,20 @@
 	noch vor der Browser-Navigation (kein `preventDefault` nötig, der Handler
 	läuft vor dem eigentlichen Seitenwechsel ab), sodass es im folgenden Request
 	bereits vorliegt.
+
+	Cmd/Ctrl-Klick und Shift-Klick öffnen den Verweis in einem neuen Tab bzw.
+	Fenster — der aktuelle Tab bleibt auf der bisherigen Sprache stehen. Das
+	Cookie darf dann nicht geschrieben werden, sonst würde ein späterer
+	normaler Klick im selben Tab (z. B. auf `/`) die dort gar nicht vollzogene
+	Umschaltung nachträglich behaupten. Mittelklick tut dasselbe (neuer Tab),
+	löst an einem `<a>` aber KEIN `click`-Event aus, sondern `auxclick` mit
+	`button === 1` — geprüft per Playwright/Chromium
+	(`page.click(selector, { button: 'middle' })` gegen eine Testseite mit
+	`click`- und `auxclick`-Listenern: nur `auxclick` feuerte, `click` blieb
+	aus). Der Handler ist deshalb zusätzlich an `onauxclick` verdrahtet; die
+	Bedingung in `sprachePersistieren` deckt beide Aufrufe über dieselbe
+	Prüfung ab, weil `button` bei einem regulären `click` 0 ist und die
+	Bedingung dort nie zuschlägt.
 
 	`data-sveltekit-reload` ist Pflicht, nicht Vorsicht: Ohne vollen Seitenaufbau
 	bleibt die Laufzeit-Locale die des zuerst gerenderten Dokuments, während sich
@@ -90,6 +99,7 @@
 		lang={andere}
 		data-sveltekit-reload
 		onclick={sprachePersistieren}
+		onauxclick={sprachePersistieren}
 		class="btn btn-ghost btn-sm"
 	>
 		{beschriftung}

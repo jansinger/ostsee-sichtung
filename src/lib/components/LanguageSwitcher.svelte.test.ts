@@ -41,6 +41,24 @@ function klickenOhneNavigation(link: Element, modifier: MouseEventInit = {}): vo
 	}
 }
 
+/**
+ * Mittelklick auf einen `<a>` löst im Browser kein `click`, sondern ein
+ * `auxclick` mit `button === 1` aus (per Playwright/Chromium verifiziert,
+ * siehe Kommentar in `LanguageSwitcher.svelte`). Ein `MouseEvent('click', {
+ * button: 1 })` synthetisch zu feuern würde reale Browser nicht abbilden —
+ * dieser Helfer dispatcht deshalb `auxclick`, denselben Event-Typ, an den
+ * `onauxclick` auch tatsächlich verdrahtet ist.
+ */
+function mittelKlickenOhneNavigation(link: Element): void {
+	const wächter = (event: Event) => event.preventDefault();
+	document.addEventListener('auxclick', wächter);
+	try {
+		link.dispatchEvent(new MouseEvent('auxclick', { bubbles: true, cancelable: true, button: 1 }));
+	} finally {
+		document.removeEventListener('auxclick', wächter);
+	}
+}
+
 beforeEach(() => {
 	pageState.url = new URL('https://localhost:4000/');
 	// Jeder Test startet ohne Cookie-Vorbelastung aus einem vorherigen Lauf.
@@ -100,5 +118,19 @@ it('Strg-Klick öffnet einen neuen Tab und schreibt kein Cookie im aktuellen', (
 	render(LanguageSwitcher);
 	const link = document.querySelector('a[hreflang="en"]');
 	klickenOhneNavigation(link as Element, { ctrlKey: true });
+	expect(cookieLocale()).toBeUndefined();
+});
+
+it('Shift-Klick öffnet ein neues Fenster und schreibt kein Cookie im aktuellen', () => {
+	render(LanguageSwitcher);
+	const link = document.querySelector('a[hreflang="en"]');
+	klickenOhneNavigation(link as Element, { shiftKey: true });
+	expect(cookieLocale()).toBeUndefined();
+});
+
+it('Mittelklick öffnet einen neuen Tab und schreibt kein Cookie im aktuellen', () => {
+	render(LanguageSwitcher);
+	const link = document.querySelector('a[hreflang="en"]');
+	mittelKlickenOhneNavigation(link as Element);
 	expect(cookieLocale()).toBeUndefined();
 });
