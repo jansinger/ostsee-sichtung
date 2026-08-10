@@ -55,7 +55,10 @@ nachtragen.
 | `src/hooks.server.ts`                  | `paraglideMiddleware`, `/`-Weiterleitung                            | 4, 5 |
 | `src/app.html`                         | `%lang%` statt `lang="de"`, `<meta name="language">` entfällt       | 4    |
 | `e2e/i18n-routing.spec.ts`             | Guard: Ausschlüsse liefern 404 (neu)                                | 6    |
-| `src/lib/utils/format/dateTime.ts`     | Darstellung folgt der Locale, Zeitzone nicht                        | 7    |
+| `src/lib/utils/format/dateTime.ts`     | Zeitzonen-Invariante festgenagelt                                   | 7    |
+| `PublicNavbar`, `PublicFooter`, `+layout` | interne Verweise über `localizeHref`                             | 8    |
+| `src/lib/components/LanguageSwitcher.svelte` | Sprachumschalter, nur außerhalb des iframes (neu)             | 9    |
+| `eslint.config.js`, `.prettierignore`, `vitest.config.ts` | erzeugten Code ausnehmen                          | 1    |
 
 ---
 
@@ -116,30 +119,47 @@ npx vitest run --project server scripts/i18nGate.test.ts
 
 Erwartet: FAIL — `expected '…' to contain 'i18n:compile'`.
 
-- [ ] **Schritt 3: Paraglide installieren**
+- [ ] **Schritt 3: Paraglide über das offizielle Init einrichten**
 
 ```bash
-npm install --save-dev @inlang/paraglide-js
+npx sv add paraglide
 ```
+
+Auf die Rückfragen: Basissprache `de`, weitere Sprache `en`, Demo-Seite **nicht**
+anlegen.
+
+**Bewusst nicht von Hand.** Der Befehl erzeugt `project.inlang/settings.json`
+mit einer **versionsgepinnten** Modul-Referenz. Eine handgeschriebene Fassung mit
+`@latest` wäre eine ungepinnte Fernabhängigkeit — in einem öffentlichen
+Repository ein unnötiges Lieferketten-Risiko, und der Aufbau der Datei ändert
+sich zwischen Versionen.
+
+Danach die erzeugte Konfiguration prüfen **und den Cookie-Namen feststellen** —
+Task 5 braucht ihn und darf ihn nicht raten:
+
+```bash
+cat project.inlang/settings.json
+grep -rn "cookieName" src/lib/paraglide/runtime.js | head -3
+```
+
+Erwartet: `baseLocale: "de"`, `locales: ["de","en"]`, gepinnte Modul-URL ohne
+`@latest`. Den gefundenen Cookie-Namen hier eintragen, bevor der Task
+weitergeht:
+
+```
+Cookie-Name laut erzeugter Laufzeit: ______________
+```
+
+Weicht der `pathPattern` von `./messages/{locale}.json` ab, gewinnt die erzeugte
+Fassung; die Pfade in Schritt 4 sind dann anzupassen.
 
 Dies ist der einzige Task, der `package-lock.json` ändert; `npm install` im
 Worktree ist hier ausdrücklich richtig.
 
-- [ ] **Schritt 4: inlang-Projekt und Botschaftsdateien anlegen**
+- [ ] **Schritt 4: Botschaftsdateien auf den Selbsttest reduzieren**
 
-`project.inlang/settings.json`:
-
-```json
-{
-	"$schema": "https://inlang.com/schema/project-settings",
-	"baseLocale": "de",
-	"locales": ["de", "en"],
-	"modules": ["https://cdn.jsdelivr.net/npm/@inlang/plugin-message-format@latest/dist/index.js"],
-	"plugin.inlang.messageFormat": {
-		"pathPattern": "./messages/{locale}.json"
-	}
-}
-```
+Was `sv add` an Beispielbotschaften angelegt hat, wird durch genau diesen einen
+Eintrag ersetzt.
 
 `messages/de.json`:
 
@@ -192,6 +212,32 @@ Unter der Zeile `/.svelte-kit`:
 
 ```
 /src/lib/paraglide
+```
+
+- [ ] **Schritt 6b: Erzeugten Code aus Lint, Prettier und Coverage nehmen**
+
+`src/lib/paraglide` steht in `.gitignore`, liegt aber unter `src/` — ESLint,
+Prettier und die Vitest-Coverage greifen trotzdem darauf zu. Ohne diesen Schritt
+ist `test:quick` nach Task 1 rot oder verrauscht.
+
+In `eslint.config.js` zu den globalen `ignores` ergänzen:
+
+```js
+	{ ignores: ['src/lib/paraglide/**'] },
+```
+
+In `.prettierignore` anhängen:
+
+```
+src/lib/paraglide
+```
+
+In `vitest.config.ts` bei `coverage.exclude` ergänzen — neben dem vorhandenen
+`**/*.testutil.ts`, aus demselben Grund: nicht ausgelieferter beziehungsweise
+erzeugter Code zählt sonst als ungedeckter Produktionscode.
+
+```js
+			'src/lib/paraglide/**',
 ```
 
 - [ ] **Schritt 7: Skripte in `package.json` einhängen**
@@ -414,6 +460,13 @@ describe('reroute', () => {
 	it('lässt einen präfixlosen Pfad unverändert', () => {
 		expect(pfadNach('/map')).toBe('/map');
 	});
+
+	it('schreibt /de/ nicht um — Deutsch ist präfixlos', () => {
+		// Ohne ausdrückliche Ablehnung räumt deLocalizeUrl das Präfix ab und
+		// liefert die deutsche Seite unter einer zweiten URL aus.
+		expect(pfadNach('/de/sichtungen')).toBeUndefined();
+		expect(pfadNach('/de')).toBeUndefined();
+	});
 });
 ```
 
@@ -451,9 +504,16 @@ export const reroute: Reroute = ({ url }) => {
 	const legacy = stripLegacyLanguagePrefix(url.pathname);
 	if (legacy !== undefined) return legacy;
 
-	if (istAusgeschlossen(deLocalizeUrl(url).pathname)) return undefined;
+	// `/de/x` ist kein zweiter Weg auf `/x`: Deutsch ist bei `baseLocale: 'de'`
+	// präfixlos. `deLocalizeUrl` räumt das Präfix bereitwillig ab und lieferte
+	// damit zwei URLs für denselben Inhalt aus. Die vier Legacy-Pfade behalten
+	// ihr `/de/` über Schritt 1 oben — sie sind hier schon durch.
+	if (/^\/de(\/|$)/.test(url.pathname)) return undefined;
 
-	return deLocalizeUrl(url).pathname;
+	const entlokalisiert = deLocalizeUrl(url).pathname;
+	if (istAusgeschlossen(entlokalisiert)) return undefined;
+
+	return entlokalisiert;
 };
 ```
 
@@ -664,13 +724,25 @@ Erwartet: PASS, 5 Tests.
 Vor `handleParaglide` in die `sequence` einsetzen:
 
 ```ts
+// Name aus Task 1, Schritt 3 — NICHT raten. Steht er falsch hier, greift die
+// Regel „ausdrückliche Wahl schlägt Vermutung" nie, und der Unit-Test in
+// Schritt 4 bleibt trotzdem grün, weil er die Funktion isoliert prüft.
+const LOCALE_COOKIE = '<aus Task 1, Schritt 3 eintragen>';
+
 const handleStartseitenSprache: Handle = async ({ event, resolve }) => {
 	const ziel = zielFuerStartseite(
 		event.url.pathname,
 		event.request.headers.get('accept-language'),
-		event.cookies.get('PARAGLIDE_LOCALE') ?? null
+		event.cookies.get(LOCALE_COOKIE) ?? null
 	);
-	if (ziel) return new Response(null, { status: 302, headers: { location: ziel } });
+	// `Vary` gehört AUF die Weiterleitung, nicht nur auf die normale Antwort:
+	// Die 302 ist die inhaltsverhandelte Antwort. Ohne den Header cacht ein
+	// Zwischenspeicher sie für alle Sprachen.
+	if (ziel)
+		return new Response(null, {
+			status: 302,
+			headers: { location: ziel, vary: 'Accept-Language' }
+		});
 
 	const antwort = await resolve(event);
 	// Nur diese eine Antwort variiert nach Header — alle übrigen Pfade bleiben
@@ -732,6 +804,16 @@ test.describe('Sprachpräfix-Routing', () => {
 	test('/en liefert die Seite aus', async ({ page }) => {
 		await page.goto('/en');
 		await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+	});
+
+	test('/en/admin ist kein zweiter Weg auf /admin', async ({ request }) => {
+		// Getrennt geprüft, weil ein 404 aus dem falschen Grund entstehen könnte:
+		// Antwortet der Auth-Ablauf auf /admin mit 302 auf den Login, muss
+		// /en/admin sich davon unterscheiden — es darf gar keine Route treffen.
+		const geschuetzt = await request.get('/admin', { maxRedirects: 0 });
+		const praefix = await request.get('/en/admin', { maxRedirects: 0 });
+		expect(praefix.status()).toBe(404);
+		expect(praefix.status()).not.toBe(geschuetzt.status());
 	});
 
 	test('/ bleibt deutsch', async ({ page }) => {
@@ -858,6 +940,175 @@ git commit -m "test(test): pin the europe/berlin invariant across locales"
 
 ---
 
+## Task 8: Interne Verweise lokalisieren
+
+**Dateien:**
+
+- Ändern: `src/lib/components/PublicNavbar.svelte`,
+  `src/lib/components/PublicFooter.svelte`, `src/routes/+layout.svelte` und jeden
+  weiteren öffentlichen `<a href="/…">` außerhalb von `/admin`
+- Test neu: `e2e/i18n-links.spec.ts`
+
+**Warum das in Etappe 0 gehört und nicht in Etappe 2.** Ohne diesen Task zeigt
+auf `/en` jeder interne Verweis weiter auf `/sichtungen`, `/map`, `/about` — der
+Nutzer fällt beim **ersten Klick** zurück auf Deutsch. Im iframe gibt es keine
+Navigation, über die er zurückfände. Das ist Routing, nicht Text: `/en` wäre
+sonst erreichbar, aber unbenutzbar, und die Definition of Done dieser Etappe
+wäre unehrlich.
+
+**Schnittstellen:**
+
+- Nutzt: `localizeHref(pfad: string): string` aus `$lib/paraglide/runtime`.
+
+- [ ] **Schritt 1: Fehlschlagenden Test schreiben**
+
+`e2e/i18n-links.spec.ts`:
+
+```ts
+import { expect, test } from '@playwright/test';
+
+test('bleibt beim Navigieren in der englischen Fassung', async ({ page }) => {
+	await page.goto('/en');
+	await page.getByRole('link', { name: /map|karte/i }).first().click();
+	await expect(page).toHaveURL(/\/en\//);
+	await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+});
+```
+
+- [ ] **Schritt 2: Test laufen lassen, Fehlschlag bestätigen**
+
+```bash
+npx playwright test e2e/i18n-links.spec.ts
+```
+
+Erwartet: FAIL — die URL trägt nach dem Klick kein `/en/` mehr.
+
+- [ ] **Schritt 3: Verweise umstellen**
+
+In jeder betroffenen Komponente:
+
+```svelte
+<script lang="ts">
+	import { localizeHref } from '$lib/paraglide/runtime';
+</script>
+
+<a href={localizeHref('/map')}>…</a>
+```
+
+**Nicht umstellen:** Verweise nach `/admin`, `/api`, `/uploads`, `/docs` und
+`/styleguide` — sie stehen auf der Ausschlussliste aus Task 2, und ein
+lokalisierter Verweis dorthin erzeugte eine 404.
+
+- [ ] **Schritt 4: Test laufen lassen, Erfolg bestätigen**
+
+```bash
+npx playwright test e2e/i18n-links.spec.ts
+```
+
+Erwartet: PASS.
+
+- [ ] **Schritt 5: Commit**
+
+```bash
+git add src/lib/components src/routes/+layout.svelte e2e/i18n-links.spec.ts
+git commit -m "feat(ui): localize internal links so a locale survives navigation"
+```
+
+---
+
+## Task 9: Sprachumschalter
+
+**Dateien:**
+
+- Neu: `src/lib/components/LanguageSwitcher.svelte`
+- Ändern: `src/lib/components/PublicNavbar.svelte`
+- Test neu: `src/lib/components/LanguageSwitcher.svelte.test.ts`
+
+**Erwartungshaltung dämpfen.** Der Umschalter sitzt in der Navigation und ist
+damit **im iframe unsichtbar** ([PublicNavbar.svelte:63](../src/lib/components/PublicNavbar.svelte#L63)).
+Er ist Bequemlichkeit für Direktaufrufer, ausdrücklich **kein** tragender Weg zur
+englischen Fassung — den liefert die Einbettung der Elternseite. Genau an dieser
+Fehlannahme ist `/bestimmungshilfe` schon einmal gescheitert
+([IFRAME_EINBETTUNG.md](IFRAME_EINBETTUNG.md)).
+
+- [ ] **Schritt 1: Fehlschlagenden Komponententest schreiben**
+
+`src/lib/components/LanguageSwitcher.svelte.test.ts`:
+
+```ts
+import { render } from 'vitest-browser-svelte';
+import { expect, it } from 'vitest';
+import LanguageSwitcher from './LanguageSwitcher.svelte';
+
+it('verweist auf die jeweils andere Sprache und kennzeichnet sie', async () => {
+	const bildschirm = render(LanguageSwitcher);
+	const verweis = bildschirm.getByRole('link', { name: 'English' });
+	await expect.element(verweis).toHaveAttribute('hreflang', 'en');
+	// Ohne data-sveltekit-reload navigiert SvelteKit clientseitig, während die
+	// Laufzeit-Locale aus dem zuerst gerenderten Dokument stammt — URL, SSR und
+	// Locale laufen auseinander.
+	await expect.element(verweis).toHaveAttribute('data-sveltekit-reload');
+});
+```
+
+- [ ] **Schritt 2: Test laufen lassen, Fehlschlag bestätigen**
+
+```bash
+npx vitest run --project client src/lib/components/LanguageSwitcher.svelte.test.ts
+```
+
+Erwartet: FAIL — Komponente existiert nicht.
+
+- [ ] **Schritt 3: Komponente schreiben**
+
+`src/lib/components/LanguageSwitcher.svelte`:
+
+```svelte
+<script lang="ts">
+	import { page } from '$app/state';
+	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
+
+	const andere = $derived(getLocale() === 'de' ? 'en' : 'de');
+	const beschriftung = $derived(andere === 'en' ? 'English' : 'Deutsch');
+	const ziel = $derived(localizeHref(page.url.pathname, { locale: andere }));
+</script>
+
+<!--
+	`data-sveltekit-reload` ist Pflicht, nicht Vorsicht: Ohne vollen Seitenaufbau
+	bleibt die Laufzeit-Locale die des zuerst gerenderten Dokuments, während sich
+	die URL ändert. `hreflang` sagt Suchmaschinen und Screenreadern, wohin der
+	Verweis führt; `lang` am Element sorgt dafür, dass „English" englisch
+	vorgelesen wird und nicht deutsch.
+-->
+<a href={ziel} hreflang={andere} lang={andere} data-sveltekit-reload class="btn btn-ghost btn-sm">
+	{beschriftung}
+</a>
+```
+
+- [ ] **Schritt 4: Test laufen lassen, Erfolg bestätigen**
+
+```bash
+npx vitest run --project client src/lib/components/LanguageSwitcher.svelte.test.ts
+```
+
+Erwartet: PASS.
+
+- [ ] **Schritt 5: In die Navigation einsetzen**
+
+In `PublicNavbar.svelte` innerhalb des bestehenden `{#if isNotIFrame}`-Blocks
+einfügen — nicht daneben. Außerhalb wäre er im iframe sichtbar, und dort gehört
+er nicht hin.
+
+- [ ] **Schritt 6: Gate laufen lassen und committen**
+
+```bash
+npm run test:quick
+git add src/lib/components
+git commit -m "feat(ui): add a language switcher to the public navbar"
+```
+
+---
+
 ## Abschluss der Etappe
 
 - [ ] **Dokumentation nachziehen.** In `src/lib/legacy-api/languagePrefix.ts` und
@@ -869,9 +1120,17 @@ git commit -m "test(test): pin the europe/berlin invariant across locales"
 - [ ] **Vollständiger E2E-Lauf**: `npm run test:e2e` (ohne `CI=1`, ohne
       parallelen Lauf in einem Nachbar-Worktree).
 
-**Definition of Done:** `/en` liefert eine Seite mit `lang="en"` aus, alle
-Ausschlüsse liefern 404, die Legacy-API antwortet unverändert deutsch, und
-`npm run test:quick` ist in einem frisch aufgesetzten Worktree grün.
+**Definition of Done:** `/en` liefert eine Seite mit `lang="en"` aus **und
+bleibt beim Navigieren englisch**, der Umschalter führt außerhalb des iframes
+hin und zurück, alle Ausschlüsse und `/de/…` liefern 404, die Legacy-API
+antwortet unverändert deutsch, und `npm run test:quick` ist in einem frisch
+aufgesetzten Worktree grün.
+
+**Aufwand dieser Etappe: 5 Tage** statt der im Entwurf genannten 3–4. Die
+Verweis-Lokalisierung (Task 8) und der Umschalter (Task 9) waren dort
+fälschlich später einsortiert; sie sind Routing und gehören hierher. Die
+Gesamtschätzung steigt entsprechend auf 16–23 Personentage — im Entwurf
+nachzutragen.
 
 **`/en` ist damit öffentlich erreichbar, aber vollständig deutschsprachig.** Das
 ist beabsichtigt und in diesem Zustand **nicht auslieferbar** — siehe Entwurf,
