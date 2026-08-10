@@ -17,6 +17,7 @@ import {
 	devServerIdentity,
 	devTrustAnchors,
 	loopbackHostFor,
+	worktreeBrowserApiPort,
 	worktreeDevPort
 } from './dev-server-identity';
 
@@ -76,6 +77,40 @@ describe('worktreeDevPort', () => {
 			expect(port).toBeGreaterThanOrEqual(41_000);
 			expect(port).toBeLessThanOrEqual(44_999);
 		}
+	});
+});
+
+describe('worktreeBrowserApiPort', () => {
+	it('liefert für dasselbe Verzeichnis immer denselben Port', () => {
+		expect(worktreeBrowserApiPort(WORKTREE_A)).toBe(worktreeBrowserApiPort(WORKTREE_A));
+	});
+
+	it('trennt Haupt-Repo und Worktrees', () => {
+		const ports = [MAIN_REPO, WORKTREE_A, WORKTREE_B].map(worktreeBrowserApiPort);
+		expect(new Set(ports).size).toBe(3);
+	});
+
+	it('liegt außerhalb des Dev-Server-Bereichs', () => {
+		// Der eigentliche Zweck der zweiten Funktion: Browser-Test-Server und
+		// Dev-Server dürfen sich im selben Worktree nicht gegenseitig verdrängen.
+		for (let i = 0; i < 500; i++) {
+			const root = `${WORKTREE_A}-${i}`;
+			const port = worktreeBrowserApiPort(root);
+			expect(port).toBeGreaterThanOrEqual(45_000);
+			expect(port).toBeLessThanOrEqual(48_999);
+			expect(port).not.toBe(worktreeDevPort(root));
+		}
+	});
+
+	it('ignoriert einen abschließenden Schrägstrich', () => {
+		expect(worktreeBrowserApiPort(`${WORKTREE_A}/`)).toBe(worktreeBrowserApiPort(WORKTREE_A));
+	});
+
+	it('streut breit genug, dass Kollisionen selten bleiben', () => {
+		const ports = Array.from({ length: 200 }, (_, i) =>
+			worktreeBrowserApiPort(`${WORKTREE_A}-${i}`)
+		);
+		expect(new Set(ports).size).toBeGreaterThanOrEqual(185);
 	});
 });
 

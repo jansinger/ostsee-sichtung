@@ -1,8 +1,22 @@
 import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
+import { worktreeBrowserApiPort } from './src/tools/dev-server-identity';
 
 export default defineConfig({
 	test: {
+		/**
+		 * Vitests Default sind 10 s — und die werden im Browser-Projekt *jedes Mal*
+		 * voll ausgeschöpft: Nach dem letzten Test bleiben Dateihandles offen, die
+		 * der `hanging-process`-Reporter nur als „FILEHANDLE (unknown stack trace)"
+		 * ausweist, und der Lauf endet mit „close timed out after 10000ms". Danach
+		 * beendet sich der Prozess von selbst; nachgemessen bleibt weder Port noch
+		 * Chromium zurück. Es ist also eine reine Wartezeit — bei einem Lauf von
+		 * ~17 s über ein Drittel der Gesamtdauer, und die fällt bei jedem Gate an.
+		 *
+		 * Bewusst nur gekürzt, nicht abgeschaltet: Bliebe eines Tages doch etwas
+		 * zurück, ist die Meldung der einzige Hinweis darauf.
+		 */
+		teardownTimeout: 2_000,
 		coverage: {
 			provider: 'v8',
 			reporter: ['text', 'json', 'html'],
@@ -64,7 +78,15 @@ export default defineConfig({
 						enabled: true,
 						headless: true,
 						provider: playwright(),
-						instances: [{ browser: 'chromium' }]
+						instances: [{ browser: 'chromium' }],
+						/*
+						 * Ohne diese Zeile bindet Vitest fest auf 63315 — in *jedem*
+						 * Worktree derselbe Port. Zwei gleichzeitige Läufe stören sich
+						 * dann gegenseitig, und zwar nicht als Portfehler, sondern als
+						 * vereinzelter Fehlschlag oder als „no tests": ein Befund, der
+						 * nach einem Defekt am Code aussieht und keiner ist.
+						 */
+						api: { port: worktreeBrowserApiPort(process.cwd()) }
 					},
 					include: ['src/**/*.svelte.{test,spec}.{js,ts}'],
 					exclude: ['src/lib/server/**'],
