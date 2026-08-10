@@ -1,4 +1,6 @@
 import { env } from '$env/dynamic/private';
+import { LOCALE_COOKIE } from '$lib/i18n/localeCookie';
+import { zielFuerStartseite } from '$lib/i18n/startseitenWeiterleitung';
 import { createLogger } from '$lib/logger.server';
 import { paraglideMiddleware } from '$lib/paraglide/server';
 import { resolveSessionUser } from '$lib/server/auth/sessionRepository';
@@ -103,6 +105,43 @@ const handleParaglide: Handle = ({ event, resolve }) =>
 	});
 
 /**
+ * Einmalige Sprachweiterleitung auf der Startseite (Task 5).
+ *
+ * Muss VOR `handleParaglide` greifen: Paraglide löst dort die Locale bereits
+ * anhand von URL/Cookie auf, und diese Weiterleitung soll genau dieser
+ * Auflösung zuvorkommen, nicht ihr hinterherlaufen.
+ *
+ * Steht bewusst NACH `authentication`: Die Auth-Prüfung hängt an
+ * `event.url.pathname`, das diese Funktion nicht verändert — sie erzeugt bei
+ * Treffer nur eine eigene 302-Antwort und läuft `resolve(event)` gar nicht
+ * erst durch. Vor `authentication` einzuhängen, brächte keinen Vorteil (die
+ * Antwort ändert sich nicht) und würde die im Kommentar dort festgehaltene
+ * Reihenfolge unnötig aufbrechen.
+ */
+const handleStartseitenSprache: Handle = async ({ event, resolve }) => {
+	const ziel = zielFuerStartseite(
+		event.url.pathname,
+		event.request.headers.get('accept-language'),
+		event.cookies.get(LOCALE_COOKIE) ?? null
+	);
+	// `Vary` gehört AUF die Weiterleitung, nicht nur auf die normale Antwort:
+	// Die 302 ist die inhaltsverhandelte Antwort. Ohne den Header cacht ein
+	// Zwischenspeicher sie für alle Sprachen.
+	if (ziel) {
+		return new Response(null, {
+			status: 302,
+			headers: { location: ziel, vary: 'Accept-Language' }
+		});
+	}
+
+	const antwort = await resolve(event);
+	// Nur diese eine Antwort variiert nach Header — alle übrigen Pfade bleiben
+	// voll cachebar.
+	if (event.url.pathname === '/') antwort.headers.set('Vary', 'Accept-Language');
+	return antwort;
+};
+
+/**
  * SvelteKit Handle Hook - Combines multiple middleware in sequence
  *
  * WICHTIG: CSP wird in svelte.config.js konfiguriert (Vercel-optimiert)
@@ -113,7 +152,8 @@ export const handle: Handle = sequence(
 	maintenanceMode, // Second: Check maintenance mode
 	authentication, // Third: Handle authentication
 	setAdditionalHeaders, // Fourth: Set security headers
-	handleParaglide // Fifth: Resolve locale and fill %lang% placeholder
+	handleStartseitenSprache, // Fifth: einmalige Sprachweiterleitung auf "/"
+	handleParaglide // Sixth: Resolve locale and fill %lang% placeholder
 );
 
 /**
