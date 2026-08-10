@@ -13,8 +13,11 @@
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const repoRoot = path.resolve(import.meta.dirname, '..');
+// `fileURLToPath(import.meta.url)` statt `import.meta.dirname` — dasselbe Muster wie
+// in `vite.config.ts`, und unabhängig davon, wie die Datei transformiert wird.
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 export function readScripts(): Record<string, string> {
 	const pkg = JSON.parse(readFileSync(path.join(repoRoot, 'package.json'), 'utf8')) as {
