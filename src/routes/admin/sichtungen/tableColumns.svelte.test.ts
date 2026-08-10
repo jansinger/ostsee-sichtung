@@ -232,11 +232,6 @@ describe('Sichtungstabelle — Spalten', () => {
 		}
 	});
 
-	/* WP7-Bugfix-Regression: Begründung der Effekt-Aufspaltung steht in
-	   `+page.svelte` beim Speicher-Effekt. Der mittlere Schritt unten —
-	   `localStorage` nach einer Checkbox-Änderung — reproduziert genau den
-	   Bug, den die Aufspaltung behoben hat; gegen die unaufgespaltene Fassung
-	   schlägt er fehl (siehe Fix-Report). */
 	it('lässt localStorage unangetastet, solange niemand die Spaltenauswahl ändert', () => {
 		// Fix-Runde-2-Regression: Die Effekt-Aufspaltung setzte
 		// `hatGespeicherteSpaltenGeladen` synchron im Lade-Effekt, bevor der
@@ -249,6 +244,11 @@ describe('Sichtungstabelle — Spalten', () => {
 		expect(window.localStorage.getItem(COLUMN_PREFERENCES_STORAGE_KEY)).toBeNull();
 	});
 
+	/* WP7-Bugfix-Regression: Begründung der Effekt-Aufspaltung steht in
+	   `+page.svelte` beim Speicher-Effekt. Der mittlere Schritt unten —
+	   `localStorage` nach einer Checkbox-Änderung — reproduziert genau den
+	   Bug, den die Aufspaltung behoben hat; gegen die unaufgespaltene Fassung
+	   schlägt er fehl (siehe Fix-Report). */
 	it('speichert die Spaltenauswahl bei jeder Änderung und setzt sie per Reset-Button zurück', async () => {
 		const screen = render(SichtungenSeite, { data: daten([sichtung({})]) });
 

@@ -65,8 +65,8 @@ describe('Sichtungstabelle — Freitext-Suche', () => {
 	it('übernimmt den getrimmten Begriff auch ins Feld zurück', async () => {
 		// Nur die URL zu trimmen genügt nicht: Das Feld zeigte danach weiter die
 		// ungetrimmte Eingabe, und ein Feld aus lauter Leerzeichen zählte in
-		// `hasActiveFilters` als aktiver Filter — die Filter-Schaltfläche stünde
-		// also markiert da, während die URL gar keine Suche trägt.
+		// `hasActiveFilters` als aktiver Filter — die URL trüge dadurch fälschlich
+		// einen aktiven Chip in der Filterzeile, obwohl gar keine Suche gesetzt ist.
 		goto.mockClear();
 		const screen = render(SichtungenSeite, { data: daten([]) });
 

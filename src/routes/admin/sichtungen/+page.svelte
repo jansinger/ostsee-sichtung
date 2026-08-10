@@ -138,17 +138,10 @@
 		isDefaultVisibility(columnVisibility, DEFAULT_COLUMN_VISIBILITY)
 	);
 
-	/* Zwei getrennte Effekte statt einem: Ein einzelner `$effect`, der beim
-	   ersten Durchlauf per `return` aussteigt, OHNE `columnVisibility` zu
-	   *lesen* (nur zu schreiben), trackt diese Abhängigkeit nie — Svelte
-	   ermittelt die Abhängigkeiten eines Effekts aus den in seinem letzten
-	   Durchlauf gelesenen reaktiven Werten. Der Effekt liefe dadurch nach dem
-	   Laden genau einmal und nie wieder, egal wie oft `columnVisibility`
-	   danach per Checkbox oder „Standard wiederherstellen" geändert wird —
-	   beobachtet beim manuellen Nachstellen des WP7-Buttons (Browser-Check,
-	   `localStorage` blieb nach mehreren Änderungen durchgehend leer). Mit
-	   getrennten Effekten liest der Speicher-Effekt `columnVisibility` in
-	   jedem Durchlauf und bleibt damit dauerhaft abonniert. */
+	// Zwei getrennte Effekte statt einem — die Begründung (Svelte trackt
+	// Abhängigkeiten nur aus gelesenen, nicht aus geschriebenen reaktiven
+	// Werten; der WP7-Bug entstand genau daraus) steht beim Speicher-Effekt
+	// unten, wo sie an derselben Stelle vor einer Regression schützt.
 	$effect(() => {
 		if (typeof window === 'undefined' || hatGespeicherteSpaltenGeladen) return;
 		try {
