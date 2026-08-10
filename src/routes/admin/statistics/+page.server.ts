@@ -1,6 +1,6 @@
 import { createLogger } from '$lib/logger.server';
 import { db } from '$lib/server/db';
-import { approvedOnly, openOnly } from '$lib/server/db/approvalFilter';
+import { approvedOnly, openOnly, pendingOnly, rejectedOnly } from '$lib/server/db/approvalFilter';
 import { sightings } from '$lib/server/db/schema';
 import { EARLIEST_PLAUSIBLE_SIGHTING_DATE } from '$lib/server/db/sightingRepository';
 import { berlinCalendarDate, berlinDatePart } from '$lib/server/db/sqlTimeZone';
@@ -66,6 +66,38 @@ async function loadBasicStats(grundmenge: SQL): Promise<AdminBasicStats> {
 		.where(grundmenge);
 
 	return row ?? EMPTY_BASIC_STATS;
+}
+
+/**
+ * Die abgelehnte Grundmenge: **nicht freigegeben und abgelehnt**.
+ *
+ * `rejectedOnly()` allein täte es nicht. Die Kopfzeile stellt drei Zahlen
+ * nebeneinander und behauptet damit eine Zerlegung — freigegeben, offen,
+ * abgelehnt. Trüge eine Zeile beide Stempel, stünde sie in zweien davon. Im
+ * Bestand gibt es das nicht (gemessen am 2026-08-10: 0 Zeilen), die Datenbank
+ * verbietet es aber nicht, und der Freigabeteil kostet nichts. Nebeneffekt, der
+ * ebenso gewollt ist: Die Abfrage trägt damit einen erkennbaren Freigabebezug
+ * (Vorgabe 3 in `approvalFilter.ts`) — als einzige Kennzahl der Seite hätte sie
+ * ihn sonst nicht.
+ */
+const rejectedNotApproved = (): SQL => and(pendingOnly(), rejectedOnly()) as SQL;
+
+/**
+ * Zählt eine Grundmenge — mehr braucht die dritte Kopfzahl nicht.
+ *
+ * Bewusst nicht `loadBasicStats`: Gruppengröße, Totfunde und Medienanteil der
+ * abgelehnten Meldungen sind Kennzahlen ohne Abnehmer, und die Anzeige würde sie
+ * nirgends zeigen. Und bewusst eine **eigene** Abfrage statt CASE-Aggregaten
+ * neben den anderen beiden: Getrennte Läufe können strukturell nicht zu einer
+ * Summe verschmelzen (Vorgabe 2).
+ */
+async function loadRejectedCount(grundmenge: SQL): Promise<number> {
+	const [row] = await db
+		.select({ rejectedSightings: sql<number>`COUNT(*)::integer` })
+		.from(sightings)
+		.where(grundmenge);
+
+	return row?.rejectedSightings ?? 0;
 }
 
 /**
@@ -157,11 +189,12 @@ export const load: PageServerLoad = async ({ url }) => {
 		// falsch, weil er eine dritte Menge neben freigegeben/nicht freigegeben
 		// aufmachte. Deshalb ändert sich hier die Aufrufstelle und nicht das
 		// gemeinsame Prädikat.
-		const [approvedStats, openStats] = await Promise.all([
+		const [approvedStats, openStats, rejectedCount] = await Promise.all([
 			loadBasicStats(mitJahr(approvedOnly())),
-			loadBasicStats(mitJahr(openOnly()))
+			loadBasicStats(mitJahr(openOnly())),
+			loadRejectedCount(mitJahr(rejectedNotApproved()))
 		]);
-		const basicStats = { approved: approvedStats, open: openStats };
+		const basicStats = { approved: approvedStats, open: openStats, rejected: rejectedCount };
 
 		// Species distribution
 		const speciesStats = await db
@@ -176,6 +209,28 @@ export const load: PageServerLoad = async ({ url }) => {
 			.from(sightings)
 			.where(mitJahr(approvedOnly()))
 			.groupBy(sightings.species)
+			.orderBy(sql`COUNT(*) DESC`);
+
+		// Meldekanal (`eingangskanal`) — über welchen Weg die Meldung hereinkam.
+		//
+		// Dieselbe Grundmenge wie die Artenverteilung darüber: freigegeben, mit
+		// Jahresauswahl. Bewusst **ohne** `plausiblesDatum()` — das ist keine
+		// Kalenderauswertung, und die 280 Epoch-Platzhalter sind ohnehin sämtlich
+		// offen (Herleitung am Docblock von `plausiblesDatum`). Ein Datumsfilter
+		// wäre hier eine Bedingung ohne Wirkung.
+		//
+		// Die Zuordnung Zahl → Bezeichnung bleibt in `entryChannel.ts` und wird
+		// erst in der Anzeige aufgelöst: Sie ist dieselbe wie in Formular,
+		// Tabelle und E-Mail-Versand, und eine zweite Liste hier liefe ihr davon.
+		const channelStats = await db
+			.select({
+				channel: sightings.entryChannel,
+				count: sql<number>`COUNT(*)::integer`,
+				percentage: sql<number>`ROUND((COUNT(*) * 100.0 / SUM(COUNT(*)) OVER()), 2)::numeric`
+			})
+			.from(sightings)
+			.where(mitJahr(approvedOnly()))
+			.groupBy(sightings.entryChannel)
 			.orderBy(sql`COUNT(*) DESC`);
 
 		// Jahr und Monat in deutscher Ortszeit gruppieren: `sichtungsdatum` hält
@@ -384,6 +439,7 @@ export const load: PageServerLoad = async ({ url }) => {
 			availableYears,
 			basicStats,
 			speciesStats,
+			channelStats,
 			yearlyStats,
 			monthlyStats,
 			recentActivity,

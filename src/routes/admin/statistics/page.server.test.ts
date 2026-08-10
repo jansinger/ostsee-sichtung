@@ -212,7 +212,15 @@ describe('admin/statistics load() — „noch offen" schließt Abgelehnte aus', 
 		await ladeSeite();
 
 		const texte = recordedWhereClauses.map(toSqlText);
-		const offeneAbfragen = texte.filter((t) => /freigegeben_am"? is null/i.test(t));
+		// „Nicht freigegeben" **und nicht** die Abgelehnten-Kopfzahl: Die zählt
+		// abgelehnte Meldungen absichtlich und nennt sie auch so. Ausgeschlossen
+		// wird sie über das positive `abgelehnt_am IS NOT NULL` — eine Abfrage mit
+		// dieser Bedingung kann keine Zahl über „noch offen" sein. Ein
+		// versehentliches `pendingOnly()` trägt sie gerade nicht und fällt der
+		// Prüfung unten weiterhin zum Opfer.
+		const offeneAbfragen = texte.filter(
+			(t) => /freigegeben_am"? is null/i.test(t) && !/abgelehnt_am"? is not null/i.test(t)
+		);
 
 		expect(
 			offeneAbfragen.length,
@@ -282,7 +290,15 @@ describe('admin/statistics load() — Jahresauswahl', () => {
 
 		await ladeSeite('?jahr=2020');
 
-		for (const spalte of ['species', 'month', 'uniqueUsers', 'uniqueShips', 'email']) {
+		for (const spalte of [
+			'species',
+			'month',
+			'channel',
+			'rejectedSightings',
+			'uniqueUsers',
+			'uniqueShips',
+			'email'
+		]) {
 			const abfrage = abfrageMit(spalte);
 			expect(abfrage, `Abfrage mit Spalte „${spalte}" nicht gefunden`).toBeDefined();
 			expect(hatJahresfilter(abfrage!), `Abfrage „${spalte}" ignoriert die Jahresauswahl`).toBe(
@@ -342,6 +358,92 @@ describe('admin/statistics load() — Jahresauswahl', () => {
 			expect(abfrage.where, 'Jahresliste ohne Freigabebezug').toBeDefined();
 			expect(toSqlText(abfrage.where!)).toContain('freigegeben_am');
 		}
+	});
+});
+
+/**
+ * Die dritte Kopfzahl: abgelehnt.
+ *
+ * Sie steht neben „freigegeben" und „noch offen" und wird mit keiner der beiden
+ * summiert (Vorgabe 2 aus `approvalFilter.ts`). Zusammen bilden die drei eine
+ * **Zerlegung** des Bestands — und genau deshalb läuft sie nicht über
+ * `rejectedOnly()` allein, sondern über „nicht freigegeben UND abgelehnt":
+ *
+ * - Ohne den Freigabeteil wäre eine Zeile mit beiden Stempeln in zwei Kopfzahlen
+ *   gleichzeitig gezählt. Im Bestand gibt es sie nicht (gemessen 2026-08-10: 0),
+ *   aber die Datenbank verbietet sie nicht — und die Kopfzeile behauptet mit drei
+ *   Zahlen nebeneinander implizit, dass sie sich nicht überlappen.
+ * - `rejectedOnly()` allein trägt zudem kein `freigegeben_am` im SQL und wäre
+ *   damit die erste Zahl dieser Seite ohne erkennbaren Freigabebezug (Vorgabe 3).
+ */
+describe('admin/statistics load() — Kopfzahl „abgelehnt"', () => {
+	it('zählt die Abgelehnten getrennt und überschneidungsfrei', async () => {
+		recordedQueries = [];
+
+		const daten = await ladeSeite();
+
+		const abgelehnt = recordedQueries.find((eintrag) => 'rejectedSightings' in eintrag.columns);
+		expect(abgelehnt, 'Abfrage der abgelehnten Kopfzahl nicht gefunden').toBeDefined();
+
+		expect(abgelehnt!.where, 'Kopfzahl ohne Grundmenge').toBeDefined();
+
+		const text = toSqlText(abgelehnt!.where!);
+		expect(text, 'Kopfzahl ohne Freigabebezug').toMatch(/freigegeben_am"? is null/i);
+		expect(text, 'Kopfzahl ohne Ablehnungsbezug').toMatch(/abgelehnt_am"? is not null/i);
+
+		expect(daten.basicStats.rejected).toBeDefined();
+	});
+
+	it('führt sie nicht mit den beiden anderen Kopfzahlen zusammen', async () => {
+		recordedQueries = [];
+
+		await ladeSeite();
+
+		// `loadBasicStats` bleibt bei zwei Läufen; die dritte Zahl ist eine eigene,
+		// schmale Abfrage. Eine gemeinsame mit CASE-Aggregaten könnte summiert
+		// werden — getrennte Läufe können es strukturell nicht.
+		const kopfzahlen = recordedQueries.filter((eintrag) => 'totalSightings' in eintrag.columns);
+		expect(kopfzahlen.length).toBe(2);
+		for (const abfrage of kopfzahlen) {
+			expect(toSqlText(abfrage.where!)).not.toMatch(/abgelehnt_am"? is not null/i);
+		}
+	});
+});
+
+/**
+ * Meldekanal-Auswertung (`eingangskanal`).
+ *
+ * Sie zählt dieselbe Grundmenge wie Artenverteilung und Saisonalität —
+ * freigegeben, mit Jahresauswahl. Das ist keine Formalie: Die Kanäle verteilen
+ * sich sehr ungleich (Web und App tragen zusammen über 90 %), eine still
+ * beigemischte offene Meldung verschiebt den Anteil eines kleinen Kanals wie Fax
+ * (14 Zeilen im Gesamtbestand) sofort sichtbar.
+ *
+ * **Kein Epoch-Ausschluss**, denn dies ist keine Kalenderauswertung: Die 280
+ * Platzhalter-Zeilen sind allesamt offen (siehe unten) und damit ohnehin nicht
+ * in der Grundmenge — ein Datumsfilter hier wäre eine Bedingung ohne Wirkung
+ * und ohne Begründung.
+ */
+describe('admin/statistics load() — Meldekanal', () => {
+	it('zählt die Kanäle über die freigegebene Menge', async () => {
+		recordedQueries = [];
+
+		await ladeSeite();
+
+		const kanaele = recordedQueries.find((eintrag) => 'channel' in eintrag.columns);
+		expect(kanaele, 'Meldekanal-Abfrage nicht gefunden').toBeDefined();
+		expect(kanaele!.where, 'Meldekanal-Abfrage ohne Grundmenge').toBeDefined();
+		expect(toSqlText(kanaele!.where!)).toMatch(/freigegeben_am"? is not null/i);
+	});
+
+	it('liefert je Kanal Anzahl und Anteil', async () => {
+		recordedQueries = [];
+
+		await ladeSeite();
+
+		const kanaele = recordedQueries.find((eintrag) => 'channel' in eintrag.columns);
+		expect(kanaele, 'Meldekanal-Abfrage nicht gefunden').toBeDefined();
+		expect(Object.keys(kanaele!.columns).sort()).toEqual(['channel', 'count', 'percentage']);
 	});
 });
 
