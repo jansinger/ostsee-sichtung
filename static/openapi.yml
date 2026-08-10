@@ -498,6 +498,52 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /api/sightings/{id}/reporter-history:
+    get:
+      tags:
+        - sightings
+      summary: Was über den Melder dieser Sichtung bekannt ist
+      description: |
+        Zählt die **anderen** Meldungen derselben E-Mail-Adresse nach
+        Bearbeitungsstand (Admin-Berechtigung erforderlich). Reine
+        Triage-Hilfe: Nichts davon wird gespeichert, nichts fließt in den
+        Spam-Score ein, und es wird nichts entschieden.
+
+        `history: null` heißt „nicht ermittelbar" (keine Adresse hinterlegt
+        oder Abfrage fehlgeschlagen) und ist nicht dasselbe wie ein Aggregat
+        aus lauter Nullen — die Oberfläche zeigt dafür kein Badge.
+
+        Die Adresse ist nicht verifiziert; die Zahlen sind eine Beobachtung
+        über eine Adresse, kein Urteil über eine Person
+        (`docs/SPAM_DETECTION.md`).
+      security:
+        - adminAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID der Sichtung
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Historie ermittelt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReporterHistoryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/LoginRedirect'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /api/sightings/{id}/queue:
     get:
       tags:
@@ -2761,6 +2807,39 @@ components:
             oder ein Element anderen Typs fällt weg). Der Score bleibt davon
             unberührt gültig — er steht in einer eigenen Spalte.
           example: ['Formular verdächtig schnell abgeschickt']
+    ReporterHistoryResponse:
+      type: object
+      required: [history]
+      properties:
+        history:
+          nullable: true
+          description: >-
+            null heißt "nicht ermittelbar" (keine Adresse, Abfrage
+            fehlgeschlagen) und ist nicht dasselbe wie ein Aggregat aus Nullen.
+          allOf:
+            - $ref: '#/components/schemas/ReporterHistory'
+    ReporterHistory:
+      type: object
+      required: [approved, rejected, open, since]
+      properties:
+        approved:
+          type: integer
+          minimum: 0
+          description: Andere Meldungen dieser Adresse, die freigegeben wurden.
+        rejected:
+          type: integer
+          minimum: 0
+          description: Andere Meldungen dieser Adresse, die abgelehnt wurden.
+        open:
+          type: integer
+          minimum: 0
+          description: Andere Meldungen dieser Adresse, die noch offen sind.
+        since:
+          type: string
+          nullable: true
+          format: date-time
+          description: >-
+            Früheste Meldung dieser Adresse in UTC, inklusive der aktuellen.
     SpamCheckResult:
       type: object
       required: [score, isHighRisk, indicators]

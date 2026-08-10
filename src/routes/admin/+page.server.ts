@@ -7,6 +7,7 @@ import {
 	mediaUploadCondition
 } from '$lib/server/db/mediaUploadFilter';
 import { openQueueOrderBy, resolveQueueOrder } from '$lib/server/db/openQueueOrder';
+import { findReporterHistory } from '$lib/server/db/reporterHistory';
 import { sightingFiles, sightings } from '$lib/server/db/schema';
 import { redirect } from '@sveltejs/kit';
 import { and, inArray, like, sql } from 'drizzle-orm';
@@ -67,6 +68,19 @@ export const load: PageServerLoad = async ({ url }) => {
 		   gemeinsam, parallel zur Bild-Abfrage. Beide hängen nur an der Liste; den
 		   Leerfall fängt `findDuplicateCandidates` selbst ab. */
 		const duplicatesPromise = findDuplicateCandidates(ids);
+		/* Melder-Historie (ein Query für alle Karten, wie der Duplikat-Hinweis).
+		   `approvedAt`/`rejectedAt` sind hier konstant `null` — das ist zulässig,
+		   *weil* diese Liste über `openOnly()` gefiltert ist: Jede gelistete
+		   Sichtung ist per Definition weder freigegeben noch abgelehnt, `null` ist
+		   also der korrekte Wert und keine Verkürzung. `findReporterHistory` zieht
+		   daran die eigene Zeile aus dem Topf ab, in dem sie steckt (approved/
+		   rejected/open) — würde der Filter je gelockert (z. B. `openOnly()` durch
+		   eine schwächere Bedingung ersetzt), müssten hier die echten Spalten
+		   mitgelesen werden, sonst zöge eine bereits entschiedene Sichtung ihre
+		   eigene Zeile aus dem falschen Topf ab. */
+		const reporterHistoryPromise = findReporterHistory(
+			open.map((s) => ({ id: s.id, email: s.email, approvedAt: null, rejectedAt: null }))
+		);
 		const imageRows = ids.length
 			? await db
 					.select({
@@ -80,11 +94,19 @@ export const load: PageServerLoad = async ({ url }) => {
 						and(inArray(sightingFiles.sightingId, ids), like(sightingFiles.mimeType, 'image/%'))
 					)
 			: [];
-		return { open, imageRows, duplicatesBySighting: await duplicatesPromise };
+		return {
+			open,
+			imageRows,
+			duplicatesBySighting: await duplicatesPromise,
+			reporterHistoryBySighting: await reporterHistoryPromise
+		};
 	});
 
-	const [{ open, imageRows, duplicatesBySighting }, openCountResult, pendingPhotoResult] =
-		await Promise.all([openWithImagesQuery, openCountQuery, pendingPhotoQuery]);
+	const [
+		{ open, imageRows, duplicatesBySighting, reporterHistoryBySighting },
+		openCountResult,
+		pendingPhotoResult
+	] = await Promise.all([openWithImagesQuery, openCountQuery, pendingPhotoQuery]);
 
 	const imagesBySighting: Record<number, { id: number; filePath: string; originalName: string }[]> =
 		{};
@@ -107,6 +129,7 @@ export const load: PageServerLoad = async ({ url }) => {
 		order,
 		imagesBySighting,
 		pendingPhotoAnnouncements: Number(pendingPhotoResult[0]?.count ?? 0),
-		duplicatesBySighting
+		duplicatesBySighting,
+		reporterHistoryBySighting
 	};
 };

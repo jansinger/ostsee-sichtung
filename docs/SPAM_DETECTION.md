@@ -247,6 +247,47 @@ ist keine.
 
 ---
 
+## Melder-Historie — daneben, nicht darin
+
+Eingang und Detailansicht zeigen seit 2026-08 zusätzlich, wie viele **andere**
+Meldungen derselben E-Mail-Adresse freigegeben, abgelehnt oder noch offen sind
+(`src/lib/server/db/reporterHistory.ts`, Stufen in
+`src/lib/components/admin/reporterHistoryPresentation.ts`). Gemessen auf der
+lokalen DB (2026-08-10, 659 offene Meldungen): Melder mit Vorgeschichte hatten
+einen mittleren Spam-Score von 0,19–0,23 und **keinen** Hochrisiko-Fall; alle 14
+Hochrisiko-Meldungen kamen von Adressen ohne Vorgeschichte.
+
+**Sie fließt bewusst nicht in den Score ein.** Drei Gründe:
+
+- Der Score wird beim Eingang **persistiert** und ist eine Momentaufnahme.
+  Reputation ändert sich rückwirkend — jede Freigabe von heute veränderte die
+  Bewertung von gestern, und ein gespeicherter Anteil wäre ab dem nächsten Klick
+  falsch.
+- Sie machte den `stored`/`recomputed`-Vergleich unerklärbar. Heute lässt sich
+  jede Differenz auf die vier Meldezeitpunkt-Indikatoren zurückführen; ein
+  zeitabhängiger Term nähme dieser Erklärung die Grundlage.
+- Die Richtung wäre angreifbar. Die E-Mail ist **nicht verifiziert** (kein
+  Double-Opt-in, kein Captcha): Ein Bonus, der den Score senkt, ließe sich durch
+  Eintragen einer bekannten Adresse abholen. Als danebenstehende Zahl ist
+  dieselbe Angabe harmlos — es entscheidet ein Mensch.
+
+**Schwellen** (Entscheidung Jan, 2026-08-10): bekannt ab 3 Freigaben, etabliert
+ab 10, gewarnt wird ab einem Anteil von ⅓ abgelehnter unter den **bearbeiteten**
+Meldungen. Eine einzelne Ablehnung unter 29 Freigaben ist ein Fehlgriff und kein
+Muster.
+
+**Offen zählt nie negativ.** Die Ablehnung gibt es erst seit 2026-08; vorher
+blieb Spam unbearbeitet liegen (im Bestand 5 abgelehnte gegen 19.289
+freigegebene Zeilen). Eine offene Altmeldung ist Bearbeitungsstau, kein
+Qualitätsurteil — wer sie negativ zählt, bestraft den Rückstau des Museums.
+
+**Nichts davon wird persistiert**: keine Spalte, keine Migration, kein Backfill.
+Berechnet wird live, ein Query für alle Karten des Eingangs (22 ms auf ~20.000
+Zeilen, Seq Scan — kein Index auf `lower(trim(email))`, gleiche Lage wie bei den
+Duplikat-Abfragen oben).
+
+---
+
 ## Grenzen und bewusst Nicht-Umgesetztes
 
 - **Kein Captcha, keine E-Mail-Bestätigung.** Beides kostet Conversion bei

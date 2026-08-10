@@ -324,6 +324,7 @@
 								images={data.imagesBySighting[sighting.id] ?? []}
 								duplicates={data.duplicatesBySighting[sighting.id] ?? []}
 								order={data.order}
+								reporterHistory={data.reporterHistoryBySighting[sighting.id] ?? null}
 								busy={busy[sighting.id] ?? false}
 								onApprove={() => entscheiden(sighting.id, 'approve')}
 								onReject={() => entscheiden(sighting.id, 'reject')}

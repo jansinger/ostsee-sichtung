@@ -85,6 +85,25 @@ vi.mock('$lib/server/db/duplicateCandidates', () => ({
 	findDuplicateCandidates: (ids: number[]) => findDuplicateCandidates(ids)
 }));
 
+/* Die Melder-Historie hat ihre eigenen Tests in
+   `src/lib/server/db/reporterHistory.test.ts`. Ohne diesen Mock ruft der Loader
+   die echte `findReporterHistory` auf, die `db.execute` braucht — das kennt der
+   Select-Mock oben nicht, der Fail-open-`catch` im Modul schluckt den daraus
+   entstehenden `TypeError`, und der Loader liefert lautlos `{}`. Ein Test ohne
+   diesen Mock bliebe grün, selbst wenn die Verdrahtung ganz entfernt würde. */
+const findReporterHistory = vi
+	.fn<
+		(
+			rows: { id: number; email: string | null }[]
+		) => Promise<
+			Record<number, { approved: number; rejected: number; open: number; since: string | null }>
+		>
+	>()
+	.mockResolvedValue({});
+vi.mock('$lib/server/db/reporterHistory', () => ({
+	findReporterHistory: (rows: { id: number; email: string | null }[]) => findReporterHistory(rows)
+}));
+
 function makeUrl(params: Record<string, string> = {}): URL {
 	const url = new URL('https://example.com/admin');
 	for (const [key, value] of Object.entries(params)) {
@@ -101,6 +120,10 @@ type InboxData = {
 	imagesBySighting: Record<number, { id: number; filePath: string; originalName: string }[]>;
 	pendingPhotoAnnouncements: number;
 	duplicatesBySighting: Record<number, unknown[]>;
+	reporterHistoryBySighting: Record<
+		number,
+		{ approved: number; rejected: number; open: number; since: string | null }
+	>;
 };
 
 const { load } = await import('./+page.server');
@@ -115,9 +138,19 @@ const runLoad = async (url: URL): Promise<InboxData> =>
 describe('Eingangs-Load', () => {
 	beforeEach(() => {
 		recordedSelects = [];
-		resolvedRows = [[{ id: 1 }, { id: 2 }], [{ count: 7 }], [{ count: 3 }], []];
+		resolvedRows = [
+			[
+				{ id: 1, email: 'melder-eins@example.com' },
+				{ id: 2, email: 'melder-zwei@example.com' }
+			],
+			[{ count: 7 }],
+			[{ count: 3 }],
+			[]
+		];
 		findDuplicateCandidates.mockClear();
 		findDuplicateCandidates.mockResolvedValue({});
+		findReporterHistory.mockClear();
+		findReporterHistory.mockResolvedValue({});
 	});
 
 	/*
@@ -176,6 +209,30 @@ describe('Eingangs-Load', () => {
 
 		expect(findDuplicateCandidates).toHaveBeenCalledWith([]);
 		expect(result.duplicatesBySighting).toEqual({});
+	});
+
+	/* Gleiche Konstruktion wie beim Duplikat-Hinweis: ein Aufruf für alle
+	   gelisteten Sichtungen, das Ergebnis unverändert durchgereicht. Ohne diesen
+	   Test bliebe die Verdrahtung aus `+page.server.ts` unbeobachtet — der Mock
+	   oben würde eine gelöschte `findReporterHistory`-Aufrufstelle nicht
+	   bemerken, weil `db.execute` im Select-Mock gar nicht existiert und der
+	   Fail-open-Zweig im echten Modul den Fehler schluckt (Befund aus dem
+	   Abschluss-Review). */
+	it('ermittelt die Melder-Historie für alle gelisteten Sichtungen in einem Aufruf', async () => {
+		findReporterHistory.mockResolvedValue({
+			1: { approved: 3, rejected: 0, open: 0, since: '2019-03-04T08:00:00Z' }
+		});
+
+		const result = await runLoad(makeUrl());
+
+		expect(findReporterHistory).toHaveBeenCalledTimes(1);
+		expect(findReporterHistory).toHaveBeenCalledWith([
+			{ id: 1, email: 'melder-eins@example.com', approvedAt: null, rejectedAt: null },
+			{ id: 2, email: 'melder-zwei@example.com', approvedAt: null, rejectedAt: null }
+		]);
+		expect(result.reporterHistoryBySighting).toEqual({
+			1: { approved: 3, rejected: 0, open: 0, since: '2019-03-04T08:00:00Z' }
+		});
 	});
 
 	it('leitet Tabellen-URLs mit 301 nach /admin/sichtungen weiter (Query bleibt erhalten)', async () => {

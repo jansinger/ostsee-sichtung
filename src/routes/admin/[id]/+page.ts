@@ -2,6 +2,7 @@ import { HERKUNFT_EINGANG, HERKUNFT_PARAMETER } from '$lib/components/admin/admi
 import { resolveQueueOrder } from '$lib/components/admin/queueOrder';
 import type { SightingQueue } from '$lib/components/admin/sightingQueue';
 import type { SightingStatusLogEntry } from '$lib/components/admin/sightingStatusLog';
+import type { ReporterHistory } from '$lib/types/reporterHistory';
 import type { PageLoad } from './$types';
 
 type FetchFn = typeof fetch;
@@ -14,6 +15,11 @@ interface StatusLogResult {
 interface QueueResult {
 	queue: SightingQueue | null;
 	queueFailed: boolean;
+}
+
+interface ReporterHistoryResult {
+	reporterHistory: ReporterHistory | null;
+	reporterHistoryFailed: boolean;
 }
 
 /**
@@ -53,6 +59,67 @@ async function ladeStatusLog(fetchFn: FetchFn, id: string): Promise<StatusLogRes
 		return { statusLog: body.history as SightingStatusLogEntry[], statusLogFailed: false };
 	} catch {
 		return { statusLog: [], statusLogFailed: true };
+	}
+}
+
+/**
+ * Prüft die Gestalt von `history`, statt sie zu casten.
+ *
+ * `null` ist zulässig (nicht ermittelbar). Ein Objekt muss die drei Zählfelder
+ * als `number` mitbringen sowie `since` als `string | null` — ohne diese
+ * Prüfung fiele `getReporterLevel` bei einem kaputten Wert (`"kaputt"`, `{}`,
+ * `{ approved: 0, rejected: 0, open: 0 }` ohne `since`, …) auf
+ * `undefined`-Vergleiche zurück und würde `'first'` liefern: die Oberfläche
+ * behauptete dann „Erstmeldung", wo ein Vertragsbruch des Endpunkts vorliegt
+ * — die Verwechslung, gegen die dieses Feature antritt. `since` ist dabei
+ * genauso Pflicht wie die Zählfelder (`static/openapi.yml` führt es als
+ * `required`), nur eben mit `null` als zulässigem Wert.
+ */
+function istGueltigeMelderHistorie(value: unknown): value is ReporterHistory | null {
+	if (value === null) return true;
+	if (typeof value !== 'object') return false;
+
+	const kandidat = value as Partial<Record<keyof ReporterHistory, unknown>>;
+	return (
+		typeof kandidat.approved === 'number' &&
+		typeof kandidat.rejected === 'number' &&
+		typeof kandidat.open === 'number' &&
+		(typeof kandidat.since === 'string' || kandidat.since === null)
+	);
+}
+
+/**
+ * Melder-Historie der Detailansicht.
+ *
+ * Gleiche Konstruktion wie beim Status-Log: Ein Fehlschlag darf die Seite nicht
+ * kosten, darf aber auch nicht als „keine Vorgeschichte" durchgehen. Beides
+ * sähe im DOM gleich aus, und die Verwechslung wäre genau der Fehlermodus,
+ * gegen den die Anzeige antritt.
+ *
+ * Eine Antwort ohne das Feld `history` zählt als Fehlschlag: Sie ist ein
+ * Vertragsbruch des Endpunkts, kein Altbestand. Dasselbe gilt für eine
+ * Antwort, deren `history` zwar existiert, aber nicht die erwartete Gestalt
+ * hat (`istGueltigeMelderHistorie`) — auch das ist ein Vertragsbruch und kein
+ * leeres Ergebnis.
+ */
+async function ladeMelderHistorie(fetchFn: FetchFn, id: string): Promise<ReporterHistoryResult> {
+	try {
+		const response = await fetchFn(`/api/sightings/${id}/reporter-history`);
+		if (!response.ok) {
+			return { reporterHistory: null, reporterHistoryFailed: true };
+		}
+
+		const body = await response.json();
+		if (!('history' in (body ?? {})) || !istGueltigeMelderHistorie(body.history)) {
+			return { reporterHistory: null, reporterHistoryFailed: true };
+		}
+
+		return {
+			reporterHistory: body.history,
+			reporterHistoryFailed: false
+		};
+	} catch {
+		return { reporterHistory: null, reporterHistoryFailed: true };
 	}
 }
 
@@ -98,12 +165,13 @@ export const load: PageLoad = async ({ params, fetch, url }) => {
 	const ausEingang = url.searchParams.get(HERKUNFT_PARAMETER) === HERKUNFT_EINGANG;
 	const queueOrder = resolveQueueOrder(url.searchParams.get('order'));
 
-	const [statusLogResult, queueResult] = await Promise.all([
+	const [statusLogResult, queueResult, reporterHistoryResult] = await Promise.all([
 		ladeStatusLog(fetch, params.id),
 		ausEingang
 			? ladeQueue(fetch, params.id, queueOrder)
-			: Promise.resolve<QueueResult>({ queue: null, queueFailed: false })
+			: Promise.resolve<QueueResult>({ queue: null, queueFailed: false }),
+		ladeMelderHistorie(fetch, params.id)
 	]);
 
-	return { ...statusLogResult, ...queueResult, queueOrder };
+	return { ...statusLogResult, ...queueResult, ...reporterHistoryResult, queueOrder };
 };

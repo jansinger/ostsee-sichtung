@@ -110,6 +110,8 @@
 	import Upload from '~icons/lucide/upload';
 	import User from '~icons/lucide/user';
 	import UserCheck from '~icons/lucide/user-check';
+	import UserPlus from '~icons/lucide/user-plus';
+	import UserX from '~icons/lucide/user-x';
 	import Users from '~icons/lucide/users';
 	import Video from '~icons/lucide/video';
 	import Waves from '~icons/lucide/waves';
@@ -221,6 +223,8 @@
 		'lucide:skull': Skull,
 		'lucide:toggle-left': ToggleLeft,
 		'lucide:user-check': UserCheck,
+		'lucide:user-plus': UserPlus,
+		'lucide:user-x': UserX,
 		'lucide:zap': Zap,
 		'lucide:mountain': Mountain,
 		'lucide:book-open': BookOpen,
