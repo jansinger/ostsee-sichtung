@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hasActiveFilters, readFilterParams, type FilterParams } from './activeFilters';
+import { readFilterParams, type FilterParams } from './activeFilters';
 
 /**
  * activeFilters.test.ts — Filterzustand kommt aus der URL, nicht aus dem Panel.
@@ -79,17 +79,4 @@ describe('readFilterParams', () => {
 			verified: erwartet
 		});
 	});
-});
-
-describe('hasActiveFilters', () => {
-	it('ist falsch, wenn kein Filter gesetzt ist', () => {
-		expect(hasActiveFilters(LEER)).toBe(false);
-	});
-
-	it.each(Object.keys(LEER) as (keyof FilterParams)[])(
-		'ist wahr, sobald nur `%s` gesetzt ist',
-		(feld) => {
-			expect(hasActiveFilters({ ...LEER, [feld]: 'x' })).toBe(true);
-		}
-	);
 });

@@ -49,7 +49,3 @@ export function readFilterParams(searchParams: URLSearchParams): FilterParams {
 		q: lies('q')
 	};
 }
-
-export function hasActiveFilters(params: FilterParams): boolean {
-	return Object.values(params).some((wert) => wert !== '');
-}
