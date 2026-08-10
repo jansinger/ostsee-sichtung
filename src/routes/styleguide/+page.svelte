@@ -671,11 +671,12 @@
 			</table>
 		</div>
 
-		<h3 class="text-section mt-6 mb-1 font-semibold">Was auf derselben Karte noch grün ist</h3>
+		<h3 class="text-section mt-6 mb-1 font-semibold">Was auf derselben Karte noch farbig ist</h3>
 		<p class="text-support text-base-content/70 mb-3">
-			Der Grund, warum die Melder-Historie kein <code>badge-success</code> trägt: Grün ist auf
-			derselben Fläche bereits der <em>Sichtungs</em>status. Zwei Grüns nebeneinander meinten
-			Verschiedenes.
+			Die Reihe zeigt den bekannten Einwand gegen das Grün: Dieselbe Farbe trägt auch der
+			<em>Sichtungs</em>status „Freigegeben". In Tabelle und Detailansicht stehen damit zwei Grüns
+			nebeneinander, die Verschiedenes meinen — bewusst in Kauf genommen, weil ohne Vollton-Fläche
+			keine der Freigabe-Stufen erkennbar war.
 		</p>
 		<div class="flex flex-wrap items-center gap-2">
 			<span class="badge badge-sm {SIGHTING_STATUS_PRESENTATION.approved.badgeClass}">

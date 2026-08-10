@@ -78,31 +78,20 @@ describe('ReporterHistoryBadge', () => {
 		expect(flaggedIcon?.outerHTML).not.toBe(firstIcon?.outerHTML);
 	});
 
-	/* Text und Icon sind bei 3 und bei 30 Freigaben identisch — ohne die Tönung
-	   wäre die Stufe im DOM nicht vorhanden, und die Schwellen 3/10 blieben eine
-	   reine Tooltip-Angelegenheit. Geprüft wird die gerenderte Klasse, nicht das
-	   Präsentationsobjekt: Die Komponente könnte die Tönung sonst still
-	   fallenlassen. */
-	it('reicht die Stufen-Tönung bis ins Markup durch', async () => {
-		const { container: knownContainer } = render(ReporterHistoryBadge, {
-			history: historie({ approved: 5 })
-		});
-		const known = knownContainer.querySelector('[data-testid="reporter-badge"]');
+	/* Text und Icon sind bei 5 und bei 30 Freigaben identisch — ohne die
+	   Flächenfarbe wäre die Stufe im DOM nicht vorhanden, und die Schwelle 10
+	   bliebe eine reine Tooltip-Angelegenheit. Ein Zwischenschritt mit Tönungen
+	   (`bg-primary/10` und `/20`) war im Betrieb nicht zu erkennen; deshalb
+	   jetzt eine Vollton-Fläche. Geprüft wird die gerenderte Klasse, nicht das
+	   Präsentationsobjekt: Die Komponente könnte sie sonst still fallenlassen. */
+	it('hebt die etablierte Stufe farblich von der bekannten ab', async () => {
+		const klasse = (approved: number) => {
+			const { container } = render(ReporterHistoryBadge, { history: historie({ approved }) });
+			return container.querySelector('[data-testid="reporter-badge"]')?.className ?? '';
+		};
 
-		const { container: establishedContainer } = render(ReporterHistoryBadge, {
-			history: historie({ approved: 30 })
-		});
-		const established = establishedContainer.querySelector('[data-testid="reporter-badge"]');
-
-		const { container: newContainer } = render(ReporterHistoryBadge, {
-			history: historie({ approved: 1 })
-		});
-		const neu = newContainer.querySelector('[data-testid="reporter-badge"]');
-
-		expect(known?.className).toContain('bg-primary/');
-		expect(established?.className).toContain('bg-primary/');
-		expect(known?.className).not.toBe(established?.className);
-		// Die unterste Stufe bleibt ungetönt — sonst gäbe es keinen Ruhezustand.
-		expect(neu?.className).not.toContain('bg-primary/');
+		expect(klasse(30)).toContain('badge-success');
+		expect(klasse(5)).toContain('badge-ghost');
+		expect(klasse(5)).not.toContain('badge-success');
 	});
 });

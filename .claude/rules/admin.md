@@ -192,9 +192,21 @@ Eingangskarte und Kontakt-Karte der Detailansicht zeigen dasselbe Badge aus
   unterscheiden: kein Badge, kein Fehlertext. Das ist der Preis des Fail-open
   und bewusst so, nicht nachzurüsten ohne die Fail-open-Eigenschaft selbst
   aufzugeben.
-- **Kein `badge-success` und keine Filter/Sortierung im Eingang.** Grün neben
-  dem Freigeben-Knopf läse sich als Urteil über die Meldung, und der Eingang
-  bleibt eine Task-Liste ohne Filter (dafür gibt es `/admin/sichtungen`).
+- **Keine Filter und keine Sortierung im Eingang.** Er bleibt eine Task-Liste;
+  dafür gibt es `/admin/sichtungen`.
+- **`badge-success` ab 10 Freigaben — mit zwei bekannten Einwänden.**
+  Ursprünglich trugen alle Stufen außer der Warnung `badge-ghost`; damit waren
+  `new`, `known` und `established` ununterscheidbar, und die Schwellen 3 und 10
+  änderten nur das Adjektiv im Tooltip. Ein Zwischenschritt mit Tönungen
+  (`bg-primary/10` und `/20`) war im Betrieb **nachweislich nicht zu erkennen**
+  und wurde wieder entfernt. Seit dem 2026-08-10 trägt `established`
+  `badge-success` (Entscheidung Jan). Die zwei Einwände dagegen sind bewusst
+  überstimmt und gehören trotzdem gekannt: Grün trifft rund die Hälfte der
+  offenen Karten (300 von 659, weil es im Bestand nur 5 Ablehnungen gibt), und
+  dieselbe Farbe ist zugleich der Sichtungsstatus „Freigegeben" — in Tabelle
+  und Detailansicht stehen damit zwei Grüns nebeneinander, die Verschiedenes
+  meinen. Alle sechs Zustände nebeneinander: `/styleguide`, Abschnitt
+  „Melder-Historie (Admin)".
 
 ### Modal und Detailkarte zeigen zwei Befunde, nicht einen
 
