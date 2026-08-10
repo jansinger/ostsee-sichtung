@@ -1368,10 +1368,17 @@
 			     worüber entschieden wird (WCAG 4.1.2). Es war die einzige Stelle im
 			     Admin ohne zugänglichen Namen. -->
 			<label class="text-sm font-medium" for="perPage">Einträge pro Seite:</label>
+			<!-- Weder `text-sm` noch `min-h-8`: Beide waren wirkungslos und damit tote
+			     Utility-Klassen (design-system.md). `app.css` setzt `.input/.select/.textarea`
+			     ungelayert auf `--text-body` und schlägt jeden Schriftgrößen-Modifier — das
+			     Feld misst mit und ohne `text-sm` 16px. Und `.select` bezieht seine Höhe aus
+			     `--size`, das `select-sm` auf 2rem stellt; die `min-height` von `min-h-8` traf
+			     denselben Wert und konnte nie greifen. `select-sm` bleibt: Es wirkt als
+			     einziges der drei (ohne es misst das Feld 40 statt 32px). -->
 			<select
 				id="perPage"
 				name="perPage"
-				class="select select-sm min-h-8 text-sm"
+				class="select select-sm"
 				onchange={(e) => changeItemsPerPage(Number(e.currentTarget.value))}
 			>
 				{#each [10, 20, 50, 100].filter((size) => size <= (data.pagination?.maxPerPage || 50)) as size (size)}
