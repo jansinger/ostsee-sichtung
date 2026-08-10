@@ -53,7 +53,7 @@
 				     Statusfarbe als Textfarbe verfehlt den Kontrast
 				     (design-system.md, „Statusfarben haben zwei Rollen"). Die
 				     Bedeutung trägt das Icon davor. -->
-				<span class="badge badge-sm">{counts[tab.countKey]}</span>
+				<span class="badge badge-sm" data-testid="status-tab-count">{counts[tab.countKey]}</span>
 			</button>
 		{/each}
 	</div>

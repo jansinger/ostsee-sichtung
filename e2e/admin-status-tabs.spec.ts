@@ -84,14 +84,18 @@ test.describe('Admin-Sichtungstabelle — Statusleiste', () => {
 	test('nennt auf dem Reiter die Trefferzahl der Ansicht dahinter', async ({ page }) => {
 		await page.goto('/admin/sichtungen');
 
-		const reiter = statusReiter(page, /Offen/);
-		const angekuendigt = Number((await reiter.locator('.badge').innerText()).trim());
-
 		await reiterKlicken(page, /Offen/, /verified=open/);
 
-		/* Die Zahl unter der Tabelle ist `pagination.total` — dieselbe Menge, die
-		   der Reiter angekündigt hat. Weichen sie ab, zählt die Reiter-Query eine
-		   andere Grundmenge als die Liste. */
+		/* Beide Zahlen aus demselben gerenderten Zustand lesen — Datenbank und
+		   `uploads/` sind zwischen Worktrees geteilt (docs/WORKTREES.md), und
+		   parallel laufende Specs seeden/löschen Sichtungen. Ein Vorher-Nachher-
+		   Vergleich (Badge vor dem Klick, Gesamtzahl danach) verglich damit
+		   gelegentlich zwei verschiedene Zeitpunkte und schlug spurios fehl. Die
+		   Zahl unter der Tabelle ist `pagination.total` — dieselbe Menge, die der
+		   Reiter für die Ansicht ankündigt. Weichen sie ab, zählt die Reiter-Query
+		   eine andere Grundmenge als die Liste. */
+		const reiter = statusReiter(page, /Offen/);
+		const angekuendigt = Number((await reiter.getByTestId('status-tab-count').innerText()).trim());
 		await expect(page.getByText(`${angekuendigt} Einträge`)).toBeVisible();
 	});
 });
