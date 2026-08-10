@@ -4,7 +4,8 @@ import { SIGHTING_STATUS_PRESENTATION } from '$lib/components/admin/sightingStat
 import { getEntryChannelOptions } from '$lib/report/formOptions/entryChannel';
 import { BALTIC_SEA_STATUS_PRESENTATION } from '$lib/utils/geo/balticSeaStatus';
 import type { FilterParams } from './activeFilters';
-import { AUFNAHME_LABEL, buildFilterChips, MELDEART_LABEL, removeFilterParam } from './filterChips';
+import { AUFNAHME_LABEL, MELDEART_LABEL } from '$lib/components/admin/filterLabels';
+import { buildFilterChips, removeFilterParam } from './filterChips';
 
 /**
  * filterChips.test.ts — was gefiltert ist, muss sichtbar und einzeln
@@ -78,11 +79,11 @@ describe('buildFilterChips', () => {
 		);
 	});
 
-	it.each(Object.keys(AUFNAHME_LABEL))(
+	it.each(Object.entries(AUFNAHME_LABEL))(
 		'beschriftet den Aufnahme-Filter %s wie die exportierte Beschriftung',
-		(wert) => {
+		(wert, beschriftung) => {
 			expect(buildFilterChips(nur('mediaUpload', wert))[0]?.label).toBe(
-				`Aufnahme: ${AUFNAHME_LABEL[wert]}`
+				`Aufnahme: ${beschriftung}`
 			);
 		}
 	);
