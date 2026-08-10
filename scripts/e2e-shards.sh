@@ -211,6 +211,14 @@ map=(
 	# (Storage-Nachtrag) bzw. über „Ändern" geschrieben wird. Vier Tests, echte
 	# Browser-Navigation, lokal ~5 s.
 	e2e/i18n-links.spec.ts
+	# Direkt daneben: prüft nicht einzelne Klickpfade (das macht
+	# i18n-links.spec.ts bereits), sondern sammelt auf mehreren Seiten ALLE
+	# internen `<a href>`-Verweise ein und prüft sie gegen die Ausschlussliste
+	# aus languagePrefix.ts — der Sweep, den `localizeHref`-Lücken in
+	# PublicFooter/OstseeTiereLogo/about/bestimmungshilfe/SubmissionSuccess
+	# bis 2026-08-10 unbemerkt ließ. Drei Seiten, echte Browser-Navigation,
+	# lokal ~4 s.
+	e2e/i18n-link-sweep.spec.ts
 	# Direkt bei den beiden Specs darüber: prüft denselben Auslieferungs-Riegel
 	# um `/en`, hier aber den Antwort-Header statt der Routen-Existenz — reine
 	# `request`-Aufrufe, kein Browser, keine eigene Route (die drei Pfade sind
