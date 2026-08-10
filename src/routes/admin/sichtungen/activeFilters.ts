@@ -1,4 +1,7 @@
-import { normalizeStatusParam } from '$lib/components/admin/sightingStatusFilter';
+import {
+	normalizeStatusParam,
+	type SightingStatusFilter
+} from '$lib/components/admin/sightingStatusFilter';
 
 /**
  * Der Filterzustand der Sichtungstabelle, gelesen aus der URL.
@@ -15,11 +18,18 @@ import { normalizeStatusParam } from '$lib/components/admin/sightingStatusFilter
  *
  * Leerer String heißt „nicht gesetzt" — die Form, die `ExportModal.svelte`
  * ohnehin erwartet.
+ *
+ * Nur `verified` trägt eine engere Domäne als `string`, und zwar dieselbe, die
+ * `normalizeStatusParam` unten herstellt — keine vierte Aufzählung derselben
+ * drei Werte, sondern der Typ aus `sightingStatusFilter.ts`. Die Statusreiter
+ * (`statusTabs.ts`) nehmen den Wert damit ohne `as` entgegen: Erweiterte sich
+ * die Domäne je, stünde der Compile-Fehler dort, statt dass die Leiste still
+ * einen Wert bekommt, zu dem kein Reiter passt.
  */
 export type FilterParams = {
 	fromDate: string;
 	toDate: string;
-	verified: string;
+	verified: SightingStatusFilter | '';
 	entryChannel: string;
 	mediaUpload: string;
 	balticSea: string;

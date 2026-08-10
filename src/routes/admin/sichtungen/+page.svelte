@@ -1320,7 +1320,7 @@
 	<div class="container mx-auto mb-3 px-4 md:px-6">
 		<StatusTabs
 			counts={data.statusCounts}
-			active={currentFilters.verified as StatusTabValue}
+			active={currentFilters.verified}
 			onselect={selectStatus}
 		/>
 	</div>
