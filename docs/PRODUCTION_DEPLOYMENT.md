@@ -232,7 +232,10 @@ install -m 600 /dev/null ~/.ostsee-cleanup.env
 Cron führt die Zeile mit `/bin/sh` aus; `.` und die Expansion von `$HOST` nach dem
 Sourcen funktionieren dort. Vor dem Eintragen genau so testen, wie Cron sie
 ausführt — eine Zeile, die nur in der interaktiven Bash läuft, fällt sonst erst
-in der ersten Nacht auf:
+in der ersten Nacht auf. Der Test lässt `?mode=execute` **bewusst** weg: Geprüft
+wird die Shell-Zeile (Sourcen, Quoting, Variablenexpansion), und die verhält sich
+mit und ohne das Flag gleich. Ein Probelauf, der dabei echte Produktionsdaten
+löscht, ist kein Test:
 
 ```bash
 /bin/sh -c '. $HOME/.ostsee-cleanup.env && curl -fsS -X POST -H "Authorization: Bearer $CLEANUP_TOKEN" "https://$HOST/api/admin/cleanup-orphans"'
