@@ -13,9 +13,9 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
 	import { DEAD_FINDING_PRESENTATION, isDeadFinding } from '$lib/components/admin/deadFinding';
+	import SightingActionsMenu from '$lib/components/admin/SightingActionsMenu.svelte';
 	import SightingStatusControl from '$lib/components/admin/SightingStatusControl.svelte';
 	import { getSightingStatus, type SightingStatus } from '$lib/components/admin/sightingStatus';
-	import { TEST_EMAIL_HINT } from '$lib/components/admin/sightingActions';
 	import type { SightingVerdict } from '$lib/components/admin/sightingVerdict';
 	import { getSpeciesLabel } from '$lib/report/formOptions/species';
 	import type { SichtungenListRow } from './listColumns';
@@ -107,38 +107,18 @@
 					>
 						<Icon icon="lucide:eye" class="h-4 w-4" />
 					</button>
-					<!-- Nur Superadmins: Der Klick erzeugt im Team-Postfach eine Mail, die
-					     von einer echten Neu-Meldung nicht zu unterscheiden ist. Das Gate
-					     steht zusätzlich am Endpunkt — hier verschwindet nur das Bedienelement. -->
-					{#if isSuperAdmin}
-						<button
-							class="btn btn-ghost btn-sm"
-							onclick={() => ontestemail(sighting.id)}
-							title={TEST_EMAIL_HINT}
-							aria-label="Benachrichtigung zu dieser Sichtung an das Team senden"
-						>
-							<Icon icon="lucide:mail" class="h-4 w-4" />
-						</button>
-					{/if}
-					<button
-						class="btn btn-ghost btn-sm"
-						onclick={() => onspamcheck(sighting.id)}
-						title="Spam-Check"
-						aria-label="Spam-Check durchführen"
-					>
-						<Icon icon="lucide:shield-alert" class="h-4 w-4" />
-					</button>
-					<!-- Kanonische destruktive Variante, gleiche Begründung wie in der
-					     Tabellenzeile nebenan (`SichtungenTable.svelte`): dieselbe Aktion,
-					     dieselbe Variante, dasselbe Icon — unabhängig von der Ansicht. -->
-					<button
-						class="btn btn-outline btn-error btn-sm"
-						onclick={() => ondelete(sighting)}
-						title="Eintrag löschen"
-						aria-label="Eintrag löschen"
-					>
-						<Icon icon="lucide:trash-2" class="h-4 w-4" />
-					</button>
+					<!-- Dasselbe Overflow-Menü wie in der Tabellenzeile nebenan
+					     (`SichtungenTable.svelte`): dieselben Aktionen, dieselbe Reihenfolge,
+					     derselbe Wortlaut — unabhängig von der Ansicht. Das eigene
+					     id-Präfix ist Pflicht: Beide Ansichten stehen gleichzeitig im DOM. -->
+					<SightingActionsMenu
+						menuId="aktionen-karte-{sighting.id}"
+						label="Weitere Aktionen zu Sichtung {sighting.referenceId ?? sighting.id}"
+						{isSuperAdmin}
+						onspamcheck={() => onspamcheck(sighting.id)}
+						ontestemail={() => ontestemail(sighting.id)}
+						ondelete={() => ondelete(sighting)}
+					/>
 				</div>
 			</div>
 
