@@ -111,7 +111,9 @@ npm run lint         # ESLint
 npm run type-check   # TypeScript
 npm run check        # Svelte-Check
 
-npm run test:quick   # Schnell-Test (E2E-Shard-Abgleich + lint + types + check + unit)
+npm run test:quick   # Gate vor dem Commit: E2E-Shard-Abgleich + lint + types + check
+                     # + Unit-Tests (Server) + Komponenten-Tests (Browser). ~70 s.
+                     # Nicht enthalten: die E2E-Suite (npm run test:e2e).
 ```
 
 Vollständige Test-Befehle: `.claude/rules/testing.md`

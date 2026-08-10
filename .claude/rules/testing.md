@@ -62,9 +62,51 @@ npm run test:unit:all     # Alle Unit Tests (Server + Browser)
 npm run test:unit:watch   # Server Unit Tests im Watch-Modus
 npm run test:e2e          # E2E Tests (Playwright)
 npm run test:e2e:shards   # Shard-Zuordnung prüfen — PFLICHT nach neuem E2E-Spec
-npm run test:quick        # Schnell-Test (Shard-Abgleich + lint + type-check + svelte-check + unit)
+npm run test:quick        # Gate vor dem Commit (siehe unten)
 npm run test:coverage     # Coverage-Report (Server-Tests + v8)
 ```
+
+### Was `test:quick` prüft — und was nicht
+
+| Schritt            | Kommando           | Laufzeit  |
+| ------------------ | ------------------ | --------- |
+| E2E-Shard-Abgleich | `test:e2e:shards`  | ~2 s      |
+| ESLint             | `lint`             |           |
+| TypeScript         | `type-check`       | ~25 s     |
+| svelte-check       | `check`            | zusammen  |
+| Unit-Tests Server  | `test:unit`        | ~26 s     |
+| Komponenten-Tests  | `test:unit:client` | ~18 s     |
+| **Summe**          |                    | **~70 s** |
+
+**Nicht enthalten:** die E2E-Suite (`npm run test:e2e`). Die braucht Dev-Server und
+Datenbank und läuft in CI in drei Shards; `test:quick` prüft davon nur, ob jeder Spec
+einem Shard zugeordnet ist.
+
+Die Komponenten-Tests standen bis zum 2026-08-10 **nicht** in diesem Kommando: Es fuhr
+nur `vitest run --project server`, und alle `*.svelte.test.ts` liegen im Projekt
+`client`. Ein Branch legte sieben davon an, die als „grün" galten, ohne dass das Gate
+sie je angefasst hätte — der Lauf meldete Erfolg für eine Prüfung, die nicht
+stattgefunden hatte. Gemessen kostet das Browser-Projekt weniger als das
+Server-Projekt (18 s gegen 26 s); das Laufzeit-Argument, das die Trennung getragen
+hatte, hielt der Messung nicht stand.
+
+Damit sich die Lücke nicht wiederholt, rechnet `scripts/testGate.test.ts` nach, ob
+`test:quick` jedes in `vitest.config.ts` konfigurierte Vitest-Projekt fährt. Ein neues
+Projekt bricht diesen Test, statt still unbeobachtet zu bleiben.
+
+### Der Browser-Lauf endet mit „close timed out"
+
+```
+close timed out after 2000ms
+Tests closed successfully but something prevents the main process from exiting
+```
+
+Das ist **kein** Fehlschlag. Nach dem letzten Test bleiben Dateihandles offen, die der
+`hanging-process`-Reporter nur als „FILEHANDLE (unknown stack trace)" ausweist; danach
+beendet sich der Prozess von selbst, und es bleibt nachweislich weder ein Port noch ein
+Chromium zurück. Vitests Default von 10 s wurde deshalb in `vitest.config.ts` auf 2 s
+gekürzt — reine Wartezeit, die bei jedem Gate anfiel. Abgeschaltet ist die Meldung
+bewusst nicht: Bliebe eines Tages doch etwas zurück, ist sie der einzige Hinweis darauf.
 
 ---
 

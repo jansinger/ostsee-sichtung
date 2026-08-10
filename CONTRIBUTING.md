@@ -156,16 +156,18 @@ These hooks are automatically installed when you run `npm install`.
 Before submitting a PR, ensure all checks pass:
 
 ```bash
-# Run quick checks (lint + type-check + svelte-check + unit tests)
+# Commit gate: e2e shard check + lint + type-check + svelte-check
+# + server unit tests + browser component tests (~70 s, no E2E suite)
 npm run test:quick
 
 # Individual checks
-npm run lint          # ESLint
-npm run type-check    # TypeScript
-npm run check         # Svelte check
-npm run test:unit     # Unit tests
-npm run test:e2e      # E2E tests
-npm run build         # Build check
+npm run lint             # ESLint
+npm run type-check       # TypeScript
+npm run check            # Svelte check
+npm run test:unit        # Unit tests (server project)
+npm run test:unit:client # Component tests (browser project)
+npm run test:e2e         # E2E tests
+npm run build            # Build check
 ```
 
 ## 📦 Release Process
