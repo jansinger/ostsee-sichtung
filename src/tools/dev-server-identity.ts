@@ -45,6 +45,16 @@ const PORT_RANGE_START = 41_000;
 const PORT_RANGE_SIZE = 4_000;
 
 /**
+ * Port-Fenster für den Vitest-Browser-Server: 45000–48999.
+ *
+ * Eigenes Fenster oberhalb des Dev-Bereichs, damit im selben Worktree Dev-Server und
+ * Komponenten-Tests nebeneinander laufen können, und weiterhin unterhalb des
+ * ephemeren Bereichs (ab 49152 auf macOS).
+ */
+const BROWSER_PORT_RANGE_START = 45_000;
+const BROWSER_PORT_RANGE_SIZE = 4_000;
+
+/**
  * Host, auf den der E2E-Dev-Server bindet (`vite.config.ci.ts`).
  *
  * Der Wildcard ist dort gewollt — in CI muss der Server auch von außerhalb des
@@ -127,6 +137,25 @@ function normalizeRoot(root: string): string {
 export function worktreeDevPort(root: string): number {
 	const digest = createHash('sha256').update(normalizeRoot(root)).digest();
 	return PORT_RANGE_START + (digest.readUInt32BE(0) % PORT_RANGE_SIZE);
+}
+
+/**
+ * Leitet aus dem Arbeitsverzeichnis den Port des Vitest-Browser-Servers ab.
+ *
+ * Vitest bindet im Browser-Modus fest auf 63315. Alle Worktrees teilen sich diesen
+ * Port, und `npm run test:unit:client` gleichzeitig in zweien laufen zu lassen ist
+ * beim parallelen Arbeiten der Normalfall, nicht die Ausnahme. Der Zusammenstoß
+ * meldet sich dabei nicht als Portfehler, sondern als vereinzelter Testfehlschlag
+ * oder als "no tests" — also als etwas, das nach einem Defekt am Code aussieht.
+ *
+ * Getrennter Hash-Versatz statt `worktreeDevPort + Offset`: Sonst zöge jede
+ * Kollision im Dev-Bereich die Browser-Ports gleich mit.
+ */
+export function worktreeBrowserApiPort(root: string): number {
+	const digest = createHash('sha256')
+		.update(`vitest-browser:${normalizeRoot(root)}`)
+		.digest();
+	return BROWSER_PORT_RANGE_START + (digest.readUInt32BE(0) % BROWSER_PORT_RANGE_SIZE);
 }
 
 /**

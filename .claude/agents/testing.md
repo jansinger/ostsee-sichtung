@@ -166,8 +166,11 @@ npm run test:unit:watch  # Watch Mode
 ## Befehle
 
 ```bash
-# Alle Unit Tests
+# Unit Tests des Server-Projekts (*.test.ts)
 npm run test:unit
+
+# Komponenten-Tests des Browser-Projekts (*.svelte.test.ts)
+npm run test:unit:client
 
 # Spezifischer Test
 npm run test:unit -- src/lib/utils/date/defaultYear.test.ts
@@ -181,7 +184,7 @@ npm run test:e2e
 # E2E mit UI
 npm run test:e2e -- --ui
 
-# Quick Check (vor Commit)
+# Gate vor dem Commit — enthält beide Vitest-Projekte, aber keine E2E-Suite
 npm run test:quick
 ```
 

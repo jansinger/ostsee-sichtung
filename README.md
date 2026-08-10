@@ -149,7 +149,8 @@ npm run test:unit:watch
 # E2E-Tests ausführen (Playwright)
 npm run test:e2e
 
-# Schnelle Tests (Lint + Type-Check + Unit-Tests)
+# Gate vor dem Commit (Shard-Abgleich + Lint + Typen + svelte-check
+# + Unit-Tests Server + Komponenten-Tests Browser, ~70 s — ohne E2E)
 npm run test:quick
 
 # Code-Qualität

@@ -172,6 +172,19 @@ false`, und der Job startet seinen eigenen Server im eigenen Container. Der
 Identitäts-Check läuft dort trotzdem mit, damit ein versehentlich entferntes Plugin
 auffällt, statt die Prüfung still abzuschalten.
 
+### Komponenten-Tests: derselbe Fehler, eigener Port
+
+Vitest bindet im Browser-Modus fest auf **63315** — in jedem Worktree derselbe Port.
+Seit die Komponenten-Tests Teil von `npm run test:quick` sind (2026-08-10), ist der
+gleichzeitige Lauf in zwei Worktrees der Normalfall, und der Zusammenstoß meldete sich
+nicht als Portfehler, sondern als vereinzelter Fehlschlag oder als „no tests": ein
+Befund, der nach einem Defekt am Code aussieht und keiner ist.
+
+`worktreeBrowserApiPort()` zieht deshalb aus demselben Pfad-Hash einen Port aus
+**45000–48999** — eigenes Fenster, damit sich Dev-Server und Komponenten-Tests im
+selben Worktree nicht verdrängen. Welcher Port es ist, steht in den Fehlermeldungen des
+Laufs (`http://localhost:<port>/src/…`).
+
 ## `CI=1` lokal: Adressfamilie, nicht Port (behoben 2026-08-04)
 
 Bis zum 2026-08-04 brach `CI=1 npx playwright test` bei parallel laufendem
