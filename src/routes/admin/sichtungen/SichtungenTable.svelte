@@ -10,8 +10,8 @@
 	import { page } from '$app/state';
 	import Icon from '$lib/components/Icon.svelte';
 	import { DEAD_FINDING_PRESENTATION, isDeadFinding } from '$lib/components/admin/deadFinding';
+	import SightingActionsMenu from '$lib/components/admin/SightingActionsMenu.svelte';
 	import SightingStatusControl from '$lib/components/admin/SightingStatusControl.svelte';
-	import { TEST_EMAIL_HINT } from '$lib/components/admin/sightingActions';
 	import {
 		getSightingStatus,
 		SIGHTING_STATUS_PRESENTATION,
@@ -517,42 +517,22 @@
 									>
 										<Icon icon="lucide:eye" class="h-4 w-4" />
 									</button>
-									<!-- Nur Superadmins — Begründung an der Kartenansicht in `SichtungenCards.svelte`. -->
-									{#if isSuperAdmin}
-										<button
-											class="btn btn-ghost btn-xs"
-											onclick={() => ontestemail(sighting.id)}
-											title={TEST_EMAIL_HINT}
-											aria-label="Benachrichtigung zu dieser Sichtung an das Team senden"
-										>
-											<Icon icon="lucide:mail" class="h-4 w-4" />
-										</button>
-									{/if}
-									<button
-										class="btn btn-ghost btn-xs"
-										onclick={() => onspamcheck(sighting.id)}
-										title="Spam-Check"
-										aria-label="Spam-Check durchführen"
-									>
-										<Icon icon="lucide:shield-alert" class="h-4 w-4" />
-									</button>
-									<!-- Die kanonische destruktive Variante (`btn btn-outline btn-error`,
-									     Button-Hierarchie in `design-system.md`) — vorher stand hier
-									     `btn-ghost text-error`, also genau die zweite Variante, die die
-									     Regel wörtlich als Anti-Pattern nennt. Der Rahmen zwischen drei
-									     rahmenlosen Icons ist dabei nicht Nebenwirkung, sondern Zweck:
-									     Löschen ist die einzige Aktion der Zeile, die man nicht
-									     zurücknehmen kann.
-									     `btn-xs` bleibt: Die Größe trägt die Zeilenhöhe, nicht die
-									     Variante — die 44px Trefferfläche kommen ohnehin aus app.css. -->
-									<button
-										class="btn btn-outline btn-error btn-xs"
-										onclick={() => ondelete(sighting)}
-										title="Eintrag löschen"
-										aria-label="Eintrag löschen"
-									>
-										<Icon icon="lucide:trash-2" class="h-4 w-4" />
-									</button>
+									<!-- Spam-Check, Test-Mail und Löschen stehen seit 2026-08-10 im
+									     Overflow-Menü statt als eigene Buttons (Entscheidung Jan nach dem
+									     UX-Review): 50 rot umrandete Löschen-Buttons pro Seite waren das
+									     auffälligste Element der Tabelle — für die seltenste Aktion,
+									     direkt neben dem täglich benutzten Status-Control. Sichtbar
+									     bleiben Ansehen und der Statuswechsel. Begründung der
+									     Popover-Technik im Kopf der Komponente. -->
+									<SightingActionsMenu
+										menuId="aktionen-tabelle-{sighting.id}"
+										label="Weitere Aktionen zu Sichtung {sighting.referenceId ?? sighting.id}"
+										{isSuperAdmin}
+										size="xs"
+										onspamcheck={() => onspamcheck(sighting.id)}
+										ontestemail={() => ontestemail(sighting.id)}
+										ondelete={() => ondelete(sighting)}
+									/>
 								</div>
 							</td>
 						{/if}
