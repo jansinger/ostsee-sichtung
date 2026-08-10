@@ -40,23 +40,41 @@ const LOCALE_COOKIE = 'PARAGLIDE_LOCALE';
  * vier Endpunkte aus `docs/LEGACY_API_SPECIFICATION.md`) VOR
  * `istAusgeschlossen`, und `/rest_sichtungen` steht in beiden Listen. Für
  * `/en/rest_sichtungen` greift deshalb nie die Ausschlussregel — die
- * Legacy-Weiche entscheidet zuerst und liefert bewusst 200 mit deutschem
- * Inhalt (`GET /rest_sichtungen` re-exportiert `showreports.json`). Die
- * Schleife nutzt dieselbe Weiche (`stripLegacyLanguagePrefix`) statt eines
- * hartkodierten Sonderfalls, um genau diese Einträge auszunehmen — ihr
- * tatsächliches Verhalten deckt „Legacy-Präfix liefert weiterhin deutsche
- * Werte" weiter unten sowie `legacy-language-prefix.spec.ts` ab.
+ * Legacy-Weiche entscheidet zuerst und liefert bewusst denselben Status wie
+ * der unpräfigierte Pfad (`GET /rest_sichtungen` re-exportiert
+ * `showreports.json`, also 200 mit deutschem Inhalt).
+ *
+ * Die Schleife unten erzeugt deshalb pro Eintrag GENAU EINEN Test, nie einen
+ * übersprungenen: Ein `continue` für legacy-abgefangene Einträge (frühere
+ * Fassung) hätte für sie schlicht keinen Test erzeugt — bricht `LEGACY_PFADE`
+ * oder `PRAEFIX_MUSTER` in `languagePrefix.ts` irgendwann so weiter auf, dass
+ * noch mehr Einträge überlappen, verschwinden immer mehr Tests lautlos statt
+ * rot zu werden (Review-Fund 2026-08-10). Statt eines hartkodierten „200 im
+ * Legacy-Fall" vergleicht der Test hier den Status von `/en<präfix>` direkt
+ * mit dem des unpräfigierten Legacy-Ziels (`stripLegacyLanguagePrefix`) — das
+ * bewacht die Überlappung in beide Richtungen: sowohl ein Legacy-Pfad, der
+ * fälschlich 404 liefert, als auch ein Ausschluss-Pfad, der fälschlich vom
+ * 404 abweicht.
  */
 test.describe('Sprachpräfix-Routing', () => {
 	for (const praefix of NICHT_LOKALISIERT) {
 		const pfad = `/en${praefix}`;
-		// Von der Legacy-Weiche abgefangene Pfade (siehe Kommentar oben) liefern
-		// keinen 404 — sie werden hier bewusst nicht erwartet.
-		if (stripLegacyLanguagePrefix(pfad) !== undefined) continue;
+		const legacyZiel = stripLegacyLanguagePrefix(pfad);
 
-		test(`${pfad} liefert 404`, async ({ request }) => {
-			expect((await request.get(pfad)).status()).toBe(404);
-		});
+		test(
+			legacyZiel === undefined
+				? `${pfad} liefert 404`
+				: `${pfad} liefert denselben Status wie der Legacy-Pfad ${legacyZiel}`,
+			async ({ request }) => {
+				const antwort = await request.get(pfad);
+				if (legacyZiel === undefined) {
+					expect(antwort.status()).toBe(404);
+				} else {
+					const referenz = await request.get(legacyZiel);
+					expect(antwort.status()).toBe(referenz.status());
+				}
+			}
+		);
 	}
 
 	/**

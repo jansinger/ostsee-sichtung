@@ -82,7 +82,7 @@ export function stripLegacyLanguagePrefix(pathname: string): string | undefined 
  * jeder Eintrag hier bekommt automatisch einen 404-Test, ohne dass ihn jemand
  * im Testfile nachträgt.
  *
- * Das behebt **nicht** jede Lücke: Ein Pfad, der hier fehlt, obwohl er fehlen
+ * Das behebt **nicht** jede Lücke: Ein Pfad, der hier fehlt, obwohl er stehen
  * sollte, bleibt für diese Schleife unsichtbar — sie kennt nur, was in der
  * Konstante steht, nicht, was fehlen dürfte. Diese Lücke lässt sich nur durch
  * eine von der Konstante unabhängige Prüfung schließen (z. B. eine feste
