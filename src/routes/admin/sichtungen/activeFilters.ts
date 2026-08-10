@@ -41,8 +41,15 @@ export function readFilterParams(searchParams: URLSearchParams): FilterParams {
 		   liefert `undefined` und gilt hier als „nicht gesetzt". */
 		verified: normalizeStatusParam(searchParams.get('verified')) ?? '',
 		/* Ohne das UI-Sentinel `all`: Das Panel-`<select>` braucht einen Wert für
-		   „egal", die URL trägt dafür gar keinen Parameter. */
-		entryChannel: lies('entryChannel'),
+		   „egal", die URL trägt dafür gar keinen Parameter — normalerweise. Ein
+		   Lesezeichen oder eine vor dem Umbau gespeicherte Ansicht kann `all`
+		   trotzdem tragen, und der Loader liest es korrekt als „kein Filter"
+		   (`entryChannel !== 'all'` in `+page.server.ts`). Ohne die Umrechnung
+		   hier hielten Chip-Zeile und Export-Dialog es für einen aktiven Filter
+		   und behaupteten „Kanal: all" über einer ungefilterten Tabelle. Die
+		   Normalisierung gehört an diese Stelle und nicht in `buildFilterChips`,
+		   damit alle Leser des Filterzustands dieselbe Sicht haben. */
+		entryChannel: lies('entryChannel') === 'all' ? '' : lies('entryChannel'),
 		mediaUpload: lies('mediaUpload'),
 		balticSea: lies('balticSea'),
 		deadFinding: lies('deadFinding'),

@@ -64,7 +64,11 @@ describe('Sichtungstabelle — Ansichten-Zeile', () => {
 	});
 
 	it('zeigt das Label, sobald mindestens ein Preset existiert', async () => {
-		seedPresets([{ id: 'id-1', name: 'Offene Totfunde', params: { deadFinding: 'true' } }]);
+		/* `1` und nicht `true`: Nur `1`/`0` lösen serverseitig ein Prädikat aus
+		   (`deadFindingFilter.ts`). Ein Preset namens „Offene Totfunde" mit einem
+		   Wert, der gar nicht filtert, wäre eine Fixture, die etwas zusichert,
+		   was der Code nicht tut. */
+		seedPresets([{ id: 'id-1', name: 'Offene Totfunde', params: { deadFinding: '1' } }]);
 		const screen = render(SichtungenSeite, { data: daten() });
 
 		await expect.element(screen.getByRole('button', { name: 'Offene Totfunde' })).toBeVisible();
