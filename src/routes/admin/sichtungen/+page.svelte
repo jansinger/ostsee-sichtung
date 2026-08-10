@@ -1044,12 +1044,51 @@
 			Mobilgeräten die passende Tastatur mit „Suchen"-Taste.
 		-->
 		<form class="mt-3 flex items-center gap-2" onsubmit={submitSearch} role="search">
-			<label class="input input-sm flex flex-1 items-center gap-2">
+			<!-- `.input` bringt bereits `display:inline-flex`, `align-items:center`
+			     und `gap:.5rem` mit (daisyui/components/input.css, 5.7.4 nachgelesen) —
+			     `flex items-center gap-2` am Label doppelte das nur bzw. überschrieb
+			     dabei `inline-flex` mit `flex`. `flex-1` bleibt: `.input` trägt
+			     `width: clamp(3rem, 20rem, 100%)`, ohne `flex-1` bliebe das Feld bei
+			     320px stehen statt die Zeile zu füllen. Das `grow` am inneren
+			     `<input>` war ebenfalls wirkungslos — `.input & input` setzt
+			     `width/height: 100%` bereits über die Elternklasse.
+
+			     Kein `input-sm`: An diesem Element ist der Modifier tote Utility.
+			     `src/app.css` trägt ungelayert `.input, .select, .textarea { font-size:
+			     var(--text-body) }` (Formularfelder ≥ 16px, WCAG AA + iOS-Auto-Zoom,
+			     `daisyui.md` „Vorhandene Overrides respektieren") — das schlägt
+			     DaisyUIs gelayerte `--font-size-min` aus `input-sm` unbedingt, exakt
+			     dieselbe Kaskaden-Mechanik wie beim Fokus- und Alert-Override dort.
+			     Im Browser gemessen: `getComputedStyle(label).fontSize` ist mit UND
+			     ohne `input-sm` `16px`. `--in-size-mul` (die zweite Wirkung des
+			     Modifiers) ist hier ebenfalls tot, weil `--size` direkt überschrieben
+			     wird (siehe unten) — `--in-size-mul` fließt nur in die
+			     `--size`-Berechnung ein, die dieser Override ersetzt. `--spin-my`
+			     bleibt drittens wirkungslos, weil `type="search"` keinen
+			     Number-Spinner hat. `input-sm` täte an diesem Feld also nichts mehr
+			     (design-system.md, „Keine toten Utility-Klassen").
+
+			     `--size` überschreibt `.input`s Standardhöhe (2.5rem/40px bei
+			     `--size-field: 0.25rem` × `--in-size-mul: 10`) direkt auf die
+			     44px-Touch-Target-Höhe (`--target-min`), statt sie über `min-height`
+			     zu erzwingen: `.input` setzt `height: var(--size)`, ein `min-height`
+			     würde also nichts bewirken. Gleiches Muster wie
+			     `.checkbox/.radio/.toggle { --size: … }` in app.css. Der Knopf daneben
+			     bekommt seine 44px unbedingt über die projektweite `.btn`-Regel
+			     (design-system.md, „Feldmodus und Touch-Targets") — das Feld muss also
+			     wachsen, nicht der Knopf schrumpfen.
+
+			     Schriftgröße dadurch nicht mehr symmetrisch zum Knopf: Das Feld zeigt
+			     16px (`--text-body`, unveränderlich seit dem App.css-Override), der
+			     `btn-sm` daneben 12px (`--fontsize` aus DaisyUIs `.btn-sm`, von diesem
+			     Override nicht betroffen). Ob der Knopf auf `btn-md`/Standardgröße
+			     wechselt, ist hier bewusst offengelassen — Entscheidung Jan,
+			     2026-08-10. -->
+			<label class="input flex-1" style="--size: var(--target-min)">
 				<Icon icon="lucide:search" class="h-4 w-4 opacity-70" aria-hidden="true" />
 				<span class="sr-only">Suche nach Referenz-ID, E-Mail, Name oder Fahrwasser</span>
 				<input
 					type="search"
-					class="grow"
 					bind:value={searchTerm}
 					placeholder="Referenz-ID, E-Mail, Name oder Fahrwasser"
 				/>
