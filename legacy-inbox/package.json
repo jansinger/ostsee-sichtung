@@ -8,7 +8,7 @@
 	},
 	"main": "app.js",
 	"dependencies": {
-		"@turf/boolean-point-in-polygon": "^7.3.5",
+		"@turf/boolean-point-in-polygon": "^7.4.0",
 		"@turf/helpers": "^7.3.4",
 		"rbush": "^4.0.1",
 		"yup": "^1.7.1"
