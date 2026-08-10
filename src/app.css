@@ -509,9 +509,13 @@ summary.btn {
    `.btn`-Regel oben greift nur für Einträge, die selbst ein Button im
    Button-Sinn sind (z. B. der Löschen-Eintrag) — die einfachen `li > a/button`
    blieben darunter. Ausgenommen wie bei DaisyUI selbst: Untermenüs,
-   `details`-Wrapper und Titel — die sind keine Ziele.
+   `details`-Wrapper und Titel — die sind keine Ziele. Das Ziel eines
+   `details`-Eintrags ist sein `summary` (PublicNavbar, Desktop-Menü
+   „Verwaltung") — zweiter Zweig, dasselbe Paar wie in DaisyUIs eigenem
+   Item-Selektor.
    Gemessen abgesichert in SightingActionsMenu.svelte.test.ts. */
-.menu li > :not(ul, details, .menu-title, .target-exempt) {
+.menu li > :not(ul, details, .menu-title, .target-exempt),
+.menu li > details > summary:not(.target-exempt) {
 	min-height: var(--target-min);
 }
 
