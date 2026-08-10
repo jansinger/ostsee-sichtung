@@ -9,7 +9,17 @@
  *
  * Die Startseite ist der einzige Ort, an dem ein Nutzer „ankommt" — dort ist die
  * Vermutung nützlich und ihre Kosten sind auf eine Antwort begrenzt. Diese eine
- * Antwort trägt `Vary: Accept-Language`.
+ * Antwort trägt `Vary: Accept-Language, Cookie` (siehe `handleStartseitenSprache`
+ * in `hooks.server.ts` — dort steht der tatsächliche Header-Wert, hier nur die
+ * Begründung: `Cookie` ist Pflicht, weil dieselbe URL mit demselben
+ * `Accept-Language` je nach `PARAGLIDE_LOCALE` eine 302 oder eine 200 liefert).
+ *
+ * `Vary: Cookie` macht `/` für geteilte Caches (CDN, Reverse Proxy) praktisch
+ * unspeicherbar — jeder Cookie-Wert ist ein eigener Cache-Schlüssel. Das ist
+ * eine bewusste Entscheidung, keine übersehene Nebenwirkung: Korrektheit vor
+ * Trefferquote. Ein „Optimierung", die `Cookie` aus dem `Vary` wieder entfernt,
+ * macht die Startseite wieder von einem Cookie-Wert abhängig cachebar UND
+ * liefert dann falsch gecachte Sprachversionen aus.
  *
  * Nur die erste Präferenz zählt, `q`-Gewichte werden bewusst ignoriert:
  * `de;q=0.1,en;q=0.9` leitet NICHT weiter, obwohl Englisch höher gewichtet ist.

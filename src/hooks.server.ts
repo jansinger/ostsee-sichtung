@@ -118,22 +118,29 @@ const handleParaglide: Handle = ({ event, resolve }) =>
  * Antwort ändert sich nicht) und würde die im Kommentar dort festgehaltene
  * Reihenfolge unnötig aufbrechen.
  *
- * Nur `GET` wird umgeleitet: Ein 302 auf `POST`/`PUT`/... degradiert die
- * Methode beim Redirect-Follow zu `GET` (RFC 7231) — für `/` gibt es zwar
- * aktuell keine schreibenden Requests, aber die Einschränkung kostet nichts
- * und verhindert, dass ein künftiger POST auf `/` still seine Methode
- * verliert.
+ * Nur lesende Methoden (`GET`/`HEAD`) werden umgeleitet: Ein 302 auf
+ * `POST`/`PUT`/... degradiert die Methode beim Redirect-Follow zu `GET`
+ * (RFC 7231) — für `/` gibt es zwar aktuell keine schreibenden Requests,
+ * aber die Einschränkung kostet nichts und verhindert, dass ein künftiger
+ * POST auf `/` still seine Methode verliert. Diese Begründung trägt für
+ * `HEAD` NICHT — `HEAD` ist sicher und idempotent. `HEAD` gehört trotzdem
+ * dazu, weil SvelteKit es als vollwertige Seiten-Methode behandelt
+ * (`respond.js`: `page_methods`/`allowed_page_methods` enthalten beide
+ * `HEAD`) und RFC 9110 §9.3.2 für `HEAD` dieselbe Antwort wie für `GET`
+ * verlangt, nur ohne Body. Monitoring und Crawler nutzen `HEAD` gerade
+ * deshalb — ein `HEAD /` mit englischem Header muss dieselbe 302 bekommen
+ * wie das entsprechende `GET`.
  */
 const handleStartseitenSprache: Handle = async ({ event, resolve }) => {
-	const ziel =
-		event.request.method === 'GET'
-			? zielFuerStartseite(
-					event.url.pathname,
-					event.url.search,
-					event.request.headers.get('accept-language'),
-					event.cookies.get(LOCALE_COOKIE) ?? null
-				)
-			: null;
+	const istLesend = event.request.method === 'GET' || event.request.method === 'HEAD';
+	const ziel = istLesend
+		? zielFuerStartseite(
+				event.url.pathname,
+				event.url.search,
+				event.request.headers.get('accept-language'),
+				event.cookies.get(LOCALE_COOKIE) ?? null
+			)
+		: null;
 	// `Vary` gehört AUF die Weiterleitung, nicht nur auf die normale Antwort:
 	// Die 302 ist die inhaltsverhandelte Antwort. Ohne den Header cacht ein
 	// Zwischenspeicher sie für alle Sprachen. `Cookie` gehört mit in die Liste:
