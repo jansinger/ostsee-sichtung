@@ -247,3 +247,74 @@ describe('AdminSightingView — Statusleiste im Kopfbereich', () => {
 		await expect.element(screen.getByText('Offen')).toBeVisible();
 	});
 });
+
+/**
+ * Melder-Historie in der Kontakt-Karte (Task 6).
+ *
+ * `email` ist hier bewusst gesetzt (`basisProps()`), damit der
+ * „Alle Meldungen dieses Melders"-Link geprüft werden kann.
+ */
+function basisProps(overrides: Record<string, unknown> = {}) {
+	return {
+		sighting: baseSighting({ email: 'melder@example.org', ...overrides })
+	};
+}
+
+describe('AdminSightingView — Melder-Historie', () => {
+	it('zeigt die Melder-Historie in der Kontakt-Karte', async () => {
+		render(AdminSightingView, {
+			...basisProps(),
+			reporterHistory: { approved: 23, rejected: 0, open: 2, since: '2019-03-04T08:00:00Z' }
+		});
+
+		await expect
+			.element(page.getByTestId('reporter-badge'))
+			.toHaveTextContent('Melder: 23 freigegeben');
+		await expect.element(page.getByText('Melder seit 03/2019')).toBeVisible();
+		await expect
+			.element(page.getByRole('link', { name: 'Alle Meldungen dieses Melders' }))
+			.toHaveAttribute('href', '/admin/sichtungen?q=melder%40example.org');
+	});
+
+	/* „Nicht ermittelt" ist nicht „keine Vorgeschichte" — der Fehlschlag muss
+	   als dritter Fall sichtbar sein, sonst liest sich eine Lücke wie ein
+	   Befund (gleiche Konstruktion wie beim Status-Log). */
+	it('benennt einen Fehlschlag statt eine leere Historie zu behaupten', async () => {
+		render(AdminSightingView, {
+			...basisProps(),
+			reporterHistory: null,
+			reporterHistoryFailed: true
+		});
+
+		await expect
+			.element(page.getByText('Melder-Historie konnte nicht geladen werden'))
+			.toBeVisible();
+		await expect.element(page.getByTestId('reporter-badge')).not.toBeInTheDocument();
+	});
+
+	/* `since` enthält bewusst die aktuelle Meldung. Bei einem Erstmelder stünde
+	   dort das heutige Datum — „Melder seit 08/2026" behauptete eine
+	   Vorgeschichte, die es gerade nicht gibt. */
+	it('nennt kein „Melder seit" bei einer Erstmeldung', async () => {
+		render(AdminSightingView, {
+			...basisProps(),
+			reporterHistory: { approved: 0, rejected: 0, open: 0, since: '2026-08-10T09:00:00Z' }
+		});
+
+		await expect.element(page.getByTestId('reporter-badge')).toHaveTextContent('Erstmeldung');
+		await expect.element(page.getByText(/Melder seit/)).not.toBeInTheDocument();
+	});
+
+	/* Ohne Adresse gibt es weder Badge noch Link. Ohne die Bedingung am Wrapper
+	   bliebe eine leere Trennlinie samt Abstand stehen — ein Rahmen um nichts. */
+	it('rendert ohne E-Mail-Adresse gar keinen Historien-Block', async () => {
+		const props = basisProps();
+		render(AdminSightingView, {
+			...props,
+			sighting: { ...props.sighting, email: null },
+			reporterHistory: null
+		});
+
+		await expect.element(page.getByTestId('reporter-history-block')).not.toBeInTheDocument();
+	});
+});

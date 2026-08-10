@@ -670,4 +670,6 @@
 	{statusBusy}
 	statusLog={data.statusLog}
 	statusLogFailed={data.statusLogFailed}
+	reporterHistory={data.reporterHistory}
+	reporterHistoryFailed={data.reporterHistoryFailed}
 />

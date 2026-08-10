@@ -2,6 +2,7 @@ import { HERKUNFT_EINGANG, HERKUNFT_PARAMETER } from '$lib/components/admin/admi
 import { resolveQueueOrder } from '$lib/components/admin/queueOrder';
 import type { SightingQueue } from '$lib/components/admin/sightingQueue';
 import type { SightingStatusLogEntry } from '$lib/components/admin/sightingStatusLog';
+import type { ReporterHistory } from '$lib/types/reporterHistory';
 import type { PageLoad } from './$types';
 
 type FetchFn = typeof fetch;
@@ -14,6 +15,11 @@ interface StatusLogResult {
 interface QueueResult {
 	queue: SightingQueue | null;
 	queueFailed: boolean;
+}
+
+interface ReporterHistoryResult {
+	reporterHistory: ReporterHistory | null;
+	reporterHistoryFailed: boolean;
 }
 
 /**
@@ -53,6 +59,38 @@ async function ladeStatusLog(fetchFn: FetchFn, id: string): Promise<StatusLogRes
 		return { statusLog: body.history as SightingStatusLogEntry[], statusLogFailed: false };
 	} catch {
 		return { statusLog: [], statusLogFailed: true };
+	}
+}
+
+/**
+ * Melder-Historie der Detailansicht.
+ *
+ * Gleiche Konstruktion wie beim Status-Log: Ein Fehlschlag darf die Seite nicht
+ * kosten, darf aber auch nicht als „keine Vorgeschichte" durchgehen. Beides
+ * sähe im DOM gleich aus, und die Verwechslung wäre genau der Fehlermodus,
+ * gegen den die Anzeige antritt.
+ *
+ * Eine Antwort ohne das Feld `history` zählt als Fehlschlag: Sie ist ein
+ * Vertragsbruch des Endpunkts, kein Altbestand.
+ */
+async function ladeMelderHistorie(fetchFn: FetchFn, id: string): Promise<ReporterHistoryResult> {
+	try {
+		const response = await fetchFn(`/api/sightings/${id}/reporter-history`);
+		if (!response.ok) {
+			return { reporterHistory: null, reporterHistoryFailed: true };
+		}
+
+		const body = await response.json();
+		if (!('history' in (body ?? {}))) {
+			return { reporterHistory: null, reporterHistoryFailed: true };
+		}
+
+		return {
+			reporterHistory: body.history as ReporterHistory | null,
+			reporterHistoryFailed: false
+		};
+	} catch {
+		return { reporterHistory: null, reporterHistoryFailed: true };
 	}
 }
 
@@ -98,12 +136,13 @@ export const load: PageLoad = async ({ params, fetch, url }) => {
 	const ausEingang = url.searchParams.get(HERKUNFT_PARAMETER) === HERKUNFT_EINGANG;
 	const queueOrder = resolveQueueOrder(url.searchParams.get('order'));
 
-	const [statusLogResult, queueResult] = await Promise.all([
+	const [statusLogResult, queueResult, reporterHistoryResult] = await Promise.all([
 		ladeStatusLog(fetch, params.id),
 		ausEingang
 			? ladeQueue(fetch, params.id, queueOrder)
-			: Promise.resolve<QueueResult>({ queue: null, queueFailed: false })
+			: Promise.resolve<QueueResult>({ queue: null, queueFailed: false }),
+		ladeMelderHistorie(fetch, params.id)
 	]);
 
-	return { ...statusLogResult, ...queueResult, queueOrder };
+	return { ...statusLogResult, ...queueResult, ...reporterHistoryResult, queueOrder };
 };

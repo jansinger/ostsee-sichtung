@@ -38,6 +38,9 @@
 	import SightingStatusControl from './SightingStatusControl.svelte';
 	import SightingStatusTimeline from './SightingStatusTimeline.svelte';
 	import type { SightingStatusLogEntry } from './sightingStatusLog';
+	import type { ReporterHistory } from '$lib/types/reporterHistory';
+	import ReporterHistoryBadge from './ReporterHistoryBadge.svelte';
+	import { getReporterLevel } from './reporterHistoryPresentation';
 
 	// Definiere die Struktur einer Datenzeile
 	interface DataRowType {
@@ -55,7 +58,9 @@
 		onStatusChange,
 		statusBusy = false,
 		statusLog = [],
-		statusLogFailed = false
+		statusLogFailed = false,
+		reporterHistory = null,
+		reporterHistoryFailed = false
 	} = $props<{
 		sighting: FrontendSighting;
 		loading?: boolean;
@@ -65,6 +70,10 @@
 		statusLog?: SightingStatusLogEntry[];
 		/** Die Historie konnte nicht geladen werden — von „leer" zu unterscheiden. */
 		statusLogFailed?: boolean;
+		/** Was über den Melder bekannt ist — `null` heißt „nicht ermittelt". */
+		reporterHistory?: ReporterHistory | null;
+		/** Die Abfrage ist fehlgeschlagen — von „keine Vorgeschichte" zu unterscheiden. */
+		reporterHistoryFailed?: boolean;
 	}>();
 
 	// State für die aktuellen Sichtungsdaten mit reaktiver Wetterdaten-Aktualisierung
@@ -373,6 +382,34 @@
 			DataRow('Fax', currentSighting.fax, hasValue(currentSighting.fax)),
 			DataRow('Adresse', addressParts || 'Nicht angegeben', Boolean(addressParts))
 		].filter((row): row is DataRowType => row !== undefined)
+	);
+
+	/* „Melder seit" ohne Tag: Der Monat trägt die Aussage (langjährig oder
+	   neu), ein Tagesdatum suggerierte eine Genauigkeit, die für diese Frage
+	   niemand braucht.
+
+	   **Nicht bei einer Erstmeldung.** `since` enthält bewusst die aktuelle
+	   Meldung — bei einem Melder ohne Vorgeschichte stünde dort das heutige
+	   Datum, und „Melder seit 08/2026" liest sich als Aussage über eine
+	   Vorgeschichte, die es nicht gibt. Ab `pending` ebenfalls nicht: Auch dort
+	   ist noch nichts bearbeitet worden. */
+	const reporterLevel = $derived(getReporterLevel(reporterHistory));
+	const reporterSince = $derived(
+		reporterHistory?.since &&
+			reporterLevel &&
+			reporterLevel !== 'first' &&
+			reporterLevel !== 'pending'
+			? new Date(reporterHistory.since).toLocaleDateString('de-DE', {
+					month: '2-digit',
+					year: 'numeric'
+				})
+			: null
+	);
+
+	const reporterSearchHref = $derived(
+		currentSighting.email
+			? `/admin/sichtungen?q=${encodeURIComponent(currentSighting.email.trim().toLowerCase())}`
+			: null
 	);
 
 	// Status — Freigabe/Ablehnung stehen seit Task 7 als eigene Leiste im
@@ -695,6 +732,37 @@
 								</tbody>
 							</table>
 						</div>
+
+						<!-- Melder-Historie: was über diese Adresse sonst bekannt ist.
+							     Reine Anzeige — sie ändert weder Spam-Score noch Sichtbarkeit,
+							     und die Adresse ist nicht verifiziert (docs/SPAM_DETECTION.md).
+
+							     Die Bedingung am Wrapper ist nicht kosmetisch: Ohne sie rendert
+							     eine Sichtung ohne E-Mail-Adresse (im Altbestand möglich) eine
+							     leere Trennlinie samt Abstand — ein Rahmen um nichts. Der
+							     Fehlschlag-Zweig ist deshalb bewusst Teil derselben Bedingung. -->
+						{#if reporterHistoryFailed || reporterLevel || reporterSearchHref}
+							<div
+								class="border-base-300 mt-2 flex flex-wrap items-center gap-2 border-t pt-3"
+								data-testid="reporter-history-block"
+							>
+								{#if reporterHistoryFailed}
+									<span class="text-base-content/70 text-sm">
+										Melder-Historie konnte nicht geladen werden
+									</span>
+								{:else}
+									<ReporterHistoryBadge history={reporterHistory} />
+									{#if reporterSince}
+										<span class="text-base-content/70 text-sm">Melder seit {reporterSince}</span>
+									{/if}
+									{#if reporterSearchHref}
+										<a href={reporterSearchHref} class="link link-hover text-sm">
+											Alle Meldungen dieses Melders
+										</a>
+									{/if}
+								{/if}
+							</div>
+						{/if}
 					</div>
 				</div>
 			{/if}
