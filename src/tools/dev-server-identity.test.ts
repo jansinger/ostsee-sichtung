@@ -9,7 +9,9 @@ import { describe, expect, it, vi } from 'vitest';
 import {
 	CI_DEV_HOST,
 	DEV_IDENTITY_PATH,
+	WORKTREE_WATCH_GLOBS,
 	assertServerIdentity,
+	worktreeWatchIgnore,
 	ciDevPort,
 	createNodeIdentityFetch,
 	describePortOwner,
@@ -563,5 +565,37 @@ describe('devServerIdentity plugin', () => {
 
 		expect(next).toHaveBeenCalled();
 		expect(res.end).not.toHaveBeenCalled();
+	});
+});
+
+/**
+ * Der Watcher darf sich nicht selbst aussperren.
+ *
+ * Vorgeschichte: `vite.config.ts` hielt die Worktrees pauschal aus dem Watcher
+ * heraus. Weil Chokidar gegen den absoluten Pfad vergleicht, traf das Muster im
+ * Worktree jede eigene Quelldatei — HMR war dort tot, ohne Fehler und ohne
+ * Meldung. Der Fall lässt sich nur an der Pfadform prüfen; ein laufender Server
+ * würde ihn nicht melden, er täte einfach nichts.
+ */
+describe('worktreeWatchIgnore', () => {
+	it('hält die Worktrees heraus, solange der Server im Haupt-Repo läuft', () => {
+		expect(worktreeWatchIgnore('/Users/jan/Code/ostsee-sichtung')).toEqual([
+			...WORKTREE_WATCH_GLOBS
+		]);
+	});
+
+	it('ignoriert nichts, wenn der Server selbst in einem Worktree läuft', () => {
+		expect(
+			worktreeWatchIgnore('/Users/jan/Code/ostsee-sichtung/.claude/worktrees/feature-x')
+		).toEqual([]);
+		expect(worktreeWatchIgnore('/Users/jan/Code/ostsee-sichtung/.worktrees/feature-y')).toEqual([]);
+	});
+
+	/* Der Verzeichnisname allein genügt nicht: Ein Projekt, das zufällig
+	   „worktrees" heißt, ist kein Worktree. Geprüft wird der Pfadabschnitt. */
+	it('lässt sich von einem ähnlich benannten Verzeichnis nicht täuschen', () => {
+		expect(worktreeWatchIgnore('/Users/jan/Code/meine-worktrees-doku')).toEqual([
+			...WORKTREE_WATCH_GLOBS
+		]);
 	});
 });

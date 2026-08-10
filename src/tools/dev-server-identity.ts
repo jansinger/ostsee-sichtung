@@ -406,3 +406,35 @@ export async function assertServerIdentity({
 		].join('\n')
 	);
 }
+
+/**
+ * Glob-Muster, mit denen der Datei-Watcher die Worktrees heraushält.
+ *
+ * Worktrees liegen unter `.claude/worktrees/` **innerhalb** des Repo-Roots.
+ * Ohne diese Muster beobachtete ein Watcher im Haupt-Repo ein Vielfaches an
+ * Dateien, sobald die `.gitignore`-Zeile einmal wegfällt.
+ */
+export const WORKTREE_WATCH_GLOBS = ['**/.claude/worktrees/**', '**/.worktrees/**'] as const;
+
+/**
+ * Dieselben Muster — aber **nur**, wenn der Dev-Server nicht selbst in einem
+ * Worktree läuft.
+ *
+ * **Warum die Fallunterscheidung nötig ist.** Chokidar vergleicht `ignored`
+ * gegen den *absoluten* Pfad. Startet der Server im Worktree, liegt jede
+ * Quelldatei unter `…/.claude/worktrees/<name>/src/…` und matcht damit
+ * `**\/.claude/worktrees/**` — der Watcher ignoriert dann das gesamte Projekt,
+ * und HMR ist tot. Kein Fehler, keine Meldung: Änderungen kommen schlicht nie
+ * an, und wer sie sehen will, muss den Server neu starten.
+ *
+ * Das Muster war als Absicherung gedacht (falls die `.gitignore`-Zeile
+ * wegfällt) und hat in dieser Rolle genau den Arbeitsablauf lahmgelegt, für den
+ * es die Worktrees gibt. Im Haupt-Repo greift es unverändert weiter.
+ */
+export function worktreeWatchIgnore(cwd: string = process.cwd()): string[] {
+	const normalisiert = cwd.replaceAll('\\', '/');
+	const imWorktree = ['/.claude/worktrees/', '/.worktrees/'].some((teil) =>
+		normalisiert.includes(teil)
+	);
+	return imWorktree ? [] : [...WORKTREE_WATCH_GLOBS];
+}
