@@ -138,7 +138,15 @@ const runLoad = async (url: URL): Promise<InboxData> =>
 describe('Eingangs-Load', () => {
 	beforeEach(() => {
 		recordedSelects = [];
-		resolvedRows = [[{ id: 1 }, { id: 2 }], [{ count: 7 }], [{ count: 3 }], []];
+		resolvedRows = [
+			[
+				{ id: 1, email: 'melder-eins@example.com' },
+				{ id: 2, email: 'melder-zwei@example.com' }
+			],
+			[{ count: 7 }],
+			[{ count: 3 }],
+			[]
+		];
 		findDuplicateCandidates.mockClear();
 		findDuplicateCandidates.mockResolvedValue({});
 		findReporterHistory.mockClear();
@@ -219,8 +227,8 @@ describe('Eingangs-Load', () => {
 
 		expect(findReporterHistory).toHaveBeenCalledTimes(1);
 		expect(findReporterHistory).toHaveBeenCalledWith([
-			{ id: 1, email: undefined, approvedAt: null, rejectedAt: null },
-			{ id: 2, email: undefined, approvedAt: null, rejectedAt: null }
+			{ id: 1, email: 'melder-eins@example.com', approvedAt: null, rejectedAt: null },
+			{ id: 2, email: 'melder-zwei@example.com', approvedAt: null, rejectedAt: null }
 		]);
 		expect(result.reporterHistoryBySighting).toEqual({
 			1: { approved: 3, rejected: 0, open: 0, since: '2019-03-04T08:00:00Z' }

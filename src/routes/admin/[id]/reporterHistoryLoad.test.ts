@@ -99,6 +99,40 @@ describe('load der Melder-Historie', () => {
 		expect(result.reporterHistory).toBeNull();
 	});
 
+	/* `static/openapi.yml` führt `since` als `required` (Typ `string`,
+	   `nullable`). Ohne diese Prüfung passierte `{ approved: 0, rejected: 0,
+	   open: 0 }` die Gestaltprüfung und landete als Stufe `'first'` in der
+	   Oberfläche — ein Vertragsbruch, der als „Erstmeldung" durchgeht. Genau
+	   die Verwechslung, gegen die die Prüfung antritt. */
+	it('behandelt ein history-Objekt mit fehlendem since als Fehlschlag', async () => {
+		const result = await laden(antwort({ history: { approved: 0, rejected: 0, open: 0 } }));
+
+		expect(result.reporterHistoryFailed).toBe(true);
+		expect(result.reporterHistory).toBeNull();
+	});
+
+	it('behandelt ein history-Objekt mit since in falschem Typ als Fehlschlag', async () => {
+		const result = await laden(
+			antwort({ history: { approved: 0, rejected: 0, open: 0, since: 12345 } })
+		);
+
+		expect(result.reporterHistoryFailed).toBe(true);
+		expect(result.reporterHistory).toBeNull();
+	});
+
+	/* Die Gegenprobe zu den beiden Fällen oben: `since: null` ist ein
+	   legitimer Wert (Sichtung ohne verwertbares Meldedatum), kein
+	   Vertragsbruch — er muss durchkommen wie jede andere gültige Historie. */
+	it('lässt since: null durch', async () => {
+		const historie: ReporterHistory = { approved: 0, rejected: 0, open: 0, since: null };
+
+		const result = await laden(antwort({ history: historie }));
+
+		expect(result).toEqual(
+			expect.objectContaining({ reporterHistory: historie, reporterHistoryFailed: false })
+		);
+	});
+
 	it('kennzeichnet eine Fehlerantwort als Fehlschlag', async () => {
 		const result = await laden(antwort({}, false));
 

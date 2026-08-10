@@ -66,11 +66,14 @@ async function ladeStatusLog(fetchFn: FetchFn, id: string): Promise<StatusLogRes
  * Prüft die Gestalt von `history`, statt sie zu casten.
  *
  * `null` ist zulässig (nicht ermittelbar). Ein Objekt muss die drei Zählfelder
- * als `number` mitbringen — ohne diese Prüfung fiele `getReporterLevel` bei
- * einem kaputten Wert (`"kaputt"`, `{}`, …) auf `undefined`-Vergleiche zurück
- * und würde `'first'` liefern: die Oberfläche behauptete dann „Erstmeldung",
- * wo ein Vertragsbruch des Endpunkts vorliegt — die Verwechslung, gegen die
- * dieses Feature antritt.
+ * als `number` mitbringen sowie `since` als `string | null` — ohne diese
+ * Prüfung fiele `getReporterLevel` bei einem kaputten Wert (`"kaputt"`, `{}`,
+ * `{ approved: 0, rejected: 0, open: 0 }` ohne `since`, …) auf
+ * `undefined`-Vergleiche zurück und würde `'first'` liefern: die Oberfläche
+ * behauptete dann „Erstmeldung", wo ein Vertragsbruch des Endpunkts vorliegt
+ * — die Verwechslung, gegen die dieses Feature antritt. `since` ist dabei
+ * genauso Pflicht wie die Zählfelder (`static/openapi.yml` führt es als
+ * `required`), nur eben mit `null` als zulässigem Wert.
  */
 function istGueltigeMelderHistorie(value: unknown): value is ReporterHistory | null {
 	if (value === null) return true;
@@ -80,7 +83,8 @@ function istGueltigeMelderHistorie(value: unknown): value is ReporterHistory | n
 	return (
 		typeof kandidat.approved === 'number' &&
 		typeof kandidat.rejected === 'number' &&
-		typeof kandidat.open === 'number'
+		typeof kandidat.open === 'number' &&
+		(typeof kandidat.since === 'string' || kandidat.since === null)
 	);
 }
 
