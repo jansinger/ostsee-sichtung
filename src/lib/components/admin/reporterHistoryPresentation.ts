@@ -97,7 +97,7 @@ export interface ReporterLevelPresentation {
 
 export const REPORTER_LEVEL_PRESENTATION: Record<ReporterLevel, ReporterLevelPresentation> = {
 	first: {
-		badgeClass: 'badge-ghost',
+		badgeClass: 'badge-neutral',
 		icon: 'lucide:user-plus',
 		description: 'Erste Meldung dieser E-Mail-Adresse — keine Vorgeschichte im Bestand'
 	},
@@ -107,12 +107,12 @@ export const REPORTER_LEVEL_PRESENTATION: Record<ReporterLevel, ReporterLevelPre
 		description: 'Weitere Meldungen dieser Adresse sind selbst noch unbearbeitet'
 	},
 	new: {
-		badgeClass: 'badge-ghost',
+		badgeClass: 'badge-soft badge-success',
 		icon: 'lucide:user-check',
 		description: 'Einzelne frühere Meldungen dieser Adresse wurden freigegeben'
 	},
 	known: {
-		badgeClass: 'badge-ghost',
+		badgeClass: 'badge-soft badge-success',
 		icon: 'lucide:user-check',
 		description: 'Mehrere frühere Meldungen dieser Adresse wurden freigegeben'
 	},

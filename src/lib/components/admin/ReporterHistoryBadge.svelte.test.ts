@@ -90,8 +90,12 @@ describe('ReporterHistoryBadge', () => {
 			return container.querySelector('[data-testid="reporter-badge"]')?.className ?? '';
 		};
 
+		// Vollton bei 30, Soft-Variante bei 5 — beide tragen `badge-success`,
+		// unterschieden werden sie über `badge-soft`.
 		expect(klasse(30)).toContain('badge-success');
-		expect(klasse(5)).toContain('badge-ghost');
-		expect(klasse(5)).not.toContain('badge-success');
+		expect(klasse(30)).not.toContain('badge-soft');
+		expect(klasse(5)).toContain('badge-soft');
+		expect(klasse(1)).toContain('badge-soft');
+		expect(klasse(0)).toContain('badge-neutral');
 	});
 });

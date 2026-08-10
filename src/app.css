@@ -355,6 +355,34 @@ h6 {
 }
 
 /* ===== Component Refinements ===== */
+/* Badge-Soft: dieselbe Korrektur wie bei den Alerts, eine Ebene tiefer.
+   DaisyUI setzt für `.badge-soft` `color: var(--badge-color)` — die Statusfarbe
+   als Text auf einer 8-%-Tönung derselben Farbe. Auf diesem Theme misst
+   `text-success` so 3,81:1 und `text-warning` 2,74:1; WCAG 1.4.3 verlangt
+   4,5:1. Mit `base-content` sind es über 13:1.
+
+   Die Tönung ist zugleich von 8 % auf 18 % angehoben und der Rahmen von 10 %
+   auf 35 %: Bei 8 % war die Abstufung im Betrieb nicht von einem neutralen
+   Badge zu unterscheiden (nachgesehen am 2026-08-10 an der Melder-Historie,
+   davor schon an einer eigenen `bg-primary/10`-Tönung gescheitert). Der Rahmen
+   ist der Teil, der die Fläche überhaupt als eigene Stufe lesbar macht.
+
+   Ungelayert und damit vor DaisyUIs `@layer` — dieselbe Mechanik wie beim
+   Fokus- und Alert-Override (.claude/rules/daisyui.md). */
+.badge-soft {
+	color: var(--color-base-content);
+	background-color: color-mix(
+		in oklab,
+		var(--badge-color, var(--color-base-content)) 18%,
+		var(--color-base-100)
+	);
+	border-color: color-mix(
+		in oklab,
+		var(--badge-color, var(--color-base-content)) 35%,
+		var(--color-base-100)
+	);
+}
+
 /* Alerts: Soft-Style als Default. Begründung und Messwerte in
    .claude/rules/daisyui.md. Textfarbe ist base-content, nicht die
    Statusfarbe — die Bedeutung trägt das Icon. */

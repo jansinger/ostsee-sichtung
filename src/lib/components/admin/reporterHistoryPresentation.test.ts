@@ -5,6 +5,7 @@
  * und stehen deshalb hier als Test und nicht nur als Konstante: Eine Zahl, die
  * niemand nachrechnet, verschiebt sich beim nächsten Umbau unbemerkt.
  */
+import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 import type { ReporterHistory } from '$lib/types/reporterHistory';
 import {
@@ -99,14 +100,34 @@ describe('reporterBadgeText', () => {
 
 describe('REPORTER_LEVEL_PRESENTATION', () => {
 	/* Die Farbwahl ist eine Produktentscheidung (Jan, 2026-08-10) und steht
-	   deshalb als Test da: Grün ab 10 Freigaben, Gelb bei überwiegend
-	   abgelehnten, alles andere neutral. Die drei unteren Stufen teilen sich
-	   bewusst `badge-ghost` — sie unterscheiden sich über die Zahl im Text. */
-	it('vergibt Farbe nur an die etablierte und die Warnstufe', () => {
+	   deshalb als Test da. Die Leiter läuft von „nichts bekannt" zu „bewährt":
+	   dunkelgrau, hellgrau, zweimal blassgrün, grün — plus Gelb als Warnung.
+
+	   `new` und `known` teilen sich bewusst dieselbe Fläche: Drei
+	   unterscheidbare Grüntöne gibt das Theme nicht her, und die Zahl im Text
+	   trennt sie ohnehin („2 freigegeben" gegen „5 freigegeben"). */
+	it('bildet eine Leiter von neutral über blassgrün nach grün', () => {
+		expect(REPORTER_LEVEL_PRESENTATION.first.badgeClass).toBe('badge-neutral');
+		expect(REPORTER_LEVEL_PRESENTATION.pending.badgeClass).toBe('badge-ghost');
+		expect(REPORTER_LEVEL_PRESENTATION.new.badgeClass).toBe('badge-soft badge-success');
+		expect(REPORTER_LEVEL_PRESENTATION.known.badgeClass).toBe('badge-soft badge-success');
 		expect(REPORTER_LEVEL_PRESENTATION.established.badgeClass).toBe('badge-success');
 		expect(REPORTER_LEVEL_PRESENTATION.flagged.badgeClass).toBe('badge-warning');
-		for (const level of ['first', 'pending', 'new', 'known'] as const) {
-			expect(REPORTER_LEVEL_PRESENTATION[level].badgeClass).toBe('badge-ghost');
+	});
+
+	/* `badge-soft` färbt bei DaisyUI den *Text* in der Statusfarbe — auf diesem
+	   Theme 3,81:1 für Grün und damit unter WCAG 1.4.3. Der Override in
+	   `src/app.css` zieht ihn auf `base-content`. Wer die Klasse hier verwendet,
+	   verlässt sich darauf; der Test hält die Abhängigkeit fest, damit ein
+	   entfernter Override nicht nur optisch auffällt. */
+	it('nutzt badge-soft nur zusammen mit dem Kontrast-Override aus app.css', async () => {
+		const appCss = await readFile('src/app.css', 'utf-8');
+		const nutztSoft = Object.values(REPORTER_LEVEL_PRESENTATION).some((p) =>
+			p.badgeClass.includes('badge-soft')
+		);
+
+		if (nutztSoft) {
+			expect(appCss).toMatch(/\.badge-soft\s*\{[^}]*color:\s*var\(--color-base-content\)/);
 		}
 	});
 
