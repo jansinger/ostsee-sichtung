@@ -74,12 +74,14 @@ describe('Admin — destruktive Schaltflächen tragen die kanonische Variante', 
 		expect(verstoesse).toEqual([]);
 	});
 
-	it('löscht in Tabelle, Karte und Detailansicht mit derselben Variante', () => {
+	it('löscht in Zeilen-Menü und Detailansicht mit derselben Variante', () => {
 		// Der Scan oben verbietet die falsche Variante; dieser Test verlangt die
 		// richtige. Ohne ihn wäre auch „gar kein Löschen-Knopf mehr" grün.
+		// Tabelle und Kartenansicht löschen seit 2026-08-10 über das gemeinsame
+		// Overflow-Menü (`SightingActionsMenu.svelte`) — deshalb steht hier die
+		// Menü-Komponente statt der beiden Ansichten.
 		for (const pfad of [
-			'./sichtungen/SichtungenTable.svelte',
-			'./sichtungen/SichtungenCards.svelte',
+			'../../lib/components/admin/SightingActionsMenu.svelte',
 			'./[id]/+page.svelte'
 		]) {
 			const quelle = readFileSync(fileURLToPath(new URL(pfad, import.meta.url)), 'utf-8');

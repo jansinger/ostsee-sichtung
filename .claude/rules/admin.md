@@ -145,6 +145,7 @@ dieselbe, deshalb steht sie einmal.
 | `SpamFinding.svelte`           | Ein Spam-Befund (Modal + Detailkarte)       |
 | `sightingStatusFilter.ts`      | Statuswert ↔ Filter-Query (`?verified=`)    |
 | `SightingStatusControl.svelte` | Segmented Control für den Statuswechsel     |
+| `SightingActionsMenu.svelte`   | Overflow-Menü der Zeilen-Aktionen (Tabelle + Karten) |
 
 ### Spam-Score: vier Anzeigestellen, eine Schwelle
 

@@ -188,7 +188,14 @@ test.describe('Spam-Check — Erstbefund und Neuberechnung nebeneinander', () =>
 			// Die Spalte zeigt den Erstbefund — unverändert, das war nie der Fehler.
 			await expect(zeile).toContainText(String(ERSTBEFUND_SCORE));
 
-			await zeile.getByRole('button', { name: 'Spam-Check durchführen' }).click();
+			/* Seit 2026-08-10 steht der Spam-Check im Overflow-Menü der Zeile
+			   (`SightingActionsMenu.svelte`) — erst öffnen, dann klicken. Der
+			   Eintrag wird über `page` gesucht, nicht über `zeile`: Es gibt zwar
+			   ein Menü pro Zeile, aber `popover="auto"` lässt nur eines offen,
+			   und geschlossene Popover stehen nicht im Accessibility-Baum —
+			   sichtbar ist also genau der Eintrag der gerade geöffneten Zeile. */
+			await zeile.getByRole('button', { name: /^Weitere Aktionen zu Sichtung/ }).click();
+			await page.getByRole('button', { name: 'Spam-Check durchführen' }).click();
 
 			const modal = page.locator('.modal-box').filter({ hasText: 'Spam-Analyse' });
 			await expect(modal).toBeVisible();
