@@ -1210,18 +1210,27 @@ git commit -m "feat(ui): add a language switcher to the public navbar"
 
 ## Abschluss der Etappe
 
-- [ ] **Dokumentation nachziehen.** In `src/lib/legacy-api/languagePrefix.ts` und
-      [LEGACY_API_SPECIFICATION.md](LEGACY_API_SPECIFICATION.md) steht die
+- [x] **Dokumentation nachgezogen** (Commit `7dafd5e7`). In
+      `src/lib/legacy-api/languagePrefix.ts` und
+      [LEGACY_API_SPECIFICATION.md](LEGACY_API_SPECIFICATION.md) stand die
       Begründung „`/en/` vor der Startseite bleibt 404, weil die Anwendung
-      einsprachig deutsch ist". Die Prämisse gilt nicht mehr — umschreiben. Die
-      Begründung zu `/en/admin` ist ebenfalls zu korrigieren: `/admin` bleibt
-      dort aus einem Umfangsgrund ausgeschlossen (einsprachig deutsches Team),
-      nicht aus einem Sicherheitsgrund — der Zugriffsschutz ist route-basiert
-      (`requireUserRole` in `src/routes/admin/+layout.server.ts`) und
-      unabhängig von `hooks.server.ts`.
-- [ ] **`docs/WORKTREES.md`** um den Paraglide-Compile-Schritt ergänzen.
+      einsprachig deutsch ist" — die Prämisse galt nicht mehr und wurde
+      umgeschrieben. Die Begründung zu `/en/admin` wurde im selben Commit
+      korrigiert: `/admin` bleibt aus einem Umfangsgrund ausgeschlossen
+      (einsprachig deutsches Team), nicht aus einem Sicherheitsgrund — der
+      Zugriffsschutz ist route-basiert (`requireUserRole` in
+      `src/routes/admin/+layout.server.ts`) und unabhängig von
+      `hooks.server.ts`.
+- [ ] **`docs/WORKTREES.md`** um den Paraglide-Compile-Schritt ergänzen. Noch
+      offen — kein entsprechender Abschnitt in der Datei.
 - [ ] **Vollständiger E2E-Lauf**: `npm run test:e2e` (ohne `CI=1`, ohne
-      parallelen Lauf in einem Nachbar-Worktree).
+      parallelen Lauf in einem Nachbar-Worktree). Noch offen — belegt ist
+      bisher nur der `map`-Shard (Task 6, 140/140 grün) und ein
+      Deckungsnachweis 2/19, nicht die volle Suite.
+- [x] **Produktions-Build verifiziert.** Task 4 hatte offengelassen, dass
+      `npm run build` nie lief, nur der Dev-Server. Der abschließende
+      Branch-Review hat das nachgeholt: mergefähig, kein Critical, Prod-Build
+      verifiziert.
 
 **Definition of Done:** `/en` liefert eine Seite mit `lang="en"` aus **und
 bleibt beim Navigieren englisch**, der Umschalter führt außerhalb des iframes

@@ -52,9 +52,13 @@ describe('stripLegacyLanguagePrefix', () => {
 	});
 
 	describe('greift nur bei den Legacy-Pfaden', () => {
-		// Die Anwendung ist einsprachig deutsch. Ein /en/ vor der Startseite oder
-		// vor /admin wäre ein Sprachversprechen, das sie nicht einlöst — und vor
-		// /admin zusätzlich ein zweiter Pfad auf geschützte Routen.
+		// stripLegacyLanguagePrefix bedient ausschließlich die vier Pfade aus
+		// LEGACY_PFADE — für sie ist das Präfix reine Routenkosmetik aus der
+		// CakePHP-Vorgänger-App. /en und /de vor der Startseite oder vor /admin
+		// sind dafür fremd: Erstere sind Seitenrouten mit eigener Lokalisierung
+		// über Paraglide, Letztere ist bewusst von der Lokalisierung
+		// ausgeschlossen (NICHT_LOKALISIERT), aber aus keinem der beiden Gründe
+		// zuständig für diese Funktion — sie bleiben hier unverändert.
 		const fremdePfade = [
 			'/en',
 			'/de',
