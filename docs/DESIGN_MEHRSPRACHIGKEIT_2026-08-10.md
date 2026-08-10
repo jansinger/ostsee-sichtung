@@ -31,12 +31,14 @@ Inhaltsseiten `/about` und `/bestimmungshilfe` einschließlich
 
 ## 2. Getroffene Entscheidungen
 
-| Frage        | Entscheidung                                                                               |
-| ------------ | ------------------------------------------------------------------------------------------ |
-| Bibliothek   | **Paraglide JS** (inlang), compilerbasiert                                                 |
-| Sprachwahl   | **URL-Präfix `/en/…`**, Elternseite entscheidet; `Accept-Language` als Rückfallebene       |
-| Einwilligung | **Vollwertig zweisprachig** im Nachweis; deutsch-only als markierter Zwischenstand erlaubt |
-| Tests        | **Suite bleibt deutsch**, schmaler EN-Rauchtest kommt dazu                                 |
+| Frage         | Entscheidung                                                                                            |
+| ------------- | ------------------------------------------------------------------------------------------------------- |
+| Bibliothek    | **Paraglide JS** (inlang), compilerbasiert                                                              |
+| Routing       | **pfadbasiert** (`/en/…`) mit Ausschlussliste für `/api`, `/admin`, Betriebs- und Legacy-Pfade          |
+| Sprachwahl    | `strategy: ['url','cookie','baseLocale']` — **ohne** `preferredLanguage`; `Accept-Language` nur auf `/` |
+| Hartcodiertes | eigener Scan-Guard in der Bauart der vier bestehenden Quelltext-Guards                                  |
+| Einwilligung  | **Vollwertig zweisprachig** im Nachweis; deutsch-only als markierter Zwischenstand erlaubt              |
+| Tests         | **Suite bleibt deutsch**, schmaler EN-Rauchtest kommt dazu                                              |
 
 ### 2.1 Warum Paraglide JS
 
@@ -91,72 +93,173 @@ angegeben.
 
 ---
 
-## 4. Routing: die `reroute`-Komposition
+## 4. Routing
 
-**Das ist die heikelste Stelle des ganzen Vorhabens.**
+**Das ist die heikelste Stelle des ganzen Vorhabens.** Gewählt ist
+**pfadbasiertes Routing** — die Sprache steht in der URL, nicht in einem Cookie
+oder Header. Deterministisch, cachebar, teilbar, und es ist die Struktur, die
+Paraglide ohnehin vorsieht.
+
+### 4.1 Der eine `reroute`-Export
 
 SvelteKit erlaubt genau **einen** `reroute`-Export. Er ist bereits belegt
 ([hooks.ts](../src/hooks.ts)) und Paraglide beansprucht ihn ebenfalls. Die beiden
-Bedeutungen des Präfixes sind dabei gegenläufig:
-
-| Aufruf                               | heute                                    | künftig                  |
-| ------------------------------------ | ---------------------------------------- | ------------------------ |
-| `/en/rest_sichtungen/antworten.json` | Präfix abschneiden, **deutsche** Antwort | **unverändert**          |
-| `/en/sichtungen`                     | 404                                      | englische Oberfläche     |
-| `/en`                                | 404                                      | englisches Meldeformular |
-| `/en/admin/...`                      | 404                                      | **bleibt 404**           |
-
-### 4.1 Reihenfolge
+Bedeutungen des Präfixes sind dabei gegenläufig: Für die Legacy-API ist `/en/`
+reine Routenkosmetik mit **deutscher** Antwort, für Seitenrouten ist es ein
+Sprachversprechen.
 
 ```
 reroute(url):
-  1. stripLegacyLanguagePrefix(url.pathname)   → Treffer? Ergebnis zurückgeben, fertig.
-  2. deLocalizeUrl(url)                        → alles Übrige.
+  1. stripLegacyLanguagePrefix(pathname)  → Treffer? zurückgeben, fertig.
+  2. istAusgeschlossen(pathname)          → ja? undefined (keine Umschreibung).
+  3. deLocalizeUrl(url)                   → alles Übrige.
 ```
 
-Die Legacy-Prüfung muss zuerst laufen und sie ist bereits eng gefasst: eine
-Positivliste von genau vier Pfaden in `LEGACY_PFADE`, bewusst nicht generisch
-über Verzeichnisse. Diese Enge ist jetzt doppelt wertvoll — sie verhindert, dass
-Paraglide je einen Legacy-Pfad in die Hand bekommt.
+Schritt 1 zuerst, weil `LEGACY_PFADE` bereits eine enge Positivliste von genau
+vier Pfaden ist — bewusst nicht generisch über Verzeichnisse. Diese Enge ist
+jetzt doppelt wertvoll: Sie verhindert, dass Paraglide je einen Legacy-Pfad in
+die Hand bekommt.
 
-### 4.2 Zwei bestehende Entscheidungen, die sich ändern
+Schritt 2 ist neu und in Abschnitt 4.2 begründet. `undefined` heißt „nicht
+umschreiben" — SvelteKit löst den Pfad dann wörtlich auf, und da es keine Route
+`/en/api/...` gibt, ist das Ergebnis ein 404. Genau das ist gewollt.
 
-Beide sind heute in `languagePrefix.ts` und
-[LEGACY_API_SPECIFICATION.md](LEGACY_API_SPECIFICATION.md) ausdrücklich begründet.
-Wer sie umdreht, muss die Begründung mit umschreiben — sonst steht dort eine
-Erklärung, die nicht mehr trägt.
+`reroute` betrifft ausschließlich die Routenauflösung. `event.url` bleibt in
+`hooks.server.ts` und in den Endpunkten die vom Client gesendete URL —
+Query-String und Trailing Slash bleiben unangetastet, und der Auth-Schutz sieht
+weiterhin den echten Pfad.
 
-- **„`/en/` vor der Startseite bleibt 404, weil die Anwendung einsprachig deutsch
-  ist."** Diese Prämisse fällt weg. `/en` allein zeigte in CakePHP auf das
-  Meldeformular; mit der englischen Fassung stellt sich genau das wieder her.
-- **„`/en/admin` wäre ein zweiter Pfad auf geschützte Routen."** Diese Begründung
-  **bleibt gültig** und wird zur harten Anforderung: Der Schutz in
-  `hooks.server.ts` hängt an `event.url.pathname`, den `reroute` nicht verändert.
-  Der Admin-Bereich ist ohnehin nicht im Umfang. Ein Guard-Test sichert den 404 ab
-  (Abschnitt 7.2).
+### 4.2 Ausschlussliste: was nie lokalisiert wird
 
-### 4.3 Spracherkennung
+Eine Positivliste der lokalisierten Bereiche wäre die theoretisch sicherere
+Bauart, in der Praxis aber eine Liste, die bei jeder neuen öffentlichen Seite
+gepflegt werden müsste und beim Vergessen **still** eine deutsche Seite
+ausliefert. Die Ausschlussliste scheitert andersherum — beim Vergessen entsteht
+ein zusätzlicher, erreichbarer Pfad, und den findet der Guard-Test in
+Abschnitt 8.2. Ein sichtbarer Fehlschlag ist einem stillen vorzuziehen.
+
+| Präfix                                             | Warum ausgeschlossen                                                              |
+| -------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `/api/**`                                          | Maschinenschnittstelle, 12 Verzeichnisse. Antworten sind Daten, keine Oberfläche. |
+| `/admin/**`                                        | Nicht im Umfang — **und** Auth-Schutz an `event.url.pathname`, siehe 4.3.         |
+| `/rest_sichtungen`, `/sichtungen/showreports.json` | Legacy-Vertrag, von Schritt 1 abgefangen.                                         |
+| `/uploads/**`                                      | Auslieferung von Mediendateien.                                                   |
+| `/health`, `/maintenance`                          | Betriebsendpunkte.                                                                |
+| `/docs/**`, `/styleguide`                          | Entwicklerflächen, bleiben deutsch.                                               |
+
+Die Liste gehört neben `LEGACY_PFADE` in `languagePrefix.ts` — dieselbe Datei
+trägt schon heute die Begründung, warum ein Pfad ein Sprachpräfix bekommt oder
+nicht.
+
+### 4.3 Vollständige Pfad-Matrix
+
+| Aufruf                               | heute                                    | künftig                           |
+| ------------------------------------ | ---------------------------------------- | --------------------------------- |
+| `/en/rest_sichtungen/antworten.json` | Präfix abschneiden, **deutsche** Antwort | **unverändert**                   |
+| `/en`                                | 404                                      | englisches Meldeformular          |
+| `/en/sichtungen`, `/en/map`, …       | 404                                      | englische Oberfläche              |
+| `/de`, `/de/sichtungen`              | 404                                      | **bleibt 404** — siehe unten      |
+| `/en/api/**`                         | 404                                      | **bleibt 404**                    |
+| `/en/admin/**`                       | 404                                      | **bleibt 404**                    |
+| `/en/uploads/**`, `/en/health`       | 404                                      | **bleibt 404**                    |
+| `/en/rest_sichtungen/view/1840.json` | 404                                      | **bleibt 404** (kein Legacy-Pfad) |
+
+**`/de/…` bleibt für Seitenrouten 404.** Bei `baseLocale: 'de'` ist Deutsch
+präfixlos; wären `/sichtungen` und `/de/sichtungen` beide erreichbar, gäbe es
+zwei URLs für denselben Inhalt. Erwogen und verworfen: eine dauerhafte
+Weiterleitung `/de/x → /x`. Sie wäre nur nötig, wenn Lesezeichen auf die
+CakePHP-Anwendung zeigten — die es nicht mehr gibt; die vier Legacy-API-Pfade
+behalten ihr `/de/` ohnehin über Schritt 1.
+
+**`/en/admin/**` bleibt 404 — das ist eine Sicherheitsanforderung, keine
+Umfangsentscheidung.** Der Schutz in `hooks.server.ts` hängt an
+`event.url.pathname`, den `reroute` nicht verändert. Ein zweiter Pfad auf
+geschützte Routen wäre eine echte Lücke. Diese Begründung steht bereits in
+`languagePrefix.ts` und bleibt dort unverändert stehen.
+
+Die andere dort dokumentierte Begründung fällt dagegen weg: „`/en/` vor der
+Startseite bleibt 404, weil die Anwendung einsprachig deutsch ist." Die Prämisse
+gilt nicht mehr. `/en` allein zeigte in CakePHP auf das Meldeformular — mit der
+englischen Fassung stellt sich genau das wieder her. Kommentar und
+[LEGACY_API_SPECIFICATION.md](LEGACY_API_SPECIFICATION.md) sind entsprechend
+umzuschreiben; eine stehengelassene Begründung, die nicht mehr trägt, ist
+schlimmer als keine.
+
+### 4.4 Installation: `reroute` ist nur die halbe Miete
+
+Paraglide braucht **zwei** Einhängepunkte, und der zweite wird leicht übersehen:
+
+| Ort                   | Was                                                                                                          |
+| --------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `src/hooks.ts`        | `reroute` — Routenauflösung (Abschnitt 4.1)                                                                  |
+| `src/hooks.server.ts` | `paraglideMiddleware` — löst die Locale serverseitig auf und ersetzt `%lang%`/`%dir%` im ausgelieferten HTML |
+| `vite.config.ts`      | `paraglideVitePlugin` mit `strategy`, `outdir`, `emitTsDeclarations: true`                                   |
+| `src/app.html`        | `%lang%`-Platzhalter statt des harten `lang="de"`                                                            |
+
+Ohne die Middleware gibt es keine serverseitig aufgelöste Locale — also kein
+korrektes SSR und keinen ersetzten Platzhalter. Die Middleware ist so einzuhängen,
+dass sie den bestehenden Auth-Ablauf in `hooks.server.ts` nicht verschiebt; der
+prüft `event.url.pathname` und muss das weiterhin vor jeder Umschreibung tun.
+
+### 4.5 Spracherkennung
+
+**Strategie: `['url', 'cookie', 'baseLocale']` — ohne `preferredLanguage`.**
+
+Das ist eine bewusste Abweichung von der Paraglide-Standardempfehlung. Mit
+`preferredLanguage` in der Kette würde `/sichtungen` je nach Browser-Header mal
+deutsch und mal englisch rendern: dieselbe URL mit zwei Inhalten. Das ist nicht
+cachebar, für Suchmaschinen ein Duplikat, und in einem iframe hinter fremder
+Infrastruktur besonders schwer zu durchschauen. Präfixlos heißt deshalb
+**immer Deutsch**.
+
+`Accept-Language` wird an **genau einer** Stelle ausgewertet:
 
 - **Hauptweg:** Die englische Seite auf meeresmuseum.de bindet den iframe mit
   `src=".../en"` ein. Die Sprachwahl trifft damit die Seite, auf der der Nutzer
   ohnehin steht. Eine englische Museumsseite existiert; die Anpassung der
   Einbettung ist mit dem DMM abzustimmen.
-- **Rückfallebene:** Wer ohne Präfix kommt, wird anhand von `Accept-Language`
-  einmalig weitergeleitet; die Wahl wird in einem Cookie gemerkt und schlägt den
-  Header danach. Greift auch, falls die Museumsseite unverändert bleibt.
+- **Rückfallebene:** Nur auf `/` — und nur, wenn kein Sprach-Cookie gesetzt ist —
+  leitet der Server bei englischem `Accept-Language` einmalig auf `/en` weiter.
+  Diese eine Antwort trägt `Vary: Accept-Language`; alle übrigen Pfade bleiben
+  unbeeinflusst und voll cachebar. Greift auch, falls die Museumsseite unverändert
+  bleibt.
 - **Zusätzlich:** ein Umschalter in der Navigation. Der ist im iframe unsichtbar
   ([PublicNavbar.svelte:63](../src/lib/components/PublicNavbar.svelte#L63)) und
   deshalb ausdrücklich **kein** tragender Weg — nur Bequemlichkeit für die
   Direktaufrufer. Genau an dieser Fehlannahme ist `/bestimmungshilfe` schon
   einmal gescheitert (siehe [IFRAME_EINBETTUNG.md](IFRAME_EINBETTUNG.md)).
 
-### 4.4 SEO
+Das Cookie merkt eine ausdrückliche Wahl und schlägt den Header danach. Es ist
+für den Betrieb der gewählten Funktion erforderlich und damit **nicht
+einwilligungspflichtig** — es wird kein Profil gebildet und nichts an Dritte
+übermittelt.
 
-`<html lang>` und `<meta name="language">` in [app.html](../src/app.html) sind
-heute hart auf `de` gesetzt und werden dynamisch. Dazu `hreflang`-Verweise je
-Seite. Der Kopf-Block gehört laut bestehender Regel in die jeweilige Route, nicht
-in `app.html` — daran ändert sich nichts, und `e2e/seo-meta.spec.ts` wacht
-weiterhin darüber.
+**Sprachwechsel-Links brauchen `data-sveltekit-reload`.** Ohne das navigiert
+SvelteKit clientseitig, während die Laufzeit-Locale aus dem beim ersten Aufruf
+gerenderten Dokument stammt — URL, SSR-Dokument und Locale laufen auseinander.
+Betrifft den Umschalter und jeden Verweis, der die Sprache wechselt.
+
+### 4.6 SEO und statische Metadaten
+
+- `<html lang>` wird über den `%lang%`-Platzhalter dynamisch (Abschnitt 4.4);
+  `<meta name="language">` in [app.html](../src/app.html) entfällt ersatzlos —
+  es ist ohnehin kein von Suchmaschinen ausgewertetes Merkmal und wäre nur eine
+  zweite, potenziell widersprüchliche Quelle.
+- `hreflang`-Verweise je Seite, im Kopf-Block der jeweiligen Route. Der gehört
+  laut bestehender Regel dorthin und nicht in `app.html`; `e2e/seo-meta.spec.ts`
+  wacht weiterhin darüber.
+- **Es gibt weder `sitemap.xml` noch `robots.txt`** in `static/`. Die
+  `hreflang`-Auszeichnung im Kopf ist damit die vollständige Maßnahme, nicht die
+  halbe. Wer später eine Sitemap ergänzt, muss die Sprachvarianten dort
+  nachziehen — hier steht das, damit niemand eine sucht, die es nie gab.
+- [manifest.json](../static/manifest.json) ist statisch und deutsch (`name`,
+  `short_name`, `description`, `start_url: "/"`). Für die englische Fassung
+  entweder eine zweite Datei, die unter `/en` verlinkt wird, oder eine
+  serverseitig erzeugte Route. Entscheidung im Umsetzungsplan — der Nutzen ist
+  gering, weil die Anwendung überwiegend im iframe läuft und dort gar nicht
+  installierbar ist.
+- Die 404-/Fehlerseite (`+error.svelte`) folgt der Locale der aufgerufenen URL;
+  bei einem 404 ohne erkennbare Locale gilt Deutsch.
 
 ---
 
@@ -218,6 +321,48 @@ einmal, nicht dreimal.
 Diese Etappe ist von den übrigen entkoppelt: Solange keine englischen Fachtexte
 vorliegen, zeigen die Inhaltsseiten unter `/en` die deutsche Fassung mit einem
 Hinweis. Das ist ein bewusster, sichtbarer Zwischenstand, kein stiller Rückfall.
+
+---
+
+### 5.6 Formatierung, Zeitzone und Plurale
+
+**Zeitzone bleibt Europe/Berlin. Nur die Darstellung folgt der Locale.**
+
+Das ist die wichtigste Regel dieses Abschnitts, weil ihr Bruch keine kaputte
+Oberfläche erzeugt, sondern **falsche Daten**. Der Sichtungstag ist fachlich
+immer Berliner Ortszeit; `sichtungsdatum` mischt im Bestand ohnehin schon
+Ortszeit und UTC (siehe [ENVIRONMENT.md](ENVIRONMENT.md), Abschnitt `TZ`).
+
+Die 25 harten `'de-DE'`-Fundstellen sind deshalb **nicht** gleichartig:
+
+| Art der Fundstelle                                                                                                                                   | Umgang                             |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| **Darstellung** — `toLocaleDateString`, `Intl.NumberFormat` in der Oberfläche                                                                        | folgt der Locale                   |
+| **Rechnung** — `berlinToday()` in [sightingSchema.ts](../src/lib/form/validation/sightingSchema.ts), das `sv-SE` bewusst für ISO-Reihenfolge benutzt | **unverändert**                    |
+| **Datenformate** — Export, Legacy-API, `sqlTimeZone.ts`                                                                                              | **unverändert**, siehe Abschnitt 6 |
+
+Die rechnenden Aufrufe sind im Umsetzungsplan namentlich aufzuführen, bevor
+jemand die Liste mechanisch abarbeitet. `display.dateFormat` in der
+Konfiguration ist ausdrücklich **nicht** betroffen: Der Schlüssel wird laut
+[configLabels.ts:109](../src/routes/admin/settings/configLabels.ts#L109) nirgends
+gelesen.
+
+**Plurale gehören in ICU-Botschaften, nicht in Verkettungen.** Betroffen sind
+Tierzahlen (`totalCount`), Trefferzahlen in der Listenansicht und Dateizahlen im
+Dropzone. Wer „`{n} Tiere`" durch Zusammensetzen löst, ist bei „1 Tier" schon
+falsch und in einer zweiten Sprache nicht mehr zu retten. Paraglide unterstützt
+ICU-Plurale; das ist beim Extrahieren zu benutzen, nicht nachträglich.
+
+**Freitexte der Melder bleiben in der Eingabesprache.** Ortsbeschreibungen,
+Bemerkungen und Schiffsnamen werden gespeichert, wie sie eingegeben wurden. Der
+Admin-Bereich zeigt dann englische Freitexte — das ist richtig so und keine
+Lücke.
+
+**Formularentwürfe im `localStorage` müssen den Sprachwechsel überleben.**
+Gespeichert werden Werte, keine Beschriftungen ([localStorage.ts](../src/lib/storage/localStorage.ts),
+[reportKind.ts](../src/lib/report/reportKind.ts)) — das trägt, ist aber beim
+Umschalter ausdrücklich zu prüfen, weil `data-sveltekit-reload` (Abschnitt 4.5)
+einen vollen Seitenaufbau auslöst.
 
 ---
 
@@ -312,7 +457,9 @@ Die 290 Textselektoren in der E2E-Suite bleiben, die Default-Locale im Test ist
 | Legacy-API locale-fest  | die vier Pfade unter `en`-Locale liefern deutsche Vertragswerte            |
 | Export locale-fest      | CSV/XML/KML-Kopfzeilen unter `en`-Locale unverändert                       |
 | `/en/admin/**` → 404    | kein zweiter Pfad auf geschützte Routen                                    |
+| Ausschlussliste         | `/en/api/**`, `/en/uploads/**`, `/en/health`, `/de/sichtungen` → 404       |
 | Vollständigkeit         | fehlende englische Botschaft bricht den Build                              |
+| **Hartcodierte Texte**  | nicht extrahierte Zeichenkette in übersetztem Bereich → rot (8.3)          |
 | Einwilligungsflächen EN | zweiter gepinnter Hash je Fläche                                           |
 
 Der Vollständigkeitstest gehört in `npm run test:quick`. Ohne ihn rutscht eine
@@ -324,30 +471,101 @@ selbst zeigt.
 konfigurierte Vitest-Projekt fährt. Kommt für die Übersetzungsprüfung ein eigener
 Schritt hinzu, ist dieser Test die Stelle, die ihn festhält.
 
+### 8.3 Guard gegen hartcodierte Texte
+
+Zwei Fehlerfälle, die oft verwechselt werden — und nur einer davon ist durch den
+Compiler abgedeckt:
+
+| Fall                                                                 | Wer findet ihn          |
+| -------------------------------------------------------------------- | ----------------------- |
+| Botschaft extrahiert, englische Fassung fehlt                        | Paraglide, Build-Fehler |
+| Botschaft **gar nicht erst extrahiert** — Zeichenkette steht im Code | **nur ein Scan**        |
+
+Den zweiten Fall kann Paraglide prinzipbedingt nicht sehen: Was nie ein
+Schlüssel wurde, fehlt in keiner Sprachdatei. Genau das ist der Zustand, in dem
+das englische Formular deutsche Brocken zeigt, ohne dass irgendetwas rot wird.
+
+**Der Scan gehört in die vorhandene Bauart.** Das Projekt hat vier Guards dieses
+Typs (`approvalPredicateScan`, `verifiedReadScan`, `statusLogWriteScan`,
+`openQueueOrderScan`) und eine geteilte Utility
+[sourceScan.testutil.ts](../src/lib/testing/sourceScan.testutil.ts) mit
+`sourceFiles`, `stripComments`, `collectHits`. Entscheidend hier: `stripComments`
+behandelt `<!-- … -->` in Svelte-Markup bereits. Da dieses Projekt Begründungen
+ausdrücklich **ins Markup** schreibt (`CLAUDE.md`), wäre ein Scan ohne diesen
+Schritt von Anfang an unbrauchbar.
+
+Zuschnitt von `hardcodedStringScan.test.ts`:
+
+- **Positivliste der geprüften Verzeichnisse**, nicht global: die als übersetzt
+  erklärten Bereiche (öffentliche Komponenten, `formOptions/`,
+  `sightingSchema.ts`). Der Admin-Bereich ist ausdrücklich draußen — ein Guard,
+  der ab Tag eins rot ist, wird abgeschaltet und schützt danach nichts.
+- **Drei Muster:** Textknoten im Markup mit mindestens zwei Wörtern; nutzersichtbare
+  Attribute (`placeholder`, `title`, `aria-label`, `alt`); Zeichenketten-Literale in
+  `.label(…)`, `.meta({…})` und Yup-Validierungsmeldungen.
+- **Keine Umlaut-Heuristik.** Sie versagt genau dort, wo es zählt: Eine
+  versehentlich englisch hartcodierte Zeichenkette hat keine Umlaute.
+- **Ausnahmeliste mit Begründungspflicht** statt perfekter Erkennung — so lösen
+  es die vier bestehenden Guards auch. Eine Ausnahme ohne Begründung ist ein
+  Review-Befund, kein Testfehler.
+- **Konstruierte Positiv- und Gegenproben im Test selbst.** Das verlangt das
+  Vorbild ausdrücklich: Ein Scan über einen konformen Bestand belegt nichts über
+  die Regel — er ist auch dann grün, wenn das Muster eine Lücke hat.
+- **Remediation-Text in der Fehlermeldung**, wie in `statusLogWriteScan.test.ts`:
+  Der Guard sagt, was stattdessen zu tun ist, nicht nur, was falsch war.
+
+Erwogen und verworfen: `eslint-plugin-i18next/no-literal-string`. Es kennt
+Svelte-Markup nur schwach, und eine fünfte Bauart neben vier bestehenden Guards
+würde getrennt altern — genau der Fall, den das Datei-Doc von
+`sourceScan.testutil.ts` für die frühere Doppelimplementierung beschreibt.
+
+Der Scan ist **kein Ersatz** für Sorgfalt beim Extrahieren, sondern ein Netz für
+den Rückfall: die Zeile, die drei Monate später jemand schnell noch einfügt.
+
 ---
 
 ## 9. Aufwand
 
 Personentage, ohne die Übersetzungsleistung selbst (Fachinhalt vom DMM).
 
-| Etappe | Inhalt                                                                                         | Aufwand   |
-| ------ | ---------------------------------------------------------------------------------------------- | --------- |
-| 0      | Paraglide, `reroute`-Komposition, Locale-Erkennung, `lang`/`hreflang`, `de-DE`-Hartcodierungen | 2–3       |
-| 1      | Schichten A + B — Schema und `formOptions`; deckt Formular, Karte, Popups, Liste ab            | 3–4       |
-| 2      | Schicht C — öffentliches Markup, Navigation, Toasts, Fehlerseiten                              | 3–4       |
-| 3      | Einwilligung und Nachweis (Abschnitt 7)                                                        | 1–3       |
-| 4      | Schicht E — Inhaltsseiten, struktureller Umbau                                                 | 2–3       |
-| 5      | Guards, Vollständigkeitsprüfung, EN-Rauchtest                                                  | 2–3       |
-|        | **Summe**                                                                                      | **13–20** |
+| Etappe | Inhalt                                                                                                                                    | Aufwand   |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| 0      | Paraglide (Vite-Plugin, `reroute`, `paraglideMiddleware`, `%lang%`), Ausschlussliste, Locale-Erkennung, `hreflang`, Formatierung/Zeitzone | 3–4       |
+| 1      | Schichten A + B — Schema und `formOptions`; deckt Formular, Karte, Popups, Liste ab                                                       | 3–4       |
+| 2      | Schicht C — öffentliches Markup, Navigation, Toasts, Fehlerseiten                                                                         | 3–4       |
+| 3      | Einwilligung und Nachweis (Abschnitt 7)                                                                                                   | 1–3       |
+| 4      | Schicht E — Inhaltsseiten, struktureller Umbau                                                                                            | 2–3       |
+| 5      | Guards inkl. Hartcodiert-Scan (8.3), Vollständigkeitsprüfung, EN-Rauchtest                                                                | 3–4       |
+|        | **Summe**                                                                                                                                 | **15–22** |
 
 Die Spannen sind echt, nicht kosmetisch: Etappe 2 hängt an der tatsächlichen
 Botschaftszahl (Abschnitt 3), Etappe 3 an der Rückmeldung zum
 Einwilligungskonzept.
 
+**Etappe 0 enthält einen Schritt, der leicht übersehen wird und dann teuer ist:**
+Der von Paraglide erzeugte Code unter `src/lib/paraglide` gehört nicht ins
+Repository — dann müssen `lint`, `type-check` und `check` ihn aber vorfinden. Der
+Compile-Schritt gehört deshalb vor `npm run test:quick` **und** in
+`npm run worktree:setup`, neben `svelte-kit sync`. Fehlt er, ist ein frischer
+Worktree rot und die Ursache sieht nach einem kaputten Setup aus statt nach einem
+fehlenden Build-Schritt.
+
 Etappen 0–2 sind die tragende Reihenfolge und aufeinander angewiesen. Etappen 3,
 4 und 5 sind untereinander unabhängig und können parallel oder nachgelagert
 laufen; Etappe 5 sollte nicht ans Ende rutschen — die Guards aus Abschnitt 6
 schützen genau die Pfade, die während der Umstellung am ehesten brechen.
+
+### 9.1 Auslieferung
+
+**`/en` wird erst erreichbar, wenn die Etappen 0–3 abgeschlossen sind.** Bis
+dahin bleibt die Ausschlussliste aus Abschnitt 4.2 um `/en` erweitert — der Pfad
+ist dann schlicht 404, wie heute. Damit kann in kleinen Schritten auf `main`
+geliefert werden, ohne dass ein halb übersetzter englischer Zustand öffentlich
+wird.
+
+Etappe 4 (Inhaltsseiten) darf danach folgen: Bis englische Fachtexte vorliegen,
+zeigen `/en/about` und `/en/bestimmungshilfe` die deutsche Fassung mit sichtbarem
+Hinweis (Abschnitt 5.5). Ein erkennbarer Zwischenstand, kein stiller Rückfall.
 
 ---
 
@@ -359,6 +577,7 @@ schützen genau die Pfade, die während der Umstellung am ehesten brechen.
 | Englische Artnamen und Fachtexte für die Bestimmungshilfe       | DMM             | Etappe 4                              |
 | Anpassung der iframe-Einbettung auf der englischen Museumsseite | DMM             | nichts — Rückfallebene greift         |
 | Ob ein Legacy-Client das `/de/`-`/en/`-Präfix nutzt             | unklärbar       | nichts — Verhalten bleibt unverändert |
+| Englische Fassung von `manifest.json` (zweite Datei vs. Route)  | Umsetzungsplan  | nichts — geringer Nutzen im iframe    |
 
 Der letzte Punkt bleibt bewusst offen: Das Zugriffsprotokoll auf hawking reicht
 nur einen Tag zurück. Da sich am Legacy-Verhalten nichts ändert, ist die Frage
