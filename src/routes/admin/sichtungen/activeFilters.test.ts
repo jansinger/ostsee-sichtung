@@ -1,5 +1,6 @@
+import type { SightingStatusFilter } from '$lib/components/admin/sightingStatusFilter';
 import { MEDIA_UPLOAD_ANNOUNCED_MISSING } from '$lib/utils/media/photoAnnouncement';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 import { readFilterParams, type FilterParams } from './activeFilters';
 
 /**
@@ -22,6 +23,20 @@ const LEER: FilterParams = {
 	deadFinding: '',
 	q: ''
 };
+
+/* Eine Typ-Zusicherung und kein Laufzeittest: Dass `verified` nur Statuswerte
+   trägt, rechnet `readFilterParams` zwar heute schon aus, zugesichert war es
+   aber nicht — der Typ stand auf `string`. Die Statusreiter mussten den Wert
+   deshalb per `as` in ihre Domäne zwingen, und eine Erweiterung von
+   `normalizeStatusParam` hätte dort still einen Wert eingeschleust, zu dem kein
+   Reiter passt: kein Reiter mehr mit `aria-current`, kein Compile-Fehler
+   irgendwo. Geprüft wird das von `npm run type-check`/`npm run check`, nicht vom
+   Testlauf — `expectTypeOf` erzeugt zur Laufzeit keine Assertion. */
+describe('FilterParams', () => {
+	it('führt den Statusfilter in der Domäne von `normalizeStatusParam`', () => {
+		expectTypeOf<FilterParams>().toMatchObjectType<{ verified: SightingStatusFilter | '' }>();
+	});
+});
 
 describe('readFilterParams', () => {
 	it('liefert für jeden fehlenden Parameter einen leeren String', () => {
