@@ -4,6 +4,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 
 	import { ADMIN_BEREICHE, istAdminPfad } from '$lib/config/adminNav';
+	import { localizeHref } from '$lib/paraglide/runtime';
 	import type { PublicUser } from '$lib/types/User';
 	import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
 	import OstseeTiereLogo from './OstseeTiereLogo.svelte';
@@ -35,14 +36,18 @@
 
 {#snippet publicItems()}
 	<li>
-		<a href="/" class={currentPath === '/' ? 'active font-medium' : ''}> Meldung </a>
+		<a href={localizeHref('/')} class={currentPath === '/' ? 'active font-medium' : ''}>
+			Meldung
+		</a>
 	</li>
 	<li>
-		<a href="/map" class={currentPath === '/map' ? 'active font-medium' : ''}> Karte </a>
+		<a href={localizeHref('/map')} class={currentPath === '/map' ? 'active font-medium' : ''}>
+			Karte
+		</a>
 	</li>
 	<li>
 		<a
-			href="/bestimmungshilfe"
+			href={localizeHref('/bestimmungshilfe')}
 			class={currentPath === '/bestimmungshilfe' ? 'active font-medium' : ''}
 		>
 			Bestimmungshilfe
@@ -66,7 +71,9 @@
 		Bestimmungshilfe. Belege: docs/IFRAME_EINBETTUNG.md
 	-->
 	<li>
-		<a href="/about" class={currentPath === '/about' ? 'active font-medium' : ''}> Hintergrund </a>
+		<a href={localizeHref('/about')} class={currentPath === '/about' ? 'active font-medium' : ''}>
+			Hintergrund
+		</a>
 	</li>
 {/snippet}
 
@@ -82,7 +89,7 @@
 
 {#if isNotIFrame}
 	<!-- Fixed Navbar -->
-	<header class="bg-base-200/95 sticky top-0 z-nav shadow-floating backdrop-blur-lg">
+	<header class="bg-base-200/95 z-nav shadow-floating sticky top-0 backdrop-blur-lg">
 		<div class="container mx-auto">
 			<!--
 				`justify-between` + `w-auto` an beiden Seiten ersetzt DaisyUIs feste
@@ -148,7 +155,7 @@
 							<Icon icon="lucide:list" width="24" class="h-6 w-6 shrink-0" />
 						</summary>
 						<ul
-							class="dropdown-content menu menu-sm rounded-box bg-base-100 absolute right-0 z-overlay mt-3 w-52 p-2 shadow-floating"
+							class="dropdown-content menu menu-sm rounded-box bg-base-100 z-overlay shadow-floating absolute right-0 mt-3 w-52 p-2"
 						>
 							{@render publicItems()}
 

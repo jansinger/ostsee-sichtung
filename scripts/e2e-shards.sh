@@ -205,6 +205,10 @@ map=(
 	# `request`-basiert, drei Tests nutzen `page.goto` für echte
 	# Browser-Navigation (Sec-Fetch-Dest). Lokal ~4 s.
 	e2e/i18n-routing.spec.ts
+	# Direkt daneben: prüft nicht das Routing selbst, sondern dass ein Klick
+	# auf `/en` in `/en/...` bleibt statt auf den deutschen Pfad zurückzufallen
+	# (Task 8). Ein Test, echte Browser-Navigation, lokal ~1 s.
+	e2e/i18n-links.spec.ts
 )
 
 # design-tokens.spec.ts gehört hierher, nicht zu form: es prüft das

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
+	import { localizeHref } from '$lib/paraglide/runtime';
 	import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
 </script>
 
@@ -30,13 +31,14 @@
 		<div class="footer sm:footer-horizontal container mx-auto p-6 sm:p-8">
 			<nav aria-labelledby="footer-navigation">
 				<h2 id="footer-navigation" class="footer-title">Navigation</h2>
-				<a href="/" class="link link-hover py-3">Meldung</a>
-				<a href="/map" class="link link-hover py-3">Sichtungskarte</a>
-				<a href="/bestimmungshilfe" class="link link-hover py-3">Bestimmungshilfe</a>
+				<a href={localizeHref('/')} class="link link-hover py-3">Meldung</a>
+				<a href={localizeHref('/map')} class="link link-hover py-3">Sichtungskarte</a>
+				<a href={localizeHref('/bestimmungshilfe')} class="link link-hover py-3">Bestimmungshilfe</a
+				>
 				<!-- „Hintergrund" wie in der Navigation: Ein Ziel trägt einen Namen —
 				     „Über uns" hier und „Hintergrund" oben wären zwei Namen für
 				     dieselbe Seite. -->
-				<a href="/about" class="link link-hover py-3">Hintergrund</a>
+				<a href={localizeHref('/about')} class="link link-hover py-3">Hintergrund</a>
 			</nav>
 
 			<!--
@@ -73,6 +75,8 @@
 
 			<nav aria-labelledby="footer-projekt">
 				<h2 id="footer-projekt" class="footer-title">Projekt</h2>
+				<!-- `/docs` bewusst NICHT über `localizeHref`: Der Pfad steht in
+				     `NICHT_LOKALISIERT` (languagePrefix.ts) — ein `/en/docs` wäre eine 404. -->
 				<a href="/docs" class="link link-hover py-3">Dokumentation</a>
 				<a
 					href="https://github.com/jansinger/ostsee-tiere"

@@ -24,6 +24,7 @@
 	import { loadFromStorage, saveToStorage, STORAGE_KEYS } from '$lib/storage/localStorage';
 	import type { SightingFormValues } from '$lib/types/Form';
 	import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
+	import { localizeHref } from '$lib/paraglide/runtime';
 
 	const logger = createLogger('main:page');
 
@@ -97,6 +98,14 @@
 	 * `page.url` statt `window.location`: Diese Funktion läuft auch im SSR, wo es
 	 * kein `window` gibt. Der ausgelieferte `href` ist damit von Anfang an
 	 * richtig und nicht erst nach der Hydration.
+	 *
+	 * `localizeHref` um den fertigen Pfad herum, nicht um `/` allein: Die
+	 * Funktion hängt Sprachpräfix und Query-String getrennt an
+	 * (`localized.pathname + localized.search + localized.hash`, `runtime.js`),
+	 * ein `localizeHref('/') + '?...'` verlöre also nichts — aber erst
+	 * `params.toString()` in den fertigen Pfad zu bauen und danach zu
+	 * lokalisieren hält den Query-String an genau einer Stelle, statt ihn ein
+	 * zweites Mal zusammenzusetzen.
 	 */
 	function reportKindHref(kind: ReportKind): string {
 		// Wirft weg, keine Komponenten-Reaktivität nötig — dasselbe Muster wie in
@@ -104,7 +113,7 @@
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const params = new URLSearchParams(page.url.searchParams);
 		params.set(REPORT_KIND_PARAM, reportKindToParam(kind));
-		return `/?${params.toString()}`;
+		return localizeHref(`/?${params.toString()}`);
 	}
 
 	/**
