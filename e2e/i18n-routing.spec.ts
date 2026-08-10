@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { NICHT_LOKALISIERT, stripLegacyLanguagePrefix } from '../src/lib/legacy-api/languagePrefix';
 
 /**
  * Name des Locale-Cookies — bewusst als Literal und nicht importiert aus
@@ -8,38 +9,84 @@ import { expect, test } from '@playwright/test';
  * verlässliche Quelle bleibt `LOCALE_COOKIE` in `localeCookie.ts` — dessen
  * eigener Kommentar verbietet, den Wert zu raten; er ist hier deshalb
  * abgeschrieben, nicht neu erfunden.
+ *
+ * `NICHT_LOKALISIERT` dagegen wird importiert, per relativem Pfad
+ * (`../src/lib/...`) statt über den `$lib`-Alias — derselbe Weg, den andere
+ * Specs in diesem Verzeichnis bereits für Quellcode-Konstanten nutzen (z. B.
+ * `SightingFromEnum` in `horizontal-overflow.spec.ts`). Der Alias ist ohne
+ * Vite-Resolver das Problem, nicht der Import als solcher.
  */
 const LOCALE_COOKIE = 'PARAGLIDE_LOCALE';
 
 /**
  * Wächter über die Ausschlussliste aus `languagePrefix.ts`.
  *
- * Die Liste ist bewusst eine Ausschluss- und keine Positivliste: Ein vergessener
- * Eintrag erzeugt einen zusätzlichen, erreichbaren Pfad — sichtbar hier, statt
- * still im Betrieb. `/en/admin` ist dabei ein Umfangsbefund, kein
- * Sicherheitsbefund: Der Zugriffsschutz auf `/admin` ist route-basiert
- * (`requireUserRole` in `src/routes/admin/+layout.server.ts`) und griffe
- * unverändert auch unter `/en/admin`.
+ * Die Schleife läuft über `NICHT_LOKALISIERT` selbst, nicht über eine eigene
+ * Literalliste — bis 2026-08-10 gab es hier eine siebenteilige (später
+ * fünfteilige) Kopie, die von der achtteiligen Konstante lief auseinander,
+ * unbemerkt. Ein Import macht dieses konkrete Auseinanderlaufen strukturell
+ * unmöglich: Jeder Eintrag in der Konstante bekommt jetzt automatisch einen
+ * 404-Test, ohne dass ihn hier jemand nachträgt.
+ *
+ * Was das NICHT behebt: Fehlt ein Pfad in `NICHT_LOKALISIERT` selbst, obwohl
+ * er dort stehen sollte, testet diese Schleife ihn gar nicht erst — sie kennt
+ * nur, was in der Konstante steht. Genau deshalb steht `/en/admin ist kein
+ * zweiter Weg auf /admin` weiter unten als eigener, von der Konstante
+ * unabhängiger Test: Er bliebe auch dann treffend, wenn `/admin` versehentlich
+ * aus der Liste flöge.
+ *
+ * Eine naive Annahme „jeder Eintrag liefert unter `/en` einen 404" trifft
+ * NICHT auf `/rest_sichtungen` zu: `src/hooks.ts` prüft `LEGACY_PFADE` (die
+ * vier Endpunkte aus `docs/LEGACY_API_SPECIFICATION.md`) VOR
+ * `istAusgeschlossen`, und `/rest_sichtungen` steht in beiden Listen. Für
+ * `/en/rest_sichtungen` greift deshalb nie die Ausschlussregel — die
+ * Legacy-Weiche entscheidet zuerst und liefert bewusst 200 mit deutschem
+ * Inhalt (`GET /rest_sichtungen` re-exportiert `showreports.json`). Die
+ * Schleife nutzt dieselbe Weiche (`stripLegacyLanguagePrefix`) statt eines
+ * hartkodierten Sonderfalls, um genau diese Einträge auszunehmen — ihr
+ * tatsächliches Verhalten deckt „Legacy-Präfix liefert weiterhin deutsche
+ * Werte" weiter unten sowie `legacy-language-prefix.spec.ts` ab.
  */
 test.describe('Sprachpräfix-Routing', () => {
+	for (const praefix of NICHT_LOKALISIERT) {
+		const pfad = `/en${praefix}`;
+		// Von der Legacy-Weiche abgefangene Pfade (siehe Kommentar oben) liefern
+		// keinen 404 — sie werden hier bewusst nicht erwartet.
+		if (stripLegacyLanguagePrefix(pfad) !== undefined) continue;
+
+		test(`${pfad} liefert 404`, async ({ request }) => {
+			expect((await request.get(pfad)).status()).toBe(404);
+		});
+	}
+
+	/**
+	 * Stichproben auf tiefere Pfade unter einem ausgeschlossenen Präfix —
+	 * die Schleife oben prüft nur den bloßen Präfix selbst, und für `/api`
+	 * existiert unter genau diesem bloßen Pfad gar keine Route (nur
+	 * `/api/sightings` & Co.). Ein `/en/api` wäre also auch ganz ohne
+	 * `istAusgeschlossen`-Treffer ein 404 — kein Beleg für die Ausschlussregel.
+	 * `istAusgeschlossen` vergleicht zudem auf ganze Segmente
+	 * (`pfad.startsWith(praefix + '/')`), nicht auf Teilstrings; diese Stichproben
+	 * belegen das für die praktisch relevanten Fälle.
+	 */
 	for (const pfad of [
 		'/en/api/sightings',
-		'/en/admin',
 		'/en/admin/sichtungen',
 		'/en/uploads/test.jpg',
-		'/en/health',
-		// Diese drei fehlten ursprünglich — Review-Befund zu Task 6 (2026-08-10):
-		// `NICHT_LOKALISIERT` in `languagePrefix.ts` hat acht Einträge, die
-		// Schleife hier deckte nur fünf. Der Kommentar dort behauptet
-		// ausdrücklich, ein vergessener Eintrag falle hier auf — für die drei
-		// stimmte das bis jetzt nicht.
-		'/en/maintenance',
-		'/en/docs',
-		'/en/styleguide',
-		'/en/rest_sichtungen/view/1840.json',
-		'/de',
-		'/de/sichtungen'
+		'/en/rest_sichtungen/view/1840.json'
 	]) {
+		test(`${pfad} liefert 404`, async ({ request }) => {
+			expect((await request.get(pfad)).status()).toBe(404);
+		});
+	}
+
+	/**
+	 * `/de/...` ist kein Fall von `NICHT_LOKALISIERT` — die Ablehnung greift
+	 * schon davor, über den `baseLocale`-Vergleich in `src/hooks.ts`
+	 * (`toLocale(erstesSegment) === baseLocale`). Deutsch ist präfixlos; ein
+	 * `/de/`-Präfix ist ein zweiter Pfad auf denselben Inhalt und bleibt 404.
+	 */
+	for (const pfad of ['/de', '/de/sichtungen']) {
 		test(`${pfad} liefert 404`, async ({ request }) => {
 			expect((await request.get(pfad)).status()).toBe(404);
 		});

@@ -72,10 +72,22 @@ export function stripLegacyLanguagePrefix(pathname: string): string | undefined 
  * Pfade, die **nie** ein Sprachpräfix bekommen.
  *
  * Bewusst eine Ausschluss- und keine Positivliste: Eine vergessene Positivliste
- * liefert bei einer neuen öffentlichen Seite still Deutsch aus, eine vergessene
- * Ausschlussliste erzeugt einen zusätzlichen erreichbaren Pfad — und den findet
- * `e2e/i18n-routing.spec.ts`. Ein sichtbarer Fehlschlag ist einem stillen
- * vorzuziehen.
+ * liefert bei einer neuen öffentlichen Seite still Deutsch aus.
+ *
+ * **Exportiert**, damit `e2e/i18n-routing.spec.ts` seine Schleife über genau
+ * diese Konstante fährt statt über eine eigene, separat gepflegte Literalliste.
+ * Bis 2026-08-10 gab es zwei Listen — diese hier mit acht Einträgen und eine
+ * hartkodierte im Test mit fünf —, die stillschweigend auseinanderliefen; drei
+ * Einträge waren dort ungetestet. Ein Import behebt genau diese Fehlerklasse:
+ * jeder Eintrag hier bekommt automatisch einen 404-Test, ohne dass ihn jemand
+ * im Testfile nachträgt.
+ *
+ * Das behebt **nicht** jede Lücke: Ein Pfad, der hier fehlt, obwohl er fehlen
+ * sollte, bleibt für diese Schleife unsichtbar — sie kennt nur, was in der
+ * Konstante steht, nicht, was fehlen dürfte. Diese Lücke lässt sich nur durch
+ * eine von der Konstante unabhängige Prüfung schließen (z. B. eine feste
+ * Erwartung „`/en/admin` bleibt 404", wie sie unten als eigener Test steht) —
+ * nicht durch die Schleife selbst.
  *
  * `/admin` steht hier, weil der Bereich einsprachig deutsch bleibt: Ein `/en/`
  * davor wäre ein Sprachversprechen, das die Oberfläche nicht einlöst — ein
@@ -93,7 +105,7 @@ export function stripLegacyLanguagePrefix(pathname: string): string | undefined 
  * ausgeschlossen; der bloße Pfad `/sichtungen` existiert als Seite nicht und
  * muss lokalisierbar bleiben.
  */
-const NICHT_LOKALISIERT = [
+export const NICHT_LOKALISIERT = [
 	'/api',
 	'/admin',
 	'/uploads',
