@@ -1,4 +1,4 @@
-import { deLocalizeUrl } from '$lib/paraglide/runtime';
+import { baseLocale, deLocalizeUrl, toLocale } from '$lib/paraglide/runtime';
 import { istAusgeschlossen, stripLegacyLanguagePrefix } from '$lib/legacy-api/languagePrefix';
 import type { Reroute } from '@sveltejs/kit';
 
@@ -28,7 +28,15 @@ export const reroute: Reroute = ({ url }) => {
 	// präfixlos. `deLocalizeUrl` räumt das Präfix bereitwillig ab und lieferte
 	// damit zwei URLs für denselben Inhalt aus. Die vier Legacy-Pfade behalten
 	// ihr `/de/` über Schritt 1 oben — sie sind hier schon durch.
-	if (/^\/de(\/|$)/.test(url.pathname)) return undefined;
+	//
+	// Über `toLocale` geprüft, nicht über einen eigenen Regex: `toLocale`
+	// vergleicht case-insensitiv (`toLowerCase()`, runtime.js), genau wie
+	// Paraglides eigene Präfix-Erkennung. Ein eigener kleingeschriebener Regex
+	// hätte `/DE/...` durchgelassen und `deLocalizeUrl` hätte es trotzdem als
+	// Deutsch erkannt — zwei URLs für dieselbe Seite, exakt der Fehler, den
+	// diese Ablehnung verhindern soll.
+	const erstesSegment = url.pathname.split('/')[1];
+	if (toLocale(erstesSegment) === baseLocale) return undefined;
 
 	const entlokalisiert = deLocalizeUrl(url).pathname;
 	if (istAusgeschlossen(entlokalisiert)) return undefined;
