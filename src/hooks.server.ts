@@ -1,5 +1,6 @@
 import { env } from '$env/dynamic/private';
 import { createLogger } from '$lib/logger.server';
+import { paraglideMiddleware } from '$lib/paraglide/server';
 import { resolveSessionUser } from '$lib/server/auth/sessionRepository';
 import { assertProductionSecrets } from '$lib/server/config/secretGuard';
 import { closeDb } from '$lib/server/db';
@@ -36,6 +37,24 @@ logger.info({ ...buildInfo, nodeEnv: NODE_ENV }, formatStartupBanner(buildInfo, 
 assertProductionSecrets({ NODE_ENV, ENCRYPTION_KEY });
 
 const setAdditionalHeaders: Handle = createSecurityHeadersHandler(NODE_ENV);
+
+/**
+ * Löst die Locale serverseitig auf und ersetzt `%lang%` im ausgelieferten HTML.
+ *
+ * Ohne diesen Schritt gibt es keine serverseitig bekannte Sprache — SSR rendert
+ * dann in der Standardsprache, während der Client umschaltet, und der
+ * Platzhalter bliebe wörtlich im Dokument stehen.
+ *
+ * Steht bewusst NACH der Auth-Prüfung: Die hängt an `event.url.pathname`, und
+ * dieser Pfad darf ihr nicht verschoben unter den Händen weggezogen werden.
+ */
+const handleParaglide: Handle = ({ event, resolve }) =>
+	paraglideMiddleware(event.request, ({ request, locale }) => {
+		event.request = request;
+		return resolve(event, {
+			transformPageChunk: ({ html }) => html.replace('%lang%', locale)
+		});
+	});
 
 /**
  * Authentication handler
@@ -85,7 +104,8 @@ export const handle: Handle = sequence(
 	databaseCheck, // First: Check database availability
 	maintenanceMode, // Second: Check maintenance mode
 	authentication, // Third: Handle authentication
-	setAdditionalHeaders // Fourth: Set security headers
+	setAdditionalHeaders, // Fourth: Set security headers
+	handleParaglide // Fifth: Resolve locale and fill %lang% placeholder
 );
 
 /**
