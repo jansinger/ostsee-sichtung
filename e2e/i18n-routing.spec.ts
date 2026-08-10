@@ -27,6 +27,14 @@ test.describe('Sprachpräfix-Routing', () => {
 		'/en/admin/sichtungen',
 		'/en/uploads/test.jpg',
 		'/en/health',
+		// Diese drei fehlten ursprünglich — Review-Befund zu Task 6 (2026-08-10):
+		// `NICHT_LOKALISIERT` in `languagePrefix.ts` hat acht Einträge, die
+		// Schleife hier deckte nur fünf. Der Kommentar dort behauptet
+		// ausdrücklich, ein vergessener Eintrag falle hier auf — für die drei
+		// stimmte das bis jetzt nicht.
+		'/en/maintenance',
+		'/en/docs',
+		'/en/styleguide',
 		'/en/rest_sichtungen/view/1840.json',
 		'/de',
 		'/de/sichtungen'
@@ -66,7 +74,7 @@ test.describe('Sprachpräfix-Routing', () => {
  * `setExtraHTTPHeaders` überschreibt `Accept-Language` bei einer echten
  * Chromium-Top-Level-Navigation NICHT zuverlässig — nachgewiesen per
  * `page.on('request', ...)`: Mit `setExtraHTTPHeaders({ 'Accept-Language':
- * 'de-DE,de;q=0.9' })' kam beim Server weiterhin Chromiums Standard `en-US`
+ * 'de-DE,de;q=0.9' })` kam beim Server weiterhin Chromiums Standard `en-US`
  * an, während `test.use({ locale: 'de-DE' })` den Header korrekt auf
  * `de-DE` setzt. Ohne diesen Fund wäre der Test von Chromiums Default
  * abhängig gewesen (der zufällig ohnehin auf Englisch steht) und hätte nie
@@ -82,7 +90,9 @@ test.describe('/ ohne Präferenz', () => {
 });
 
 /**
- * Der Cookie-Fall aus Task 4/5, der dort nie über einen echten Browser lief.
+ * Der Cookie-Fall aus Task 4/5, der dort nie über einen echten Browser lief —
+ * mit dem richtigen Cookie-Namen (`LOCALE_COOKIE`, oben abgeschrieben aus
+ * `localeCookie.ts`), tatsächlich per `context.addCookies` gesetzt.
  *
  * `curl` sendet kein `Sec-Fetch-Dest: document` — genau daran hängt Paraglides
  * eigener Redirect-Zweig in `paraglideMiddleware` (siehe
@@ -162,7 +172,7 @@ test.describe('Cookie-gesteuerte Sprachwahl (Browser-Navigation)', () => {
 		// Die ausdrückliche frühere Wahl (Cookie) muss die Vermutung aus
 		// Accept-Language schlagen — in beide Richtungen, siehe
 		// zielFuerStartseite() in startseitenWeiterleitung.ts. Die englische
-		// Präferenz kommt aus `test.use({ locale: 'en-GB' })' oben.
+		// Präferenz kommt aus `test.use({ locale: 'en-GB' })` oben.
 		await context.addCookies([
 			{
 				name: LOCALE_COOKIE,
@@ -180,7 +190,7 @@ test.describe('Cookie-gesteuerte Sprachwahl (Browser-Navigation)', () => {
 
 /**
  * Deckung für die Verdrahtung aus Task 5: `handleStartseitenSprache` in der
- * `sequence` von `src/hooks.server.ts`, mit dem richtigen Cookie-Namen.
+ * `sequence` von `src/hooks.server.ts`.
  *
  * Ohne diese Tests bliebe eine entfernte Verdrahtung unsichtbar — die
  * eigentliche Entscheidungslogik (`zielFuerStartseite`) ist bereits als
