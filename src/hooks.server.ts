@@ -117,27 +117,46 @@ const handleParaglide: Handle = ({ event, resolve }) =>
  * erst durch. Vor `authentication` einzuhängen, brächte keinen Vorteil (die
  * Antwort ändert sich nicht) und würde die im Kommentar dort festgehaltene
  * Reihenfolge unnötig aufbrechen.
+ *
+ * Nur `GET` wird umgeleitet: Ein 302 auf `POST`/`PUT`/... degradiert die
+ * Methode beim Redirect-Follow zu `GET` (RFC 7231) — für `/` gibt es zwar
+ * aktuell keine schreibenden Requests, aber die Einschränkung kostet nichts
+ * und verhindert, dass ein künftiger POST auf `/` still seine Methode
+ * verliert.
  */
 const handleStartseitenSprache: Handle = async ({ event, resolve }) => {
-	const ziel = zielFuerStartseite(
-		event.url.pathname,
-		event.request.headers.get('accept-language'),
-		event.cookies.get(LOCALE_COOKIE) ?? null
-	);
+	const ziel =
+		event.request.method === 'GET'
+			? zielFuerStartseite(
+					event.url.pathname,
+					event.url.search,
+					event.request.headers.get('accept-language'),
+					event.cookies.get(LOCALE_COOKIE) ?? null
+				)
+			: null;
 	// `Vary` gehört AUF die Weiterleitung, nicht nur auf die normale Antwort:
 	// Die 302 ist die inhaltsverhandelte Antwort. Ohne den Header cacht ein
-	// Zwischenspeicher sie für alle Sprachen.
+	// Zwischenspeicher sie für alle Sprachen. `Cookie` gehört mit in die Liste:
+	// dieselbe URL mit demselben Accept-Language liefert je nach
+	// PARAGLIDE_LOCALE-Cookie eine 302 oder eine 200 — ohne `Cookie` im `Vary`
+	// bekäme ein cookielosen englischer Besucher die für einen Cookie-Nutzer
+	// gecachte deutsche Antwort.
 	if (ziel) {
 		return new Response(null, {
 			status: 302,
-			headers: { location: ziel, vary: 'Accept-Language' }
+			headers: { location: ziel, vary: 'Accept-Language, Cookie' }
 		});
 	}
 
 	const antwort = await resolve(event);
-	// Nur diese eine Antwort variiert nach Header — alle übrigen Pfade bleiben
-	// voll cachebar.
-	if (event.url.pathname === '/') antwort.headers.set('Vary', 'Accept-Language');
+	// Nur diese eine Route variiert nach Header — alle übrigen Pfade bleiben
+	// voll cachebar. `append` statt `set`: innere Handler (z. B. CORS) setzen
+	// bereits eigene `Vary`-Werte (`Origin`, `Sec-Fetch-Dest`); `set` hätte sie
+	// überschrieben statt ergänzt.
+	if (event.url.pathname === '/') {
+		antwort.headers.append('Vary', 'Accept-Language');
+		antwort.headers.append('Vary', 'Cookie');
+	}
 	return antwort;
 };
 

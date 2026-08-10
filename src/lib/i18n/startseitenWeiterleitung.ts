@@ -11,13 +11,27 @@
  * Vermutung nützlich und ihre Kosten sind auf eine Antwort begrenzt. Diese eine
  * Antwort trägt `Vary: Accept-Language`.
  *
+ * Nur die erste Präferenz zählt, `q`-Gewichte werden bewusst ignoriert:
+ * `de;q=0.1,en;q=0.9` leitet NICHT weiter, obwohl Englisch höher gewichtet ist.
+ * Das ist kein Bug, sondern der Brief — eine echte RFC-4647-Gewichtung wäre für
+ * eine einmalige Vermutung auf der Startseite mehr Mechanik, als der Fall
+ * hergibt.
+ *
+ * Die reine Verdrahtung (Cookie-Name, Reihenfolge in der `sequence`) prüft
+ * diese Funktion nicht — sie ist isoliert testbar und bliebe grün, entfernte
+ * man `handleStartseitenSprache` versehentlich aus `hooks.server.ts`. Diese
+ * Lücke deckt `e2e/i18n-routing.spec.ts` (Task 6).
+ *
  * @param pfad            Pfad der Anfrage, ohne Query-String
+ * @param search          Query-String der Anfrage, inkl. führendem `?` oder leer
  * @param acceptLanguage  Header-Wert oder `null`
  * @param cookieLocale    Ausdrückliche frühere Wahl oder `null`
- * @returns Zielpfad, oder `null` wenn nicht weitergeleitet wird
+ * @returns Zielpfad (inkl. erhaltenem Query-String), oder `null` wenn nicht
+ *          weitergeleitet wird
  */
 export function zielFuerStartseite(
 	pfad: string,
+	search: string,
 	acceptLanguage: string | null,
 	cookieLocale: string | null
 ): string | null {
@@ -27,5 +41,10 @@ export function zielFuerStartseite(
 	if (!acceptLanguage) return null;
 
 	const bevorzugt = acceptLanguage.split(',')[0]?.trim().toLowerCase() ?? '';
-	return bevorzugt.startsWith('en') ? '/en' : null;
+	if (!bevorzugt.startsWith('en')) return null;
+
+	// Kampagnen-Marker aus einem Museums-Link (siehe reportKindHref() in
+	// +page.svelte) dürfen die Weiterleitung nicht wegwerfen — dieselbe Zusage
+	// gilt hier für den allerersten Request wie dort für jeden Klick danach.
+	return `/en${search}`;
 }
