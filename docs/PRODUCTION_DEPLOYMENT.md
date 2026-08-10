@@ -207,6 +207,43 @@ curl -sk -X POST -H "Authorization: Bearer $CLEANUP_TOKEN" \
   "https://deine-domain.de/api/admin/cleanup-orphans"
 ```
 
+#### Eingerichtet auf `dmm` als User-Crontab (2026-08-10)
+
+Auf dem Produktionsserver läuft der Job als **User-Crontab von `jansinger`**, nicht
+als Container oder Compose-Service. Das ist dort der einfachste Weg, weil ein
+HTTPS-Aufruf gegen den öffentlichen Traefik-Host weder `sudo` noch die
+`docker`-Gruppe braucht — beides hat der SSH-User nur eingeschränkt.
+
+Der Haken ist das Token: Es steht in `/opt/ostsee-tiere/.env`, und die ist für den
+SSH-User **nicht lesbar**. Einmalig mit `sudo` herausholen und in eine eigene,
+nur für den Benutzer lesbare Datei legen — nicht ins Crontab, das ist
+world-readable für root-nahe Prozesse und landet in Backups:
+
+```bash
+sudo grep "^CLEANUP_TOKEN=" /opt/ostsee-tiere/.env   # gesetzt? sonst erzeugen, s.o.
+install -m 600 /dev/null ~/.ostsee-cleanup.env
+# CLEANUP_TOKEN=… und HOST=… eintragen
+```
+
+```
+15 3 * * * . $HOME/.ostsee-cleanup.env && curl -fsS -X POST -H "Authorization: Bearer $CLEANUP_TOKEN" "https://$HOST/api/admin/cleanup-orphans?mode=execute" >> $HOME/cleanup.log 2>&1
+```
+
+Cron führt die Zeile mit `/bin/sh` aus; `.` und die Expansion von `$HOST` nach dem
+Sourcen funktionieren dort. Vor dem Eintragen genau so testen, wie Cron sie
+ausführt — eine Zeile, die nur in der interaktiven Bash läuft, fällt sonst erst
+in der ersten Nacht auf. Der Test lässt `?mode=execute` **bewusst** weg: Geprüft
+wird die Shell-Zeile (Sourcen, Quoting, Variablenexpansion), und die verhält sich
+mit und ohne das Flag gleich. Ein Probelauf, der dabei echte Produktionsdaten
+löscht, ist kein Test:
+
+```bash
+/bin/sh -c '. $HOME/.ostsee-cleanup.env && curl -fsS -X POST -H "Authorization: Bearer $CLEANUP_TOKEN" "https://$HOST/api/admin/cleanup-orphans"'
+```
+
+Ein `%` im Crontab ist ein Zeilenumbruch-Sonderzeichen und muss als `\%` escaped
+werden — betrifft jeden, der ein `date`-Format in den Log-Namen baut.
+
 ---
 
 ## 4. Anwendung starten
