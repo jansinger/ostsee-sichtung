@@ -29,7 +29,7 @@
 		"lint:fix": "eslint . --fix --config eslint.config.js",
 		"lint:debug": "eslint . --config eslint.config.js --debug",
 		"audit": "npm audit --audit-level=moderate",
-		"type-check": "tsc --noEmit",
+		"type-check": "npm run i18n:compile && tsc --noEmit",
 		"commit": "git-cz",
 		"commit:signed": "git-cz -S",
 		"test:unit": "vitest run --project server",

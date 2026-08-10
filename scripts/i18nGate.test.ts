@@ -118,6 +118,93 @@ function compileCommandFromPackageJson(): string {
  * Vite-Plugin-Pfad nicht). Ohne Übereinstimmung testen `deLocalizeUrl`/`localizeUrl`
  * in Folge-Tasks also eine Konfiguration, die im Betrieb nie gilt.
  */
+const CI_WORKFLOW_PATH = path.join(repoRoot, '.github/workflows/ci.yml');
+
+/**
+ * Extrahiert die Namen aller `npm run <name>`-Aufrufe aus den `run:`-Schritten
+ * von `ci.yml` — nicht aus Kommentaren oder `echo`-Zeilen, die denselben Text
+ * nur erwähnen (z. B. `echo "Fix: npm run db:generate ..."` in
+ * `migration-check`, oder die Erklärungen zu `e2e-shards.sh` in den
+ * Filter-Kommentaren). Ein einfacher Zeilenfilter statt eines YAML-Parsers, im
+ * selben Geist wie `flattenScript` in `testGate.ts`: Kommt hier etwas
+ * Komplexeres dazu, das dieser Filter falsch einordnet, fällt es über die
+ * Tests zu diesem Modul auf, nicht über eine still zu großzügige Prüfung.
+ *
+ * Absichtlich modulweit ausgewertet (nicht in einer `it`): Die Liste bildet
+ * unten die `it.each`-Fälle. Ein **neuer** `npm run`-Schritt in `ci.yml`
+ * erzeugt damit automatisch einen neuen Testfall, ohne dass diese Datei
+ * angefasst werden muss.
+ */
+export function npmRunScriptNamesIn(workflowSource: string): string[] {
+	const names = new Set<string>();
+	for (const rawLine of workflowSource.split('\n')) {
+		const line = rawLine.trim();
+		if (line.startsWith('#') || line.startsWith('echo')) continue;
+		for (const match of line.matchAll(/npm run ([\w:.-]+)/g)) {
+			names.add(match[1]);
+		}
+	}
+	return [...names];
+}
+
+/**
+ * Erkennt Kommandos, die den generierten Paraglide-Code direkt lesen, ohne
+ * über Vite zu laufen.
+ *
+ * `vite build`/`vite dev`/`vite preview` sowie jeder `vitest`- und
+ * `playwright`-Lauf gehen über `paraglideVitePlugin` (siehe `vite.config.ts`,
+ * `vite.config.ci.ts`, `vite.config.preview.ts`) — das Plugin erzeugt
+ * `src/lib/paraglide` beim Start selbst, dafür braucht keines dieser Kommandos
+ * den expliziten Vorlauf. `tsc` und `svelte-check` laufen roh, ohne das
+ * Plugin, und finden den generierten Code nur, wenn ihn vorher jemand erzeugt
+ * hat — das ist genau die Lücke, die `type-check` in CI aufgerissen hat.
+ *
+ * `eslint` (das `lint`-Skript) steht bewusst NICHT in dieser Liste: ESLint
+ * löst Imports nicht typgeprüft auf, und `src/lib/paraglide` steht in
+ * `eslint.config.js` unter `ignores` — der Schritt lief in CI durch, obwohl
+ * das Verzeichnis fehlte. Ihm den Vorlauf trotzdem voranzustellen würde nur
+ * Zeit kosten, ohne eine reale Lücke zu schließen.
+ */
+function readsGeneratedCodeDirectly(command: string): boolean {
+	return /(^|\s)(tsc|svelte-check)(\s|$)/.test(command);
+}
+
+describe('CI-Workflow ruft keine Skripte auf, denen der Compile-Vorlauf fehlt', () => {
+	const ciWorkflowSource = readFileSync(CI_WORKFLOW_PATH, 'utf8');
+	const scriptNames = npmRunScriptNamesIn(ciWorkflowSource);
+
+	// Schutz gegen eine kaputte Extraktion: Läge die Liste versehentlich leer,
+	// würde `it.each` klaglos null Testfälle erzeugen und der ganze Block wäre
+	// stillschweigend wirkungslos — dasselbe Fehlerbild, das dieser Block
+	// eigentlich verhindern soll.
+	it('findet die bekannten Aufrufer aus ci.yml', () => {
+		expect(scriptNames).toEqual(
+			expect.arrayContaining(['lint', 'type-check', 'check', 'test:unit', 'build'])
+		);
+	});
+
+	it.each(scriptNames)(
+		'%s: tsc/svelte-check finden den generierten Code, falls dieses Skript sie aufruft',
+		(name) => {
+			const scripts = readScripts();
+			const flat = flattenScript(name, scripts);
+			const consumerIndex = flat.findIndex(readsGeneratedCodeDirectly);
+			// Skript ruft weder tsc noch svelte-check direkt auf (z. B. lint,
+			// db:migrate, license:audit) — für dieses Skript gibt es hier nichts
+			// zu prüfen.
+			if (consumerIndex === -1) return;
+
+			const compileIndex = flat.findIndex((command) => command.includes('paraglide-js compile'));
+			expect(
+				compileIndex,
+				`${name}: kein "paraglide-js compile" vor "${flat[consumerIndex]}" — ` +
+					`in CI existiert src/lib/paraglide nicht, dieser Schritt schlägt fehl`
+			).toBeGreaterThanOrEqual(0);
+			expect(compileIndex).toBeLessThan(consumerIndex);
+		}
+	);
+});
+
 describe('CLI und Vite-Plugin erzeugen dieselbe Paraglide-Laufzeit', () => {
 	it('nutzen dieselbe --strategy wie das paraglideVitePlugin', () => {
 		const fromCli = cliStrategy(compileCommandFromPackageJson());
