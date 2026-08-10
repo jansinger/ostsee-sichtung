@@ -1029,11 +1029,18 @@
 						</select>
 					</div>
 				</div>
+				<!-- Kein `md:btn-xs` mehr: Die Höhe hat es ohnehin nie geändert (beide
+				     Knöpfe messen die 44px aus dem Touch-Target-Block), es verkleinerte
+				     nur Schrift und Innenabstand — und zwar auf dem GRÖSSEREN Schirm, wo
+				     Platz kein Argument ist. „Anwenden" ist die Aktion, ohne die das
+				     Panel nichts bewirkt; sie auf dem Desktop zu verkleinern lief der
+				     Bedeutung entgegen. `btn-sm` bleibt und stimmt mit den übrigen
+				     Aktionsknöpfen der Seite überein (Spalten, Filter, Export); die
+				     Rangfolge im Panel trägt weiterhin `btn-primary` gegen
+				     `btn-outline`, nicht die Größe. -->
 				<div class="mt-3 flex flex-col gap-2 md:flex-row md:justify-end">
-					<button class="btn btn-outline btn-sm md:btn-xs" onclick={resetFilters}
-						>Zurücksetzen</button
-					>
-					<button class="btn btn-primary btn-sm md:btn-xs" onclick={applyFilters}>Anwenden</button>
+					<button class="btn btn-outline btn-sm" onclick={resetFilters}>Zurücksetzen</button>
+					<button class="btn btn-primary btn-sm" onclick={applyFilters}>Anwenden</button>
 				</div>
 			</div>
 		{/if}
