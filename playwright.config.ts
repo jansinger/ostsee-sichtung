@@ -76,6 +76,15 @@ export default defineConfig({
 	use: {
 		/* Base URL to use in actions like `await page.goto('/')`. */
 		baseURL,
+		/**
+		 * Ohne diese Angabe entscheidet Chromiums Standardsprache (`en-US`) über
+		 * `Accept-Language` und damit über die Weiterleitung auf `/` nach `/en`
+		 * (siehe `zielFuerStartseite` in `src/lib/i18n/startseitenWeiterleitung.ts`).
+		 * `page.goto('/')` würde dann still die englische Startseite prüfen statt
+		 * der deutschen. Specs, die gezielt Englisch testen, überschreiben das
+		 * lokal mit `test.use({ locale: 'en-GB' })` (siehe `e2e/i18n-routing.spec.ts`).
+		 */
+		locale: 'de-DE',
 		/* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
 		trace: 'on-first-retry',
 		/* Screenshot on failure */
