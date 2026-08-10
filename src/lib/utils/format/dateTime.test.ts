@@ -672,21 +672,35 @@ describe('dateTime - Zentrale Zeitzonenverwaltung', () => {
 	});
 
 	describe('Locale und Zeitzone', () => {
-		it('formatiert unter englischer Locale englisch', () => {
+		it('formatiert das Datum locale-spezifisch (Trennzeichen, Reihenfolge)', () => {
 			const datum = '2026-07-15T12:00:00Z';
-			expect(formatLocalDateTime(datum, 'date', 'en-GB')).not.toBe(
-				formatLocalDateTime(datum, 'date', 'de-DE')
-			);
+			expect(formatLocalDateTime(datum, 'date', 'de-DE')).toBe('15.07.2026');
+			expect(formatLocalDateTime(datum, 'date', 'en-GB')).toBe('15/07/2026');
 		});
 
-		it('bleibt in beiden Sprachen auf Europe/Berlin', () => {
-			// 2026-07-15 23:30 UTC ist in Berlin bereits der 16. Juli. Koppelt jemand
-			// die Zeitzone an die Locale, zeigt eine Sichtung den falschen Tag — ein
-			// Datenfehler, keine Darstellungsfrage. Siehe docs/ENVIRONMENT.md,
+		it('bleibt für alle Formate und beide Sprachen auf Europe/Berlin', () => {
+			// 22:30 UTC statt 23:30: Bei 23:30 zeigen Berlin (Sommerzeit, 00:30) UND
+			// London (Sommerzeit, 23:30) noch denselben Kalendertag — eine versehentliche
+			// Kopplung en → Europe/London wäre an diesem Zeitpunkt unsichtbar grün
+			// geblieben. Bei 22:30 UTC ist Berlin bereits der 16. (00:30), London noch
+			// der 15. (23:30) — die beiden Zonen fallen also tatsächlich auseinander,
+			// und der Test wird bei einer Locale→Zone-Kopplung wirklich rot. Koppelt
+			// jemand die Zeitzone an die Locale, zeigt eine Sichtung den falschen Tag —
+			// ein Datenfehler, keine Darstellungsfrage. Siehe docs/ENVIRONMENT.md,
 			// Abschnitt TZ, und den Kommentar an berlinToday() im Sichtungsschema.
-			const spaet = '2026-07-15T23:30:00Z';
-			expect(formatLocalDateTime(spaet, 'date', 'de-DE')).toContain('16');
-			expect(formatLocalDateTime(spaet, 'date', 'en-GB')).toContain('16');
+			const spaet = '2026-07-15T22:30:00Z';
+
+			const erwartet = {
+				full: { de: '16.07.2026, 00:30:00', en: '16/07/2026, 00:30:00' },
+				date: { de: '16.07.2026', en: '16/07/2026' },
+				time: { de: '00:30', en: '00:30' },
+				datetime: { de: '16.07.2026, 00:30', en: '16/07/2026, 00:30' }
+			} satisfies Record<'full' | 'date' | 'time' | 'datetime', { de: string; en: string }>;
+
+			(Object.keys(erwartet) as Array<keyof typeof erwartet>).forEach((format) => {
+				expect(formatLocalDateTime(spaet, format, 'de-DE'), format).toBe(erwartet[format].de);
+				expect(formatLocalDateTime(spaet, format, 'en-GB'), format).toBe(erwartet[format].en);
+			});
 		});
 	});
 });

@@ -55,6 +55,16 @@ const APP_LOCALE = 'de-DE';
  *     benutzen `sv-SE` für ISO-Reihenfolge — Rechnung, keine Darstellung.
  *   - `formatForExport`, `formatForKmlExport`, `formatForXmlExport` bedienen
  *     Datenformate mit festem Vertrag (Entwurf, Abschnitt 6).
+ *   - `splitDateTime` unten übergibt `'sv-SE'` explizit als dritten Parameter
+ *     an genau diese Funktion — der naheliegendste Treffer für einen
+ *     mechanischen Sweep „aktive Locale durchreichen". Das Ergebnis füllt
+ *     `<input type="date">`/`<input type="time">` im Formular; eine andere
+ *     Locale dort liefert z. B. "16/07/2026" statt "2026-07-16" und das
+ *     Eingabefeld akzeptiert den Wert nicht mehr.
+ *   - `formatISOLikeDatetime` weiter unten hat dieselbe Berechnungsrolle wie
+ *     `splitDateTime`/`berlinCalendarDayIso` (zonenlose Wanduhrzeit-Strings
+ *     durchreichen bzw. `sv-SE`-Reihenfolge erzeugen) und gehört aus demselben
+ *     Grund nicht an die aktive Locale gekoppelt.
  */
 export function formatLocalDateTime(
 	utcDateTime: string | Date | null | undefined,
