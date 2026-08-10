@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { stripLegacyLanguagePrefix } from './languagePrefix';
+import { istAusgeschlossen, stripLegacyLanguagePrefix } from './languagePrefix';
 
 describe('stripLegacyLanguagePrefix', () => {
 	describe('bedient die Legacy-Pfade mit Sprachkürzel', () => {
@@ -97,5 +97,33 @@ describe('stripLegacyLanguagePrefix', () => {
 				expect(stripLegacyLanguagePrefix(pfad)).toBeUndefined();
 			});
 		}
+	});
+});
+
+describe('istAusgeschlossen', () => {
+	it.each([
+		'/api/sightings',
+		'/api/media/foo.jpg',
+		'/admin',
+		'/admin/sichtungen',
+		'/uploads/2026/bild.jpg',
+		'/health',
+		'/maintenance',
+		'/docs',
+		'/docs/api',
+		'/styleguide'
+	])('schließt %s aus', (pfad) => {
+		expect(istAusgeschlossen(pfad)).toBe(true);
+	});
+
+	it.each(['/', '/sichtungen', '/map', '/about', '/bestimmungshilfe'])('lokalisiert %s', (pfad) => {
+		expect(istAusgeschlossen(pfad)).toBe(false);
+	});
+
+	it('trifft nur ganze Pfadsegmente', () => {
+		// `/apidoku` beginnt mit `/api`, ist aber ein anderer Pfad. Ein reines
+		// startsWith hätte ihn stillschweigend mit ausgeschlossen.
+		expect(istAusgeschlossen('/apidoku')).toBe(false);
+		expect(istAusgeschlossen('/administration')).toBe(false);
 	});
 });

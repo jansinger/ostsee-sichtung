@@ -67,3 +67,45 @@ export function stripLegacyLanguagePrefix(pathname: string): string | undefined 
 
 	return rest;
 }
+
+/**
+ * Pfade, die **nie** ein Sprachpräfix bekommen.
+ *
+ * Bewusst eine Ausschluss- und keine Positivliste: Eine vergessene Positivliste
+ * liefert bei einer neuen öffentlichen Seite still Deutsch aus, eine vergessene
+ * Ausschlussliste erzeugt einen zusätzlichen erreichbaren Pfad — und den findet
+ * `e2e/i18n-routing.spec.ts`. Ein sichtbarer Fehlschlag ist einem stillen
+ * vorzuziehen.
+ *
+ * `/admin` steht hier nicht nur, weil der Bereich einsprachig deutsch bleibt:
+ * Der Schutz in `hooks.server.ts` hängt an `event.url.pathname`, den `reroute`
+ * nicht verändert. Ein zweiter Pfad auf geschützte Routen wäre eine echte Lücke.
+ *
+ * Bewusst **ohne** `/sichtungen`: Unter `src/routes/sichtungen/` liegt nur der
+ * Legacy-Endpunkt `showreports.json` (bereits über `/rest_sichtungen` und
+ * `LEGACY_PFADE` oben abgedeckt), keine Seitenroute. Ein Präfix hier hätte
+ * `istAusgeschlossen('/sichtungen')` fälschlich ausgeschlossen — der Pfad ist
+ * keine reale, geschützte oder technische Route und muss lokalisierbar bleiben.
+ */
+const NICHT_LOKALISIERT = [
+	'/api',
+	'/admin',
+	'/uploads',
+	'/health',
+	'/maintenance',
+	'/docs',
+	'/styleguide',
+	'/rest_sichtungen'
+] as const;
+
+/**
+ * Ob ein Pfad von der Sprachlokalisierung ausgenommen ist.
+ *
+ * Vergleicht auf **ganze Segmente**: `/apidoku` beginnt zwar mit `/api`, ist
+ * aber ein anderer Pfad und wird lokalisiert.
+ *
+ * @param pfad Pfad ohne Sprachpräfix und ohne Query-String
+ */
+export function istAusgeschlossen(pfad: string): boolean {
+	return NICHT_LOKALISIERT.some((praefix) => pfad === praefix || pfad.startsWith(`${praefix}/`));
+}
