@@ -421,6 +421,11 @@ export function istAusgeschlossen(pfad: string): boolean {
 }
 ```
 
+> **Historischer Stand.** Dieser Plan ist ein Artefakt seiner Entstehungszeit,
+> kein Nachzeichnen des Ausgelieferten. Im tatsächlichen Code ist
+> `NICHT_LOKALISIERT` `export`iert — Commit `5efd7674` hat das nachgezogen,
+> damit `e2e/i18n-routing.spec.ts` direkt darüber laufen kann (siehe Task 6).
+
 - [ ] **Schritt 4: Tests laufen lassen, Erfolg bestätigen**
 
 ```bash
@@ -909,6 +914,13 @@ test.describe('Sprachpräfix-Routing', () => {
 });
 ```
 
+> **Historischer Stand.** Diese Schleife mit ihrer hartkodierten Pfadliste ist
+> der Plan-Entwurf, nicht der ausgelieferte Code. Die Liste lief tatsächlich
+> einmal unbemerkt von `NICHT_LOKALISIERT` auseinander; Commit `5efd7674` hat
+> die Schleife deshalb auf einen Import der Konstante umgestellt, Commit
+> `accf2465` hat eine Folgelücke im verwandten `e2e/i18n-link-sweep.spec.ts`
+> nachgebessert. Aktueller Stand: `e2e/i18n-routing.spec.ts`.
+
 - [ ] **Schritt 2: Test laufen lassen**
 
 ```bash
@@ -1234,9 +1246,11 @@ git commit -m "feat(ui): add a language switcher to the public navbar"
 
 **Definition of Done:** `/en` liefert eine Seite mit `lang="en"` aus **und
 bleibt beim Navigieren englisch**, der Umschalter führt außerhalb des iframes
-hin und zurück, alle Ausschlüsse und `/de/…` liefern 404, die Legacy-API
-antwortet unverändert deutsch, und `npm run test:quick` ist in einem frisch
-aufgesetzten Worktree grün.
+hin und zurück, alle Ausschlüsse und `/de/…` liefern 404 — mit einer
+dokumentierten Ausnahme: `/en/rest_sichtungen` steht zugleich in
+`LEGACY_PFADE`, die Legacy-Weiche in `src/hooks.ts` greift dort zuerst und
+liefert bewusst 200 —, die Legacy-API antwortet unverändert deutsch, und
+`npm run test:quick` ist in einem frisch aufgesetzten Worktree grün.
 
 **Aufwand dieser Etappe: 4–5 Tage** statt der zuerst genannten 3–4. Die
 Verweis-Lokalisierung (Task 8) und der Umschalter (Task 9) waren dort
@@ -1275,4 +1289,3 @@ steht. Sie sind hier bewusst ausgelassen, nicht vergessen:
 (Abschnitt 4.6), aber die Verweise gehören in den Kopf-Block jeder Route — und
 die zwölf `+page.svelte` werden in Etappe 2 ohnehin angefasst. Sie hier einmal
 und dort ein zweites Mal zu öffnen wäre doppelte Arbeit an denselben Dateien.
-Der Entwurf ist entsprechend nachzutragen.
