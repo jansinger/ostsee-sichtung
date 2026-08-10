@@ -108,26 +108,35 @@ describe('REPORTER_LEVEL_PRESENTATION', () => {
 		}
 	});
 
-	/* Ohne den Rahmen waren `new`, `known` und `established` ununterscheidbar:
+	/* Ohne die Tönung waren `new`, `known` und `established` ununterscheidbar:
 	   gleiche Fläche, gleiches Icon, gleicher Text („Melder: N freigegeben").
 	   Die Schwellen 3 und 10 änderten damit nur das Adjektiv im Tooltip — ein
 	   Bearbeiter sah bei 3 Freigaben dasselbe Badge wie bei 30. */
-	it('macht die drei Freigabe-Stufen am Rahmen unterscheidbar', () => {
-		const rahmen = (['new', 'known', 'established'] as const).map(
-			(level) => REPORTER_LEVEL_PRESENTATION[level].borderClass
+	it('macht die drei Freigabe-Stufen an der Fläche unterscheidbar', () => {
+		const flaechen = (['new', 'known', 'established'] as const).map(
+			(level) => REPORTER_LEVEL_PRESENTATION[level].accentClass
 		);
 
-		expect(new Set(rahmen).size).toBe(3);
-		expect(REPORTER_LEVEL_PRESENTATION.new.borderClass).toBe('');
+		expect(new Set(flaechen).size).toBe(3);
+		// Die unterste Stufe bleibt ungetönt — sonst gäbe es keinen Ruhezustand.
+		expect(REPORTER_LEVEL_PRESENTATION.new.accentClass).toBe('');
 	});
 
-	/* Der Rahmen ist Verstärkung, nicht Träger: `flagged` hat die Warnfläche,
-	   ein zusätzlicher Rahmen wäre doppelt. Und keine Stufe darf ihre Fläche
-	   über den Rahmen doch noch einfärben. */
-	it('lässt die Warnstufe ohne Rahmen und hält ihn aus den Flächenklassen heraus', () => {
-		expect(REPORTER_LEVEL_PRESENTATION.flagged.borderClass).toBe('');
+	/* Die Tönung ist Verstärkung, nicht Träger: `flagged` hat die Warnfläche,
+	   eine zweite Tönung wäre doppelt.
+
+	   Und sie bleibt bei der Markenfarbe. Ein grüner Tint neben dem
+	   Freigeben-Knopf wäre ein Urteil über die *Meldung* („kann durch") statt
+	   eine Auszeichnung der *Adresse* — dieselbe Begründung, aus der
+	   `badgeClass` nirgends `badge-success` trägt. Der Test nennt die
+	   Statusfarben einzeln, damit auch `warning`/`error`/`info` nicht auf diesem
+	   Weg hereinkommen. */
+	it('lässt die Warnstufe ungetönt und hält Statusfarben aus der Tönung heraus', () => {
+		expect(REPORTER_LEVEL_PRESENTATION.flagged.accentClass).toBe('');
 		for (const presentation of Object.values(REPORTER_LEVEL_PRESENTATION)) {
-			expect(presentation.borderClass).not.toMatch(/\bbg-|\bbadge-/);
+			expect(presentation.accentClass).not.toMatch(/\b(?:bg|badge)-(?:success|warning|error|info)/);
+			// Eine Vollton-Fläche wäre keine Tönung mehr — Deckkraft ist Pflicht.
+			if (presentation.accentClass) expect(presentation.accentClass).toMatch(/\/\d{1,2}$/);
 		}
 	});
 

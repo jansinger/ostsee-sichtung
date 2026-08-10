@@ -20,7 +20,7 @@
 
 {#if level && presentation && history}
 	<span
-		class="badge badge-sm {presentation.badgeClass} {presentation.borderClass}"
+		class="badge badge-sm {presentation.badgeClass} {presentation.accentClass}"
 		data-testid="reporter-badge"
 		title={presentation.description}
 	>

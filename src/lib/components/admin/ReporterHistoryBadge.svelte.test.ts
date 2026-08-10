@@ -78,12 +78,12 @@ describe('ReporterHistoryBadge', () => {
 		expect(flaggedIcon?.outerHTML).not.toBe(firstIcon?.outerHTML);
 	});
 
-	/* Text und Icon sind bei 3 und bei 30 Freigaben identisch — ohne den Rahmen
+	/* Text und Icon sind bei 3 und bei 30 Freigaben identisch — ohne die Tönung
 	   wäre die Stufe im DOM nicht vorhanden, und die Schwellen 3/10 blieben eine
 	   reine Tooltip-Angelegenheit. Geprüft wird die gerenderte Klasse, nicht das
-	   Präsentationsobjekt: Die Komponente könnte den Rahmen sonst still
+	   Präsentationsobjekt: Die Komponente könnte die Tönung sonst still
 	   fallenlassen. */
-	it('reicht den Stufen-Rahmen bis ins Markup durch', async () => {
+	it('reicht die Stufen-Tönung bis ins Markup durch', async () => {
 		const { container: knownContainer } = render(ReporterHistoryBadge, {
 			history: historie({ approved: 5 })
 		});
@@ -99,10 +99,10 @@ describe('ReporterHistoryBadge', () => {
 		});
 		const neu = newContainer.querySelector('[data-testid="reporter-badge"]');
 
-		expect(known?.className).toContain('border');
-		expect(established?.className).toContain('border');
+		expect(known?.className).toContain('bg-primary/');
+		expect(established?.className).toContain('bg-primary/');
 		expect(known?.className).not.toBe(established?.className);
-		// Die unterste Stufe bleibt rahmenlos — sonst gäbe es keinen Ruhezustand.
-		expect(neu?.className).not.toContain('border');
+		// Die unterste Stufe bleibt ungetönt — sonst gäbe es keinen Ruhezustand.
+		expect(neu?.className).not.toContain('bg-primary/');
 	});
 });
