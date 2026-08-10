@@ -906,11 +906,15 @@
 			Echte `btn` statt klickbar gemachter `badge`: Nur `.btn` bekommt über
 			app.css die 44px-Touch-Target-Mindestgröße (design-system.md
 			„Feldmodus und Touch-Targets"); ein `badge` bliebe bei ~24px.
-			Die aktive Ansicht trägt `btn-primary` — sie ist die einzige
-			Vollton-Fläche der Leiste, alle übrigen sind `btn-outline`, damit
-			„aktiv" nicht mit „auswählbar" verschwimmt (Button-Hierarchie).
-			`aria-current="true"` sagt dasselbe für Screenreader, die die Farbe
-			nicht sehen.
+			Die aktive Ansicht trägt `btn-active` — dieselbe „aktueller
+			Zustand"-Optik wie der aktive Statusreiter direkt darunter und die
+			Seitenzahl in der Paginierung. `btn-primary` bleibt Export und
+			„Anwenden" vorbehalten: Auf breiten Bildschirmen standen bislang bis
+			zu vier Vollton-Flächen binnen 150px Höhe nebeneinander, weil
+			`btn-primary` gleichzeitig „das ist die Aktion hier" und „das ist
+			ausgewählt" bedeutete (Button-Hierarchie). `aria-current="true"`
+			sagt „ausgewählt" weiterhin für Screenreader, die die Farbe nicht
+			sehen.
 		-->
 		<div class="mt-3 flex flex-wrap items-center gap-2">
 			{#if filterPresets.length > 0 || zeigeAnsichtFormular}
@@ -948,7 +952,7 @@
 						<button
 							type="button"
 							class="btn btn-sm join-item {aktiveAnsichtId === preset.id
-								? 'btn-primary'
+								? 'btn-active'
 								: 'btn-outline'}"
 							aria-current={aktiveAnsichtId === preset.id ? 'true' : undefined}
 							onclick={() => ansichtAnwenden(preset)}

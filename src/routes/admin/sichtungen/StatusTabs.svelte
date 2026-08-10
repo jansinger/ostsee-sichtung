@@ -29,8 +29,12 @@
 	   (design-system.md, „Feldmodus und Touch-Targets"). `.tab` bliebe darunter
 	   — und diese Leiste ist gerade auf Mobil das wichtigste Bedienelement.
 	3. Dieselbe Bauform wie die Ansichten-Leiste direkt darüber: aktiv =
-	   `btn-primary` (die einzige Vollton-Fläche), alle übrigen `btn-outline`,
-	   damit „aktiv" nicht mit „auswählbar" verschwimmt.
+	   `btn-active` (dieselbe „aktueller Zustand"-Optik wie die Seitenzahl in
+	   der Paginierung weiter unten), alle übrigen `btn-outline`. `btn-primary`
+	   bleibt Export und „Anwenden" vorbehalten (Button-Hierarchie) — sonst
+	   sagt dieselbe Vollton-Fläche gleichzeitig „das ist die Aktion hier" und
+	   „das ist ausgewählt", und auf breiten Bildschirmen standen bis zu vier
+	   solcher Flächen binnen 150px Höhe nebeneinander.
 
 	Waagerecht scrollbar statt umbrechend: Ein Umbruch verschöbe bei jedem
 	Filterwechsel die Tabelle darunter.
@@ -41,7 +45,7 @@
 			{@const aktiv = tab.value === active}
 			<button
 				type="button"
-				class="btn btn-sm join-item {aktiv ? 'btn-primary' : 'btn-outline'}"
+				class="btn btn-sm join-item {aktiv ? 'btn-active' : 'btn-outline'}"
 				aria-current={aktiv ? 'true' : undefined}
 				onclick={() => onselect(tab.value)}
 			>
