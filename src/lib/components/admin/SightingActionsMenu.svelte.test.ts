@@ -10,6 +10,11 @@ import { render } from 'vitest-browser-svelte';
 import { describe, expect, it, vi } from 'vitest';
 import SightingActionsMenu from './SightingActionsMenu.svelte';
 
+/* Das Browser-Test-Setup lädt src/app.css nicht — für die Touch-Target-Messung
+   unten braucht es aber die zentrale `.menu`-Regel von dort (und DaisyUIs
+   Menü-Styles). Explizit importieren, wie in FilterPanel.svelte.test.ts. */
+import '../../../app.css';
+
 function renderMenu(overrides: Partial<Parameters<typeof render>[1]> = {}) {
 	const onspamcheck = vi.fn();
 	const ontestemail = vi.fn();
@@ -64,6 +69,29 @@ describe('SightingActionsMenu', () => {
 		await expect.element(mail).toBeVisible();
 		await mail.click();
 		expect(ontestemail).toHaveBeenCalledOnce();
+	});
+
+	it('jeder Menüeintrag erfüllt das 44px-Touch-Target (WCAG 2.5.5)', async () => {
+		/* Misst die Wirkung im Browser, nicht die Existenz einer CSS-Regel: Der
+		   Touch-Target-Block in app.css deckte nur `.btn` ab — die einfachen
+		   Menüeinträge (Spam-Check, Mail) kamen mit DaisyUIs Menü-Padding nur
+		   auf ~32px. Superadmin an, damit alle drei Einträge im DOM stehen. */
+		const { screen } = renderMenu({ isSuperAdmin: true });
+
+		await screen.getByRole('button', { name: 'Weitere Aktionen zu Sichtung REF-1' }).click();
+		const eintraege = screen.container.querySelectorAll('[popover] li > button');
+		expect(eintraege.length).toBe(3);
+		for (const eintrag of eintraege) {
+			/* expect.poll: DaisyUI öffnet das Dropdown mit einer scale-Animation
+			   (0.95 → 1, 200 ms). Eine Sofort-Messung per getBoundingClientRect
+			   liefert mitten darin 41,8px (= 44 × 0,95) und wäre flaky — gepollt
+			   wird deshalb bis zum Endzustand. */
+			await expect
+				.poll(() => eintrag.getBoundingClientRect().height, {
+					message: `Touch-Target von „${eintrag.textContent?.trim()}"`
+				})
+				.toBeGreaterThanOrEqual(44);
+		}
 	});
 
 	it('hat ohne Superadmin-Rolle keinen Mail-Eintrag', async () => {

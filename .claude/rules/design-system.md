@@ -455,12 +455,13 @@ Das Formular wird an Deck und am Strand ausgefüllt — nass, in der Sonne, mit 
 - Touch-Targets kommen aus `--target-min` (44px, im Feldmodus 56px). Der `Touch-Targets`-Block in `app.css` setzt sie global durch — `min-h-11` an der Aufrufstelle ist damit nicht mehr nötig, und `btn-xs` unterschreitet die Grenze nicht mehr still.
 - **Das Ziel ist 44px, nicht das Bedienelement.** WCAG 2.5.5 verlangt eine Trefferfläche dieser Größe — kein Control dieser Größe. Daraus folgen drei getrennte Mechanismen:
 
-  | Element                                   | Mechanismus                     | Größe                          |
-  | ----------------------------------------- | ------------------------------- | ------------------------------ |
-  | `.btn`, `summary.btn`                     | `min-height: var(--target-min)` | 44px (Feldmodus 56px)          |
-  | `.btn-circle`                             | zusätzlich `min-width`          | 44×44                          |
-  | `label:has(> .checkbox\|.radio\|.toggle)` | `min-height: var(--target-min)` | 44px — **hier liegt das Ziel** |
-  | `.checkbox`, `.radio`, `.toggle`          | `--size: var(--control-size)`   | 28px, sichtbare Größe          |
+  | Element                                                                                                | Mechanismus                     | Größe                             |
+  | ------------------------------------------------------------------------------------------------------ | ------------------------------- | --------------------------------- |
+  | `.btn`, `summary.btn`                                                                                  | `min-height: var(--target-min)` | 44px (Feldmodus 56px)             |
+  | `.btn-circle`                                                                                          | zusätzlich `min-width`          | 44×44                             |
+  | `label:has(> .checkbox\|.radio\|.toggle)`                                                              | `min-height: var(--target-min)` | 44px — **hier liegt das Ziel**    |
+  | `.checkbox`, `.radio`, `.toggle`                                                                       | `--size: var(--control-size)`   | 28px, sichtbare Größe             |
+  | `.menu`-Einträge: `li > *` (ohne `ul`/`details`/Titel/`.target-exempt`) sowie `li > details > summary` | `min-height: var(--target-min)` | 44px — DaisyUI-Default wäre ~32px |
 
   `.checkbox`/`.radio`/`.toggle` **nie über `min-height`** vergrößern: DaisyUI setzt bei ihnen `width` **und** `height` fest, `min-height` überschreibt nur die Höhe und verzerrt sie (gemessen: Checkbox 24×44, Radio 24×44 als Ellipse, Toggle 40×44 mit versetztem Knopf). Und `--size` **nicht** auf `--target-min` setzen — dann greifen Control-Größe und Trefferfläche gleichzeitig, der Toggle würde 75×44 breit (im Feldmodus 96×56).
 
