@@ -66,7 +66,28 @@ export function getReporterLevel(
 }
 
 export interface ReporterLevelPresentation {
-	/** Flächenfarbe — ohne `-strong`-Suffix (`.claude/rules/design-system.md`). */
+	/**
+	 * Flächenfarbe — ohne `-strong`-Suffix (`.claude/rules/design-system.md`).
+	 *
+	 * **`established` trägt seit dem 2026-08-10 `badge-success`** (Entscheidung
+	 * Jan). Davor waren `new`, `known` und `established` alle `badge-ghost` und
+	 * damit ununterscheidbar; ein Zwischenschritt mit Tönungen
+	 * (`bg-primary/10` und `/20`) war im Betrieb nachweislich nicht zu erkennen
+	 * und wurde wieder entfernt — was unsichtbar ist, gehört nicht in den Code.
+	 *
+	 * Zwei Einwände standen dagegen und sind bewusst überstimmt worden:
+	 * Grün trifft rund die Hälfte der offenen Karten (300 von 659 am
+	 * 2026-08-10, weil es im Bestand nur 5 Ablehnungen gibt), und
+	 * `badge-success` ist zugleich der Sichtungsstatus „Freigegeben"
+	 * (`sightingStatus.ts`) — in Tabelle und Detailansicht stehen damit zwei
+	 * Grüns nebeneinander, die Verschiedenes meinen. Wer das zurückdreht,
+	 * sollte diese zwei Punkte kennen und nicht neu entdecken.
+	 *
+	 * Kontrast ist **kein** Einwand: `--color-success` mit weißem Text misst
+	 * 4,56:1 (`daisyui.md`). Die dortige Warnung gilt weiter — die Lightness
+	 * dieser Fläche darf nicht erhöht werden, sonst fällt jedes
+	 * `badge-success` im Projekt unter AA.
+	 */
 	badgeClass: string;
 	/** Icon-Name für `$lib/components/Icon.svelte` — die farbunabhängige Unterscheidung. */
 	icon: string;
@@ -76,7 +97,7 @@ export interface ReporterLevelPresentation {
 
 export const REPORTER_LEVEL_PRESENTATION: Record<ReporterLevel, ReporterLevelPresentation> = {
 	first: {
-		badgeClass: 'badge-ghost',
+		badgeClass: 'badge-neutral',
 		icon: 'lucide:user-plus',
 		description: 'Erste Meldung dieser E-Mail-Adresse — keine Vorgeschichte im Bestand'
 	},
@@ -86,17 +107,17 @@ export const REPORTER_LEVEL_PRESENTATION: Record<ReporterLevel, ReporterLevelPre
 		description: 'Weitere Meldungen dieser Adresse sind selbst noch unbearbeitet'
 	},
 	new: {
-		badgeClass: 'badge-ghost',
+		badgeClass: 'badge-soft badge-success',
 		icon: 'lucide:user-check',
 		description: 'Einzelne frühere Meldungen dieser Adresse wurden freigegeben'
 	},
 	known: {
-		badgeClass: 'badge-ghost',
+		badgeClass: 'badge-soft badge-success',
 		icon: 'lucide:user-check',
 		description: 'Mehrere frühere Meldungen dieser Adresse wurden freigegeben'
 	},
 	established: {
-		badgeClass: 'badge-ghost',
+		badgeClass: 'badge-success',
 		/* Nicht „langjährig": Die Stufe zählt Freigaben, nicht Dauer — zehn
 		   Meldungen können aus einer Woche stammen. Wie lange die Adresse meldet,
 		   sagt `since` in der Detailansicht, und zwar getrennt davon. */

@@ -26,6 +26,9 @@
 -->
 <script lang="ts">
 	import ConnectionBadge from '$lib/components/ConnectionBadge.svelte';
+	import ReporterHistoryBadge from '$lib/components/admin/ReporterHistoryBadge.svelte';
+	import { SIGHTING_STATUS_PRESENTATION } from '$lib/components/admin/sightingStatus';
+	import { SPAM_RISK_PRESENTATION } from '$lib/components/admin/spamScorePresentation';
 	import Icon from '$lib/components/Icon.svelte';
 	import StatusBlock from '$lib/components/StatusBlock.svelte';
 	import SubmitStatus from '$lib/report/components/form/SubmitStatus.svelte';
@@ -130,6 +133,44 @@
 			delete root.dataset.density;
 		};
 	});
+
+	/**
+	 * Die sechs Zustände der Melder-Historie, mit den Zahlen, die sie auslösen.
+	 * Bewusst echte `ReporterHistory`-Objekte durch die echte Komponente — eine
+	 * nachgebaute Badge-Zeile wäre eine zweite Quelle und würde altern.
+	 */
+	const reporterBeispiele = [
+		{
+			stufe: 'first',
+			bedingung: 'keine weitere Meldung dieser Adresse',
+			history: { approved: 0, rejected: 0, open: 0, since: null }
+		},
+		{
+			stufe: 'pending',
+			bedingung: 'weitere Meldungen vorhanden, alle noch unbearbeitet',
+			history: { approved: 0, rejected: 0, open: 4, since: null }
+		},
+		{
+			stufe: 'new',
+			bedingung: '1–2 Freigaben',
+			history: { approved: 2, rejected: 0, open: 0, since: null }
+		},
+		{
+			stufe: 'known',
+			bedingung: 'ab 3 Freigaben',
+			history: { approved: 5, rejected: 0, open: 0, since: null }
+		},
+		{
+			stufe: 'established',
+			bedingung: 'ab 10 Freigaben',
+			history: { approved: 23, rejected: 0, open: 0, since: null }
+		},
+		{
+			stufe: 'flagged',
+			bedingung: 'ab ⅓ Ablehnungen unter den bearbeiteten Meldungen',
+			history: { approved: 2, rejected: 2, open: 0, since: null }
+		}
+	];
 </script>
 
 <svelte:head>
@@ -597,6 +638,57 @@
 			<span class="badge badge-warning">Außerhalb</span>
 			<span class="badge badge-info">aus Cache</span>
 			<span class="badge badge-secondary">Kamera</span>
+		</div>
+	</section>
+
+	<!-- ══ Melder-Historie ══ -->
+	<section class="mb-10">
+		<h2 class="text-title mb-1 font-bold">Melder-Historie (Admin)</h2>
+		<p class="text-support text-base-content/70 mb-4">
+			Sechs Zustände, abgeleitet aus den Meldungen derselben E-Mail-Adresse (<code
+				>reporterHistoryPresentation.ts</code
+			>). Die Zahl im Text trägt die Aussage, Tönung und Icon verstärken sie nur — die Bedeutung
+			hängt an keiner Stelle allein an der Farbe.
+		</p>
+		<div class="overflow-x-auto">
+			<table class="table-zebra table-sm table w-full">
+				<thead>
+					<tr>
+						<th>Badge</th>
+						<th>Stufe</th>
+						<th>Bedingung</th>
+					</tr>
+				</thead>
+				<tbody>
+					{#each reporterBeispiele as fall (fall.stufe)}
+						<tr>
+							<td><ReporterHistoryBadge history={fall.history} /></td>
+							<td><code>{fall.stufe}</code></td>
+							<td class="text-support text-base-content/70">{fall.bedingung}</td>
+						</tr>
+					{/each}
+				</tbody>
+			</table>
+		</div>
+
+		<h3 class="text-section mt-6 mb-1 font-semibold">Was auf derselben Karte noch farbig ist</h3>
+		<p class="text-support text-base-content/70 mb-3">
+			Die Reihe zeigt den bekannten Einwand gegen das Grün: Dieselbe Farbe trägt auch der
+			<em>Sichtungs</em>status „Freigegeben". In Tabelle und Detailansicht stehen damit zwei Grüns
+			nebeneinander, die Verschiedenes meinen — bewusst in Kauf genommen, weil ohne Vollton-Fläche
+			keine der Freigabe-Stufen erkennbar war.
+		</p>
+		<div class="flex flex-wrap items-center gap-2">
+			<span class="badge badge-sm {SIGHTING_STATUS_PRESENTATION.approved.badgeClass}">
+				{SIGHTING_STATUS_PRESENTATION.approved.label}
+			</span>
+			<span class="badge badge-sm {SIGHTING_STATUS_PRESENTATION.rejected.badgeClass}">
+				{SIGHTING_STATUS_PRESENTATION.rejected.label}
+			</span>
+			<span class="badge badge-sm {SPAM_RISK_PRESENTATION.suspicious.badgeClass}">Spam: 3</span>
+			<span class="badge badge-sm {SPAM_RISK_PRESENTATION.high.badgeClass}">Spam: 7</span>
+			<span class="badge badge-sm badge-info">Ostsee</span>
+			<ReporterHistoryBadge history={{ approved: 23, rejected: 0, open: 1, since: null }} />
 		</div>
 	</section>
 

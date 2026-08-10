@@ -77,4 +77,25 @@ describe('ReporterHistoryBadge', () => {
 		expect(firstIcon).not.toBeNull();
 		expect(flaggedIcon?.outerHTML).not.toBe(firstIcon?.outerHTML);
 	});
+
+	/* Text und Icon sind bei 5 und bei 30 Freigaben identisch — ohne die
+	   Flächenfarbe wäre die Stufe im DOM nicht vorhanden, und die Schwelle 10
+	   bliebe eine reine Tooltip-Angelegenheit. Ein Zwischenschritt mit Tönungen
+	   (`bg-primary/10` und `/20`) war im Betrieb nicht zu erkennen; deshalb
+	   jetzt eine Vollton-Fläche. Geprüft wird die gerenderte Klasse, nicht das
+	   Präsentationsobjekt: Die Komponente könnte sie sonst still fallenlassen. */
+	it('hebt die etablierte Stufe farblich von der bekannten ab', async () => {
+		const klasse = (approved: number) => {
+			const { container } = render(ReporterHistoryBadge, { history: historie({ approved }) });
+			return container.querySelector('[data-testid="reporter-badge"]')?.className ?? '';
+		};
+
+		// Vollton bei 30, Soft-Variante bei 5 — beide tragen `badge-success`,
+		// unterschieden werden sie über `badge-soft`.
+		expect(klasse(30)).toContain('badge-success');
+		expect(klasse(30)).not.toContain('badge-soft');
+		expect(klasse(5)).toContain('badge-soft');
+		expect(klasse(1)).toContain('badge-soft');
+		expect(klasse(0)).toContain('badge-neutral');
+	});
 });
