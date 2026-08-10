@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.18.0](https://github.com/jansinger/ostsee-tiere/compare/v2.17.0...v2.18.0) (2026-08-10)
+
+
+### Features
+
+* **admin:** melder-historie von neutral bis grün abstufen ([#853](https://github.com/jansinger/ostsee-tiere/issues/853)) ([2b50e58](https://github.com/jansinger/ostsee-tiere/commit/2b50e587d4e491ca71648036da28b7e66e11ccb2))
+
+
+### Bug Fixes
+
+* **build:** dev-server ignoriert im worktree nicht mehr sich selbst ([#854](https://github.com/jansinger/ostsee-tiere/issues/854)) ([33112a1](https://github.com/jansinger/ostsee-tiere/commit/33112a1ddf4d7bc52d5fc23d95dd1a212f96c815))
+
 ## [2.17.0](https://github.com/jansinger/ostsee-tiere/compare/v2.16.0...v2.17.0) (2026-08-10)
 
 
