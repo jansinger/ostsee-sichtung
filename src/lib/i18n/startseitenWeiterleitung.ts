@@ -35,7 +35,9 @@
  * @param pfad            Pfad der Anfrage, ohne Query-String
  * @param search          Query-String der Anfrage, inkl. führendem `?` oder leer
  * @param acceptLanguage  Header-Wert oder `null`
- * @param cookieLocale    Ausdrückliche frühere Wahl oder `null`
+ * @param cookieLocale    Ausdrückliche frühere Wahl (`'en'`/`'de'`) oder `null`/ein
+ *                        unbekannter Wert — Letzteres wird wie „kein Cookie"
+ *                        behandelt, nicht geraten
  * @returns Zielpfad (inkl. erhaltenem Query-String), oder `null` wenn nicht
  *          weitergeleitet wird
  */
@@ -46,8 +48,15 @@ export function zielFuerStartseite(
 	cookieLocale: string | null
 ): string | null {
 	if (pfad !== '/') return null;
-	// Eine getroffene Wahl schlägt die Vermutung — immer, in beide Richtungen.
-	if (cookieLocale) return null;
+
+	// Eine getroffene Wahl schlägt die Vermutung — in beide Richtungen:
+	// `en` leitet immer weiter (auch bei deutschem oder fehlendem Header),
+	// `de` nie (auch bei englischem Header). Ein unbekannter Cookie-Wert ist
+	// keine getroffene Wahl — der fällt durch auf die Header-Vermutung unten,
+	// statt geraten zu werden.
+	if (cookieLocale === 'en') return `/en${search}`;
+	if (cookieLocale === 'de') return null;
+
 	if (!acceptLanguage) return null;
 
 	const bevorzugt = acceptLanguage.split(',')[0]?.trim().toLowerCase() ?? '';
