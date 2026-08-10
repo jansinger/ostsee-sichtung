@@ -199,6 +199,12 @@ map=(
 	# Kaltkompilier-Aufschlag der /rest_sichtungen-Routen fällt einmalig
 	# an; kein anderer Spec fährt sie.
 	e2e/legacy-language-prefix.spec.ts
+	# Aus demselben Grund und direkt daneben: prüft die Gegenrichtung der
+	# Ausschlussliste (`/en/…` liefert 404 statt Legacy-Kosmetik) sowie die
+	# Verdrahtung von `handleStartseitenSprache` in der `sequence`. Überwiegend
+	# `request`-basiert, drei Tests nutzen `page.goto` für echte
+	# Browser-Navigation (Sec-Fetch-Dest). Lokal ~4 s.
+	e2e/i18n-routing.spec.ts
 )
 
 # design-tokens.spec.ts gehört hierher, nicht zu form: es prüft das
