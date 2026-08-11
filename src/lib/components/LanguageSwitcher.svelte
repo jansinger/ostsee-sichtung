@@ -86,11 +86,17 @@
 	ohnehin ausgeblendet.
 
 	Bequemlichkeit für Direktaufrufer, kein tragender Weg zur englischen Fassung:
-	Die Komponente sitzt in der Navigation und ist damit im iframe auf
-	meeresmuseum.de unsichtbar (`PublicNavbar.svelte`, `isNotIFrame`) — den Weg
-	zur englischen Fassung liefert dort die Einbettung der Elternseite. An
-	genau dieser Fehlannahme ist `/bestimmungshilfe` schon einmal gescheitert,
-	siehe docs/IFRAME_EINBETTUNG.md.
+	Die Komponente ist für den Einbau in die Navigation gebaut und wäre dort im
+	iframe auf meeresmuseum.de unsichtbar (`PublicNavbar.svelte`, `isNotIFrame`)
+	— den Weg zur englischen Fassung liefert dort die Einbettung der
+	Elternseite. An genau dieser Fehlannahme ist `/bestimmungshilfe` schon
+	einmal gescheitert, siehe docs/IFRAME_EINBETTUNG.md.
+
+	Stand Etappe 0 der Mehrsprachigkeit ist die Komponente NICHT eingebunden
+	(`TRANSLATION_ROLLOUT_COMPLETE`, `$lib/i18n/translationRolloutStage.ts`):
+	Solange keine einzige Zeichenkette übersetzt ist, führt ein Umschalter nur
+	auf eine ebenso deutsche Seite. Komponente und Tests bleiben erhalten, bis
+	die Übersetzung ausgeliefert ist.
 -->
 {#if !ausgeschlossen}
 	<a

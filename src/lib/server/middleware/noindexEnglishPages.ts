@@ -1,5 +1,6 @@
 import type { Handle } from '@sveltejs/kit';
 import { toLocale } from '$lib/paraglide/runtime';
+import { TRANSLATION_ROLLOUT_COMPLETE } from '$lib/i18n/translationRolloutStage';
 
 /**
  * Vorübergehender Auslieferungs-Riegel für Etappe 0 der Mehrsprachigkeit
@@ -21,13 +22,11 @@ import { toLocale } from '$lib/paraglide/runtime';
  * garantiert. Der Header umgeht das und wirkt zusätzlich für Nicht-HTML-
  * Antworten (z. B. die Legacy-JSON-Endpunkte unter `/en/rest_sichtungen/...`).
  *
- * WICHTIG BEIM ENTFERNEN: Sobald die Übersetzung ausgeliefert ist (Etappen
- * 1–3 abgeschlossen), muss dieser Handler aus der `sequence(...)` in
- * `hooks.server.ts` entfernt werden — UND GLEICHZEITIG `hreflang` ergänzt
- * werden (Etappe 2 laut Designdokument). Nur den Riegel zu entfernen ohne
- * `hreflang` zu ergänzen, kippt das Problem nur in die andere Richtung: dann
- * indexiert Google zwar die englische Fassung, aber ohne Sprachzuordnung zur
- * deutschen — wieder Duplicate-Content-Risiko, nur andersherum.
+ * Die Entfernungsbedingung — inklusive der Kopplung an den Sprachumschalter
+ * in `PublicNavbar.svelte` und die noch ausstehende `hreflang`-Ergänzung —
+ * steht gebündelt bei `TRANSLATION_ROLLOUT_COMPLETE`
+ * (`$lib/i18n/translationRolloutStage.ts`). Dort auch der vollständige
+ * Ablauf für den Abschluss von Etappe 0.
  *
  * Erkennung über `event.url.pathname` (die vom Client gesendete URL), nicht
  * über die von `reroute` umgeschriebene Route — `reroute` verändert
@@ -45,7 +44,7 @@ import { toLocale } from '$lib/paraglide/runtime';
 export const noindexEnglishPages: Handle = async ({ event, resolve }) => {
 	const response = await resolve(event);
 	const erstesSegment = event.url.pathname.split('/').filter(Boolean)[0];
-	if (toLocale(erstesSegment) === 'en') {
+	if (!TRANSLATION_ROLLOUT_COMPLETE && toLocale(erstesSegment) === 'en') {
 		response.headers.set('X-Robots-Tag', 'noindex, follow');
 	}
 	return response;

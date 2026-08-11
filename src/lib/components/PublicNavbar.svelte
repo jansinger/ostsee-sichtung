@@ -4,6 +4,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 
 	import { ADMIN_BEREICHE, istAdminPfad } from '$lib/config/adminNav';
+	import { TRANSLATION_ROLLOUT_COMPLETE } from '$lib/i18n/translationRolloutStage';
 	import { localizeHref } from '$lib/paraglide/runtime';
 	import { connection } from '$lib/stores/connectionState.svelte';
 	import type { PublicUser } from '$lib/types/User';
@@ -117,23 +118,22 @@
 					<ConnectionBadge compact />
 
 					<!--
-						Bequemlichkeit für Direktaufrufer, kein tragender Weg zur
-						englischen Fassung: Innerhalb desselben `isNotIFrame`-Blocks
-						platziert wie der Rest der Navigation, also im iframe auf
-						meeresmuseum.de ebenso unsichtbar — dort liefert die Einbettung
-						der Elternseite die Sprache. Details zur Begründung und den
-						Ausschlussrouten stehen in `LanguageSwitcher.svelte`.
+						Ausgeblendet, bis die Übersetzung ausgeliefert ist
+						(`TRANSLATION_ROLLOUT_COMPLETE`, `$lib/i18n/translationRolloutStage.ts`):
+						Aktuell ist keine einzige Zeichenkette übersetzt, der Umschalter
+						führte also nur auf eine Seite, die genauso deutsch ist wie die,
+						von der man kommt — ein Bedienelement ohne erkennbare Wirkung.
+						Komponente, Tests und Logik bleiben erhalten; nur die Einbindung
+						hier ruht. `e2e/navbar-i18n-hidden.spec.ts` nagelt die Abwesenheit
+						fest, damit sie sich nicht unbemerkt zurückschleicht.
 
-						Zusätzlich ausgeblendet, solange `connection.isOffline` gilt:
-						Gemessen (2026-08-10) lief die Navbar bei 320px — der schmalsten
-						unterstützten Breite — nur dann über, wenn Umschalter UND
-						Offline-Abzeichen gleichzeitig sichtbar waren (231px Inhalt gegen
-						320px verfügbare Breite). Beide teilen sich dieselbe Bedingung,
-						konkurrieren also nie um denselben Platz. Die Sprache lässt sich in
-						diesem Zustand ohnehin nicht wechseln — `data-sveltekit-reload`
-						verlangt einen echten Seitenaufruf, den es offline nicht gibt.
+						Die `connection.isOffline`-Bedingung bleibt im Code erhalten
+						(Commit 4098b962: Umschalter + Offline-Abzeichen liefen bei 320px
+						gemeinsam über, 231px Inhalt gegen 320px verfügbare Breite) — sie
+						greift nur zurzeit nicht, weil die äußere Bedingung sie ohnehin nie
+						erreichen lässt. Beim Wiedereinschalten NICHT entfernen.
 					-->
-					{#if !connection.isOffline}
+					{#if TRANSLATION_ROLLOUT_COMPLETE && !connection.isOffline}
 						<LanguageSwitcher />
 					{/if}
 
