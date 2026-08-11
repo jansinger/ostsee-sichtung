@@ -369,4 +369,93 @@ describe('collectFormOptionsSites', () => {
 		expect(result.sites).toEqual([]);
 		expect(result.skipped.map((s) => s.reason)).toEqual(['numeric-only']);
 	});
+
+	// Defekt 1a: ein Record, dessen Werttyp NICHT `string` ist
+	// (`speciesIdentification.ts`: `Record<SpeciesEnum, SpeciesIdentificationEntry>`),
+	// trägt trotzdem deutschen Anzeigetext. Bisher verschwand das spurlos — weder
+	// eingesammelt noch gemeldet. Jetzt landet der Export mit Namen und Anzahl der
+	// enthaltenen String-Literale im Übersprungen-Abschnitt.
+	it('meldet ein Record mit Fremdtyp-Werten als übersprungen, sammelt aber nichts ein', () => {
+		const result = collectFormOptionsSites(
+			`
+			export const speciesIdentification: Record<SpeciesEnum, SpeciesIdentificationEntry> = {
+				[SpeciesEnum.HARBOR_PORPOISE]: {
+					name: 'Schweinswal',
+					size: 'bis 2m lang'
+				}
+			};
+			`,
+			'src/lib/report/formOptions/speciesIdentification.ts',
+			createKeyRegistry()
+		);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped).toEqual([
+			expect.objectContaining({
+				text: 'speciesIdentification',
+				aspect: 'export',
+				reason: 'record-pattern-miss',
+				explanation: expect.stringContaining('2 String-Literal(e)')
+			})
+		]);
+	});
+
+	// Defekt 1b: ein exportiertes Array-Literal (`PUBLIC_BOAT_DRIVE_OPTIONS`) trifft
+	// weder das Record- noch irgendein anderes Muster und blieb bisher unsichtbar.
+	it('meldet ein exportiertes Array-Literal mit String-Literalen als übersprungen', () => {
+		const result = collectFormOptionsSites(
+			`
+			export const PUBLIC_BOAT_DRIVE_OPTIONS = [
+				{ value: 1, label: 'Motor lief' },
+				{ value: 6, label: 'Motor lief nicht' }
+			];
+			`,
+			'src/lib/report/formOptions/boatDrive.ts',
+			createKeyRegistry()
+		);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped).toEqual([
+			expect.objectContaining({
+				text: 'PUBLIC_BOAT_DRIVE_OPTIONS',
+				aspect: 'export',
+				reason: 'record-pattern-miss',
+				explanation: expect.stringContaining('2 String-Literal(e)')
+			})
+		]);
+	});
+
+	// Defekt 1c: die Rückfalltexte 'Nicht angegeben'/'Unbekannt' stehen in
+	// `return`-Anweisungen der `getXLabel`-Funktionen, nicht in einem Record. Nur
+	// String-Literale in `return`-Anweisungen exportierter Funktionen zählen —
+	// nicht jede Zeichenkette im Modul (sonst Rauschen durch Vergleichscode).
+	it('meldet Rückfalltexte in return-Anweisungen einer exportierten Funktion als übersprungen', () => {
+		const result = collectFormOptionsSites(
+			`
+			export function getBoatDriveLabel(value) {
+				if (value === null || value === undefined) return 'Nicht angegeben';
+				const numericValue = value;
+				return boatDriveLabels[numericValue] || 'Unbekannt';
+			}
+			`,
+			'src/lib/report/formOptions/boatDrive.ts',
+			createKeyRegistry()
+		);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => [s.text, s.aspect, s.reason])).toEqual([
+			['Nicht angegeben', 'getBoatDriveLabel (return)', 'record-pattern-miss'],
+			['Unbekannt', 'getBoatDriveLabel (return)', 'record-pattern-miss']
+		]);
+	});
+
+	// Rein numerische Array- oder Objekt-Literale ohne jedes String-Literal
+	// bleiben unangetastet — dieselbe Nicht-Meldung wie bisher, nur jetzt bewusst
+	// geprüft statt zufällig richtig.
+	it('meldet ein exportiertes Objektliteral ohne String-Literale nicht', () => {
+		const result = collectFormOptionsSites(
+			`export const speciesGroups = { Kleinwale: [0, 3] };`,
+			'src/lib/report/formOptions/species.ts',
+			createKeyRegistry()
+		);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped).toEqual([]);
+	});
 });

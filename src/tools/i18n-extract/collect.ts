@@ -388,50 +388,145 @@ export function collectFormOptionsSites(
 	const skipped: SkippedSite[] = [];
 	const fileBaseName = relativeFilePath.replace(/^.*[/\\]/, '').replace(/\.ts$/, '');
 
-	const visit = (node: ts.Node): void => {
-		if (ts.isVariableStatement(node)) {
-			for (const decl of node.declarationList.declarations) {
-				if (!isStringRecordDeclaration(decl, sourceFile) || !decl.initializer) {
-					continue;
-				}
-				if (!ts.isObjectLiteralExpression(decl.initializer)) {
-					continue;
-				}
-				const recordName = decl.name.getText(sourceFile);
-				for (const prop of decl.initializer.properties) {
-					if (!ts.isPropertyAssignment(prop) || !ts.isStringLiteralLike(prop.initializer)) {
-						continue;
-					}
-					const enumKey = ts.isComputedPropertyName(prop.name)
-						? prop.name.expression.getText(sourceFile)
-						: prop.name.getText(sourceFile);
-					const line =
-						sourceFile.getLineAndCharacterOfPosition(prop.initializer.getStart(sourceFile)).line +
-						1;
-					const check = checkValue(prop.initializer.text);
-					if (!check.ok) {
-						skipped.push({
-							file: relativeFilePath,
-							line,
-							text: prop.initializer.text,
-							aspect: `${recordName}[${enumKey}]`,
-							reason: check.reason,
-							explanation: check.explanation
-						});
-						continue;
-					}
-					sites.push({
+	const lineOf = (node: ts.Node): number =>
+		sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
+
+	/**
+	 * Alle String-Literale unterhalb von `node`, ohne in verschachtelte
+	 * Funktionsrümpfe abzusteigen (Befund 1c: eine Zeichenkette im Rumpf einer
+	 * Callback-Funktion gehört nicht zur `return`-Anweisung, die sie umschließt).
+	 */
+	function collectStringLiteralsWithin(node: ts.Node): ts.StringLiteralLike[] {
+		const found: ts.StringLiteralLike[] = [];
+		const walk = (n: ts.Node): void => {
+			if (ts.isStringLiteralLike(n)) {
+				found.push(n);
+				return;
+			}
+			if (ts.isFunctionExpression(n) || ts.isArrowFunction(n) || ts.isFunctionDeclaration(n)) {
+				return;
+			}
+			ts.forEachChild(n, walk);
+		};
+		walk(node);
+		return found;
+	}
+
+	/**
+	 * Befund 1a/1b: ein `export const`, dessen Initializer ein Objekt- oder
+	 * Arrayliteral mit String-Literalen ist, aber das strenge
+	 * `Record<Enum, string>`-Muster nicht trifft — z.B. `speciesIdentification`
+	 * (Record mit Fremdtyp-Werten) oder `PUBLIC_BOAT_DRIVE_OPTIONS`
+	 * (Array-Literal). Wird NICHT eingesammelt, nur gemeldet: Die Struktur ist
+	 * zu uneinheitlich, um sie automatisch in Schlüssel und Text zu zerlegen.
+	 */
+	function reportUnmatchedExport(exportName: string, initializer: ts.Expression): void {
+		if (!ts.isObjectLiteralExpression(initializer) && !ts.isArrayLiteralExpression(initializer)) {
+			return;
+		}
+		const literals = collectStringLiteralsWithin(initializer);
+		if (literals.length === 0) {
+			return;
+		}
+		skipped.push({
+			file: relativeFilePath,
+			line: lineOf(initializer),
+			text: exportName,
+			aspect: 'export',
+			reason: 'record-pattern-miss',
+			explanation:
+				`export const ${exportName} enthält ${literals.length} String-Literal(e), passt aber ` +
+				'nicht auf das Muster `export const x: Record<Enum, string>` — von Hand prüfen, ob und ' +
+				'wie hier extrahiert werden muss'
+		});
+	}
+
+	/**
+	 * Befund 1c: Rückfalltexte wie `'Nicht angegeben'` oder `'Unbekannt'` in den
+	 * `getXLabel`-Funktionen. Gezielt String-Literale in `return`-Anweisungen
+	 * exportierter Funktionen — nicht jede Zeichenkette im Modul, sonst würde
+	 * der Übersprungen-Abschnitt mit Rauschen aus Vergleichs- und Hilfscode
+	 * gefüllt.
+	 */
+	function reportReturnLiterals(fnName: string, body: ts.Node): void {
+		const walk = (n: ts.Node): void => {
+			if (ts.isFunctionExpression(n) || ts.isArrowFunction(n) || ts.isFunctionDeclaration(n)) {
+				return;
+			}
+			if (ts.isReturnStatement(n) && n.expression) {
+				for (const literal of collectStringLiteralsWithin(n.expression)) {
+					skipped.push({
 						file: relativeFilePath,
-						line,
-						start: prop.initializer.getStart(sourceFile),
-						end: prop.initializer.getEnd(),
-						text: prop.initializer.text,
-						key: formOptionsMessageKey(fileBaseName, enumKey, taken),
-						aspect: `${recordName}[${enumKey}]`,
-						field: recordName
+						line: lineOf(literal),
+						text: literal.text,
+						aspect: `${fnName} (return)`,
+						reason: 'record-pattern-miss',
+						explanation:
+							`Rückfalltext in einer return-Anweisung der exportierten Funktion ${fnName} — ` +
+							'vom Muster `export const x: Record<Enum, string>` nicht erfasst, von Hand prüfen'
 					});
 				}
 			}
+			ts.forEachChild(n, walk);
+		};
+		ts.forEachChild(body, walk);
+	}
+
+	const isExported = (node: ts.Node): boolean =>
+		ts.canHaveModifiers(node) &&
+		(ts.getModifiers(node) ?? []).some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
+
+	const visit = (node: ts.Node): void => {
+		if (ts.isVariableStatement(node)) {
+			for (const decl of node.declarationList.declarations) {
+				if (!decl.initializer) {
+					continue;
+				}
+				if (
+					isStringRecordDeclaration(decl, sourceFile) &&
+					ts.isObjectLiteralExpression(decl.initializer)
+				) {
+					const recordName = decl.name.getText(sourceFile);
+					for (const prop of decl.initializer.properties) {
+						if (!ts.isPropertyAssignment(prop) || !ts.isStringLiteralLike(prop.initializer)) {
+							continue;
+						}
+						const enumKey = ts.isComputedPropertyName(prop.name)
+							? prop.name.expression.getText(sourceFile)
+							: prop.name.getText(sourceFile);
+						const line = lineOf(prop.initializer);
+						const check = checkValue(prop.initializer.text);
+						if (!check.ok) {
+							skipped.push({
+								file: relativeFilePath,
+								line,
+								text: prop.initializer.text,
+								aspect: `${recordName}[${enumKey}]`,
+								reason: check.reason,
+								explanation: check.explanation
+							});
+							continue;
+						}
+						sites.push({
+							file: relativeFilePath,
+							line,
+							start: prop.initializer.getStart(sourceFile),
+							end: prop.initializer.getEnd(),
+							text: prop.initializer.text,
+							key: formOptionsMessageKey(fileBaseName, enumKey, taken),
+							aspect: `${recordName}[${enumKey}]`,
+							field: recordName
+						});
+					}
+					continue;
+				}
+				if (isExported(node)) {
+					reportUnmatchedExport(decl.name.getText(sourceFile), decl.initializer);
+				}
+			}
+		}
+		if (ts.isFunctionDeclaration(node) && isExported(node) && node.body) {
+			reportReturnLiterals(node.name?.getText(sourceFile) ?? 'anonym', node.body);
 		}
 		ts.forEachChild(node, visit);
 	};

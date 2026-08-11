@@ -28,7 +28,17 @@ export type SkipReason =
 	| 'test-name-argument'
 	| 'non-literal-argument'
 	| 'numeric-only'
-	| 'empty-string';
+	| 'empty-string'
+	// Trifft, wenn `collectFormOptionsSites` auf eine Stelle stößt, die
+	// String-Literale trägt, aber vom `export const x: Record<Enum, string>`-
+	// Muster nicht erfasst wird: ein Record mit einem anderen Wertetyp
+	// (z.B. `Record<Enum, SpeciesIdentificationEntry>`), ein exportiertes
+	// Array-Literal, oder ein Rückfalltext in einer `return`-Anweisung einer
+	// exportierten Funktion. Ohne diesen Grund blieben solche Stellen unsichtbar
+	// übersprungen — nicht eingesammelt UND nicht gemeldet. Ein Mensch muss hier
+	// von Hand entscheiden, ob und wie extrahiert wird; das Werkzeug kann die
+	// Struktur nicht auf Anhieb in Schlüssel und Text zerlegen.
+	| 'record-pattern-miss';
 
 export type MetaDecision =
 	| { kind: 'extract' }
