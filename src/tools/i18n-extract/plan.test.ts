@@ -48,4 +48,29 @@ describe('planExtraction', () => {
 		expect(schemaFile?.before).toBe(SCHEMA_SOURCE);
 		expect(schemaFile?.after).toContain('m.sighting_waterway_label({}, { locale })');
 	});
+
+	// Defekt 2: eine formOptions-Datei ohne jeden Fund (0 Botschaften, 0
+	// Übersprungene) fiel bisher aus `plan.files` ganz heraus — sie erschien
+	// nirgends im Bericht, nicht einmal als Zeile mit 0. Jede gescannte Datei
+	// muss jetzt in `plan.files` stehen.
+	it('nimmt eine formOptions-Datei ohne jeden Fund trotzdem in den Plan auf', () => {
+		const fs: ExtractFileSystem = {
+			readFile: (path: string) => {
+				if (path.includes('empty')) {
+					return `export const x = 1;\n`;
+				}
+				return path.includes('formOptions') ? OPTIONS_SOURCE : SCHEMA_SOURCE;
+			},
+			listFormOptionFiles: () => [
+				'src/lib/report/formOptions/sex.ts',
+				'src/lib/report/formOptions/empty.ts'
+			]
+		};
+
+		const plan = planExtraction('/repo', fs);
+
+		const emptyFile = plan.files.find((f) => f.file === 'src/lib/report/formOptions/empty.ts');
+		expect(emptyFile).toBeDefined();
+		expect(emptyFile?.sites).toEqual([]);
+	});
 });

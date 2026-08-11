@@ -62,9 +62,10 @@ export function planExtraction(
 	for (const relativePath of fs.listFormOptionFiles()) {
 		const source = fs.readFile(relativePath);
 		const result = collectFormOptionsSites(source, relativePath, taken);
-		if (result.sites.length === 0 && result.skipped.length === 0) {
-			continue;
-		}
+		// Befund 2: eine Datei ohne jeden Fund fiel bisher ganz aus dem Bericht —
+		// nicht einmal als Zeile mit 0. Jede gescannte Datei erscheint jetzt im
+		// Abschnitt "Botschaften je Datei", auch ohne Fundstellen oder
+		// Übersprungene.
 		files.push({
 			file: relativePath,
 			before: source,
