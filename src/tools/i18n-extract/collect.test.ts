@@ -1,0 +1,151 @@
+import { describe, expect, it } from 'vitest';
+import { collectSchemaSites } from './collect';
+import { createKeyRegistry } from './messageKey';
+
+function collect(source: string) {
+	return collectSchemaSites(
+		source,
+		'src/lib/form/validation/sightingSchema.ts',
+		createKeyRegistry()
+	);
+}
+
+describe('collectSchemaSites', () => {
+	it('sammelt label, meta-Text und Regelmeldung mit Schlüssel und Offsets', () => {
+		const result = collect(`
+			const s = yup.object().shape({
+				waterway: yup
+					.string()
+					.max(255, 'Die Ortsbeschreibung ist zu lang')
+					.label('Wo ungefähr?')
+					.meta({ helpText: 'Seegebiet oder Fahrwasser', icon: Waves, type: 'text' })
+			});
+		`);
+		expect(result.sites.map((s) => [s.key, s.text])).toEqual([
+			['sighting_waterway_max', 'Die Ortsbeschreibung ist zu lang'],
+			['sighting_waterway_label', 'Wo ungefähr?'],
+			['sighting_waterway_meta_helptext', 'Seegebiet oder Fahrwasser']
+		]);
+	});
+
+	// Die Reihenfolge ist nicht Kosmetik: An ihr hängt, an welcher Fundstelle das
+	// Zählsuffix _2 landet. ts.forEachChild besucht bei einer Aufrufkette den
+	// ÄUSSERSTEN Aufruf zuerst — ohne den zweiten Durchgang in collect.ts stünde
+	// hier die umgekehrte Reihenfolge und das Suffix an der falschen Stelle.
+	it('liefert Fundstellen in Quelltextreihenfolge, nicht in AST-Reihenfolge', () => {
+		const result = collect(`
+			const s = yup.object().shape({
+				deadSize: yup
+					.number()
+					.max(300, 'zu groß')
+					.max(400, 'auch zu groß')
+					.label('Größe')
+			});
+		`);
+		expect(result.sites.map((s) => [s.key, s.text])).toEqual([
+			['sighting_deadsize_max', 'zu groß'],
+			['sighting_deadsize_max_2', 'auch zu groß'],
+			['sighting_deadsize_label', 'Größe']
+		]);
+	});
+
+	it('markiert die Offsets so, dass genau das Literal samt Anführungszeichen ersetzbar ist', () => {
+		const source = `const s = yup.object().shape({ a: yup.string().label('Titel') });`;
+		const [site] = collect(source).sites;
+		expect(source.slice(site!.start, site!.end)).toBe(`'Titel'`);
+	});
+
+	it('überspringt meta.type und meta.icon mit Begründung', () => {
+		const result = collect(`
+			const s = yup.object().shape({
+				species: yup.number().meta({ type: 'select', icon: Porpoise })
+			});
+		`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => [s.text, s.reason])).toEqual([['select', 'meta-key-denied']]);
+	});
+
+	// Argument 0 von .test() ist der Testname und wird maschinell ausgewertet.
+	it('extrahiert aus test() die Meldung, nie den Testnamen', () => {
+		const result = collect(`
+			const s = yup.object().shape({
+				species: yup.number().test('is-valid-species', 'Diese Tierart gibt es nicht', fn)
+			});
+		`);
+		expect(result.sites.map((s) => s.text)).toEqual(['Diese Tierart gibt es nicht']);
+		expect(result.skipped.map((s) => [s.text, s.reason])).toEqual([
+			['is-valid-species', 'test-name-argument']
+		]);
+	});
+
+	// sightingSchema.ts:1400/1410 — adminSightingSchema benutzt diese Form.
+	it('versteht die Objektform von test()', () => {
+		const result = collect(`
+			const s = base.shape({
+				distance: field.test({
+					name: 'is-valid-distance',
+					exclusive: true,
+					message: 'Bitte eine gültige Entfernung wählen.',
+					test: fn
+				})
+			});
+		`);
+		expect(result.sites.map((s) => [s.key, s.text])).toEqual([
+			['sighting_distance_test', 'Bitte eine gültige Entfernung wählen.']
+		]);
+		expect(result.skipped.map((s) => s.reason)).toEqual(['test-name-argument']);
+	});
+
+	it('überspringt eine leere Meldung in der Objektform', () => {
+		const result = collect(`
+			const s = base.shape({
+				juvenileCount: field.test({ name: 'x', exclusive: true, message: '', test: fn })
+			});
+		`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => s.reason)).toContain('empty-string');
+	});
+
+	// sightingSchema.ts:1421 — das Literal ist ein ??-Rückfallwert.
+	it('fasst nicht-literale Argumente nicht an und meldet sie', () => {
+		const result = collect(`
+			const s = base.shape({
+				sightingFromText: yup.string().label(other.spec.label ?? 'Sonstiger Ort')
+			});
+		`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => s.reason)).toEqual(['non-literal-argument']);
+	});
+
+	// Gegenprobe zur Regel darüber: Bei .test('name', fn) steht an Position 1 eine
+	// Funktion. Ein Literal aus ihrem Rumpf ist kein übergangenes Argument.
+	it('meldet keine Literale aus einem Funktionsrumpf als übersprungen', () => {
+		const result = collect(`
+			const s = yup.object().shape({
+				a: yup.string().test('is-x', (value) => value === 'roher Vergleichswert')
+			});
+		`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => [s.text, s.reason])).toEqual([['is-x', 'test-name-argument']]);
+	});
+
+	it('überspringt rein numerische Platzhalter', () => {
+		const result = collect(`
+			const s = yup.object().shape({
+				totalCount: yup.number().meta({ placeholder: '1' })
+			});
+		`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => s.reason)).toEqual(['numeric-only']);
+	});
+
+	it('bricht bei einem unbekannten meta-Schlüssel ab, statt ihn zu übergehen', () => {
+		expect(() =>
+			collect(`
+				const s = yup.object().shape({
+					a: yup.string().meta({ tooltipText: 'Neu und unbekannt' })
+				});
+			`)
+		).toThrow(/tooltipText/);
+	});
+});
