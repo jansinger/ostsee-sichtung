@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { collectSchemaSites } from './collect';
+import type { ExtractionSite, SkippedSite } from './collect';
 import { createKeyRegistry } from './messageKey';
-import { applySitesToSource, renderUnifiedDiff } from './render';
+import {
+	applySitesToSource,
+	renderDryRunReport,
+	renderUnifiedDiff,
+	type ExtractionPlan
+} from './render';
 
 describe('applySitesToSource', () => {
 	it('ersetzt das Literal durch den Botschaftsaufruf', () => {
@@ -41,5 +47,105 @@ describe('renderUnifiedDiff', () => {
 
 	it('liefert Leertext, wenn nichts geändert wurde', () => {
 		expect(renderUnifiedDiff('a/b.ts', `eins\n`, `eins\n`)).toBe('');
+	});
+});
+
+describe('renderDryRunReport', () => {
+	function buildSite(overrides: Partial<ExtractionSite> = {}): ExtractionSite {
+		return {
+			file: 'src/lib/form/validation/sightingSchema.ts',
+			line: 12,
+			start: 40,
+			end: 48,
+			text: 'Titel',
+			key: 'sighting_a_label',
+			aspect: 'label',
+			field: 'a',
+			...overrides
+		};
+	}
+
+	function buildSkipped(overrides: Partial<SkippedSite> = {}): SkippedSite {
+		return {
+			file: 'src/lib/form/validation/sightingSchema.ts',
+			line: 21,
+			text: 'sichtung',
+			aspect: 'meta.icon',
+			reason: 'meta-key-denied',
+			explanation: 'nicht-sprachlicher meta-Schlüssel',
+			...overrides
+		};
+	}
+
+	function buildPlan(overrides: Partial<ExtractionPlan> = {}): ExtractionPlan {
+		const site = buildSite();
+		return {
+			files: [
+				{
+					file: site.file,
+					before: `const s = yup.string().label('Titel');`,
+					after: `const s = yup.string().label(m.sighting_a_label({}, { locale }));`,
+					sites: [site]
+				}
+			],
+			skipped: [],
+			...overrides
+		};
+	}
+
+	it('führt jeden übersprungenen Eintrag mit Datei, Zeile, Aspekt, Text und Erklärung auf', () => {
+		const skippedMetaKey = buildSkipped({
+			file: 'a.ts',
+			line: 21,
+			text: 'sichtung',
+			aspect: 'meta.icon',
+			reason: 'meta-key-denied',
+			explanation: 'nicht-sprachlicher meta-Schlüssel'
+		});
+		const skippedTestName = buildSkipped({
+			file: 'b.ts',
+			line: 55,
+			text: 'wal-1',
+			aspect: 'test',
+			reason: 'test-name-argument',
+			explanation: 'erstes Argument von yup.test() ist ein interner Name, keine Botschaft'
+		});
+		const plan = buildPlan({ skipped: [skippedMetaKey, skippedTestName] });
+
+		const report = renderDryRunReport(plan);
+
+		expect(report).toContain('## Übersprungen — bitte durchsehen');
+		expect(report).toContain(
+			'- a.ts:21 (meta.icon) `sichtung` — nicht-sprachlicher meta-Schlüssel'
+		);
+		expect(report).toContain(
+			'- b.ts:55 (test) `wal-1` — erstes Argument von yup.test() ist ein interner Name, keine Botschaft'
+		);
+	});
+
+	it('nennt die Gesamtzahlen für Botschaften und Übersprungene', () => {
+		const plan = buildPlan({ skipped: [buildSkipped(), buildSkipped({ file: 'c.ts', line: 3 })] });
+
+		const report = renderDryRunReport(plan);
+
+		expect(report).toContain('Botschaften: 1 — übersprungen: 2');
+	});
+
+	it('listet die Botschaften je Datei auf', () => {
+		const plan = buildPlan();
+
+		const report = renderDryRunReport(plan);
+
+		expect(report).toContain('## Botschaften je Datei');
+		expect(report).toContain('- src/lib/form/validation/sightingSchema.ts: 1');
+	});
+
+	it('enthält im JSON-Block Schlüssel und deutschen Text der geplanten Botschaften', () => {
+		const plan = buildPlan();
+
+		const report = renderDryRunReport(plan);
+
+		expect(report).toContain('```json');
+		expect(report).toContain('"sighting_a_label": "Titel"');
 	});
 });

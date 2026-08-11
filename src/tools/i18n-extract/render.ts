@@ -35,6 +35,10 @@ export function applySitesToSource(source: string, sites: ExtractionSite[]): str
  * Zeile geht rein, eine Zeile kommt raus), weil ein Literal nie eine Zeile
  * hinzufügt oder entfernt. Ein Zeilenvergleich ist dafür vollständig — und
  * lesbar, ohne dass jemand eine weitere Abhängigkeit prüfen muss.
+ *
+ * **Unausgesprochene Annahme:** Kein ersetztes Literal enthält einen echten
+ * Zeilenumbruch. Träfe das nicht mehr zu, verschöbe sich der 1:1-Zeilenvergleich
+ * gegenüber dem echten Text — der Diff zeigte dann falsche `-`/`+`-Paare.
  */
 export function renderUnifiedDiff(relativeFilePath: string, before: string, after: string): string {
 	if (before === after) {
