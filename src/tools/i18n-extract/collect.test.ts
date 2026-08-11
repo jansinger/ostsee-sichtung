@@ -357,6 +357,76 @@ describe('collectSchemaSites', () => {
 		expect(result.sites).toEqual([]);
 		expect(result.skipped).toEqual([]);
 	});
+
+	// Der eigentliche Befund dieser Aufgabe: Nach dem Umbau von sightingSchema.ts
+	// steht an vielen meta-Stellen kein Literal mehr, sondern ein Aufruf einer
+	// Paraglide-Botschaftsfunktion (`m.sighting_x_meta_helptext({}, { locale })`).
+	// Das ist erledigte Arbeit, kein offener Fall — sie zählt als 'already-translated',
+	// nicht als 'non-literal-argument', und darf im Trockenlauf-Bericht nicht mehr
+	// einzeln erscheinen (render.ts).
+	it('zählt ein meta-Argument, das bereits eine Paraglide-Botschaftsfunktion aufruft, als bereits übersetzt', () => {
+		const result = collect(`
+			import * as m from '$lib/paraglide/messages';
+			const s = yup.object().shape({
+				latitude: yup
+					.number()
+					.meta({ helpText: m.sighting_latitude_meta_helptext({}, { locale }) })
+			});
+		`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => [s.reason, s.aspect])).toEqual([
+			['already-translated', 'meta.helpText']
+		]);
+	});
+
+	// Gegenprobe: Ein anderer Nicht-Literal-Ausdruck — kein Aufruf des
+	// Paraglide-Botschaftsmoduls — muss weiterhin als 'non-literal-argument'
+	// einzeln erscheinen. Ohne diese Gegenprobe wäre die Erkennung ein
+	// Freibrief, jeden beliebigen Ausdruck als „schon übersetzt" zu verschlucken.
+	it('zählt ein anderes nicht-literales meta-Argument weiterhin als offenen, einzeln zu prüfenden Fall', () => {
+		const result = collect(`
+			import * as m from '$lib/paraglide/messages';
+			const s = yup.object().shape({
+				sightingFromText: yup
+					.string()
+					.meta({ helpText: other.spec.label ?? 'Sonstiger Ort' })
+			});
+		`);
+		expect(result.skipped.map((s) => s.reason)).toEqual(['non-literal-argument']);
+	});
+
+	// Dasselbe gilt für die Objektform von .test({ message: ... }).
+	it('zählt ein bereits übersetztes message in der Objektform von .test() als bereits übersetzt', () => {
+		const result = collect(`
+			import * as m from '$lib/paraglide/messages';
+			const s = base.shape({
+				distance: field.test({
+					name: 'is-valid-distance',
+					exclusive: true,
+					message: m.sighting_distance_test({}, { locale }),
+					test: fn
+				})
+			});
+		`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => s.reason)).toEqual([
+			'test-name-argument',
+			'already-translated'
+		]);
+	});
+
+	// Ein Namespace-Import unter einem anderen Bezeichner oder ein Aufruf, dessen
+	// Empfänger nicht der importierte Paraglide-Namespace ist, darf NICHT als
+	// bereits übersetzt gelten — sonst würde jeder beliebige Funktionsaufruf mit
+	// dem Namen `m` verschluckt.
+	it('erkennt einen Aufruf mit demselben Namen aber ohne den Paraglide-Import nicht als bereits übersetzt', () => {
+		const result = collect(`
+			const s = yup.object().shape({
+				a: yup.string().meta({ helpText: m.someOtherHelper({}, { locale }) })
+			});
+		`);
+		expect(result.skipped.map((s) => s.reason)).toEqual(['non-literal-argument']);
+	});
 });
 
 describe('collectFormOptionsSites', () => {

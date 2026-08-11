@@ -189,4 +189,48 @@ describe('renderDryRunReport', () => {
 		expect(warningIndex).toBeGreaterThan(formOptionsIndex);
 		expect(formOptionsIndex).toBeGreaterThan(schemaIndex);
 	});
+
+	// Der eigentliche Befund dieser Aufgabe: Nach dem Umbau von sightingSchema.ts
+	// besteht der Übersprungen-Abschnitt zu 70 % aus 'already-translated'-Fällen
+	// (erledigte Arbeit). Sie zählen weiter mit, erscheinen aber nur noch als
+	// eine Summenzeile — nicht mehr einzeln mit Datei, Zeile und Text.
+	it('führt bereits übersetzte Stellen nur als Summenzeile, nicht mehr einzeln auf', () => {
+		const alreadyTranslated = buildSkipped({
+			file: 'a.ts',
+			line: 10,
+			text: 'm.sighting_a_meta_helptext({}, { locale })',
+			aspect: 'meta.helpText',
+			reason: 'already-translated',
+			explanation:
+				'meta.helpText ruft bereits eine Paraglide-Botschaftsfunktion auf — schon übersetzt'
+		});
+		const openCase = buildSkipped({
+			file: 'b.ts',
+			line: 20,
+			text: 'Sonstiger Ort',
+			aspect: 'label',
+			reason: 'non-literal-argument',
+			explanation: 'Argument ist ein Ausdruck, nicht ein Literal — von Hand zu entscheiden'
+		});
+		const plan = buildPlan({
+			skipped: [alreadyTranslated, alreadyTranslated, openCase]
+		});
+
+		const report = renderDryRunReport(plan);
+
+		expect(report).toContain('- bereits übersetzt: 2 Stellen (nicht aufgeführt)');
+		expect(report).not.toContain('m.sighting_a_meta_helptext');
+		expect(report).not.toContain('a.ts:10');
+		expect(report).toContain('- b.ts:20 (label) `Sonstiger Ort` — Argument ist ein Ausdruck');
+		// Die Gesamtzahl übersprungener Stellen zählt weiterhin alle mit.
+		expect(report).toContain('Botschaften: 1 — übersprungen: 3');
+	});
+
+	it('lässt die Summenzeile für bereits übersetzte Stellen weg, wenn es keine gibt', () => {
+		const plan = buildPlan({ skipped: [buildSkipped()] });
+
+		const report = renderDryRunReport(plan);
+
+		expect(report).not.toContain('bereits übersetzt:');
+	});
 });

@@ -47,12 +47,61 @@ export interface CollectResult {
 	skipped: SkippedSite[];
 }
 
+/**
+ * Der lokale Name, unter dem `$lib/paraglide/messages` als Namespace
+ * importiert ist (`import * as m from '$lib/paraglide/messages'` → `'m'`).
+ *
+ * `undefined`, wenn die Datei das Modul nicht (mehr) per Namespace-Import
+ * bindet — dann kann auch kein Aufruf als Paraglide-Botschaftsaufruf gelten.
+ * Bewusst kein Raten über den Bezeichner: Nur ein Namespace-Import aus genau
+ * diesem Modulpfad zählt, kein benannter Import und kein anderes Modul, das
+ * zufällig auch `m` heißt.
+ */
+function paraglideMessagesNamespace(sourceFile: ts.SourceFile): string | undefined {
+	for (const statement of sourceFile.statements) {
+		if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) {
+			continue;
+		}
+		if (statement.moduleSpecifier.text !== '$lib/paraglide/messages') {
+			continue;
+		}
+		const bindings = statement.importClause?.namedBindings;
+		if (bindings && ts.isNamespaceImport(bindings)) {
+			return bindings.name.text;
+		}
+	}
+	return undefined;
+}
+
+/**
+ * Ist `node` ein Aufruf `<messagesNamespace>.<schlüssel>(...)` — also genau
+ * die Form, in der Schicht A und B umgebaute Stellen tatsächlich schreiben
+ * (`m.sighting_latitude_meta_helptext({}, { locale })`,
+ * `m.formoptions_species_harbor_porpoise({}, { locale })`)? Prüft nur den
+ * Callee, nicht die Argumentliste — die Signatur ist nicht Teil der
+ * Erkennung, nur die Herkunft aus dem Paraglide-Botschaftsmodul.
+ */
+function isParaglideMessageCall(
+	node: ts.Node,
+	messagesNamespace: string | undefined
+): node is ts.CallExpression {
+	if (messagesNamespace === undefined || !ts.isCallExpression(node)) {
+		return false;
+	}
+	return (
+		ts.isPropertyAccessExpression(node.expression) &&
+		ts.isIdentifier(node.expression.expression) &&
+		node.expression.expression.text === messagesNamespace
+	);
+}
+
 export function collectSchemaSites(
 	source: string,
 	relativeFilePath: string,
 	taken: Set<string>
 ): CollectResult {
 	const sourceFile = ts.createSourceFile(relativeFilePath, source, ts.ScriptTarget.Latest, true);
+	const messagesNamespace = paraglideMessagesNamespace(sourceFile);
 	const skipped: SkippedSite[] = [];
 
 	/**
@@ -270,6 +319,18 @@ export function collectSchemaSites(
 				addSite(prop.initializer, `meta.${key}`);
 				continue;
 			}
+			if (isParaglideMessageCall(prop.initializer, messagesNamespace)) {
+				// Schon umgebaut: `helpText: m.sighting_x_meta_helptext({}, { locale })` —
+				// erledigte Arbeit, kein offener Fall (siehe SkipReason 'already-translated').
+				addSkip(
+					prop.initializer,
+					prop.initializer.getText(sourceFile),
+					`meta.${key}`,
+					'already-translated',
+					`meta.${key} ruft bereits eine Paraglide-Botschaftsfunktion auf — schon übersetzt`
+				);
+				continue;
+			}
 			// Erlaubter Schlüssel (z.B. helpText), aber der Wert ist kein Literal
 			// (`{ helpText: someVar }`) — die Allowlist kann den Inhalt nicht prüfen.
 			addSkip(
@@ -339,6 +400,18 @@ export function collectSchemaSites(
 			if (key === 'message') {
 				if (ts.isStringLiteralLike(prop.initializer)) {
 					addSite(prop.initializer, 'test');
+					continue;
+				}
+				if (isParaglideMessageCall(prop.initializer, messagesNamespace)) {
+					// Schon umgebaut: `message: m.sighting_x_test({}, { locale })`.
+					addSkip(
+						prop.initializer,
+						prop.initializer.getText(sourceFile),
+						'test',
+						'already-translated',
+						'message in der Objektform von .test() ruft bereits eine Paraglide-Botschaftsfunktion ' +
+							'auf — schon übersetzt'
+					);
 					continue;
 				}
 				// Erlaubter Schlüssel, aber der Wert ist kein Literal — von Hand zu prüfen.

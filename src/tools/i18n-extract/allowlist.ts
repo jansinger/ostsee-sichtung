@@ -42,6 +42,15 @@ export type SkipReason =
 	| 'non-literal-argument'
 	| 'numeric-only'
 	| 'empty-string'
+	// Schicht A/B sind umgebaut: Das Argument ist bereits ein Aufruf einer
+	// Paraglide-Botschaftsfunktion (`m.<schlüssel>({}, { locale })`), also
+	// erledigte Arbeit, kein offener Fall. Ohne diesen eigenen Grund landeten
+	// diese Stellen unter 'non-literal-argument' und füllten den Abschnitt
+	// „Übersprungen — bitte durchsehen" mit Fehlalarmen über bereits
+	// übersetzten Code (Befund: 132 von 188 Übersprungenen nach dem Umbau von
+	// sightingSchema.ts). Der Bericht zählt sie weiterhin (render.ts), listet
+	// sie aber nicht mehr einzeln auf.
+	| 'already-translated'
 	// Ein Aufruf `.methode(literal)`, dessen Methode weder in
 	// MESSAGE_ARGUMENT_INDEX noch in NO_MESSAGE_METHOD_REASONS steht — die
 	// einzige Stelle, an der ein Mensch bemerkt, dass eine der beiden Listen zu

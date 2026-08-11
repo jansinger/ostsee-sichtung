@@ -136,10 +136,20 @@ export function renderDryRunReport(plan: ExtractionPlan): string {
 	lines.push('');
 
 	// Der wichtigste Abschnitt des Berichts: die einzige Stelle, an der ein
-	// Mensch eine zu enge Allowlist bemerken kann.
+	// Mensch eine zu enge Allowlist bemerken kann. Bereits übersetzte Stellen
+	// (Aufrufe von Paraglide-Botschaftsfunktionen, SkipReason 'already-translated')
+	// sind erledigte Arbeit, kein offener Fall — sie zählen weiterhin mit, stehen
+	// aber nicht mehr einzeln in der Liste, sonst ertränkt eine dreistellige Zahl
+	// von Fehlalarmen die wenigen Stellen, die wirklich von Hand zu prüfen sind.
+	const alreadyTranslated = plan.skipped.filter((s) => s.reason === 'already-translated');
+	const toReview = plan.skipped.filter((s) => s.reason !== 'already-translated');
+
 	lines.push('## Übersprungen — bitte durchsehen');
 	lines.push('');
-	for (const s of plan.skipped) {
+	if (alreadyTranslated.length > 0) {
+		lines.push(`- bereits übersetzt: ${alreadyTranslated.length} Stellen (nicht aufgeführt)`);
+	}
+	for (const s of toReview) {
 		lines.push(`- ${s.file}:${s.line} (${s.aspect}) \`${s.text}\` — ${s.explanation}`);
 	}
 	lines.push('');
