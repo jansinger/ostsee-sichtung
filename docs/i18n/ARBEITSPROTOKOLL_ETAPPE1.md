@@ -216,3 +216,40 @@ deutschen Wortlaut. `germanBaseline.json` ist seit dem Einfrieren bitgleich.
 - Etappe 2 erbt drei Dinge aus dieser Etappe: die Locale-Falle (dreimal
   zugeschlagen), den positiven Sprachwechsel-Nachweis als Muster, und den
   Hartcodiert-Scan, der um Schicht C zu erweitern ist.
+
+---
+
+# Etappe 2 — Fortsetzung (Protokoll läuft hier weiter)
+
+## Aufgabe 2.1 — Anzeigesprache en-GB
+Commits: f1c6e09a (Plan), 27ef62d5 (Zuordnung), 12a0fd18 + f4ea8959 + 5cc1bb40
+(uebersehene Stellen + Scan), 9959490a (Verhaltenstests).
+
+`resolveDisplayLocale()` in dateTime.ts bildet de -> de-DE, en -> en-GB. Die Zone
+bleibt in jedem Fall Europe/Berlin — per Mutation belegt (en -> Europe/London
+macht den Guard rot: London zeigt den 15., Berlin den 16.).
+
+### Mein vierter Fundstellen-Irrtum in dieser Etappe
+Ich hatte behauptet, `routes/about/+page.svelte` sei die einzige oeffentliche
+Formatierungsstelle. Ein Review fand neun weitere (Kartensteuerung, Listenansicht,
+Popup, FormHelp, DropzoneEnhanced), die Umsetzung danach vier weitere. Alle waeren
+unter /en deutsch formatiert geblieben, ohne dass etwas rot wird.
+
+Konsequenz war diesmal nicht "sorgfaeltiger grepen", sondern ein Scan:
+`hardcodedDisplayLocaleScan.test.ts` wird rot, wenn jemand wieder einen Sprach-Tag
+in oeffentlichem Code hartcodiert. Ausnahmen mit Begruendungspflicht, darunter
+bewusst: der Legacy-DD/MM/YY-Kontrakt (legacy-api/date-utils.ts, en-GB FEST fuer
+die iOS-App), der Admin-Bereich, die Export-Pfade.
+
+### Beilaeufiger Befund, NICHT Teil der Mehrsprachigkeit
+`DropzoneEnhanced.svelte`: Ein gesetzter `mediaFile.timestamp` im Positions-Zweig
+treibt den `applyExifDateTime`-$effect in eine Endlosschleife
+(`effect_update_depth_exceeded`). Vorbestehend, unabhaengig von der Locale-Frage.
+Er verhindert, dass zwei der drei Formatierungsstellen dort testbar sind — sie
+sind mit Kommentar an der `aufnahmeLocale`-Deklaration als Luecke dokumentiert.
+Zu klaeren: Tritt die Schleife auch im Browser auf? Dann ist es ein echter Fehler
+im Meldeformular. Reproduzierender Test zuerst.
+
+## OFFEN in Etappe 2
+2.2 Extraktor lernt Svelte (Trockenlauf) — 2.3 Markup in Wellen, 68 Dateien,
+449 Botschaften — 2.4 Plurale (12 Kandidaten, ICU) — 2.5 hreflang und og:locale.
