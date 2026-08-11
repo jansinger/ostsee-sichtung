@@ -1,9 +1,15 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
 	import OstseeTiereLogo from '$lib/components/OstseeTiereLogo.svelte';
-	import { localizeHref } from '$lib/paraglide/runtime';
+	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
+	import { resolveDisplayLocale } from '$lib/utils/format/dateTime';
 
 	let { data } = $props();
+
+	// Anzeigesprache der beiden Zahlenkacheln unten — folgt der Sprachwahl,
+	// nicht fest auf `de-DE`. Dieselbe Zuordnung wie bei Datum/Zeit
+	// (`resolveDisplayLocale`), damit `en` überall als `en-GB` formatiert.
+	const zahlenLocale = $derived(resolveDisplayLocale(getLocale()));
 </script>
 
 <svelte:head>
@@ -514,7 +520,7 @@
 						<div class="stat">
 							<div class="stat-title">Veröffentlicht</div>
 							<div class="stat-value text-primary">
-								{new Intl.NumberFormat('de-DE').format(data.totalSightings)}
+								{new Intl.NumberFormat(zahlenLocale).format(data.totalSightings)}
 							</div>
 							<!-- `whitespace-normal` hebt DaisyUIs `white-space: nowrap` auf den
 							     Kachel-Zeilen auf. Das ist für kurze Labels gedacht; „Melder-Adressen
@@ -529,7 +535,7 @@
 						<div class="stat">
 							<div class="stat-title">Beteiligt</div>
 							<div class="stat-value text-secondary-strong">
-								{new Intl.NumberFormat('de-DE').format(data.totalObservers)}
+								{new Intl.NumberFormat(zahlenLocale).format(data.totalObservers)}
 							</div>
 							<div class="stat-desc whitespace-normal">Melder-Adressen insgesamt</div>
 						</div>
