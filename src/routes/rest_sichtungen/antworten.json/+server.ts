@@ -17,15 +17,15 @@ import {
 	animalConditionLabels
 } from '$lib/report/formOptions/animalCondition';
 import { BoatDriveEnum, boatDriveLabels } from '$lib/report/formOptions/boatDrive';
-import { DistanceEnum, distanceLabels } from '$lib/report/formOptions/distance';
-import { DistributionEnum, distributionLabels } from '$lib/report/formOptions/distribution';
+import { DistanceEnum, getDistanceLabel } from '$lib/report/formOptions/distance';
+import { DistributionEnum, getDistributionLabel } from '$lib/report/formOptions/distribution';
 import { EntryChannelEnum, entryChannelLabels } from '$lib/report/formOptions/entryChannel';
 import { getSeaStateLabel, SeaStateEnum } from '$lib/report/formOptions/seaState';
 import { getSexLabel, SexEnum } from '$lib/report/formOptions/sex';
 import { SightingFromEnum, sightingFromLabels } from '$lib/report/formOptions/sightingFrom';
 import { getSpeciesLabel, SpeciesEnum } from '$lib/report/formOptions/species';
 import { getVisibilityLabel, VisibilityEnum } from '$lib/report/formOptions/visibility';
-import { WindDirectionEnum, windDirectionLabels } from '$lib/report/formOptions/windDirection';
+import { getWindDirectionLabel, WindDirectionEnum } from '$lib/report/formOptions/windDirection';
 import { getWindStrengthLabel, WindStrengthEnum } from '$lib/report/formOptions/windStrength';
 import { getClientIp } from '$lib/server/utils/getClientIp';
 import { baseLocale } from '$lib/paraglide/runtime';
@@ -81,22 +81,26 @@ export async function GET(event: RequestEvent): Promise<Response> {
 				),
 
 			// Distance mapping (entfernung) - Note: PDF shows 1-5 range
+			// Locale bewusst auf baseLocale gepinnt — dieselbe Begründung wie bei
+			// `tierart` oben (Legacy-API-Vertrag, iOS-Client OstSeeTiere/8).
 			entfernung: Object.entries(DistanceEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.reduce(
 					(acc, [_key, value]) => {
-						acc[value.toString()] = distanceLabels[value as DistanceEnum];
+						acc[value.toString()] = getDistanceLabel(value as DistanceEnum, baseLocale);
 						return acc;
 					},
 					{} as Record<string, string>
 				),
 
 			// Distribution mapping (verteilung) - Note: PDF shows 0-3 range
+			// Locale bewusst auf baseLocale gepinnt — dieselbe Begründung wie bei
+			// `tierart` oben (Legacy-API-Vertrag, iOS-Client OstSeeTiere/8).
 			verteilung: Object.entries(DistributionEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.reduce(
 					(acc, [_key, value]) => {
-						acc[value.toString()] = distributionLabels[value as DistributionEnum];
+						acc[value.toString()] = getDistributionLabel(value as DistributionEnum, baseLocale);
 						return acc;
 					},
 					{} as Record<string, string>
@@ -127,13 +131,15 @@ export async function GET(event: RequestEvent): Promise<Response> {
 				),
 
 			// Wind direction mapping (windrichtung) - Note: PDF specifies exact values including 'SO'
+			// Locale bewusst auf baseLocale gepinnt — dieselbe Begründung wie bei
+			// `tierart` oben (Legacy-API-Vertrag, iOS-Client OstSeeTiere/8).
 			windrichtung: (() => {
 				const validDirections = ['', 'N', 'NW', 'W', 'SW', 'S', 'SO', 'O', 'NO'];
 				const result: Record<string, string> = {};
 
 				validDirections.forEach((dir) => {
 					if (Object.values(WindDirectionEnum).includes(dir as WindDirectionEnum)) {
-						result[dir] = windDirectionLabels[dir as WindDirectionEnum];
+						result[dir] = getWindDirectionLabel(dir as WindDirectionEnum, baseLocale);
 					}
 				});
 

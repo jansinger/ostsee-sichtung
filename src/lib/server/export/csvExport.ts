@@ -131,12 +131,14 @@ export function generateCsvData(sightings: FrontendSighting[]): string {
 			speciesName,
 			sighting.totalCount,
 			sighting.juvenileCount || '',
-			getDistributionLabel(sighting.distribution),
+			// Verteilung/Entfernung bewusst auf baseLocale gepinnt — dieselbe
+			// Begründung wie bei `speciesName` oben (Exportformate bleiben deutsch).
+			getDistributionLabel(sighting.distribution, baseLocale),
 			sighting.latitude,
 			sighting.longitude,
 			behaviorText,
 			sighting.reaction || '',
-			getDistanceLabel(sighting.distance),
+			getDistanceLabel(sighting.distance, baseLocale),
 			getSightingFromLabel(sighting.sightingFrom),
 			sighting.isDead ? 'Ja' : 'Nein',
 			sighting.deadCondition || '',

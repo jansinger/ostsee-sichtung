@@ -12,6 +12,9 @@
  * `getSeaStateLabel()`, `getSexLabel()`, `getVisibilityLabel()` und
  * `getWindStrengthLabel()` — je ein Feld unten, nach demselben Muster.
  *
+ * Seit Aufgabe 3.3 (Gruppe 2) gilt sie zusätzlich für `getDistanceLabel()`,
+ * `getDistributionLabel()` und `getWindDirectionLabel()`.
+ *
  * Ein Test, der sich auf den heutigen Wortlaut von `messages/en.json`
  * verlässt, wäre nutzlos: die Datei trägt vorerst denselben deutschen Text
  * wie `de.json`, ein ungepinnter Aufruf sähe also identisch aus. Deshalb wird
@@ -42,7 +45,10 @@ vi.mock('$lib/paraglide/messages', async (importOriginal) => {
 		formoptions_seastate_smooth: divergeInEnglish(actual.formoptions_seastate_smooth),
 		formoptions_sex_female: divergeInEnglish(actual.formoptions_sex_female),
 		formoptions_visibility_clear: divergeInEnglish(actual.formoptions_visibility_clear),
-		formoptions_windstrength_windstill: divergeInEnglish(actual.formoptions_windstrength_windstill)
+		formoptions_windstrength_windstill: divergeInEnglish(actual.formoptions_windstrength_windstill),
+		formoptions_distance_less_than_10m: divergeInEnglish(actual.formoptions_distance_less_than_10m),
+		formoptions_distribution_single: divergeInEnglish(actual.formoptions_distribution_single),
+		formoptions_winddirection_n: divergeInEnglish(actual.formoptions_winddirection_n)
 	};
 });
 
@@ -135,5 +141,53 @@ describe('GET /rest_sichtungen/antworten.json — Locale-Pinnung', () => {
 
 		expect(body.windstaerke['0']).toBe('0 - Windstille (< 1 km/h)');
 		expect(body.windstaerke['0']).not.toBe(DIVERGED_EN_LABEL);
+	});
+
+	it('liefert den deutschen Entfernungs-Text, obwohl die aktive Locale Englisch ist und die englische Botschaft nachweislich abweicht', async () => {
+		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
+		overwriteGetLocale(() => 'en');
+
+		const { GET } = await import('./+server');
+		const response = await GET({
+			url: new URL('https://localhost/rest_sichtungen/antworten.json'),
+			getClientAddress: () => '127.0.0.1',
+			request: new Request('https://localhost/rest_sichtungen/antworten.json')
+		} as never);
+		const body = await response.json();
+
+		expect(body.entfernung['1']).toBe('weniger als 10 Meter');
+		expect(body.entfernung['1']).not.toBe(DIVERGED_EN_LABEL);
+	});
+
+	it('liefert den deutschen Verteilungs-Text, obwohl die aktive Locale Englisch ist und die englische Botschaft nachweislich abweicht', async () => {
+		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
+		overwriteGetLocale(() => 'en');
+
+		const { GET } = await import('./+server');
+		const response = await GET({
+			url: new URL('https://localhost/rest_sichtungen/antworten.json'),
+			getClientAddress: () => '127.0.0.1',
+			request: new Request('https://localhost/rest_sichtungen/antworten.json')
+		} as never);
+		const body = await response.json();
+
+		expect(body.verteilung['1']).toBe('Einzeln');
+		expect(body.verteilung['1']).not.toBe(DIVERGED_EN_LABEL);
+	});
+
+	it('liefert den deutschen Windrichtungs-Text, obwohl die aktive Locale Englisch ist und die englische Botschaft nachweislich abweicht', async () => {
+		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
+		overwriteGetLocale(() => 'en');
+
+		const { GET } = await import('./+server');
+		const response = await GET({
+			url: new URL('https://localhost/rest_sichtungen/antworten.json'),
+			getClientAddress: () => '127.0.0.1',
+			request: new Request('https://localhost/rest_sichtungen/antworten.json')
+		} as never);
+		const body = await response.json();
+
+		expect(body.windrichtung['N']).toBe('Nord');
+		expect(body.windrichtung['N']).not.toBe(DIVERGED_EN_LABEL);
 	});
 });

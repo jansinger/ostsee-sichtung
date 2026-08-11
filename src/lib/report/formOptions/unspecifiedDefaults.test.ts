@@ -8,7 +8,6 @@ import {
 } from './animalBehavior';
 import {
 	DistributionEnum,
-	distributionLabels,
 	getDistributionLabel,
 	getDistributionOptions,
 	isValidDistribution
@@ -39,7 +38,7 @@ describe('DistributionEnum.UNKNOWN', () => {
 	});
 
 	it('hat das Label "Keine Angabe"', () => {
-		expect(distributionLabels[DistributionEnum.UNKNOWN]).toBe('Keine Angabe');
+		expect(getDistributionLabel(DistributionEnum.UNKNOWN)).toBe('Keine Angabe');
 		expect(getDistributionLabel(4)).toBe('Keine Angabe');
 	});
 
