@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { collectHits, sourceFiles, stripComments } from '$lib/testing/sourceScan.testutil';
+import { sourceFiles, stripComments } from '$lib/testing/sourceScan.testutil';
 import type { SourceHit } from '$lib/testing/sourceScan.testutil';
 
 /**
@@ -61,69 +61,94 @@ const REMEDIATION = [
 const LETTER = String.raw`[A-Za-zÀ-ÖØ-öø-ÿ]`;
 
 /** Eine Buchstabengruppe: mindestens zwei Buchstaben am Stück. */
-const GROUP = `${LETTER}{2,}`;
+const GROUP_PATTERN = new RegExp(`${LETTER}{2,}`, 'g');
 
 /**
- * Obergrenze für die Länge des Literal-Randes um die beiden Buchstabengruppen
- * herum (in Zeichen). Kein fachlicher Wert — reine Sicherheitsgrenze gegen
- * katastrophales Backtracking, siehe Begründung unten. Das längste Literal im
- * aktuellen Bestand aller 17 Dateien misst 218 Zeichen (in der ausgenommenen
- * `speciesIdentification.ts`); 300 lässt Luft, ohne die Begrenzung wirkungslos
- * zu machen.
- */
-const MAX_LITERAL_EDGE = 300;
-
-/**
- * Baut das Muster für eine Anführungszeichen-Art.
+ * Baut das Muster, das ein Zeichenketten-Literal **extrahiert** — ohne jede
+ * Aussage darüber, ob es ein Befund ist. Das entscheidet erst
+ * {@link isMultiWordLiteral} in einem zweiten, von Regex unabhängigen
+ * Schritt.
  *
  * Für `'`/`"` ist ein Zeilenumbruch innerhalb des Literals ausgeschlossen
  * (`[^quote\\\n]`) — ein echtes `'…'`/`"…"`-Literal kann ihn syntaktisch nicht
  * enthalten. Template-Literale (`` ` ``) dürfen dagegen echte Zeilenumbrüche
  * enthalten und bekommen den Ausschluss nicht.
  *
- * **Die Lücke zwischen den beiden Buchstabengruppen (`gap`) braucht denselben
- * Ausschluss wie der Rest des Literals** (Anführungszeichen, Backslash, bei
- * `'`/`"` auch Zeilenumbruch) — nicht nur „kein Buchstabe". Ohne ihn durfte
- * die Lücke selbst über das schließende Anführungszeichen hinweglesen.
- *
- * **Warum `{0,300}` und nicht `*`.** Die erste Fassung nutzte unbegrenztes
- * `*`/`*?` für den Rand vor und nach den beiden Buchstabengruppen. Für ein
- * Literal mit passendem Gegenstück ist das schnell — das Problem zeigt sich
- * erst, wenn ein Anführungszeichen **kein** Gegenstück im Rest der Datei hat
- * (`sightingSchema.ts` enthält genau ein Backtick-Paar; das zweite Backtick
- * dort ist aus Sicht dieses Musters ein Fall ohne Gegenstück). Dann muss der
- * Motor beweisen, dass **keine** Aufteilung der bis zu 48.000 Restzeichen auf
- * Rand/Gruppe/Lücke/Gruppe/Rand zu einem Treffer führt — mit fünf
- * unbegrenzten, einander überlappenden Quantoren (Rand und Gruppe teilen sich
- * dasselbe Buchstaben-Alphabet) ist das keine lineare Suche mehr, sondern
- * kombinatorisch: Gemessen ist der Lauf über die reale Datei bei 20.000
- * Zeichen bereits bei über 8 Sekunden und wächst überlinear weiter. Eine
- * feste Obergrenze pro Rand macht die Neuverteilung endlich (getestet:
- * derselbe Lauf über alle 17 Dateien in unter 10 ms) — echte Anzeigetexte
- * sind ohnehin kurz, ein Literal über 300 Zeichen ist im Bestand nicht zu
- * erwarten.
- *
- * Innerhalb des Literals wird **lazy** bis zur ersten Buchstabengruppe
- * vorgerückt (`*?`), dann muss eine leerzeichenhaltige Lücke und eine zweite
- * Buchstabengruppe folgen — danach beliebiger Rest bis zum schließenden
- * Anführungszeichen.
+ * **Warum das ohne Längengrenze linear bleibt.** Der Vorläufer dieses Musters
+ * bettete die Suche nach den zwei Buchstabengruppen direkt in die
+ * Literal-Erkennung ein: Rand-vor-Gruppe-1, Lücke, Rand-nach-Gruppe-2 — vier
+ * Quantoren, die sich dasselbe Alphabet teilen und deren Aufteilung der
+ * Motor bei einem Literal ohne schließendes Gegenstück kombinatorisch prüfen
+ * musste (gemessen über 8 Sekunden bei 20.000 Zeichen, siehe Git-Historie
+ * dieser Datei). Diese Fassung hat nur **eine** quantifizierte Alternation
+ * (`(?:${body})*`; „Nicht-Anführungszeichen“ oder „Escape“, unbegrenzt), und
+ * die beiden Alternativen schließen sich für jedes Zeichen
+ * gegenseitig aus — ein Backslash startet ausschließlich `\\.`, jedes andere
+ * Zeichen ausschließlich die erste Alternative. Damit gibt es für jede
+ * Zeichenfolge genau **eine** Art, sie zu konsumieren, keine Aufteilung zum
+ * Ausprobieren — der Motor liest linear bis zum nächsten Anführungszeichen
+ * oder bis zum Dateiende, ohne zurückzusetzen. Die Länge des Literals spielt
+ * dafür keine Rolle mehr, eine `MAX_LITERAL_EDGE`-Grenze entfällt ersatzlos.
  */
-function quotedLiteralWithTwoWords(quote: "'" | '"' | '`'): RegExp {
+function stringLiteralPattern(quote: "'" | '"' | '`'): RegExp {
 	const excludeNewline = quote === '`' ? '' : '\\n';
 	const body = `[^${quote}\\\\${excludeNewline}]|\\\\.`;
-	const gapChar = `[^A-Za-zÀ-ÖØ-öø-ÿ${quote}\\\\${excludeNewline}]`;
-	const ws = quote === '`' ? '\\s' : '[ \\t]';
-	const edgeLazy = `(?:${body}){0,${MAX_LITERAL_EDGE}}?`;
-	const edgeGreedy = `(?:${body}){0,${MAX_LITERAL_EDGE}}`;
-	const gap = `${gapChar}{0,${MAX_LITERAL_EDGE}}${ws}${gapChar}{0,${MAX_LITERAL_EDGE}}`;
-	return new RegExp(`${quote}${edgeLazy}${GROUP}${gap}${GROUP}${edgeGreedy}${quote}`, 'g');
+	return new RegExp(`${quote}(?:${body})*${quote}`, 'g');
 }
 
-const PATTERNS = [
-	quotedLiteralWithTwoWords("'"),
-	quotedLiteralWithTwoWords('"'),
-	quotedLiteralWithTwoWords('`')
+const LITERAL_PATTERNS = [
+	stringLiteralPattern("'"),
+	stringLiteralPattern('"'),
+	stringLiteralPattern('`')
 ] as const;
+
+/**
+ * Die eigentliche Regel — ohne Längengrenze, weil sie in reinem JavaScript
+ * auf dem bereits extrahierten Literal prüft statt in der Regex-Suche
+ * mitzulaufen: „Enthält Leerzeichen UND mindestens zwei Buchstabengruppen“
+ * (siehe Datei-Doc oben, Abschnitt „Die Regel"). `literal` trägt die
+ * umschließenden Anführungszeichen noch — die zählen für beide Bedingungen
+ * nicht mit, stören aber auch nicht (kein Leerzeichen, kein Buchstabe).
+ */
+function isMultiWordLiteral(literal: string): boolean {
+	if (!/\s/.test(literal)) return false;
+	const groups = literal.match(GROUP_PATTERN);
+	return (groups?.length ?? 0) >= 2;
+}
+
+/**
+ * Sammelt mehrwortige Zeichenketten-Literale in bereits kommentarfreiem
+ * `code`.
+ *
+ * Eigene, zweistufige Sammelfunktion statt `collectHits` aus
+ * `sourceScan.testutil`: `collectHits` meldet jeden Regex-Treffer als
+ * Befund, hier ist aber die Extraktion (Regex, Stufe 1) von der Bewertung
+ * (Prädikat in JavaScript, Stufe 2 — {@link isMultiWordLiteral}) bewusst
+ * getrennt. `stripComments` bleibt Pflicht (siehe Datei-Doc): Ohne sie wäre
+ * jede deutsche Begründung im Kommentar selbst ein Fund.
+ *
+ * Eine Meldung je Zeile, wie bei `collectHits` — derselbe Ausdruck kann für
+ * mehrere Anführungszeichen-Arten in Frage kommen, das darf nicht doppelt
+ * zählen.
+ */
+function collectMultiWordLiterals(code: string): SourceHit[] {
+	const hits = new Map<number, SourceHit>();
+
+	for (const pattern of LITERAL_PATTERNS) {
+		for (const match of code.matchAll(pattern)) {
+			const literal = match[0];
+			if (!isMultiWordLiteral(literal)) continue;
+
+			const index = match.index ?? 0;
+			const line = code.slice(0, index).split('\n').length;
+			if (!hits.has(line)) {
+				hits.set(line, { line, text: literal.replace(/\s+/g, ' ').trim() });
+			}
+		}
+	}
+
+	return [...hits.values()].sort((a, b) => a.line - b.line);
+}
 
 /**
  * Meldet jedes mehrwortige Zeichenketten-Literal in `source`.
@@ -131,7 +156,7 @@ const PATTERNS = [
  * @returns Fundstellen (leer = konform), aufsteigend nach Zeile.
  */
 export function findHardcodedStrings(source: string): SourceHit[] {
-	return collectHits(stripComments(source), PATTERNS);
+	return collectMultiWordLiterals(stripComments(source));
 }
 
 const SCHEMA_FILE = 'src/lib/form/validation/sightingSchema.ts';
@@ -208,6 +233,32 @@ describe('Mustererkennung', () => {
 		].join('\n');
 
 		expect(findHardcodedStrings(code).map((hit) => hit.line)).toEqual([1, 2]);
+	});
+
+	/**
+	 * Die feste Randgrenze (`MAX_LITERAL_EDGE`, vormals 300 Zeichen je Seite der
+	 * beiden Buchstabengruppen) machte den Scan blind für lange Literale — ein
+	 * Konstrukt, das ein Review am 2026-08-11 belegt hat. Beide folgenden Fälle
+	 * wurden gegen die alte, längenbegrenzte Fassung geprüft und blieben dort
+	 * ohne Fund; siehe Commit-Beschreibung für den Nachweis (Lauf vor dem Umbau
+	 * auf die zweistufige Extraktion).
+	 */
+	it('meldet ein langes deutsches Fließtext-Literal (~700 Zeichen) — vormals ab ~650 blind', () => {
+		const sentence =
+			'Diese ausführliche Ortsbeschreibung erläutert die Umstände der Sichtung und enthält viele Details, die für die spätere Nachverfolgung durch die Meldestelle wichtig sind. ';
+		const prose = sentence.repeat(5).slice(0, 700);
+		const code = `.meta({ helpText: '${prose}' })`;
+
+		expect(findHardcodedStrings(code)).toHaveLength(1);
+	});
+
+	it('meldet ein Literal mit zwei frühen Wortgruppen und langem nicht-buchstäblichem Nachlauf — vormals 0 Treffer trotz Gesamtlänge >600', () => {
+		const tail = ',1,2,3,4,5,6,7,8,9,10'.repeat(20).slice(0, 400);
+		const literalContent = `Wo ungefähr${tail}`;
+		const code = `.label('${literalContent}')`;
+
+		expect(literalContent.length).toBeGreaterThan(400);
+		expect(findHardcodedStrings(code)).toHaveLength(1);
 	});
 });
 
