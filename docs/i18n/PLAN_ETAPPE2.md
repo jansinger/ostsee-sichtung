@@ -159,3 +159,101 @@ verifiziert, siehe Nachweise oben.
 
 Werden einzeln geplant, sobald 2.1 abgenommen ist — nach der Lehre aus Etappe 0
 („Pläne klein schneiden. Neun Tasks in einem Dokument waren zu viel.").
+
+
+---
+
+## Aufgabe 2.2 — Der Extraktor lernt Svelte
+
+**Ziel:** Der Extraktor findet die Botschaften im Markup, vergibt Schlüssel und
+zeigt einen Diff — **im Trockenlauf, ohne zu schreiben**. Der Umbau der 68 Dateien
+ist Aufgabe 2.3.
+
+### Warum Markup anders ist als Schicht A und B
+
+In Schicht A und B war die Ersetzung ein Literaltausch an einer Aufrufstelle. Im
+Markup ist sie ein Formwechsel, und er ist je Position verschieden:
+
+```svelte
+<p>Ein Text</p>                    →  <p>{m.key()}</p>
+placeholder="Ein Text"             →  placeholder={m.key()}
+```
+
+Bei Attributen müssen die **Anführungszeichen mit ersetzt** werden:
+`placeholder="{m.key()}"` wäre eine Zeichenketten-Interpolation, nicht der Wert.
+
+Zweiter Unterschied: In Komponenten gibt es **kein `locale`-Argument**. Paraglide
+löst über die aktive Locale auf, `m.key()` genügt. Das ist richtig so — eine
+Komponente rendert immer in der Sprache der Anfrage.
+
+Dritter Unterschied, und der wiegt am schwersten: **In Schicht A und B gab es ein
+strukturelles Signal** (Aufrufstelle, Argumentposition). Im Markup ist ein
+Textknoten ein Textknoten. Eine gewisse Inhaltsabhängigkeit ist deshalb
+unvermeidbar — sie bleibt auf das Minimum beschränkt: mindestens eine
+Buchstabengruppe. **Keine Sprachheuristik**, aus demselben Grund wie in Etappe 1.
+
+### Was extrahiert wird
+
+| Fall | Ersetzung |
+| --- | --- |
+| Textknoten, **einziges Kind** seines Elements, mit ≥1 Buchstabengruppe, ohne `{…}` | `{m.key()}` |
+| Attribut `placeholder`/`title`/`aria-label`/`alt` mit rein statischem Wert | `attr={m.key()}` |
+
+### Was verweigert und gemeldet wird
+
+Jeder Fall mit Grund im Abschnitt „Übersprungen — bitte durchsehen":
+
+1. **Satzfragment** — der Textknoten hat Geschwister-Elemente. `Vielen Dank für
+   Ihre <strong>Meldung</strong>!` zerfällt in drei Knoten; sie einzeln zu
+   übersetzen bricht die Wortstellung in jeder Zielsprache. Das ist **kein
+   Randfall**: allein in drei Dateien stehen 53 Inline-Elemente. Diese Stellen
+   brauchen eine Botschaft über das ganze Element, mit Auszeichnung als Parameter
+   — Handarbeit in Aufgabe 2.3.
+2. **Interpolation** — der Knoten enthält `{…}`. Braucht eine ICU-Botschaft mit
+   Parameter (9 Fälle laut Inventar).
+3. **Plural-Kandidat** — der Text enthält eine Ziffer (12 Fälle). Menschliche
+   Entscheidung, ob ICU-Plural nötig ist; Aufgabe 2.4.
+4. **Keine Buchstabengruppe** — reine Satzzeichen, Symbole, Zahlen.
+5. **Dynamisches Attribut** — der Attributwert ist kein reines Literal.
+
+### Schritte
+
+- [ ] **1. Tests zuerst**, gegen konstruiertes Markup: je Fall der Tabelle eine
+      Positivprobe, je Verweigerungsgrund eine Gegenprobe. Dazu die Probe, die in
+      Etappe 1 den Ausschlag gab: **ein deutscher Satz im Markup-Kommentar
+      (`<!-- … -->`) darf nicht gefunden werden.** Dieses Projekt schreibt
+      Begründungen konventionsgemäß ins Markup (CLAUDE.md); ein Scanner ohne
+      diesen Fall wäre von Anfang an unbrauchbar. Der AST macht das von selbst —
+      `Comment`-Knoten tragen ihren Inhalt in `data`, die Traversierung steigt
+      dort nie ab. Genau deshalb AST und nicht Regex.
+- [ ] **2. `collectSvelteSites`** in `src/tools/i18n-extract/collect.ts`,
+      Rückgabe wie die beiden bestehenden Sammler (`ExtractionSite[]`,
+      `SkippedSite[]`). Parsen über `svelte/compiler`, wie
+      `analyzeSvelteSource` es im Inventar-Werkzeug bereits tut — die dortige
+      Traversierung ist die Vorlage, nicht der Import.
+- [ ] **3. Schlüsselschema** wie in Etappe 1 beibehalten, damit
+      `docs/i18n-inventory.md` lesbar bleibt: Pfadpräfix plus Aspekt plus Slug,
+      z. B. `report_components_submissionsuccess_text_vielen_dank`. Kollisionen
+      mit Zählsuffix, Vergabe in Quelltextreihenfolge (zwei Durchgänge, wie in
+      `collectSchemaSites`).
+- [ ] **4. Ersetzungsform je Position** in `apply.ts`: Textknoten bekommen
+      `{m.key()}`, Attribute `attr={m.key()}` **einschließlich der
+      Anführungszeichen**. Ein Test je Form, der die erzeugte Quelle mit dem
+      Svelte-Compiler wieder parst — erzeugt die Ersetzung gültiges Markup?
+- [ ] **5. Trockenlauf über alle 68 Dateien.** Zahlen nennen: gefunden,
+      verweigert je Grund. Den Abschnitt „Übersprungen" **vollständig lesen** und
+      im Bericht beurteilen: Steht dort etwas, das eigentlich mechanisch machbar
+      wäre? Und wie viele Satzfragmente sind es wirklich? Diese Zahl bestimmt den
+      Aufwand von Aufgabe 2.3.
+- [ ] **6. Nachweise.** Mutation je Verweigerungsgrund (Regel entfernen → die
+      zugehörige Gegenprobe wird rot). `npm run test:quick` grün.
+      `germanBaseline.json` unverändert. Der Arbeitsbaum enthält **keine**
+      Änderung an einer `.svelte`-Datei — dies ist ein Trockenlauf.
+
+### Abnahme
+
+1. Der Trockenlauf schreibt nichts ausser `messages/*.json`, und auch das nur mit
+   `--write-messages`.
+2. Die erzeugten Ersetzungen parsen als gültiges Svelte.
+3. Jede Verweigerungskategorie ist per Mutation belegt.
+4. Die Zahl der Satzfragmente ist erhoben — sie ist die Planungsgrundlage für 2.3.
