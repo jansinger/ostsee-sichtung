@@ -133,4 +133,60 @@ describe('renderDryRunReport', () => {
 		expect(report).toContain('## Geplante Diffs');
 		expect(report).toContain(['```diff', diff, '```', ''].join('\n'));
 	});
+
+	// Defekt 2: eine gescannte Datei ohne jeden Fund muss trotzdem sichtbar sein.
+	it('nennt am Kopf, wie viele Dateien gescannt wurden', () => {
+		const plan = buildPlan();
+
+		const report = renderDryRunReport(plan);
+
+		expect(report).toContain('Gescannte Dateien: 1');
+	});
+
+	// Defekt 3: der Vorschlag für formOptions-Dateien zeigt eine Ersetzung
+	// INNERHALB der Modulkonstante — das friert die Sprache beim Modulladen ein
+	// (Entwurf 2.3/4.1). Fundstellen und Schlüssel sind richtig, nur die gezeigte
+	// Ersetzung ist nicht die Zielform. Der Bericht muss die beiden Schichten
+	// trennen und vor der formOptions-Zielform warnen.
+	it('trennt Schema- und formOptions-Diffs und warnt bei formOptions vor der falschen Zielform', () => {
+		const schemaSite = buildSite();
+		const formOptionsSite = buildSite({
+			file: 'src/lib/report/formOptions/sex.ts',
+			key: 'formoptions_sex_female',
+			text: 'Weiblich',
+			aspect: 'sexLabels[SexEnum.FEMALE]',
+			field: 'sexLabels'
+		});
+		const plan = buildPlan({
+			files: [
+				{
+					file: schemaSite.file,
+					before: `const s = yup.string().label('Titel');`,
+					after: `const s = yup.string().label(m.sighting_a_label({}, { locale }));`,
+					sites: [schemaSite]
+				},
+				{
+					file: formOptionsSite.file,
+					before: `export const sexLabels: Record<SexEnum, string> = {\n\t[SexEnum.FEMALE]: 'Weiblich'\n};`,
+					after: `export const sexLabels: Record<SexEnum, string> = {\n\t[SexEnum.FEMALE]: m.formoptions_sex_female({}, { locale })\n};`,
+					sites: [formOptionsSite]
+				}
+			]
+		});
+
+		const report = renderDryRunReport(plan);
+
+		expect(report).toContain('### Schema (Schicht A)');
+		expect(report).toContain('### formOptions (Schicht B)');
+		expect(report).toContain('nicht die Zielform');
+		expect(report).toContain('Modulladen einfrieren');
+		expect(report).toContain('Entwurf Abschnitt 2.3 und 4.1');
+
+		// Die Warnung muss im formOptions-Abschnitt stehen, nicht im Schema-Abschnitt.
+		const schemaIndex = report.indexOf('### Schema (Schicht A)');
+		const formOptionsIndex = report.indexOf('### formOptions (Schicht B)');
+		const warningIndex = report.indexOf('nicht die Zielform');
+		expect(warningIndex).toBeGreaterThan(formOptionsIndex);
+		expect(formOptionsIndex).toBeGreaterThan(schemaIndex);
+	});
 });

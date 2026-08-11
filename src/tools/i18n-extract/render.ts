@@ -53,12 +53,23 @@ export interface ExtractionPlan {
 	skipped: SkippedSite[];
 }
 
+// Befund 3: formOptions-Dateien sind Modulkonstanten (Schicht B) — eine
+// Ersetzung INNERHALB der Konstante friert die Sprache beim Modulladen ein
+// (Entwurf Abschnitt 2.3/4.1). sightingSchema.ts (Schicht A) hat dieses
+// Problem nicht: Der Schema-Aufbau läuft bereits pro Request/Formular neu.
+const FORM_OPTIONS_PATH_SEGMENT = 'formOptions/';
+
+function isFormOptionsFile(relativeFilePath: string): boolean {
+	return relativeFilePath.includes(FORM_OPTIONS_PATH_SEGMENT);
+}
+
 export function renderDryRunReport(plan: ExtractionPlan): string {
 	const lines: string[] = [];
 	const totalSites = plan.files.reduce((sum, f) => sum + f.sites.length, 0);
 
 	lines.push('# i18n-Extraktion — TROCKENLAUF (es wurde nichts geschrieben)');
 	lines.push('');
+	lines.push(`Gescannte Dateien: ${plan.files.length}`);
 	lines.push(`Botschaften: ${totalSites} — übersprungen: ${plan.skipped.length}`);
 	lines.push('');
 
@@ -69,9 +80,34 @@ export function renderDryRunReport(plan: ExtractionPlan): string {
 	}
 	lines.push('');
 
+	const schemaFiles = plan.files.filter((f) => !isFormOptionsFile(f.file));
+	const formOptionsFiles = plan.files.filter((f) => isFormOptionsFile(f.file));
+
 	lines.push('## Geplante Diffs');
 	lines.push('');
-	for (const f of plan.files) {
+
+	lines.push('### Schema (Schicht A)');
+	lines.push('');
+	for (const f of schemaFiles) {
+		const diff = renderUnifiedDiff(f.file, f.before, f.after);
+		if (diff) {
+			lines.push('```diff');
+			lines.push(diff);
+			lines.push('```');
+			lines.push('');
+		}
+	}
+
+	lines.push('### formOptions (Schicht B)');
+	lines.push('');
+	lines.push(
+		'Hinweis: Die folgende Ersetzung belegt nur Fundstellen und Schlüssel, nicht die ' +
+			'Zielform. Eine Ersetzung innerhalb der Modulkonstante würde die Sprache beim ' +
+			'Modulladen einfrieren. Jede formOptions-Datei braucht einen strukturellen Umbau ' +
+			'(Entwurf Abschnitt 2.3 und 4.1).'
+	);
+	lines.push('');
+	for (const f of formOptionsFiles) {
 		const diff = renderUnifiedDiff(f.file, f.before, f.after);
 		if (diff) {
 			lines.push('```diff');
