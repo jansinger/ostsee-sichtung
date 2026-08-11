@@ -3,6 +3,7 @@
 	import DataUsageNotice from '$lib/components/info/DataUsageNotice.svelte';
 	import DeadFindingNotice from '$lib/components/info/DeadFindingNotice.svelte';
 	import SpeciesIdentificationHelp from '$lib/report/components/form/fields/SpeciesIdentificationHelp.svelte';
+	import { localizeHref } from '$lib/paraglide/runtime';
 
 	const title = 'Bestimmungshilfe: Wale und Robben der Ostsee erkennen';
 	const description =
@@ -54,11 +55,11 @@
 	<!-- Rückweg zum Formular: Wer hier landet, hat in aller Regel gerade etwas
 	     gesehen und will es melden. -->
 	<div class="border-base-300 mt-12 flex flex-wrap justify-center gap-4 border-t pt-10">
-		<a href="/" class="btn btn-primary btn-lg">
+		<a href={localizeHref('/')} class="btn btn-primary btn-lg">
 			<Icon icon="custom:porpoise" width="20" height="20" aria-hidden="true" />
 			Sichtung melden
 		</a>
-		<a href="/map" class="btn btn-outline btn-lg">
+		<a href={localizeHref('/map')} class="btn btn-outline btn-lg">
 			<Icon icon="lucide:map" width="20" height="20" aria-hidden="true" />
 			Sichtungskarte ansehen
 		</a>

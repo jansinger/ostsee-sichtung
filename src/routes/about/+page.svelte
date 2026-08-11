@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
 	import OstseeTiereLogo from '$lib/components/OstseeTiereLogo.svelte';
+	import { localizeHref } from '$lib/paraglide/runtime';
 
 	let { data } = $props();
 </script>
@@ -541,14 +542,14 @@
 
 				<div class="flex flex-wrap justify-center gap-6">
 					<a
-						href="/"
+						href={localizeHref('/')}
 						class="btn btn-primary btn-lg shadow-raised duration-instant hover:shadow-floating px-8 py-4 text-lg transition-all"
 					>
 						<Icon icon="custom:porpoise" width="20" height="20" class="mr-2" aria-hidden="true" />
 						Sichtung melden
 					</a>
 					<a
-						href="/map"
+						href={localizeHref('/map')}
 						class="btn btn-secondary btn-outline btn-lg shadow-raised duration-instant hover:shadow-floating px-8 py-4 text-lg transition-all"
 					>
 						<Icon icon="lucide:map" width="20" height="20" class="mr-2" />
@@ -563,7 +564,7 @@
 					     wieder, mit dem Ziel, das an dieser Stelle immer gemeint war,
 					     und mit einer Beschriftung, die es benennt statt zu umschreiben. -->
 					<a
-						href="/bestimmungshilfe"
+						href={localizeHref('/bestimmungshilfe')}
 						class="btn btn-accent btn-outline btn-lg shadow-raised duration-instant hover:shadow-floating px-8 py-4 text-lg transition-all"
 					>
 						<Icon icon="lucide:book-open" width="20" height="20" class="mr-2" />

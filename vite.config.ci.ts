@@ -2,6 +2,7 @@
  * Vite config for CI/E2E tests (no HTTPS, SKIP_DB_CHECK, no HMR).
  * See also: vite.config.ts (development), vite.config.preview.ts (preview server)
  */
+import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { createRequire } from 'node:module';
@@ -30,6 +31,19 @@ export default defineConfig({
 	},
 	plugins: [
 		tailwindcss(),
+		paraglideVitePlugin({
+			project: './project.inlang',
+			outdir: './src/lib/paraglide',
+			emitTsDeclarations: true,
+			// Ohne `preferredLanguage`: präfixlos ist immer Deutsch. Sonst rendert
+			// dieselbe URL je nach Browser-Header zwei Inhalte — nicht cachebar und
+			// für Suchmaschinen ein Duplikat. Begründung: Entwurf, Abschnitt 4.5.
+			strategy: ['url', 'cookie', 'baseLocale'],
+			// Nagelt den Dev-Sonderfall des Plugins fest (`locale-modules` statt
+			// `message-modules` außerhalb von `NODE_ENV=production`) — Begründung in
+			// vite.config.ts.
+			outputStructure: 'message-modules'
+		}),
 		Icons({
 			compiler: 'svelte',
 			autoInstall: true,

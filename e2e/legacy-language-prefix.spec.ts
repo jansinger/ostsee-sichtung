@@ -43,12 +43,35 @@ test.describe('Legacy-API: Sprachpräfix /de/ und /en/', () => {
 		expect(await mit.body()).toEqual(await ohne.body());
 	});
 
-	test('vor Seitenrouten und /admin gilt das Präfix bewusst nicht', async ({ request }) => {
-		// Die Anwendung ist einsprachig deutsch; /admin hängt zusätzlich an
-		// event.url.pathname, das reroute nicht verändert.
-		for (const pfad of ['/en/', '/en/admin', '/en/api/sightings']) {
+	test('vor /admin und /api gilt das Präfix bewusst nicht', async ({ request }) => {
+		// /admin und /api stehen in NICHT_LOKALISIERT — eine Umfangsentscheidung,
+		// kein Sicherheitsmechanismus: Der Zugriffsschutz auf /admin ist
+		// route-basiert (requireUserRole in src/routes/admin/+layout.server.ts)
+		// und griffe unverändert auch unter /en/admin.
+		for (const pfad of ['/en/admin', '/en/api/sightings']) {
 			const antwort = await request.get(pfad, { maxRedirects: 0 });
 			expect(antwort.status(), pfad).toBe(404);
 		}
+	});
+
+	test('/en/ (mit Trailing Slash) liefert keine 404, sondern die Startseite', async ({
+		request
+	}) => {
+		// Kein Ausschluss-Fall: `/en/` ist kein Legacy-Pfad (steht nicht in
+		// LEGACY_PFADE) und keiner der acht Einträge aus NICHT_LOKALISIERT. In
+		// `reroute` (src/hooks.ts) landet er deshalb im dritten Schritt:
+		// `deLocalizeUrl('/en/').pathname` liefert `/` (die Wurzel kennt keinen
+		// Trailing Slash), `istAusgeschlossen('/')` ist false, also wird auf `/`
+		// umgeschrieben — die Startseite, nicht 404. Da SvelteKit `/` selbst mit
+		// `trailingSlash: 'never'` normalisiert, kommt der Client-Request mit
+		// überflüssigem Slash aber gar nicht direkt bis dorthin: Er bekommt zuerst
+		// SvelteKits eigene Trailing-Slash-Normalisierung als 308 auf `/en`.
+		// Ehemals stand `/en/` hier in der 404-Liste dieses Tests — ein Befund aus
+		// dem Review zu Task 6 (2026-08-10): Live gegen den Dev-Server verifiziert
+		// per `curl -sk -D - -o /dev/null "https://localhost:4000/en/"` → Status
+		// 308, `location: /en`, nicht 404.
+		const antwort = await request.get('/en/', { maxRedirects: 0 });
+		expect(antwort.status()).toBe(308);
+		expect(antwort.headers()['location']).toBe('/en');
 	});
 });

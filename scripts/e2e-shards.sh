@@ -199,6 +199,33 @@ map=(
 	# Kaltkompilier-Aufschlag der /rest_sichtungen-Routen fällt einmalig
 	# an; kein anderer Spec fährt sie.
 	e2e/legacy-language-prefix.spec.ts
+	# Aus demselben Grund und direkt daneben: prüft die Gegenrichtung der
+	# Ausschlussliste (`/en/…` liefert 404 statt Legacy-Kosmetik) sowie die
+	# Verdrahtung von `handleStartseitenSprache` in der `sequence`. Überwiegend
+	# `request`-basiert, drei Tests nutzen `page.goto` für echte
+	# Browser-Navigation (Sec-Fetch-Dest). Lokal ~4 s.
+	e2e/i18n-routing.spec.ts
+	# Direkt daneben: prüft nicht das Routing selbst, sondern dass ein Klick
+	# auf `/en` in `/en/...` bleibt statt auf den deutschen Pfad zurückzufallen
+	# (Task 8) — inklusive der beiden Stellen, an denen die URL ohne Klick
+	# (Storage-Nachtrag) bzw. über „Ändern" geschrieben wird. Vier Tests, echte
+	# Browser-Navigation, lokal ~5 s.
+	e2e/i18n-links.spec.ts
+	# Direkt daneben: prüft nicht einzelne Klickpfade (das macht
+	# i18n-links.spec.ts bereits), sondern sammelt auf mehreren Seiten ALLE
+	# internen `<a href>`-Verweise ein und prüft sie gegen die Ausschlussliste
+	# aus languagePrefix.ts — der Sweep, den `localizeHref`-Lücken in
+	# PublicFooter/OstseeTiereLogo/about/bestimmungshilfe/SubmissionSuccess
+	# bis 2026-08-10 unbemerkt ließ. Drei Seiten, echte Browser-Navigation,
+	# lokal ~4 s.
+	e2e/i18n-link-sweep.spec.ts
+	# Direkt bei den beiden Specs darüber: prüft denselben Auslieferungs-Riegel
+	# um `/en`, hier aber den Antwort-Header statt der Routen-Existenz — reine
+	# `request`-Aufrufe, kein Browser, keine eigene Route (die drei Pfade sind
+	# durch i18n-routing.spec.ts und legacy-language-prefix.spec.ts bereits kalt
+	# kompiliert). Vorübergehend, solange der Riegel existiert (siehe
+	# `src/lib/server/middleware/noindexEnglishPages.ts`).
+	e2e/noindex-english-pages.spec.ts
 )
 
 # design-tokens.spec.ts gehört hierher, nicht zu form: es prüft das

@@ -55,11 +55,20 @@ Pfade ohne Präfix ändern sich dadurch nicht — das Präfix kommt additiv dazu
   Verzeichnissen. `/en/rest_sichtungen/view/1840.json` bleibt also 404, und ein
   neuer Legacy-Endpunkt bekommt das Präfix erst, wenn er in `LEGACY_PFADE`
   eingetragen wird.
-- `/en/` vor der Startseite oder vor `/admin` bleibt 404: Die Anwendung ist
-  einsprachig deutsch, ein `/en/` vor einer Seitenroute wäre ein
-  Sprachversprechen, das sie nicht einlöst — und vor `/admin` zusätzlich ein
-  zweiter Pfad auf geschützte Routen, deren Schutz an `event.url.pathname`
-  hängt, das `reroute` nicht verändert.
+- `/en/` vor Seitenrouten liefert seit Einführung der Mehrsprachigkeit **nicht
+  mehr 404**: `/en` liefert die Startseite in englischer Fassung (HTTP 200).
+  Nur `/en/admin` bleibt weiterhin 404 — nicht weil die Anwendung einsprachig
+  wäre (das ist sie seitdem nicht mehr), sondern weil `/admin` bewusst von der
+  Lokalisierung ausgenommen ist (`NICHT_LOKALISIERT` in
+  `src/lib/legacy-api/languagePrefix.ts`). Der Zugriffsschutz auf `/admin`
+  selbst ist davon unabhängig: Er ist route-basiert
+  (`requireUserRole(url, locals.user, [...])` in
+  `src/routes/admin/+layout.server.ts`) und griffe unverändert auch unter
+  `/en/admin`, wenn der Pfad lokalisiert wäre.
+  **Der Vertrag der vier Legacy-API-Pfade selbst ist davon unberührt:**
+  `/de/` und `/en/` vor `/rest_sichtungen` & Co. bleiben reine Routenkosmetik
+  mit byte-identischer deutscher Antwort (siehe Tabelle oben) — nur die
+  Aussage über Seitenrouten war überholt.
 - `/de` bzw. `/en` allein zeigte in CakePHP auf das Meldeformular
   (`sichtungen/add`) und bleibt aus demselben Grund 404.
 

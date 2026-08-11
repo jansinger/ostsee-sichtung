@@ -6,6 +6,7 @@
 	import { maskEmail } from '$lib/utils/privacy/emailMask';
 	import { MEDIA_FALLBACK_EMAIL } from '$lib/constants/contact';
 	import Icon from '$lib/components/Icon.svelte';
+	import { localizeHref } from '$lib/paraglide/runtime';
 
 	// Success state management
 	let { submittedData, handleNewReport } = $props<{
@@ -145,7 +146,7 @@
 							<h3 class="font-semibold">Daten einsehen</h3>
 							<p class="text-base-content/70 text-sm">
 								Ihre Meldung erscheint nach Prüfung auf der
-								<a href="/map" class="link link-primary">interaktiven Karte</a>
+								<a href={localizeHref('/map')} class="link link-primary">interaktiven Karte</a>
 							</p>
 						</div>
 					</div>
@@ -210,7 +211,7 @@
 					<h3 class="mb-4 text-lg font-semibold">Interessiert an mehr?</h3>
 
 					<div class="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
-						<a href="/map" class="btn btn-outline btn-sm flex items-center gap-2">
+						<a href={localizeHref('/map')} class="btn btn-outline btn-sm flex items-center gap-2">
 							<Icon icon="lucide:map" width="16" height="16" aria-hidden="true" />
 							Alle Sichtungen auf der Karte
 						</a>

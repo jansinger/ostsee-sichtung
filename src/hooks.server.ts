@@ -1,10 +1,14 @@
 import { env } from '$env/dynamic/private';
+import { LOCALE_COOKIE } from '$lib/i18n/localeCookie';
+import { zielFuerStartseite } from '$lib/i18n/startseitenWeiterleitung';
 import { createLogger } from '$lib/logger.server';
+import { paraglideMiddleware } from '$lib/paraglide/server';
 import { resolveSessionUser } from '$lib/server/auth/sessionRepository';
 import { assertProductionSecrets } from '$lib/server/config/secretGuard';
 import { closeDb } from '$lib/server/db';
 import { databaseCheck } from '$lib/server/middleware/databaseCheck';
 import { maintenanceMode } from '$lib/server/middleware/maintenanceMode';
+import { noindexEnglishPages } from '$lib/server/middleware/noindexEnglishPages';
 import { createSecurityHeadersHandler } from '$lib/server/middleware/securityHeaders';
 import { warnIfBodySizeLimitTooLow } from '$lib/server/startup/bodySizeLimit';
 import { formatStartupBanner, getBuildInfo } from '$lib/server/startup/versionInfo';
@@ -76,6 +80,95 @@ const authentication: Handle = async ({ event, resolve }) => {
 };
 
 /**
+ * Löst die Locale serverseitig auf und ersetzt `%lang%` im ausgelieferten HTML.
+ *
+ * Ohne diesen Schritt gibt es keine serverseitig bekannte Sprache — SSR rendert
+ * dann in der Standardsprache, während der Client umschaltet, und der
+ * Platzhalter bliebe wörtlich im Dokument stehen.
+ *
+ * Steht bewusst NACH der Auth-Prüfung: Die hängt an `event.url.pathname`, und
+ * dieser Pfad darf ihr nicht verschoben unter den Händen weggezogen werden. Die
+ * Definition steht deshalb absichtlich direkt vor `sequence(...)` — unmittelbar
+ * bei der Stelle, die ihre tatsächliche Ausführungsreihenfolge festlegt, statt
+ * weiter oben in Lesereihenfolge vor `authentication` und damit im Widerspruch
+ * zu genau dieser Aussage.
+ *
+ * `replaceAll` statt `replace`: Heute kommt `%lang%` genau einmal im Dokument
+ * vor, aber ein künftiges zweites Vorkommen (z. B. `og:locale`, `hreflang`)
+ * bliebe mit `replace` stillschweigend unersetzt im ausgelieferten HTML stehen.
+ */
+const handleParaglide: Handle = ({ event, resolve }) =>
+	paraglideMiddleware(event.request, ({ request, locale }) => {
+		event.request = request;
+		return resolve(event, {
+			transformPageChunk: ({ html }) => html.replaceAll('%lang%', locale)
+		});
+	});
+
+/**
+ * Einmalige Sprachweiterleitung auf der Startseite (Task 5).
+ *
+ * Muss VOR `handleParaglide` greifen: Paraglide löst dort die Locale bereits
+ * anhand von URL/Cookie auf, und diese Weiterleitung soll genau dieser
+ * Auflösung zuvorkommen, nicht ihr hinterherlaufen.
+ *
+ * Steht bewusst NACH `authentication`: Die Auth-Prüfung hängt an
+ * `event.url.pathname`, das diese Funktion nicht verändert — sie erzeugt bei
+ * Treffer nur eine eigene 302-Antwort und läuft `resolve(event)` gar nicht
+ * erst durch. Vor `authentication` einzuhängen, brächte keinen Vorteil (die
+ * Antwort ändert sich nicht) und würde die im Kommentar dort festgehaltene
+ * Reihenfolge unnötig aufbrechen.
+ *
+ * Nur lesende Methoden (`GET`/`HEAD`) werden umgeleitet: Ein 302 auf
+ * `POST`/`PUT`/... degradiert die Methode beim Redirect-Follow zu `GET`
+ * (RFC 7231) — für `/` gibt es zwar aktuell keine schreibenden Requests,
+ * aber die Einschränkung kostet nichts und verhindert, dass ein künftiger
+ * POST auf `/` still seine Methode verliert. Diese Begründung trägt für
+ * `HEAD` NICHT — `HEAD` ist sicher und idempotent. `HEAD` gehört trotzdem
+ * dazu, weil SvelteKit es als vollwertige Seiten-Methode behandelt
+ * (`respond.js`: `page_methods`/`allowed_page_methods` enthalten beide
+ * `HEAD`) und RFC 9110 §9.3.2 für `HEAD` dieselbe Antwort wie für `GET`
+ * verlangt, nur ohne Body. Monitoring und Crawler nutzen `HEAD` gerade
+ * deshalb — ein `HEAD /` mit englischem Header muss dieselbe 302 bekommen
+ * wie das entsprechende `GET`.
+ */
+const handleStartseitenSprache: Handle = async ({ event, resolve }) => {
+	const istLesend = event.request.method === 'GET' || event.request.method === 'HEAD';
+	const ziel = istLesend
+		? zielFuerStartseite(
+				event.url.pathname,
+				event.url.search,
+				event.request.headers.get('accept-language'),
+				event.cookies.get(LOCALE_COOKIE) ?? null
+			)
+		: null;
+	// `Vary` gehört AUF die Weiterleitung, nicht nur auf die normale Antwort:
+	// Die 302 ist die inhaltsverhandelte Antwort. Ohne den Header cacht ein
+	// Zwischenspeicher sie für alle Sprachen. `Cookie` gehört mit in die Liste:
+	// dieselbe URL mit demselben Accept-Language liefert je nach
+	// PARAGLIDE_LOCALE-Cookie eine 302 oder eine 200 — ohne `Cookie` im `Vary`
+	// bekäme ein cookielosen englischer Besucher die für einen Cookie-Nutzer
+	// gecachte deutsche Antwort.
+	if (ziel) {
+		return new Response(null, {
+			status: 302,
+			headers: { location: ziel, vary: 'Accept-Language, Cookie' }
+		});
+	}
+
+	const antwort = await resolve(event);
+	// Nur diese eine Route variiert nach Header — alle übrigen Pfade bleiben
+	// voll cachebar. `append` statt `set`: innere Handler (z. B. CORS) setzen
+	// bereits eigene `Vary`-Werte (`Origin`, `Sec-Fetch-Dest`); `set` hätte sie
+	// überschrieben statt ergänzt.
+	if (event.url.pathname === '/') {
+		antwort.headers.append('Vary', 'Accept-Language');
+		antwort.headers.append('Vary', 'Cookie');
+	}
+	return antwort;
+};
+
+/**
  * SvelteKit Handle Hook - Combines multiple middleware in sequence
  *
  * WICHTIG: CSP wird in svelte.config.js konfiguriert (Vercel-optimiert)
@@ -85,7 +178,22 @@ export const handle: Handle = sequence(
 	databaseCheck, // First: Check database availability
 	maintenanceMode, // Second: Check maintenance mode
 	authentication, // Third: Handle authentication
-	setAdditionalHeaders // Fourth: Set security headers
+	setAdditionalHeaders, // Fourth: Set security headers
+	// Fünfter Platz, direkt neben `setAdditionalHeaders`: Beide setzen nur
+	// Antwort-Header über `resolve(event)` und lesen dafür ausschließlich
+	// `event.url.pathname` — dieselbe Grundlage, an der auch `authentication`
+	// und `handleStartseitenSprache` hängen, und die bis hierher unverändert
+	// ist (`reroute` fasst `event.url` nicht an, und die spätere
+	// Locale-Auflösung in `handleParaglide` setzt nur `event.request` neu).
+	// Der Riegel muss NICHT nach `handleStartseitenSprache` stehen: Eine 302
+	// von dort betrifft nur `/` (siehe deren Kommentar), nie `/en/...` — ein
+	// Redirect-Response bekäme den Header ohnehin harmlos mit. Er ist
+	// vorübergehend (Etappe 0 der Mehrsprachigkeit, siehe
+	// `noindexEnglishPages.ts` für die vollständige Begründung und die
+	// Entfernungsbedingung).
+	noindexEnglishPages,
+	handleStartseitenSprache, // Sechstes: einmalige Sprachweiterleitung auf "/"
+	handleParaglide // Siebtes: Resolve locale and fill %lang% placeholder
 );
 
 /**

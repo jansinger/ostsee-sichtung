@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { expectCurrentStep, fillStep1, fillStep2, fillStep4 } from './helpers/form-helpers';
+import { expectNoHorizontalOverflow } from './helpers/overflow';
 import { FormPage } from './pages/FormPage';
 
 /**
@@ -94,7 +95,43 @@ test.describe('Absenden ohne Internetverbindung', () => {
 		expect(layout).not.toBeNull();
 		expect(layout!.badgeVisible).toBe(false);
 		// Menü (Desktop) + Dropdown (Mobil) — kein drittes, leeres Flex-Item.
+		// Der Sprachumschalter (`LanguageSwitcher.svelte`) ist seit Etappe 0 der
+		// Mehrsprachigkeit bewusst NICHT eingebunden (siehe
+		// `TRANSLATION_ROLLOUT_COMPLETE`, `$lib/i18n/translationRolloutStage.ts`)
+		// — solange das gilt, sind es zwei Flex-Items, nicht drei.
 		expect(layout!.inFlowChildren).toBe(2);
+	});
+
+	/**
+	 * Ehemalige Regression (Task 9, vor Etappe 0 der Mehrsprachigkeit): Der
+	 * Sprachumschalter und das Offline-Abzeichen konkurrierten beide um Platz in
+	 * `.navbar-end`. Gemessen (2026-08-10) lief die Navbar bei 320px — der
+	 * schmalsten unterstützten Breite (`horizontal-overflow.spec.ts`) — nur dann
+	 * über, wenn BEIDE gleichzeitig sichtbar waren: 231px Inhalt gegen 320px
+	 * verfügbare Breite, davon 74px der Sprachumschalter. Die `!connection.isOffline`-
+	 * Bedingung an der Einbindung des Umschalters (`PublicNavbar.svelte`) sorgt
+	 * dafür, dass sich beide nie gleichzeitig um den Platz streiten, SOBALD der
+	 * Umschalter wieder eingeblendet wird — siehe `TRANSLATION_ROLLOUT_COMPLETE`.
+	 *
+	 * Solange der Umschalter aus der Navigation entfernt ist, kann diese
+	 * Konkurrenzsituation gar nicht auftreten — der Test prüft hier nur noch die
+	 * schwächere, aber weiterhin gültige Aussage: das Offline-Abzeichen läuft für
+	 * sich allein bei 320px nicht über. Wird der Umschalter wieder eingeblendet,
+	 * gehört die ursprüngliche Kombination (Umschalter sichtbar + offline) hier
+	 * erneut geprüft.
+	 */
+	test('Offline-Abzeichen läuft bei 320px nicht über', async ({ page, context }) => {
+		await page.setViewportSize({ width: 320, height: 800 });
+		const formPage = new FormPage(page);
+		await formPage.goto();
+
+		await context.setOffline(true);
+		// Zwei Instanzen sind offline gleichzeitig im DOM (Navbar + ortsfester
+		// Schritt-Balken, siehe `ConnectionBadge.svelte`) — hier zählt die in der
+		// Navbar.
+		await expect(page.locator('header [data-testid="connection-badge-offline"]')).toBeVisible();
+
+		await expectNoHorizontalOverflow(page, '320px · Navbar offline');
 	});
 
 	test('gibt das Absenden wieder frei, sobald die Verbindung zurück ist', async ({

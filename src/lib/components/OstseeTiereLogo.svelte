@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localizeHref } from '$lib/paraglide/runtime';
+
 	let { 
 		size = 'md',
 		showText = true,
@@ -35,8 +37,8 @@
 </script>
 
 {#if linkToHome}
-	<a 
-		href="/" 
+	<a
+		href={localizeHref('/')}
 		class="inline-flex items-center gap-2 hover:opacity-90 transition-opacity {className}"
 		aria-label="Ostsee-Tiere Startseite"
 	>

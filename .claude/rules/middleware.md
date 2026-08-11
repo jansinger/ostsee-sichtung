@@ -18,13 +18,24 @@ export const handle = sequence(
 	databaseCheck, // 1. DB-Verfügbarkeit
 	maintenanceMode, // 2. Wartungsmodus
 	authentication, // 3. Session-Lookup (sessionRepository)
-	setAdditionalHeaders // 4. Security Headers
+	setAdditionalHeaders, // 4. Security Headers
+	noindexEnglishPages, // 5. Vorübergehender Riegel, Etappe 0 der Mehrsprachigkeit
+	handleStartseitenSprache, // 6. Einmalige Sprachweiterleitung auf "/"
+	handleParaglide // 7. Locale auflösen, %lang%-Platzhalter ersetzen
 );
 ```
 
 **Reihenfolge ist wichtig** -- databaseCheck muss vor Auth kommen (Auth braucht DB).
 Seit dem Session-Store (#635) gilt das buchstäblich: `resolveSessionUser` schlägt das
 Cookie in der Tabelle `sessions` nach, Authentifizierung ohne DB gibt es nicht mehr.
+
+`noindexEnglishPages` und `handleStartseitenSprache`/`handleParaglide` sind Teil der
+Mehrsprachigkeits-Umstellung (siehe `docs/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md`). Beide
+letzten Glieder lesen bzw. schreiben ausschließlich über `event.url`/`event.request` und
+`resolve(event)` — sie verschieben nicht, an welcher Stelle `event.url.pathname` für Auth
+und Security-Header gilt. `noindexEnglishPages` ist vorübergehend: Der Kommentar in
+`src/lib/server/middleware/noindexEnglishPages.ts` nennt die Entfernungsbedingung
+(Übersetzung abgeschlossen **und** `hreflang` ergänzt).
 
 ---
 

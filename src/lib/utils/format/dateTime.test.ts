@@ -670,4 +670,64 @@ describe('dateTime - Zentrale Zeitzonenverwaltung', () => {
 			expect(berlinCalendarDayIso()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 		});
 	});
+
+	describe('Locale und Zeitzone', () => {
+		it('formatiert das Datum locale-spezifisch (Trennzeichen, Reihenfolge)', () => {
+			const datum = '2026-07-15T12:00:00Z';
+			expect(formatLocalDateTime(datum, 'date', 'de-DE')).toBe('15.07.2026');
+			expect(formatLocalDateTime(datum, 'date', 'en-GB')).toBe('15/07/2026');
+		});
+
+		/**
+		 * Fachlich zugesagt ist hier ausschließlich der **Kalendertag**. Trennzeichen,
+		 * Feldreihenfolge und der ", "-Verbinder sind mitdokumentiertes ICU-Verhalten
+		 * und dürfen sich mit einem Node-Update ändern — ein roter Test allein daran
+		 * ist dann eine Ein-Minuten-Entscheidung ("ICU-Kosmetik, kein Zeitzonenfehler"),
+		 * keine Ratesession.
+		 */
+		it('bleibt für alle Formate und beide Sprachen auf Europe/Berlin', () => {
+			// 22:30 UTC statt 23:30: Bei 23:30 zeigen Berlin (Sommerzeit, 00:30) UND
+			// London (Sommerzeit, 23:30) noch denselben Kalendertag — eine versehentliche
+			// Kopplung en → Europe/London wäre an diesem Zeitpunkt unsichtbar grün
+			// geblieben. Bei 22:30 UTC ist Berlin bereits der 16. (00:30), London noch
+			// der 15. (23:30) — die beiden Zonen fallen also tatsächlich auseinander,
+			// und der Test wird bei einer Locale→Zone-Kopplung wirklich rot. Koppelt
+			// jemand die Zeitzone an die Locale, zeigt eine Sichtung den falschen Tag —
+			// ein Datenfehler, keine Darstellungsfrage. Siehe docs/ENVIRONMENT.md,
+			// Abschnitt TZ, und den Kommentar an berlinToday() im Sichtungsschema.
+			const spaet = '2026-07-15T22:30:00Z';
+
+			// `de-DE`/`en-GB` sind die langen BCP-47-Tags, mit denen sich das Verhalten
+			// zusätzlich dokumentieren lässt. `de`/`en` sind die tatsächlich in
+			// project.inlang/settings.json konfigurierten Locales — genau die, die
+			// Etappe 2 an formatLocalDateTime durchreichen wird. Beide Paare sind
+			// nötig: Eine Zone-Map, die nur nach kurzen Tags schlüsselt
+			// (`{ de: 'Europe/Berlin', en: 'Europe/London' }`), träfe bei den langen
+			// Tags keinen Schlüssel, fiele auf den Berlin-Default zurück und bliebe
+			// grün — während die Anwendung mit dem kurzen Tag den falschen Tag zeigt.
+			const erwartet = {
+				full: { de: '16.07.2026, 00:30:00', en: '16/07/2026, 00:30:00' },
+				date: { de: '16.07.2026', en: '16/07/2026' },
+				time: { de: '00:30', en: '00:30' },
+				datetime: { de: '16.07.2026, 00:30', en: '16/07/2026, 00:30' }
+			} satisfies Record<'full' | 'date' | 'time' | 'datetime', { de: string; en: string }>;
+
+			(Object.keys(erwartet) as Array<keyof typeof erwartet>).forEach((format) => {
+				expect(formatLocalDateTime(spaet, format, 'de-DE'), format).toBe(erwartet[format].de);
+				expect(formatLocalDateTime(spaet, format, 'en-GB'), format).toBe(erwartet[format].en);
+				// `de` (kurzer Tag) formatiert identisch zu `de-DE`.
+				expect(formatLocalDateTime(spaet, format, 'de'), format).toBe(erwartet[format].de);
+			});
+
+			// `en` (kurzer Tag) formatiert US-Englisch (MM/DD/YYYY, 12-Stunden mit
+			// AM/PM) — ein komplett anderes Layout als `en-GB`. Nur der Kalendertag
+			// ist hier die zugesagte Invariante, deshalb wird ausschließlich das
+			// `date`-Format exakt festgenagelt. Die drei Uhrzeit-Formate tragen
+			// "AM"/"PM"; seit ICU 72 steht davor ein schmales geschütztes Leerzeichen
+			// (U+202F) statt eines normalen — ein `toBe` darauf wäre allein an einem
+			// ICU-Sprung zerbrechlich, ohne dass die Zeitzonen-Invariante betroffen
+			// wäre.
+			expect(formatLocalDateTime(spaet, 'date', 'en')).toBe('07/16/2026');
+		});
+	});
 });

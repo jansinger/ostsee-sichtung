@@ -11,6 +11,9 @@ const gitignorePath = fileURLToPath(new URL('./.gitignore', import.meta.url));
 
 export default ts.config(
 	includeIgnoreFile(gitignorePath),
+	// Erzeugter Paraglide-Code (Task 1, `.claude/rules/architecture.md`): liegt unter `src/`,
+	// steht zwar auch in `.gitignore`, aber ESLint soll ihn unabhängig davon nie anfassen.
+	{ ignores: ['src/lib/paraglide/**'] },
 	js.configs.recommended,
 	...ts.configs.recommended,
 	...svelte.configs.recommended,
