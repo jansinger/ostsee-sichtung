@@ -17,7 +17,6 @@ export function memoizePerLocale<T>(build: (locale: Locale) => T): (locale?: Loc
 
 	return (locale: Locale = getLocale()): T => {
 		if (cache.has(locale)) {
-			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- `has` garantiert einen Treffer
 			return cache.get(locale)!;
 		}
 		const value = build(locale);
