@@ -186,7 +186,19 @@ function standardFile(
  * wie `collectSchemaShape()` es für die Feld-Reihenfolge bereits tut.
  */
 export function collectDomainLabels(): DomainLabelSnapshot {
+	// `windStrength` steht hier bewusst VOR `animalBehavior` — nicht
+	// alphabetisch. Stünde diese Liste zufällig doch in alphabetischer
+	// Quelltext-Reihenfolge, würde eine entfernte Sortierung im Rückgabewert
+	// unbemerkt bleiben (siehe Test „sortiert die Ausgabe unabhängig von der
+	// Quelltext-Reihenfolge" in germanBaseline.test.ts). Diese eine
+	// Umstellung erzwingt, dass die programmatische Sortierung unten
+	// tatsächlich etwas leistet.
 	const unsorted: DomainLabelSnapshot = {
+		windStrength: standardFile(
+			getWindStrengthOptions(),
+			getWindStrengthLabel(null),
+			getWindStrengthLabel(INVALID_NUMERIC_VALUE)
+		),
 		animalBehavior: standardFile(
 			getAnimalBehaviorOptions(),
 			getAnimalBehaviorLabel(null),
@@ -300,11 +312,6 @@ export function collectDomainLabels(): DomainLabelSnapshot {
 			getWindDirectionOptions(),
 			getWindDirectionLabel(null),
 			getWindDirectionLabel(INVALID_STRING_VALUE)
-		),
-		windStrength: standardFile(
-			getWindStrengthOptions(),
-			getWindStrengthLabel(null),
-			getWindStrengthLabel(INVALID_NUMERIC_VALUE)
 		)
 	};
 

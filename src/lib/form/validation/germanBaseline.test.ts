@@ -77,6 +77,23 @@ describe('collectDomainLabels', () => {
 	// GENAU die zwei Label-Sets ab, nicht die Artdatensätze — die gehören zu
 	// einer eigenen, späteren Etappe (Schicht E). Wer das ändern will, muss
 	// diesen Test anfassen, nicht nur `germanBaseline.testutil.ts`.
+	// Befund aus dem Review: Die Sortierung in `collectDomainLabels()` war
+	// ungetestet — entfernt man `.sort(...)` dort, blieben bislang alle Tests
+	// grün, weil die Quelltext-Reihenfolge zufällig schon alphabetisch war.
+	// Dieser Test prüft die Sortierung direkt an der Ausgabe, unabhängig
+	// davon, in welcher Reihenfolge die Quelltext-Einträge stehen (siehe
+	// `windStrength` ganz oben im Quelltext von `collectDomainLabels()`).
+	it('sortiert die Ausgabe unabhängig von der Quelltext-Reihenfolge', () => {
+		const labels = collectDomainLabels();
+		const keys = Object.keys(labels);
+		const expectedSortedKeys = [...keys].sort((a, b) => a.localeCompare(b));
+
+		expect(keys).toEqual(expectedSortedKeys);
+		// `windStrength` steht im Quelltext ganz vorn, muss aber alphabetisch
+		// ganz hinten in der Ausgabe stehen — nur die Sortierlogik kann das leisten.
+		expect(keys[keys.length - 1]).toBe('windStrength');
+	});
+
 	it('markiert die Ausschlussgrenze der Artdatensätze in speciesIdentification', () => {
 		const labels = collectDomainLabels();
 		const speciesIdentification = labels['speciesIdentification'];
