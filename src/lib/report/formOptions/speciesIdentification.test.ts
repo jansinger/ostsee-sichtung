@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SpeciesEnum, speciesGroups, speciesLabels } from './species';
+import { SpeciesEnum, getSpeciesLabel, speciesGroups } from './species';
 import {
 	frequencyLabels,
 	observabilityLabels,
@@ -14,7 +14,7 @@ const allSpecies = Object.values(SpeciesEnum).filter(
 describe('speciesIdentification', () => {
 	it('deckt jede Tierart des Formulars ab', () => {
 		for (const species of allSpecies) {
-			expect(speciesIdentification[species], `fehlt für ${speciesLabels[species]}`).toBeDefined();
+			expect(speciesIdentification[species], `fehlt für ${getSpeciesLabel(species)}`).toBeDefined();
 		}
 	});
 
@@ -26,7 +26,7 @@ describe('speciesIdentification', () => {
 
 	it('verwendet dieselben Namen wie die Auswahlliste', () => {
 		for (const species of allSpecies) {
-			expect(speciesIdentification[species].name).toBe(speciesLabels[species]);
+			expect(speciesIdentification[species].name).toBe(getSpeciesLabel(species));
 		}
 	});
 
@@ -53,7 +53,7 @@ describe('Merkmale', () => {
 			const onDistance = speciesIdentification[species].distinguishing.filter(
 				(f) => f.observability === 'distance'
 			);
-			expect(onDistance.length, `${speciesLabels[species]} hat kein Fernmerkmal`).toBeGreaterThan(
+			expect(onDistance.length, `${getSpeciesLabel(species)} hat kein Fernmerkmal`).toBeGreaterThan(
 				0
 			);
 		}
@@ -114,7 +114,7 @@ describe('Bilder', () => {
 		for (const species of allSpecies) {
 			expect(
 				speciesIdentification[species].images.length,
-				`kein Bild für ${speciesLabels[species]}`
+				`kein Bild für ${getSpeciesLabel(species)}`
 			).toBeGreaterThan(0);
 		}
 	});

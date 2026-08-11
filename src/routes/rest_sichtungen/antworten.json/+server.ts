@@ -23,7 +23,7 @@ import { EntryChannelEnum, entryChannelLabels } from '$lib/report/formOptions/en
 import { SeaStateEnum, seaStateLabels } from '$lib/report/formOptions/seaState';
 import { SexEnum, sexLabels } from '$lib/report/formOptions/sex';
 import { SightingFromEnum, sightingFromLabels } from '$lib/report/formOptions/sightingFrom';
-import { SpeciesEnum, speciesLabels } from '$lib/report/formOptions/species';
+import { getSpeciesLabel, SpeciesEnum } from '$lib/report/formOptions/species';
 import { VisibilityEnum, visibilityLabels } from '$lib/report/formOptions/visibility';
 import { WindDirectionEnum, windDirectionLabels } from '$lib/report/formOptions/windDirection';
 import { WindStrengthEnum, windStrengthLabels } from '$lib/report/formOptions/windStrength';
@@ -51,7 +51,7 @@ export async function GET(event: RequestEvent): Promise<Response> {
 				.filter(([_key, value]) => typeof value === 'number')
 				.reduce(
 					(acc, [_key, value]) => {
-						acc[value.toString()] = speciesLabels[value as SpeciesEnum];
+						acc[value.toString()] = getSpeciesLabel(value as SpeciesEnum);
 						return acc;
 					},
 					{} as Record<string, string>

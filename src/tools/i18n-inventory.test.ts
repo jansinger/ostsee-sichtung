@@ -375,18 +375,26 @@ describe('renderMarkdownReport', () => {
 });
 
 describe('Verifikation an echten Dateien', () => {
-	it('species.ts: findet die 11 Artnamen aus speciesLabels (Gruppennamen bewusst nicht, siehe Bericht)', () => {
+	// Aufgabe i18n-t3 3.2 hat species.ts als Pilotmodul umgebaut: Die elf
+	// Artnamen kommen seit dem nicht mehr aus String-Literalen in einer
+	// `speciesLabels`-Konstante, sondern aus dem Botschaftskatalog
+	// (`speciesLabelBuilders` + `memoizePerLocale`). Dieses Altwerkzeug
+	// erkennt nur das `[Enum.X]: 'Text'`-Literalmuster — nach dem Umbau
+	// findet es dort folgerichtig nichts mehr. Das ist der Beleg, nicht der
+	// Bug: species.ts trägt seither keine deutschen Anzeigetext-Literale
+	// mehr, die dieses Werkzeug aufzählen könnte.
+	it('species.ts: findet nach dem i18n-t3-3.2-Umbau keine Artnamen-Literale mehr', () => {
 		const source = readFileSync(
 			resolve(PROJECT_ROOT, 'src/lib/report/formOptions/species.ts'),
 			'utf-8'
 		);
 		const findings = analyzeFormOptionsSource(source, 'src/lib/report/formOptions/species.ts');
 		const speciesLabelFindings = findings.filter((f) => f.context?.startsWith('speciesLabels'));
-		expect(speciesLabelFindings).toHaveLength(11);
-		expect(speciesLabelFindings.every((f) => f.category === 'uebersetzbar')).toBe(true);
+		expect(speciesLabelFindings).toHaveLength(0);
 
-		// Dokumentierte Grenze: Gruppennamen (Kleinwale/Großwale/Robben) sind Schlüssel
-		// eines anders typisierten Objekts, kein Record<Enum, string> — werden nicht gefunden.
+		// Weiterhin unverändert: Die Gruppennamen (Kleinwale/Großwale/Robben)
+		// stehen als Objektschlüssel in `speciesGroups`, nicht als Text-Literal
+		// — von diesem Muster-basierten Werkzeug nie erfasst, vor UND nach 3.2.
 		const groupNameFound = findings.some(
 			(f) => f.rawText === 'Kleinwale' || f.rawText === 'Großwale'
 		);

@@ -5,7 +5,7 @@
 	import type { MapTranslations } from '$lib/map/mapUtils';
 	import { SichtungenMap } from '$lib/map/optimizedMapController';
 	import { MapTimeSliderManager } from '$lib/map/timeSliderManager';
-	import { speciesLabels } from '$lib/report/formOptions/species';
+	import { getSpeciesOptions } from '$lib/report/formOptions/species';
 	import {
 		deriveSelectableYears,
 		getDefaultSightingYear,
@@ -33,6 +33,15 @@
 	import FilterPanel from './Panel/FilterPanel.svelte';
 	import LegendPanel from './Panel/LegendPanel.svelte';
 	import SightingsListView from './SightingsListView.svelte';
+
+	// `getSpeciesOptions()` (statt der früheren `speciesLabels`-Konstante aus
+	// species.ts — die ist seit Aufgabe 3.2 modul-intern) einmalig zu einem
+	// Record umgebaut. Bleibt bewusst bei der aktuellen Locale zum Ladezeitpunkt
+	// (kein `locale`-Prop hier) — diese Karten-Komponente selbst lokalisierbar
+	// zu machen ist außerhalb der Aufgabe 3.2.
+	const speciesLabels: Record<string, string> = Object.fromEntries(
+		getSpeciesOptions().map((option) => [option.value, option.label])
+	);
 
 	// Props
 	let {
