@@ -11,6 +11,7 @@ import { sightings } from '$lib/server/db/schema';
 import type { SightingFormValues } from '$lib/types/Form';
 import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 import { formatSightingForDisplay } from '$lib/utils/format/sightingFormatter';
+import { baseLocale } from '$lib/paraglide/runtime';
 import { eq } from 'drizzle-orm';
 import Handlebars from 'handlebars';
 import { htmlToText as htmlToPlainText } from 'html-to-text';
@@ -500,8 +501,13 @@ export class EmailService {
 					inBalticSeaGeo
 				}));
 
-			// Prepare template data with formatted enum values
-			const formattedSighting = formatSightingForDisplay(sightingFormValues);
+			// Prepare template data with formatted enum values.
+			// Locale bewusst auf baseLocale ('de') gepinnt: Diese Mail geht ans
+			// Deutsche Meeresmuseum, nicht an den Melder, und bleibt laut Entwurf
+			// vom Sprachwechsel ausgenommen (docs/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md,
+			// Abschnitt 5.4). Ohne die Pinnung würde eine Meldung über /en dem
+			// Museum englische Labels in einer sonst deutschen Mail liefern.
+			const formattedSighting = formatSightingForDisplay(sightingFormValues, baseLocale);
 			const templateData = {
 				referenceId,
 				// Der Ostsee-Status liegt unter `sighting.balticSea` — die Vorlage

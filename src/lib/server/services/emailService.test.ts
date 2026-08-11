@@ -510,6 +510,25 @@ describe('EmailService', () => {
 			expect(callArg?.sightingDate).not.toBe('2024-07-14');
 		});
 
+		it('ruft formatSightingForDisplay mit baseLocale auf — die Mail geht ans Museum, nicht an den Melder (siehe docs/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md, 5.4)', async () => {
+			vi.mocked(db.select).mockReturnValue({
+				from: vi.fn().mockReturnValue({
+					where: vi.fn().mockReturnValue({
+						limit: vi.fn().mockResolvedValue([createMockSighting()])
+					})
+				})
+			} as any);
+
+			setupConfigRepositoryMocks({ enabled: true, smtpHost: 'smtp.example.com' });
+			await EmailService.initialize(false);
+
+			await EmailService.sendNewSightingNotification(42);
+
+			const { baseLocale } = await import('$lib/paraglide/runtime');
+			const localeArg = vi.mocked(formatSightingForDisplay).mock.calls[0]?.[1];
+			expect(localeArg).toBe(baseLocale);
+		});
+
 		// ------------------------------------------------------------------
 		// Ostsee-Status im Template-Kontext
 		//
