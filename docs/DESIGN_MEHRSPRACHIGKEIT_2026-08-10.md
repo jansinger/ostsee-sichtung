@@ -39,6 +39,7 @@ Inhaltsseiten `/about` und `/bestimmungshilfe` einschließlich
 | Hartcodiertes | eigener Scan-Guard in der Bauart der vier bestehenden Quelltext-Guards                                  |
 | Einwilligung  | **Vollwertig zweisprachig** im Nachweis; deutsch-only als markierter Zwischenstand erlaubt              |
 | Tests         | **Suite bleibt deutsch**, schmaler EN-Rauchtest kommt dazu                                              |
+| Locale-Format | **`en-GB`**, nicht Paraglides Standard `en` — siehe 2.2                                                 |
 
 ### 2.1 Warum Paraglide JS
 
@@ -59,6 +60,30 @@ Deployment ändern zu können. Das betrifft hier fünf Konfigurationsschlüssel
 (Abschnitt 5.4) und rechtfertigt weder den Bundle-Aufwand noch den Verlust der
 Typprüfung.
 
+### 2.2 Warum `en-GB` statt `en`
+
+Das war ein offener Punkt, ist jetzt entschieden. Paraglides Locale `en` liefert
+über `Intl`/`toLocaleDateString` US-Formatierung — `07/16/2026`,
+12-Stunden-Uhr mit `AM`/`PM`. Für ein Ostsee-Publikum lag `en-GB`
+(`16/07/2026`, 24-Stunden-Uhr) näher, war aber bis eben nur eine Vermutung ohne
+harten Grund, sie gegen den Paraglide-Standard durchzusetzen.
+
+Der harte Grund kam aus einer anderen Ecke: [I18N_ARTNAMEN_VORSCHLAG.md](I18N_ARTNAMEN_VORSCHLAG.md)
+(Vorschlag zur Prüfung, nicht freigegeben) empfiehlt für die englischen
+Artnamen **britisches Englisch** (`harbour porpoise`, `grey seal`), weil HELCOM
+und ASCOBANS — die Gremien, an die das Museum die Sichtungsdaten weitergibt —
+in ihren Kernindikatoren durchgängig britisch schreiben. Damit ist die
+Formatierungsfrage mitentschieden: Britische Artnamen neben amerikanischem
+Datumsformat wären in sich widersprüchlich. **Entscheidung: `en-GB` für die
+gesamte Locale-Formatierung, nicht nur für die Artnamen.**
+
+**Konsequenz für den Bestand:** Der Charakterisierungstest
+[dateTime.test.ts](../src/lib/utils/format/dateTime.test.ts) hält für Locale
+`'en'` derzeit ausdrücklich die US-Formatierung fest (`07/16/2026`, Zeile
+~730) — er beschreibt den heutigen Zustand, nicht die Zielformatierung. Er
+muss in Etappe 2 auf `en-GB` umgestellt werden, zusammen mit der übrigen
+Locale-Umstellung von Schicht C.
+
 ---
 
 ## 3. Wo die Texte liegen
@@ -66,13 +91,13 @@ Typprüfung.
 Die Erhebung vom 2026-08-10. Die Architektur ist an dieser Stelle günstig: Ein
 großer Teil der nutzersichtbaren Sprache liegt zentral, nicht verstreut.
 
-| Schicht                       | Ort                                                               | Umfang                              |
-| ----------------------------- | ----------------------------------------------------------------- | ----------------------------------- |
-| **A** Formular-Metadaten      | [sightingSchema.ts](../src/lib/form/validation/sightingSchema.ts) | ~146 Zeichenketten, 1 Datei         |
-| **B** Domänen-Labels          | [`src/lib/report/formOptions/`](../src/lib/report/formOptions/)   | ~147 Zeichenketten, 16 Dateien      |
-| **C** Markup in Komponenten   | 118 `.svelte`-Dateien                                             | grob 600–900 Botschaften öffentlich |
-| **D** Serverseitige Texte     | `src/lib/server/`, plus DB-Konfiguration                          | ~75 Zeichenketten + 3 DB-Schlüssel  |
-| **E** Fachliche Inhaltsseiten | `/about`, `/bestimmungshilfe`, `SpeciesIdentificationHelp`        | ~1.280 Zeilen Fachtext              |
+| Schicht                       | Ort                                                               | Umfang                             |
+| ----------------------------- | ----------------------------------------------------------------- | ---------------------------------- |
+| **A** Formular-Metadaten      | [sightingSchema.ts](../src/lib/form/validation/sightingSchema.ts) | **286** Botschaften, 1 Datei       |
+| **B** Domänen-Labels          | [`src/lib/report/formOptions/`](../src/lib/report/formOptions/)   | **118** Botschaften, 16 Dateien    |
+| **C** Markup in Komponenten   | 118 `.svelte`-Dateien                                             | **448** Botschaften öffentlich     |
+| **D** Serverseitige Texte     | `src/lib/server/`, plus DB-Konfiguration                          | ~75 Zeichenketten + 3 DB-Schlüssel |
+| **E** Fachliche Inhaltsseiten | `/about`, `/bestimmungshilfe`, `SpeciesIdentificationHelp`        | ~1.280 Zeilen Fachtext             |
 
 **Schicht A ist der größte Hebel.** `sightingSchema.ts` ist Single Source of
 Truth für Beschriftungen, Platzhalter, Hilfetexte, `valueText` **und**
@@ -83,13 +108,30 @@ Statistik lesen dieselben `formOptions` ([popupContent.ts](../src/lib/map/popupC
 [listViewUtils.ts](../src/lib/map/listViewUtils.ts)). Wer B übersetzt, übersetzt
 diese Flächen mit.
 
-**Zur Zahl in Schicht C.** Ein Grep über deutschsprachige Zeilen in `.svelte`
-liefert rund 3.140 Treffer im öffentlichen Bereich. Diese Zahl ist **nach oben
-verzerrt**: Projektkonvention ist, Begründungen als Kommentare ins Markup zu
-schreiben (siehe `CLAUDE.md`), und die zählt der Grep mit. Die Schätzung 600–900
-ist eine Ableitung daraus, keine Messung. Belastbar wird sie erst nach der
-Extraktion in Etappe 2 — der Aufwand in Abschnitt 9 ist entsprechend als Spanne
-angegeben.
+**Die Zahlen in A–C sind jetzt gemessen, nicht mehr geschätzt.** Das
+Inventar-Werkzeug [i18n-inventory.ts](../src/tools/i18n-inventory.ts) scannt
+öffentliches `.svelte`-Markup über den Svelte-Compiler-AST (nicht per Grep),
+`formOptions`-Records und `sightingSchema.ts` und klassifiziert jeden Fund als
+`uebersetzbar`, `technisch` (kein Schlüssel, siehe Abschnitt 8.3) oder `unklar`
+(Einzelfallprüfung). Ergebnis, Stand 2026-08-11:
+[i18n-inventory.md](i18n-inventory.md) / [i18n-inventory.json](i18n-inventory.json).
+
+**Ergebnis: 1.103 Funde gesamt, davon 25 technisch.** Von den restlichen 1.078
+liegen **226 außerhalb des Umfangs** dieses Vorhabens: `/styleguide` (109
+Funde), `/docs` (86 Funde, verteilt über drei Dateien) und
+`ApiDocumentation.svelte` (31 Funde) — genau die Entwicklerflächen, die
+Abschnitt 4.2 bereits als `/docs`, `/styleguide` von der Lokalisierung
+ausschließt und die deshalb deutsch bleiben; das Inventar zählt sie trotzdem
+mit, weil es unabhängig vom Routing über den Quelltext scannt. Die 44 als
+`unklar` markierten Fälle sind inzwischen einzeln geprüft und disponiert:
+[I18N_UNKLARE_FAELLE_EMPFEHLUNG.md](I18N_UNKLARE_FAELLE_EMPFEHLUNG.md)
+(Vorschlag zur Prüfung, nicht freigegeben) empfiehlt 12 als `übersetzen`, 32
+als `technisch`.
+
+**Im Umfang bleiben 852 Botschaften.** Davon Schicht A + B zusammen **404**
+(286 + 118 — das ist Etappe 1) und Schicht C **448** über rund 72 Dateien (das
+ist Etappe 2). Spitzenwerte in Schicht C: `about/+page.svelte` 67,
+`FormHelp.svelte` 36, `SightingsMapView.svelte` 32, `LocationInput.svelte` 30.
 
 ---
 
@@ -301,6 +343,11 @@ brauchen Freigabe durch das Deutsche Meeresmuseum. Empfehlung: die
 sprachneutral, für die Bestimmungshilfe ohnehin ein Gewinn und lösen die Frage,
 was mit „Unbekannte Walart" geschieht.
 
+Ein ausgearbeiteter Vorschlag für die elf Artnamen und drei Gruppennamen liegt
+vor: [I18N_ARTNAMEN_VORSCHLAG.md](I18N_ARTNAMEN_VORSCHLAG.md). **Status:
+Vorschlag zur fachlichen Prüfung, nicht freigegeben** — er enthält auch die
+Begründung für die Entscheidung `en-GB` (Abschnitt 2.2 dieses Dokuments).
+
 ### 5.3 Schicht C — Markup
 
 Extraktion Komponente für Komponente. Reihenfolge nach Nutzersichtbarkeit:
@@ -361,6 +408,11 @@ Konfiguration ist ausdrücklich **nicht** betroffen: Der Schlüssel wird laut
 [configLabels.ts:109](../src/routes/admin/settings/configLabels.ts#L109) nirgends
 gelesen.
 
+**„Folgt der Locale" heißt für Englisch konkret `en-GB`, nicht Paraglides
+Standard `en`** — Begründung und die betroffene Bestandslücke in
+[dateTime.test.ts](../src/lib/utils/format/dateTime.test.ts) stehen in
+Abschnitt 2.2.
+
 **Plurale gehören in ICU-Botschaften, nicht in Verkettungen.** Betroffen sind
 Tierzahlen (`totalCount`), Trefferzahlen in der Listenansicht und Dateizahlen im
 Dropzone. Wer „`{n} Tiere`" durch Zusammensetzen löst, ist bei „1 Tier" schon
@@ -393,7 +445,7 @@ von hier aus nicht mehr reparierbar, wenn sie einmal brechen:
 2. **Exportformate.** CSV-, XML-, KML- und JSON-Kopfzeilen bleiben deutsch.
 3. **`/en/admin/**`.** Bleibt 404 (Abschnitt 4.2).
 
-Alle drei bekommen einen Guard-Test (Abschnitt 7.2). Kommentare tragen diese
+Alle drei bekommen einen Guard-Test (Abschnitt 8.2). Kommentare tragen diese
 Zusicherung nicht — dieselbe Erfahrung wie bei den Einwilligungskennungen, wo
 ein Kommentar allein die Fassung nicht gehalten hat.
 
@@ -446,6 +498,21 @@ englischer Melder einen deutschen Text ankreuzt, ohne dass es jemandem auffällt
 
 Dieser Zwischenstand ist **kein Auslieferungsziel.** Er wird im Umsetzungsplan
 als eigener, ausdrücklich befristeter Zustand geführt.
+
+### 7.4 Vorschlag der Wortlaute
+
+Ein ausgearbeiteter Textvorschlag für alle fünf Einwilligungsflächen
+(`privacyConsent`, `nameConsent`, `shipNameConsent`, `mediaConsent`,
+`persistentDataConsent`) liegt vor: [I18N_EINWILLIGUNGEN_VORSCHLAG.md](I18N_EINWILLIGUNGEN_VORSCHLAG.md).
+**Status: Vorschlag zur Prüfung, nicht freigegeben, nicht einsetzbar** — er
+braucht vor der Übernahme die Datenschutz-Abnahme durch das Deutsche
+Meeresmuseum und eine muttersprachliche Durchsicht (Art. 12 Abs. 1 DSGVO).
+
+Drei Befunde aus diesem Vorschlag betreffen den Entwurf hier unmittelbar und
+sind in Abschnitt 10 als offene Punkte aufgenommen: die verlinkte
+Datenschutzerklärung existiert nur auf Deutsch, die Weitergabe an
+HELCOM/ASCOBANS ist in keiner Einwilligungsfassung erwähnt, und
+„Öffentlichkeitsarbeit" hat keine deckungsgleiche englische Entsprechung.
 
 ---
 
@@ -545,25 +612,34 @@ Personentage, ohne die Übersetzungsleistung selbst (Fachinhalt vom DMM).
 | Etappe | Inhalt                                                                                                                                                               | Aufwand   |
 | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
 | 0      | Paraglide (Vite-Plugin, `reroute`, `paraglideMiddleware`, `%lang%`), Ausschlussliste, Locale-Erkennung, **lokalisierte Verweise, Sprachumschalter**, Zeitzonen-Guard | 4–5       |
-| 1      | Schichten A + B — Schema und `formOptions`; deckt Formular, Karte, Popups, Liste ab                                                                                  | 3–4       |
-| 2      | Schicht C — öffentliches Markup, Plurale, `hreflang` je Route, Toasts, Fehlerseiten                                                                                  | 3–4       |
+| 1      | Schichten A + B — Schema und `formOptions`; deckt Formular, Karte, Popups, Liste ab; 404 Botschaften, strukturiert und gut automatisierbar                           | 4–6       |
+| 2      | Schicht C — öffentliches Markup, Plurale, `hreflang` je Route, Toasts, Fehlerseiten; 448 Botschaften über rund 72 Dateien, plus `en-GB`-Formatierung (2.2)           | 7–9       |
 | 3      | Einwilligung und Nachweis (Abschnitt 7)                                                                                                                              | 1–3       |
 | 4      | Schicht E — Inhaltsseiten, struktureller Umbau                                                                                                                       | 2–3       |
 | 5      | Guards inkl. Hartcodiert-Scan (8.3), Vollständigkeitsprüfung, EN-Rauchtest                                                                                           | 3–4       |
-|        | **Summe**                                                                                                                                                            | **16–23** |
+|        | **Summe**                                                                                                                                                            | **21–30** |
 
-**Korrektur gegenüber der ersten Fassung (15–22).** Beim Ausarbeiten von
-Etappe 0 stellte sich heraus, dass zwei Punkte dort falsch einsortiert waren:
-Die **Lokalisierung interner Verweise** und der **Sprachumschalter** sind
-Routing, nicht Text. Ohne sie fällt `/en` beim ersten Klick zurück auf Deutsch,
-und im iframe gibt es keine Navigation zum Zurückfinden — Etappe 0 lieferte
-sonst eine erreichbare, aber unbenutzbare englische Fassung. Im Gegenzug wandert
-`hreflang` nach Etappe 2, weil die Verweise in die Kopf-Blöcke der zwölf
-`+page.svelte` gehören, die dort ohnehin geöffnet werden.
+**Korrektur gegenüber der ersten Fassung (15–22, danach 16–23).** Beim
+Ausarbeiten von Etappe 0 stellte sich zunächst heraus, dass zwei Punkte dort
+falsch einsortiert waren: Die **Lokalisierung interner Verweise** und der
+**Sprachumschalter** sind Routing, nicht Text. Ohne sie fällt `/en` beim
+ersten Klick zurück auf Deutsch, und im iframe gibt es keine Navigation zum
+Zurückfinden — Etappe 0 lieferte sonst eine erreichbare, aber unbenutzbare
+englische Fassung. Im Gegenzug wanderte `hreflang` nach Etappe 2, weil die
+Verweise in die Kopf-Blöcke der zwölf `+page.svelte` gehören, die dort ohnehin
+geöffnet werden. Das ergab **16–23**.
 
-Die Spannen sind echt, nicht kosmetisch: Etappe 2 hängt an der tatsächlichen
-Botschaftszahl (Abschnitt 3), Etappe 3 an der Rückmeldung zum
-Einwilligungskonzept.
+**Zweite Korrektur, mit der Extraktion (Abschnitt 3) gemessen statt
+geschätzt.** Etappe 1 wächst von 3–4 auf **4–6** (404 statt der zuvor
+angenommenen ~293 Botschaften aus A+B), Etappe 2 von 3–4 auf **7–9** (448
+Botschaften über rund 72 Dateien statt der Spanne „grob 600–900"). Macht in
+der Summe **21–30**.
+
+Die Spannen sind jetzt keine Unsicherheit über die Botschaftszahl mehr —
+die steht fest (Abschnitt 3) —, sondern über die Komplexität je Datei: Manche
+der 72 Dateien in Schicht C sind einzeilige Labels, andere brauchen ICU-Plurale
+oder Kontext-Rücksprache. Etappe 3 hängt weiterhin an der Rückmeldung zum
+Einwilligungskonzept (Abschnitt 7.4).
 
 **Etappe 0 enthält einen Schritt, der leicht übersehen wird und dann teuer ist:**
 Der von Paraglide erzeugte Code unter `src/lib/paraglide` gehört nicht ins
@@ -612,17 +688,28 @@ stiller Rückfall.
 
 ## 10. Offene Punkte
 
-| Punkt                                                           | Wer entscheidet | Blockiert                             |
-| --------------------------------------------------------------- | --------------- | ------------------------------------- |
-| Englische Einwilligungstexte, freigegeben                       | DMM/Datenschutz | Etappe 3                              |
-| Englische Artnamen und Fachtexte für die Bestimmungshilfe       | DMM             | Etappe 4                              |
-| Anpassung der iframe-Einbettung auf der englischen Museumsseite | DMM             | nichts — Rückfallebene greift         |
-| Ob ein Legacy-Client das `/de/`-`/en/`-Präfix nutzt             | unklärbar       | nichts — Verhalten bleibt unverändert |
-| Englische Fassung von `manifest.json` (zweite Datei vs. Route)  | Umsetzungsplan  | nichts — geringer Nutzen im iframe    |
+| Punkt                                                                                 | Wer entscheidet | Blockiert                             |
+| ------------------------------------------------------------------------------------- | --------------- | ------------------------------------- |
+| Englische Einwilligungstexte, freigegeben (Vorschlag liegt vor, 7.4)                  | DMM/Datenschutz | Etappe 3                              |
+| Englische Artnamen und Fachtexte für die Bestimmungshilfe (Vorschlag liegt vor, 5.2)  | DMM             | Etappe 4                              |
+| Verlinkte Datenschutzerklärung existiert nur auf Deutsch (Art. 12 DSGVO)              | DMM/Website     | Etappe 3 — von hier aus nicht lösbar  |
+| Weitergabe an HELCOM/ASCOBANS steht im `notes`-Hilfetext, aber in keiner Einwilligung | DMM/Datenschutz | Etappe 3                              |
+| Englische Entsprechung für „Öffentlichkeitsarbeit" (`mediaConsent`) — Umfangsfrage    | DMM/Datenschutz | Etappe 3                              |
+| Anpassung der iframe-Einbettung auf der englischen Museumsseite                       | DMM             | nichts — Rückfallebene greift         |
+| Ob ein Legacy-Client das `/de/`-`/en/`-Präfix nutzt                                   | unklärbar       | nichts — Verhalten bleibt unverändert |
+| Englische Fassung von `manifest.json` (zweite Datei vs. Route)                        | Umsetzungsplan  | nichts — geringer Nutzen im iframe    |
 
-Der letzte Punkt bleibt bewusst offen: Das Zugriffsprotokoll auf hawking reicht
-nur einen Tag zurück. Da sich am Legacy-Verhalten nichts ändert, ist die Frage
-für dieses Vorhaben ohne Folgen.
+Der vorletzte Punkt (Legacy-Client-Präfix) bleibt bewusst offen: Das
+Zugriffsprotokoll auf hawking reicht nur einen Tag zurück. Da sich am
+Legacy-Verhalten nichts ändert, ist die Frage für dieses Vorhaben ohne Folgen.
+
+Die drei Einwilligungs-Punkte stammen aus [I18N_EINWILLIGUNGEN_VORSCHLAG.md](I18N_EINWILLIGUNGEN_VORSCHLAG.md)
+(Abschnitt „Zusammenstellung der offenen ⚠️-Punkte" dort). Die
+Datenschutzerklärung ist von dieser Anwendung aus nicht reparierbar — sie
+betrifft die Website des Museums, nicht diesen Code. Die HELCOM/ASCOBANS-Frage
+ist ein Bestandsbefund: Die deutsche Fassung schweigt bereits genauso dazu, das
+Vorhaben ändert daran nichts, es sei denn, die Datenschutz-Abnahme entscheidet
+sich für eine Ergänzung.
 
 ---
 
@@ -633,5 +720,7 @@ für dieses Vorhaben ohne Folgen.
 - **Keine Botschafts-Schlüsselstruktur.** Ob nach Route, nach Komponente oder
   flach benannt wird, entscheidet sich sinnvoll erst an der ersten Extraktion in
   Etappe 1.
-- **Keine belastbare Botschaftszahl für Schicht C.** Siehe Abschnitt 3; die
-  Schätzung ist als solche markiert.
+- **Keine freigegebenen Fachtexte.** Die Artnamen- und
+  Einwilligungs-Vorschläge (5.2, 7.4) sind recherchierte Entwürfe zur Prüfung,
+  keine autorisierten Übersetzungen — das steht in jedem der beiden Dokumente,
+  wird hier nur nicht wiederholt.
