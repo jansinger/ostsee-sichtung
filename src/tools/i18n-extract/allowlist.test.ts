@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	checkValue,
+	isKnownNoMessageMethod,
 	messageArgumentIndex,
 	metaKeyDecision,
 	TRANSLATABLE_META_KEYS
@@ -78,6 +79,92 @@ describe('messageArgumentIndex', () => {
 		expect(messageArgumentIndex('when')).toBeUndefined();
 		expect(messageArgumentIndex('shape')).toBeUndefined();
 		expect(messageArgumentIndex('transform')).toBeUndefined();
+	});
+
+	// Befund (Aufgabe 4): .integer(message) an vier Feldern (totalCount,
+	// juvenileCount, deadSize, shipCount) verschwand bisher spurlos — weder Fund
+	// noch Übersprungen. NumberSchema.integer(message?: Message<any>): this,
+	// node_modules/yup/index.d.ts:706 — die Meldung ist das einzige Argument.
+	it('nennt für integer die Position 0', () => {
+		expect(messageArgumentIndex('integer')).toBe(0);
+	});
+
+	// Weitere meldungstragende Yup-Methoden, an node_modules/yup/index.d.ts
+	// belegt, nicht geraten.
+	it('kennt die Argumentposition weiterer meldungstragender Yup-Regeln', () => {
+		expect(messageArgumentIndex('positive')).toBe(0);
+		expect(messageArgumentIndex('negative')).toBe(0);
+		expect(messageArgumentIndex('trim')).toBe(0);
+		expect(messageArgumentIndex('lowercase')).toBe(0);
+		expect(messageArgumentIndex('uppercase')).toBe(0);
+		expect(messageArgumentIndex('uuid')).toBe(0);
+		expect(messageArgumentIndex('defined')).toBe(0);
+		expect(messageArgumentIndex('nonNullable')).toBe(0);
+		// lessThan/moreThan tragen wie min/max zuerst den Vergleichswert.
+		expect(messageArgumentIndex('lessThan')).toBe(1);
+		expect(messageArgumentIndex('moreThan')).toBe(1);
+	});
+});
+
+describe('isKnownNoMessageMethod', () => {
+	it('kennt die im Bestand aufgerufenen meldungsfreien Yup-Methoden', () => {
+		for (const method of [
+			'array',
+			'boolean',
+			'number',
+			'object',
+			'string',
+			'mixed',
+			'of',
+			'shape',
+			'concat',
+			'default',
+			'transform',
+			'when',
+			'nullable',
+			'notRequired',
+			'optional'
+		]) {
+			expect(isKnownNoMessageMethod(method), method).toBe(true);
+		}
+	});
+
+	it('hält eine erfundene Methode für nicht bekannt', () => {
+		expect(isKnownNoMessageMethod('someFutureRule')).toBe(false);
+	});
+
+	// Die Asymmetrie ist Absicht (siehe Dateikopf allowlist.ts): Eine
+	// meldungstragende Regel darf nicht zusätzlich als meldungsfrei gelten,
+	// sonst würde sie in collect.ts nie als `method-unknown` gemeldet.
+	it('führt MESSAGE_ARGUMENT_INDEX und NO_MESSAGE_METHOD_REASONS überschneidungsfrei', () => {
+		const messageMethods = [
+			'required',
+			'email',
+			'url',
+			'typeError',
+			'integer',
+			'positive',
+			'negative',
+			'trim',
+			'lowercase',
+			'uppercase',
+			'uuid',
+			'defined',
+			'nonNullable',
+			'min',
+			'max',
+			'length',
+			'matches',
+			'oneOf',
+			'notOneOf',
+			'lessThan',
+			'moreThan',
+			'test'
+		];
+		for (const method of messageMethods) {
+			expect(isKnownNoMessageMethod(method), method).toBe(false);
+			expect(messageArgumentIndex(method), method).not.toBeUndefined();
+		}
 	});
 });
 

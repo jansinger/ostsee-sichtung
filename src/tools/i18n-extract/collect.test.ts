@@ -276,6 +276,87 @@ describe('collectSchemaSites', () => {
 		]);
 		expect(result.skipped[1]?.aspect).toBe('test');
 	});
+
+	// Aufgabe 4: .integer(message) verschwand bisher spurlos — weder Fund noch
+	// Übersprungen. Der Schlüssel `sighting_totalcount_integer` muss mit dem von
+	// Hand angelegten Schlüssel in messages/de.json übereinstimmen (aspect ==
+	// Methodenname, wie bei `sighting_totalcount_min`/`_max`).
+	it('extrahiert aus .integer() die Meldung', () => {
+		const result = collect(`
+			const s = yup.object().shape({
+				totalCount: yup
+					.number()
+					.integer('Bitte nur ganze Zahlen eingeben')
+					.min(1, 'zu wenig')
+			});
+		`);
+		expect(result.sites.map((s) => [s.key, s.text, s.aspect])).toEqual([
+			['sighting_totalcount_integer', 'Bitte nur ganze Zahlen eingeben', 'integer'],
+			['sighting_totalcount_min', 'zu wenig', 'min']
+		]);
+		expect(result.skipped).toEqual([]);
+	});
+
+	// Die eigentliche Reparatur: Eine Methode, die der Extraktor nicht kennt,
+	// verschwindet nicht mehr wortlos, sondern erscheint mit Grund im
+	// Übersprungen-Abschnitt. Mutationsnachweis (siehe Bericht): Entfernt man in
+	// collect.ts den `else if (!isKnownNoMessageMethod(method))`-Zweig, wird
+	// dieser Test rot — `result.skipped` bleibt leer statt den Fund zu melden.
+	it('meldet eine unbekannte Methode mit String-Literal-Argument als übersprungen, statt sie verschwinden zu lassen', () => {
+		const result = collect(`
+			const s = yup.object().shape({
+				totalCount: yup.number().someFutureRule('Ein deutscher Text')
+			});
+		`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => [s.text, s.aspect, s.reason])).toEqual([
+			['Ein deutscher Text', 'someFutureRule', 'method-unknown']
+		]);
+		expect(result.skipped[0]?.explanation).toContain('someFutureRule');
+	});
+
+	it('meldet eine unbekannte Methode nicht, wenn kein Argument ein String-Literal ist', () => {
+		const result = collect(`
+			const s = yup.object().shape({
+				totalCount: yup.number().someFutureRule(someVar)
+			});
+		`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped).toEqual([]);
+	});
+
+	// Die vier von Hand nachgetragenen Schlüssel in messages/de.json
+	// (sighting_totalcount_integer, sighting_juvenilecount_integer,
+	// sighting_deadsize_integer, sighting_shipcount_integer) müssen mit dem
+	// Schema übereinstimmen, das der Extraktor jetzt selbst vergibt — sonst
+	// hätte der Fix zwar das Melden repariert, aber unter einem anderen
+	// Schlüssel als dem bereits gepflegten.
+	it('vergibt für alle vier betroffenen Felder denselben Schlüssel wie der Handeintrag in messages/de.json', () => {
+		const result = collect(`
+			const s = yup.object().shape({
+				totalCount: yup.number().integer('Bitte nur ganze Zahlen eingeben'),
+				juvenileCount: yup.number().integer('Bitte nur ganze Zahlen eingeben'),
+				deadSize: yup.number().integer('Bitte geben Sie eine ganze Zahl ein.'),
+				shipCount: yup.number().integer('Bitte geben Sie eine ganze Zahl ein.')
+			});
+		`);
+		expect(result.sites.map((s) => s.key)).toEqual([
+			'sighting_totalcount_integer',
+			'sighting_juvenilecount_integer',
+			'sighting_deadsize_integer',
+			'sighting_shipcount_integer'
+		]);
+	});
+
+	it('meldet eine bekannte meldungsfreie Methode nicht, selbst mit String-Literal-Argument', () => {
+		const result = collect(`
+			const s = yup.object().shape({
+				a: yup.string().default('Rückfallwert')
+			});
+		`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped).toEqual([]);
+	});
 });
 
 describe('collectFormOptionsSites', () => {

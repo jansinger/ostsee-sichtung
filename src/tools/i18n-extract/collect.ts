@@ -12,7 +12,13 @@
  * kann.
  */
 import ts from 'typescript';
-import { checkValue, messageArgumentIndex, metaKeyDecision, type SkipReason } from './allowlist';
+import {
+	checkValue,
+	isKnownNoMessageMethod,
+	messageArgumentIndex,
+	metaKeyDecision,
+	type SkipReason
+} from './allowlist';
 import { formOptionsMessageKey, resolveFieldName, schemaMessageKey } from './messageKey';
 
 export interface ExtractionSite {
@@ -130,6 +136,8 @@ export function collectSchemaSites(
 						}
 					}
 					handlePositional(node, index, method);
+				} else if (!isKnownNoMessageMethod(method)) {
+					reportUnknownMethodLiterals(node, method);
 				}
 			}
 		}
@@ -156,6 +164,34 @@ export function collectSchemaSites(
 				'non-literal-argument',
 				'Argument ist ein Ausdruck, nicht ein Literal — von Hand zu entscheiden'
 			);
+		}
+	}
+
+	/**
+	 * Die Aufgabe-4-Meldung: eine Methode, die weder eine bekannte
+	 * Meldungsposition (`MESSAGE_ARGUMENT_INDEX`) noch eine bekannte
+	 * Meldungsfreiheit (`NO_MESSAGE_METHOD_REASONS`) hat. Genau das war die
+	 * Lücke, in der `.integer(message)` an vier Feldern verschwand — weder
+	 * Fund noch Übersprungen.
+	 *
+	 * Meldet jedes DIREKTE String-Literal-Argument (keine verschachtelten
+	 * Ausdrücke — dasselbe Prinzip wie `firstStringLiteralWithin` weiter unten:
+	 * ein Literal aus einem Callback-Rumpf ist kein übergangenes
+	 * Meldungsargument, sondern irgendein Vergleichstext im Prüfcode).
+	 */
+	function reportUnknownMethodLiterals(node: ts.CallExpression, method: string): void {
+		for (const arg of node.arguments) {
+			if (ts.isStringLiteralLike(arg)) {
+				addSkip(
+					arg,
+					arg.text,
+					method,
+					'method-unknown',
+					`.${method}(...) steht weder in MESSAGE_ARGUMENT_INDEX noch in ` +
+						'NO_MESSAGE_METHOD_REASONS (allowlist.ts) — von Hand prüfen, ob dieses Argument ' +
+						'eine Meldung trägt, und die passende Liste ergänzen'
+				);
+			}
 		}
 	}
 

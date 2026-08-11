@@ -14,11 +14,24 @@
  *  - **meta-Schlüssel: geschlossen.** Ein unbekannter Schlüssel bricht ab. Er
  *    könnte sprachlich sein und bliebe sonst still deutsch — ein Fehler, den
  *    nachher niemand sieht.
- *  - **Yup-Regeln: offen.** Eine unbekannte Regel wird schlicht nicht
- *    extrahiert. Die meisten Yup-Methoden (`default`, `when`, `transform`,
- *    `shape`, `of`, `nullable`) tragen keine Meldung; ein Abbruch dort wäre
- *    unbrauchbar. Die Restlücke — eine meldungstragende Regel, die hier fehlt —
- *    fängt der Hartcodiert-Scan aus Aufgabe 5.
+ *  - **Yup-Regeln: offen, aber nicht mehr STUMM offen.** Eine unbekannte Regel
+ *    wird weiterhin nicht extrahiert — ein Abbruch wäre unbrauchbar, weil die
+ *    meisten Yup-Methoden (`default`, `when`, `transform`, `shape`, `of`, …,
+ *    siehe `NO_MESSAGE_METHOD_REASONS`) keine Meldung tragen. Bis Aufgabe 4
+ *    verschwand eine unbekannte Regel mit String-Literal-Argument dabei aber
+ *    komplett — weder Fund noch Übersprungen. Genau das traf `.integer(message)`
+ *    an vier Feldern (totalCount, juvenileCount, deadSize, shipCount): Der
+ *    Extraktor meldete nichts, die vier Meldungen blieben in jeder Sprache
+ *    deutsch, bis sie von Hand nachgetragen wurden. Der in der ursprünglichen
+ *    Begründung angekündigte Hartcodiert-Scan (Aufgabe 5) existiert nicht — die
+ *    Lücke war nicht abgefangen, sie war offen.
+ *
+ *    Seit Aufgabe 4 gilt deshalb: Jeder Aufruf `.methode(…)` mit mindestens
+ *    einem direkten String-Literal-Argument, dessen Methode weder eine bekannte
+ *    Meldungsposition hat (`MESSAGE_ARGUMENT_INDEX`) noch als meldungsfrei
+ *    bekannt ist (`NO_MESSAGE_METHOD_REASONS`), wird als `skipped` mit Grund
+ *    `method-unknown` gemeldet — nicht extrahiert (die Methode könnte immer
+ *    noch strukturell etwas anderes als eine Meldung tragen), aber sichtbar.
  */
 
 /** Warum eine Zeichenkette nicht extrahiert wird — erscheint im Trockenlauf. */
@@ -29,6 +42,11 @@ export type SkipReason =
 	| 'non-literal-argument'
 	| 'numeric-only'
 	| 'empty-string'
+	// Ein Aufruf `.methode(literal)`, dessen Methode weder in
+	// MESSAGE_ARGUMENT_INDEX noch in NO_MESSAGE_METHOD_REASONS steht — die
+	// einzige Stelle, an der ein Mensch bemerkt, dass eine der beiden Listen zu
+	// eng ist (siehe Dateikopf).
+	| 'method-unknown'
 	// Trifft, wenn `collectFormOptionsSites` auf eine Stelle stößt, die
 	// String-Literale trägt, aber vom `export const x: Record<Enum, string>`-
 	// Muster nicht erfasst wird: ein Record mit einem anderen Wertetyp
@@ -93,23 +111,89 @@ export function metaKeyDecision(key: string): MetaDecision {
  * `test` ist der Sonderfall, der Aufmerksamkeit verdient: `.test(name, message, fn)`.
  * Argument 0 ist der Testname, er erscheint als `errors[field].type` und wird
  * maschinell ausgewertet.
+ *
+ * Jeder Eintrag ist an `node_modules/yup/index.d.ts` belegt — nicht geraten.
+ * `integer`, `positive`, `negative`, `trim`, `lowercase`, `uppercase`, `uuid`,
+ * `defined` und `nonNullable` tragen die Meldung als einziges Argument
+ * (Position 0); `lessThan`/`moreThan` haben wie `min`/`max` zuerst den
+ * Vergleichswert, die Meldung folgt an Position 1.
  */
 const MESSAGE_ARGUMENT_INDEX: Record<string, number> = {
 	required: 0,
 	email: 0,
 	url: 0,
 	typeError: 0,
+	// NumberSchema.integer(message?: Message<any>): this — index.d.ts:706.
+	// Die konkrete Lücke, die Aufgabe 4 schließt: vier `.integer(…)`-Aufrufe
+	// (totalCount, juvenileCount, deadSize, shipCount) blieben unsichtbar.
+	integer: 0,
+	// NumberSchema.positive(msg?: …): index.d.ts:700.
+	positive: 0,
+	// NumberSchema.negative(msg?: …): index.d.ts:703.
+	negative: 0,
+	// StringSchema.trim(message?: Message<any>): index.d.ts:659.
+	trim: 0,
+	// StringSchema.lowercase(message?: Message<any>): index.d.ts:660.
+	lowercase: 0,
+	// StringSchema.uppercase(message?: Message<any>): index.d.ts:661.
+	uppercase: 0,
+	// StringSchema.uuid(message?: …): index.d.ts:654.
+	uuid: 0,
+	// Schema.defined(message?: Message<any>): index.d.ts:251 (und je Subtyp
+	// erneut, z.B. NumberSchema.defined, index.d.ts:714).
+	defined: 0,
+	// Schema.nonNullable(message?: Message<any>): index.d.ts:253 (und je
+	// Subtyp erneut, z.B. NumberSchema.nonNullable, index.d.ts:719).
+	nonNullable: 0,
 	min: 1,
 	max: 1,
 	length: 1,
 	matches: 1,
 	oneOf: 1,
 	notOneOf: 1,
+	// NumberSchema.lessThan(less, message?): index.d.ts:694.
+	lessThan: 1,
+	// NumberSchema.moreThan(more, message?): index.d.ts:697.
+	moreThan: 1,
 	test: 1
 };
 
 export function messageArgumentIndex(method: string): number | undefined {
 	return MESSAGE_ARGUMENT_INDEX[method];
+}
+
+/**
+ * Yup-Methoden, die im Bestand (`sightingSchema.ts`) auf Schemas aufgerufen
+ * werden und nachweislich keine Meldung tragen — erhoben per Grep über
+ * `sightingSchema.ts` und die `formOptions`-Module (die keine Yup-Aufrufe
+ * enthalten), nicht geraten. `label`, `meta` und die Objektform von `test`
+ * stehen NICHT hier: Sie werden vorher in `collect.ts` speziell behandelt und
+ * erreichen diese Prüfung nie.
+ */
+const NO_MESSAGE_METHOD_REASONS: Record<string, string> = {
+	array: 'Typkonstruktor, kein Meldungsträger',
+	boolean: 'Typkonstruktor, kein Meldungsträger',
+	number: 'Typkonstruktor, kein Meldungsträger',
+	object: 'Typkonstruktor, kein Meldungsträger',
+	string: 'Typkonstruktor, kein Meldungsträger',
+	mixed: 'Typkonstruktor, kein Meldungsträger',
+	of: 'nimmt ein Unterschema entgegen, keine Meldung',
+	shape: 'nimmt die Feld-Definitionen entgegen, keine Meldung',
+	concat: 'verkettet zwei Schemas, keine Meldung',
+	default: 'nimmt den Default-Wert entgegen (z.B. `.default(1)`), keine Meldung',
+	transform: 'nimmt eine Transformationsfunktion entgegen, keine Meldung',
+	when: 'nimmt Feldname und Bedingungs-Konfiguration entgegen, keine Meldung',
+	// nullable()/notRequired()/optional() nehmen in diesem Bestand nie ein
+	// Argument (siehe MESSAGE_ARGUMENT_INDEX-Kommentar zu `nullable(msg?)`,
+	// yup ließe eine Meldung technisch zu) — im Code stehen sie immer ohne
+	// Argument, ein String-Literal darin wäre also ohnehin nie ein Meldungstext.
+	nullable: 'wird im Bestand ausschließlich ohne Argument aufgerufen',
+	notRequired: 'nimmt kein Argument entgegen',
+	optional: 'nimmt kein Argument entgegen'
+};
+
+export function isKnownNoMessageMethod(method: string): boolean {
+	return method in NO_MESSAGE_METHOD_REASONS;
 }
 
 /** Prüft den Wert selbst — die einzige inhaltliche Prüfung, und sie ist eng. */
