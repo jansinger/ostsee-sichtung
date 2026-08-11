@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
 	AnimalBehaviorEnum,
-	animalBehaviorLabels,
 	getAnimalBehaviorLabel,
 	getAnimalBehaviorOptions,
 	isValidAnimalBehavior
@@ -76,7 +75,7 @@ describe('AnimalBehaviorEnum.UNKNOWN', () => {
 	});
 
 	it('hat das Label "Keine Angabe"', () => {
-		expect(animalBehaviorLabels[AnimalBehaviorEnum.UNKNOWN]).toBe('Keine Angabe');
+		expect(getAnimalBehaviorLabel(AnimalBehaviorEnum.UNKNOWN)).toBe('Keine Angabe');
 		expect(getAnimalBehaviorLabel(4)).toBe('Keine Angabe');
 	});
 

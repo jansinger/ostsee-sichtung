@@ -2,6 +2,10 @@
  * Enum für Bootstypen
  * Die numerischen Werte werden in der Datenbank gespeichert.
  */
+import { memoizePerLocale } from '$lib/i18n/localeMemo';
+import * as m from '$lib/paraglide/messages';
+import { getLocale, type Locale } from '$lib/paraglide/runtime';
+
 export enum BoatTypeEnum {
 	OTHER = 0,
 	SAILBOAT = 1,
@@ -17,21 +21,41 @@ export enum BoatTypeEnum {
 }
 
 /**
- * Deutsche Bezeichnungen für die Bootstypen
+ * Baut je Locale die Bezeichnungen der Bootstypen aus dem Botschaftskatalog.
+ *
+ * Modul-intern (kein Export): Kein Verbraucher außerhalb von `formOptions/`
+ * indiziert das Record direkt oder ruft `getBoatTypeLabel` aus der
+ * Legacy-API oder einem Export-Pfad auf — geprüft vor diesem Umbau (auch über
+ * mehrzeilige Importe, `germanBaseline.testutil.ts` ausgenommen). Keine
+ * Locale-Pinnung an einem Verbraucher nötig.
+ *
+ * Bewusst ein Record von BUILDERN, nicht von aufgelösten Strings — siehe
+ * Begründung in `species.ts`.
  */
-export const boatTypeLabels: Record<BoatTypeEnum, string> = {
-	[BoatTypeEnum.OTHER]: 'Sonstiger Bootstyp',
-	[BoatTypeEnum.SAILBOAT]: 'Segelboot',
-	[BoatTypeEnum.MOTORBOAT]: 'Motorboot',
-	[BoatTypeEnum.FERRY]: 'Fähre',
-	[BoatTypeEnum.FISHING_VESSEL]: 'Fischereifahrzeug',
-	[BoatTypeEnum.CARGO_SHIP]: 'Frachtschiff',
-	[BoatTypeEnum.CRUISE_SHIP]: 'Kreuzfahrtschiff',
-	[BoatTypeEnum.RESEARCH_VESSEL]: 'Forschungsschiff',
-	[BoatTypeEnum.INFLATABLE_BOAT]: 'Schlauchboot',
-	[BoatTypeEnum.SAILING_CATAMARAN]: 'Segelkatamaran',
-	[BoatTypeEnum.MOTOR_YACHT]: 'Motoryacht'
+const boatTypeLabelBuilders: Record<BoatTypeEnum, (locale: Locale) => string> = {
+	[BoatTypeEnum.OTHER]: (locale) => m.formoptions_boattype_other({}, { locale }),
+	[BoatTypeEnum.SAILBOAT]: (locale) => m.formoptions_boattype_sailboat({}, { locale }),
+	[BoatTypeEnum.MOTORBOAT]: (locale) => m.formoptions_boattype_motorboat({}, { locale }),
+	[BoatTypeEnum.FERRY]: (locale) => m.formoptions_boattype_ferry({}, { locale }),
+	[BoatTypeEnum.FISHING_VESSEL]: (locale) => m.formoptions_boattype_fishing_vessel({}, { locale }),
+	[BoatTypeEnum.CARGO_SHIP]: (locale) => m.formoptions_boattype_cargo_ship({}, { locale }),
+	[BoatTypeEnum.CRUISE_SHIP]: (locale) => m.formoptions_boattype_cruise_ship({}, { locale }),
+	[BoatTypeEnum.RESEARCH_VESSEL]: (locale) =>
+		m.formoptions_boattype_research_vessel({}, { locale }),
+	[BoatTypeEnum.INFLATABLE_BOAT]: (locale) =>
+		m.formoptions_boattype_inflatable_boat({}, { locale }),
+	[BoatTypeEnum.SAILING_CATAMARAN]: (locale) =>
+		m.formoptions_boattype_sailing_catamaran({}, { locale }),
+	[BoatTypeEnum.MOTOR_YACHT]: (locale) => m.formoptions_boattype_motor_yacht({}, { locale })
 };
+
+/** Baut die Bootstyp-Bezeichnungen für eine Locale genau einmal und hält sie danach vor. */
+const boatTypeLabelsFor = memoizePerLocale(
+	(locale) =>
+		Object.fromEntries(
+			Object.entries(boatTypeLabelBuilders).map(([value, build]) => [value, build(locale)])
+		) as Record<BoatTypeEnum, string>
+);
 
 export type BoatType = BoatTypeEnum;
 
@@ -51,23 +75,32 @@ const SELECTABLE_BOAT_TYPES: readonly BoatTypeEnum[] = [
 
 /**
  * Generiert eine Array-Struktur für Select-Komponenten
+ * @param locale - Locale für die Anzeigetexte; Default die aktuelle Locale
  * @returns Array von Objekten mit value und label
  */
-const boatTypeOptions: Array<{ value: number; label: string }> = SELECTABLE_BOAT_TYPES.map(
-	(value) => ({ value, label: boatTypeLabels[value] })
-);
-export const getBoatTypeOptions = (): Array<{ value: number; label: string }> => boatTypeOptions;
+export function getBoatTypeOptions(
+	locale: Locale = getLocale()
+): Array<{ value: number; label: string }> {
+	const labels = boatTypeLabelsFor(locale);
+	return SELECTABLE_BOAT_TYPES.map((value) => ({ value, label: labels[value] }));
+}
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert
  * @param value - Der Enum-Wert (z.B. aus der Datenbank)
+ * @param locale - Locale für den Anzeigetext; Default die aktuelle Locale
  * @returns Das zugehörige Label oder einen Fallback-Text
  */
-export function getBoatTypeLabel(value: BoatTypeEnum | number | null | undefined): string {
-	if (value === null || value === undefined) return 'Nicht angegeben';
+export function getBoatTypeLabel(
+	value: BoatTypeEnum | number | null | undefined,
+	locale: Locale = getLocale()
+): string {
+	if (value === null || value === undefined)
+		return m.formoptions_boattype_not_specified({}, { locale });
 
 	const numericValue = typeof value === 'string' ? parseInt(value, 10) : value;
-	return boatTypeLabels[numericValue as BoatTypeEnum] || 'Unbekannt';
+	const labels = boatTypeLabelsFor(locale);
+	return labels[numericValue as BoatTypeEnum] || m.formoptions_boattype_invalid({}, { locale });
 }
 
 /**

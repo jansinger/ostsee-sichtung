@@ -11,10 +11,10 @@
  */
 
 import { createLogger } from '$lib/logger.server';
-import { AnimalBehaviorEnum, animalBehaviorLabels } from '$lib/report/formOptions/animalBehavior';
+import { AnimalBehaviorEnum, getAnimalBehaviorLabel } from '$lib/report/formOptions/animalBehavior';
 import {
 	AnimalConditionEnum,
-	animalConditionLabels
+	getAnimalConditionLabel
 } from '$lib/report/formOptions/animalCondition';
 import { BoatDriveEnum, boatDriveLabels } from '$lib/report/formOptions/boatDrive';
 import { DistanceEnum, getDistanceLabel } from '$lib/report/formOptions/distance';
@@ -107,11 +107,13 @@ export async function GET(event: RequestEvent): Promise<Response> {
 				),
 
 			// Animal behavior mapping (verhalten) - Note: PDF shows 0-3 range
+			// Locale bewusst auf baseLocale gepinnt — dieselbe Begründung wie bei
+			// `tierart` oben (Legacy-API-Vertrag, iOS-Client OstSeeTiere/8).
 			verhalten: Object.entries(AnimalBehaviorEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.reduce(
 					(acc, [_key, value]) => {
-						acc[value.toString()] = animalBehaviorLabels[value as AnimalBehaviorEnum];
+						acc[value.toString()] = getAnimalBehaviorLabel(value as AnimalBehaviorEnum, baseLocale);
 						return acc;
 					},
 					{} as Record<string, string>
@@ -195,11 +197,16 @@ export async function GET(event: RequestEvent): Promise<Response> {
 				),
 
 			// Dead animal condition mapping (totfund_zustand) - Note: PDF shows 0-5 range
+			// Locale bewusst auf baseLocale gepinnt — dieselbe Begründung wie bei
+			// `tierart` oben (Legacy-API-Vertrag, iOS-Client OstSeeTiere/8).
 			totfund_zustand: Object.entries(AnimalConditionEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.reduce(
 					(acc, [_key, value]) => {
-						acc[value.toString()] = animalConditionLabels[value as AnimalConditionEnum];
+						acc[value.toString()] = getAnimalConditionLabel(
+							value as AnimalConditionEnum,
+							baseLocale
+						);
 						return acc;
 					},
 					{} as Record<string, string>

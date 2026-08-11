@@ -115,7 +115,9 @@ export function generateCsvData(sightings: FrontendSighting[]): string {
 		// aktive Anfrage-Locale übernehmen, sobald echte englische Artnamen
 		// eingepflegt sind (heute maskiert das messages/en.json == de.json).
 		const speciesName = getSpeciesLabel(sighting.species, baseLocale);
-		const behaviorText = getAnimalBehaviorLabel(sighting.behavior);
+		// Verhalten bewusst auf baseLocale gepinnt — dieselbe Begründung wie bei
+		// `speciesName` oben (Exportformate bleiben deutsch).
+		const behaviorText = getAnimalBehaviorLabel(sighting.behavior, baseLocale);
 
 		// Datenschutz: Namen nur bei expliziter Einwilligung anzeigen
 		const name =
