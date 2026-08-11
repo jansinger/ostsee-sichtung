@@ -148,4 +148,23 @@ describe('renderDryRunReport', () => {
 		expect(report).toContain('```json');
 		expect(report).toContain('"sighting_a_label": "Titel"');
 	});
+
+	// Befund B.2: Der Abschnitt „Geplante Diffs" war unbehauptet — eine Mutation,
+	// die die ```diff-Umrandung kaputtmacht (z.B. das schließende ``` weglässt
+	// oder aus ```diff ein ``` macht), ließ alle Tests grün. Dieser Test
+	// verlangt die Umrandung als zusammenhängenden Block, nicht nur, dass Titel
+	// und Inhalt irgendwo im Bericht vorkommen.
+	it('bettet den Diff im Abschnitt „Geplante Diffs" in einen ```diff-Codeblock ein', () => {
+		const plan = buildPlan();
+
+		const report = renderDryRunReport(plan);
+		const diff = renderUnifiedDiff(
+			plan.files[0]!.file,
+			plan.files[0]!.before,
+			plan.files[0]!.after
+		);
+
+		expect(report).toContain('## Geplante Diffs');
+		expect(report).toContain(['```diff', diff, '```', ''].join('\n'));
+	});
 });

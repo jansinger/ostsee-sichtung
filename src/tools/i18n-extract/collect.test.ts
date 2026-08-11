@@ -129,6 +129,47 @@ describe('collectSchemaSites', () => {
 		expect(result.skipped.map((s) => [s.text, s.reason])).toEqual([['is-x', 'test-name-argument']]);
 	});
 
+	// Befund B.3: `firstStringLiteralWithin` hat zwei Funktionsrumpf-Wächter —
+	// einen vor `walk()` (greift, wenn das Argument SELBST eine Funktion ist)
+	// und einen IN `walk()` (greift, wenn eine Funktion erst beim Absteigen
+	// auftaucht). Der Test oben deckt nur ihre Konjunktion: Entfernt man genau
+	// EINEN der beiden, bleibt er grün, weil der jeweils andere Wächter für
+	// dieselbe Eingabe ebenfalls greift. Diese beiden Tests treffen die Wächter
+	// mit unterschiedlichen Eingaben.
+
+	// Trifft den Wächter VOR walk(): Das Argument an Position 1 ist direkt eine
+	// Arrow Function, es wird also gar nicht erst abgestiegen.
+	it('meldet keine Literale, wenn die Arrow Function das direkte Argument ist', () => {
+		const result = collect(`
+			const s = yup.object().shape({
+				a: yup.string().test('direktes-argument', (value) => value === 'roher Vergleichswert direkt')
+			});
+		`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => [s.text, s.reason])).toEqual([
+			['direktes-argument', 'test-name-argument']
+		]);
+	});
+
+	// Trifft den Wächter IN walk(): Das Argument selbst ist kein Funktionsknoten
+	// (eine ConditionalExpression) — der Wächter vor walk() greift hier nicht.
+	// Ohne den Wächter IN walk() würde beim Absteigen in den Arrow-Function-Zweig
+	// das Literal aus ihrem Rumpf ('aus arrow function') gefunden, statt des
+	// Literals im anderen Zweig ('Rückfalltext').
+	it('steigt beim Suchen nicht in eine verschachtelte Arrow Function ab', () => {
+		const result = collect(`
+			const s = yup.object().shape({
+				sightingFromText: yup
+					.string()
+					.label(useFallback ? (value) => 'aus arrow function' : 'Rückfalltext')
+			});
+		`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => [s.text, s.reason])).toEqual([
+			['Rückfalltext', 'non-literal-argument']
+		]);
+	});
+
 	it('überspringt rein numerische Platzhalter', () => {
 		const result = collect(`
 			const s = yup.object().shape({
@@ -295,5 +336,37 @@ describe('collectFormOptionsSites', () => {
 			createKeyRegistry()
 		);
 		expect(result.sites).toEqual([]);
+	});
+
+	// Befund B.1: `if (!check.ok)` in collectFormOptionsSites war ungetestet —
+	// eine Mutation zu `if (false)` ließ alle 48 Tests grün. Leere und rein
+	// numerische Werte in einem Labels-Record müssen als `skipped` landen,
+	// nicht als Botschaft.
+	it('überspringt einen leeren Wert in einem Labels-Record', () => {
+		const result = collectFormOptionsSites(
+			`
+			export const sexLabels: Record<SexEnum, string> = {
+				[SexEnum.UNKNOWN]: ''
+			};
+			`,
+			'src/lib/report/formOptions/sex.ts',
+			createKeyRegistry()
+		);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => s.reason)).toEqual(['empty-string']);
+	});
+
+	it('überspringt einen rein numerischen Wert in einem Labels-Record', () => {
+		const result = collectFormOptionsSites(
+			`
+			export const windStrengthLabels: Record<WindStrengthEnum, string> = {
+				[WindStrengthEnum.CALM]: '0'
+			};
+			`,
+			'src/lib/report/formOptions/windStrength.ts',
+			createKeyRegistry()
+		);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => s.reason)).toEqual(['numeric-only']);
 	});
 });
