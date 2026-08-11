@@ -395,4 +395,3 @@ Zum Abarbeiten in der Datenschutz-Abnahme:
 
 Die fett markierten Zeilen sind die, bei denen ein Fehler die Einwilligung
 angreifbar macht. Die übrigen sind Geschmacks- oder Redaktionsfragen.
-</content>

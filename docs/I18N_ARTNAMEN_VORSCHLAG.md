@@ -224,6 +224,3 @@ Seals
   (verwendet `Harbor Porpoise`, US-Schreibung — siehe Abschnitt 1)
 - IUCN Red List: [_Phocoena phocoena_](https://www.iucnredlist.org/species/pdf/247632759)
 - IWC Whale Watching Handbook: [Harbour porpoise](https://wwhandbook.iwc.int/en/species/harbour-porpoise)
-</content>
-
-</invoke>
