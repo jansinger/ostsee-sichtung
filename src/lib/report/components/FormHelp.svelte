@@ -8,6 +8,12 @@
 	import StatusBlock from '$lib/components/StatusBlock.svelte';
 	import DataUsageNotice from '$lib/components/info/DataUsageNotice.svelte';
 	import DeadFindingNotice from '$lib/components/info/DeadFindingNotice.svelte';
+	import { getLocale } from '$lib/paraglide/runtime';
+	import { resolveDisplayLocale } from '$lib/utils/format/dateTime';
+
+	// Zahlenformat folgt der Anzeigesprache, nicht hartcodiert 'de-DE', sonst
+	// bleiben die Statistik-Zahlen unter /en deutsch formatiert.
+	const zahlenLocale = $derived(resolveDisplayLocale(getLocale()));
 
 	// Keine Platzhalter-Zahlen: Statistiken werden erst angezeigt, wenn sie
 	// tatsächlich geladen wurden. Erfundene Fallback-Werte würden Bürgern sonst
@@ -95,7 +101,7 @@
 												{#if loading}
 													<span class="loading loading-dots loading-sm"></span>
 												{:else}
-													{statistics?.totalSightings.toLocaleString('de-DE') ?? '–'}
+													{statistics?.totalSightings.toLocaleString(zahlenLocale) ?? '–'}
 												{/if}
 											</div>
 											<div class="text-xs">freigegebene Sichtungen</div>
@@ -225,7 +231,7 @@
 									</div>
 									<div class="text-base-content/70 mt-1 text-xs">
 										{#if !loading && statistics && statistics.uniqueUsers > 0}
-											{statistics.uniqueUsers.toLocaleString('de-DE')} Personen haben bereits gemeldet
+											{statistics.uniqueUsers.toLocaleString(zahlenLocale)} Personen haben bereits gemeldet
 										{:else}
 											viele Beobachtende melden bereits regelmäßig
 										{/if}
@@ -246,7 +252,7 @@
 									<div class="text-base-content text-sm font-medium">mit Fotos/Videos</div>
 									<div class="text-base-content/70 mt-1 text-xs">
 										{#if !loading && statistics}
-											{statistics.sightingsWithMedia.toLocaleString('de-DE')} freigegebene Sichtungen
+											{statistics.sightingsWithMedia.toLocaleString(zahlenLocale)} freigegebene Sichtungen
 											mit Medien dokumentiert
 										{:else}
 											durch Ihre Fotos wissenschaftlich dokumentiert
@@ -269,7 +275,7 @@
 									{#if loading}
 										<span class="loading loading-dots loading-sm"></span>
 									{:else}
-										{statistics?.deadAnimalsFound.toLocaleString('de-DE') ?? '–'}
+										{statistics?.deadAnimalsFound.toLocaleString(zahlenLocale) ?? '–'}
 									{/if}
 								</div>
 								<div class="text-base-content text-xs">

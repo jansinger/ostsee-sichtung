@@ -24,7 +24,8 @@
 	import { deleteFileDirect } from '$lib/utils';
 	import { formatFileSize } from '$lib/utils/file/fileSize';
 	import { getFileIcon } from '$lib/utils/file/fileType';
-	import { splitDateTime } from '$lib/utils/format/dateTime';
+	import { getLocale } from '$lib/paraglide/runtime';
+	import { resolveDisplayLocale, splitDateTime } from '$lib/utils/format/dateTime';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
 	import { isInBalticArea } from '$lib/utils/geo/checkBalticSea';
 	import { MediaFile } from '$lib/utils/media/MediaFile.svelte';
@@ -49,6 +50,10 @@
 
 	const logger = createLogger('DropzoneEnhanced');
 	let { form, touched, handleChange, mediaStore } = getFormContext();
+
+	// Aufnahmezeit folgt der Anzeigesprache statt hartcodiert 'de-DE', sonst
+	// bleibt sie unter /en deutsch formatiert.
+	const aufnahmeLocale = $derived(resolveDisplayLocale(getLocale()));
 
 	// Merkt sich die zuletzt aus EXIF in den Formularzustand übernommene
 	// Position (siehe `applyExifPosition`). Wird beim Entfernen des Fotos
@@ -709,7 +714,9 @@
 										<div class="mt-1">
 											<p class="text-base-content/60 flex items-center gap-1 text-xs">
 												<Icon icon="lucide:calendar" width="12" height="12" class="text-primary" />
-												{mediaFile.timestamp.toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })}
+												{mediaFile.timestamp.toLocaleString(aufnahmeLocale, {
+													timeZone: 'Europe/Berlin'
+												})}
 											</p>
 										</div>
 									{/if}
@@ -789,7 +796,7 @@
 							<div class="mt-3 text-center">
 								<p class="text-base-content/60 flex items-center justify-center gap-1 text-xs">
 									<Icon icon="lucide:calendar" width="12" height="12" class="text-primary" />
-									Aufnahmezeit: {positionMediaFile.timestamp.toLocaleString('de-DE', {
+									Aufnahmezeit: {positionMediaFile.timestamp.toLocaleString(aufnahmeLocale, {
 										timeZone: 'Europe/Berlin'
 									})}
 								</p>
@@ -922,7 +929,7 @@
 						<div class="mt-3 text-center">
 							<p class="text-base-content/60 flex items-center justify-center gap-1 text-xs">
 								<Icon icon="lucide:calendar" width="12" height="12" class="text-primary" />
-								Aufnahmezeit: {positionMediaFile.timestamp.toLocaleString('de-DE', {
+								Aufnahmezeit: {positionMediaFile.timestamp.toLocaleString(aufnahmeLocale, {
 									timeZone: 'Europe/Berlin'
 								})}
 							</p>
