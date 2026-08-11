@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import {
 	formatEntryDate,
 	isSightingVisible,
@@ -218,5 +218,31 @@ describe('formatEntryDate', () => {
 		const ts = Date.UTC(2024, 11, 31, 23, 30, 0) / 1000;
 
 		expect(formatEntryDate(ts)).toMatch(/^1\.0?1\.2025$/);
+	});
+
+	describe('Locale-Umschaltung (resolveDisplayLocale)', () => {
+		afterEach(async () => {
+			// overwriteGetLocale() überschreibt die Modul-Funktion dauerhaft ohne
+			// eingebauten Reset — auf den echten Default zurückschalten, damit
+			// andere Tests im selben Prozess nicht die englische Locale erben.
+			const { overwriteGetLocale, baseLocale } = await import('$lib/paraglide/runtime');
+			overwriteGetLocale(() => baseLocale);
+		});
+
+		it('formatiert deutsch (TT.MM.JJJJ), wenn die aktive Locale de ist', async () => {
+			const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
+			overwriteGetLocale(() => 'de');
+			const ts = Date.UTC(2025, 5, 15, 12, 0, 0) / 1000;
+
+			expect(formatEntryDate(ts)).toMatch(/^15\.0?6\.2025$/);
+		});
+
+		it('formatiert britisch (TT/MM/JJJJ), wenn die aktive Locale en ist', async () => {
+			const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
+			overwriteGetLocale(() => 'en');
+			const ts = Date.UTC(2025, 5, 15, 12, 0, 0) / 1000;
+
+			expect(formatEntryDate(ts)).toBe('15/06/2025');
+		});
 	});
 });

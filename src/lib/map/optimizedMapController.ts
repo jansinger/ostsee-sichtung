@@ -1,4 +1,6 @@
 import { createLogger } from '$lib/logger';
+import { getLocale } from '$lib/paraglide/runtime';
+import { resolveDisplayLocale } from '$lib/utils/format/dateTime';
 import { Feature, Geolocation, Map, Overlay, View } from 'ol';
 import type { Control } from 'ol/control';
 import { defaults as defaultControls } from 'ol/control';
@@ -1006,16 +1008,23 @@ export class SichtungenMap {
 		const timeEndElement = document.getElementById('time-end');
 
 		// M5: timeZone explizit setzen, sonst bestimmt die Browser-Zone das Datum.
+		// Locale kommt aus resolveDisplayLocale, nicht aus einem hartcodierten
+		// Sprach-Tag, sonst bleibt die Anzeige unter /en deutsch formatiert.
+		const displayLocale = resolveDisplayLocale(getLocale());
+
 		if (timeStartElement) {
-			timeStartElement.innerText = new Date(this.timeFilter.lower).toLocaleDateString('de-DE', {
-				day: '2-digit',
-				month: '2-digit',
-				timeZone: 'Europe/Berlin'
-			});
+			timeStartElement.innerText = new Date(this.timeFilter.lower).toLocaleDateString(
+				displayLocale,
+				{
+					day: '2-digit',
+					month: '2-digit',
+					timeZone: 'Europe/Berlin'
+				}
+			);
 		}
 
 		if (timeEndElement) {
-			timeEndElement.innerText = new Date(this.timeFilter.upper).toLocaleDateString('de-DE', {
+			timeEndElement.innerText = new Date(this.timeFilter.upper).toLocaleDateString(displayLocale, {
 				day: '2-digit',
 				month: '2-digit',
 				timeZone: 'Europe/Berlin'

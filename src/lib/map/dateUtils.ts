@@ -1,3 +1,6 @@
+import { getLocale } from '$lib/paraglide/runtime';
+import { resolveDisplayLocale } from '$lib/utils/format/dateTime';
+
 /**
  * Gibt die Anzahl der Tage in einem Jahr zurück (365 oder 366 bei Schaltjahr).
  */
@@ -30,11 +33,11 @@ export function isoDateFromDayOfYear(year: number, dayIndex: number): string {
 }
 
 /**
- * Lesbares deutsches Datum („6. Juli") eines 0-basierten Tag-Index —
- * für aria-valuetext der Slider-Griffe (M10).
+ * Lesbares lokalisiertes Datum („6. Juli" / „6 July") eines 0-basierten
+ * Tag-Index — für aria-valuetext der Slider-Griffe (M10).
  */
 export function formatDayOfYearLong(year: number, dayIndex: number): string {
-	return dateFromDayOfYear(year, dayIndex).toLocaleDateString('de-DE', {
+	return dateFromDayOfYear(year, dayIndex).toLocaleDateString(resolveDisplayLocale(getLocale()), {
 		day: 'numeric',
 		month: 'long'
 	});
