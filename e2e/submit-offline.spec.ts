@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { expectCurrentStep, fillStep1, fillStep2, fillStep4 } from './helpers/form-helpers';
+import { expectNoHorizontalOverflow } from './helpers/overflow';
 import { FormPage } from './pages/FormPage';
 
 /**
@@ -93,8 +94,39 @@ test.describe('Absenden ohne Internetverbindung', () => {
 
 		expect(layout).not.toBeNull();
 		expect(layout!.badgeVisible).toBe(false);
-		// Menü (Desktop) + Dropdown (Mobil) — kein drittes, leeres Flex-Item.
-		expect(layout!.inFlowChildren).toBe(2);
+		// Sprachumschalter + Menü (Desktop) + Dropdown (Mobil) — kein viertes,
+		// leeres Flex-Item. Der Sprachumschalter (`LanguageSwitcher.svelte`, seit
+		// Task 9) ist bewusst ein drittes dauerhaftes Flex-Item, kein Rest: Er
+		// blendet sich nur auf ausgeschlossenen Routen aus, auf `/` nicht.
+		expect(layout!.inFlowChildren).toBe(3);
+	});
+
+	/**
+	 * Regression: Der Sprachumschalter (Task 9) und das Offline-Abzeichen
+	 * konkurrieren beide um Platz in `.navbar-end`. Gemessen (2026-08-10) lief
+	 * die Navbar bei 320px — der schmalsten unterstützten Breite
+	 * (`horizontal-overflow.spec.ts`) — nur dann über, wenn BEIDE gleichzeitig
+	 * sichtbar waren: 231px Inhalt gegen 320px verfügbare Breite, davon 74px der
+	 * Sprachumschalter. Ohne ihn (157px) oder bei ≥360px (auch mit ihm) trat kein
+	 * Überlauf auf. Die Behebung blendet den Umschalter deshalb aus, solange
+	 * `connection.isOffline` gilt — dieselbe Bedingung, unter der das Abzeichen
+	 * erscheint, sodass sich beide nie gleichzeitig um den Platz streiten.
+	 */
+	test('Sprachumschalter und Offline-Abzeichen laufen bei 320px nicht über', async ({
+		page,
+		context
+	}) => {
+		await page.setViewportSize({ width: 320, height: 800 });
+		const formPage = new FormPage(page);
+		await formPage.goto();
+
+		await context.setOffline(true);
+		// Zwei Instanzen sind offline gleichzeitig im DOM (Navbar + ortsfester
+		// Schritt-Balken, siehe `ConnectionBadge.svelte`) — hier zählt die in der
+		// Navbar, weil genau die mit dem Sprachumschalter um Platz konkurriert.
+		await expect(page.locator('header [data-testid="connection-badge-offline"]')).toBeVisible();
+
+		await expectNoHorizontalOverflow(page, '320px · Navbar offline mit Sprachumschalter');
 	});
 
 	test('gibt das Absenden wieder frei, sobald die Verbindung zurück ist', async ({

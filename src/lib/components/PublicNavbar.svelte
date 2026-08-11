@@ -5,6 +5,7 @@
 
 	import { ADMIN_BEREICHE, istAdminPfad } from '$lib/config/adminNav';
 	import { localizeHref } from '$lib/paraglide/runtime';
+	import { connection } from '$lib/stores/connectionState.svelte';
 	import type { PublicUser } from '$lib/types/User';
 	import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
 	import LanguageSwitcher from './LanguageSwitcher.svelte';
@@ -122,8 +123,19 @@
 						meeresmuseum.de ebenso unsichtbar — dort liefert die Einbettung
 						der Elternseite die Sprache. Details zur Begründung und den
 						Ausschlussrouten stehen in `LanguageSwitcher.svelte`.
+
+						Zusätzlich ausgeblendet, solange `connection.isOffline` gilt:
+						Gemessen (2026-08-10) lief die Navbar bei 320px — der schmalsten
+						unterstützten Breite — nur dann über, wenn Umschalter UND
+						Offline-Abzeichen gleichzeitig sichtbar waren (231px Inhalt gegen
+						320px verfügbare Breite). Beide teilen sich dieselbe Bedingung,
+						konkurrieren also nie um denselben Platz. Die Sprache lässt sich in
+						diesem Zustand ohnehin nicht wechseln — `data-sveltekit-reload`
+						verlangt einen echten Seitenaufruf, den es offline nicht gibt.
 					-->
-					<LanguageSwitcher />
+					{#if !connection.isOffline}
+						<LanguageSwitcher />
+					{/if}
 
 					<!-- Desktop menu -->
 					<div class="hidden lg:flex lg:items-center lg:gap-4">
