@@ -120,6 +120,27 @@ Belegt: `statisticsFormat.ts`/`activityHeatmap.ts` haben genau einen Importer,
 `requireUserRole` (`admin/+layout.server.ts`). `about/+page.svelte` folgt jetzt
 `resolveDisplayLocale(getLocale())` statt fest `'de-DE'`.
 
+> **Korrektur (2026-08-11, Etappe-2-Nacharbeit).** Dieser Schritt hatte
+> `about/+page.svelte` faktisch als einzige öffentlich sichtbare
+> Formatierungsstelle behandelt — das war falsch, und die eigentliche Messung
+> war zu kurz. Ein **Review**, nicht die ursprüngliche Erhebung, fand neun
+> weitere hartcodierte `'de-DE'`-Stellen auf öffentlichen Flächen (Karte,
+> Meldeformular):
+>
+> - `src/lib/map/optimizedMapController.ts:1010`, `:1018`
+> - `src/lib/map/listViewUtils.ts:108`
+> - `src/lib/map/dateUtils.ts:37`
+> - `src/lib/map/popupContent.ts:29`
+> - `src/lib/report/components/FormHelp.svelte:98`, `:228`, `:249`, `:272`
+> - `src/lib/report/components/form/fields/DropzoneEnhanced.svelte:712`,
+>   `:792`, `:925`
+>
+> Alle neun sind inzwischen auf `resolveDisplayLocale(getLocale())`
+> umgestellt (Etappe-2-Nacharbeit) und durch
+> `src/lib/i18n/hardcodedDisplayLocaleScan.test.ts` als Guard abgesichert —
+> ein Rückfall auf ein hartcodiertes Sprach-Tag in einem `Intl`-/`toLocale*`-
+> Aufruf im öffentlichen Code wird jetzt rot statt unbemerkt zu bleiben.
+
 - [x] **Schritt 5: Nachweise**
 
 - Beide Richtungen: unter `de` deutsches Format, unter `en` britisches. Positiv
