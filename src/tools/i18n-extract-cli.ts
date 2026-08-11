@@ -44,8 +44,11 @@ function readCatalogue(root: string, relativePath: string): Record<string, strin
 	return JSON.parse(raw) as Record<string, string>;
 }
 
-function formatConflict(c: { key: string; existingValue: string; incomingValue: string }): string {
-	return `  - ${c.key}: vorhanden "${c.existingValue}" ≠ neu "${c.incomingValue}"`;
+function formatConflict(
+	file: string,
+	c: { key: string; existingValue: string; incomingValue: string }
+): string {
+	return `  - ${file} ${c.key}: vorhanden "${c.existingValue}" ≠ neu "${c.incomingValue}"`;
 }
 
 /**
@@ -70,7 +73,14 @@ export function writeMessageCatalogue(
 	// Mechanik, nicht die Übersetzung.
 	const en = mergeMessageCatalogue(existingEn, incoming);
 
-	const conflictLines = [...de.conflicts, ...en.conflicts].map(formatConflict);
+	// Befund B: je Konfliktzeile die Quelldatei nennen — sonst mischt der
+	// Bericht Konflikte aus de.json und en.json in eine flache Liste, und man
+	// muss beide Dateien von Hand durchsuchen, um herauszufinden, wo welcher
+	// Konflikt herkommt.
+	const conflictLines = [
+		...de.conflicts.map((c) => formatConflict(DE_MESSAGES_PATH, c)),
+		...en.conflicts.map((c) => formatConflict(EN_MESSAGES_PATH, c))
+	];
 	if (conflictLines.length > 0) {
 		return { written: false, conflicts: conflictLines };
 	}

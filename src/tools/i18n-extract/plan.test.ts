@@ -135,4 +135,26 @@ describe('mergeMessageCatalogue', () => {
 		);
 		expect(Object.keys(merged)).toEqual(['$schema', 'sighting_aaa', 'sighting_zzz']);
 	});
+
+	// Befund A: `localeCompare` ohne gebundenes Locale hängt vom Default-Locale
+	// und ICU-Build der Node-Umgebung ab. Belegt an genau diesem Schlüsselpaar:
+	// `formoptions_distance_from_10_to_50m` sortiert per `localeCompare` VOR
+	// `formoptions_distance_from_101_to_500m` — keine Codepoint-Ordnung, denn an
+	// der ersten abweichenden Stelle steht `_` (0x5F) gegen `1` (0x31), und `1`
+	// ist der kleinere Codepoint. Ein Rückbau auf `localeCompare` macht diesen
+	// Test rot, ohne dass sich am Inhalt der Katalog-Datei etwas ändert.
+	it('sortiert nach Codepoint statt nach lokalisiertem Vergleich', () => {
+		const { merged } = mergeMessageCatalogue(
+			{ $schema: 'x' },
+			{
+				formoptions_distance_from_10_to_50m: '10 bis 50 Meter',
+				formoptions_distance_from_101_to_500m: '101 bis 500 Meter'
+			}
+		);
+		expect(Object.keys(merged)).toEqual([
+			'$schema',
+			'formoptions_distance_from_101_to_500m',
+			'formoptions_distance_from_10_to_50m'
+		]);
+	});
 });

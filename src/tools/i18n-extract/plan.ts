@@ -125,6 +125,18 @@ export function mergeMessageCatalogue(
 	return { merged: sortByKey(merged), conflicts };
 }
 
+/**
+ * Sortiert nach Codepoint, nicht nach lokalisiertem Vergleich.
+ *
+ * `localeCompare` ohne gebundenes Locale hängt vom Default-Locale und
+ * ICU-Build der ausführenden Node-Umgebung ab — derselbe Lauf kann auf zwei
+ * Maschinen zwei verschiedene Schlüsselreihenfolgen in `messages/*.json`
+ * erzeugen, ohne dass sich der Inhalt ändert (Befund A). Der einfache
+ * `<`/`>`-Vergleich auf Strings vergleicht UTF-16-Codeeinheiten und ist damit
+ * überall deterministisch gleich.
+ */
 function sortByKey(record: Record<string, string>): Record<string, string> {
-	return Object.fromEntries(Object.entries(record).sort(([a], [b]) => a.localeCompare(b)));
+	return Object.fromEntries(
+		Object.entries(record).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+	);
 }

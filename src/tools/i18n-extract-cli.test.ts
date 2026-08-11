@@ -180,4 +180,23 @@ describe('writeMessageCatalogue', () => {
 		expect(result.conflicts.length).toBeGreaterThan(0);
 		expect(readFileSync(join(root, 'messages/en.json'), 'utf-8')).toBe(enBefore);
 	});
+
+	// Befund B: Bricht der Lauf wegen Konflikten in BEIDEN Dateien ab, mischte
+	// die Meldung Konflikte aus de.json und en.json bisher in eine flache Liste
+	// ohne Quellangabe — man musste beide Dateien von Hand durchsuchen. Jede
+	// Konfliktzeile nennt jetzt die Datei, aus der sie stammt.
+	it('nennt bei Konflikten in beiden Dateien je Zeile die Quelldatei', () => {
+		const root = tempRootWithCatalogues(
+			{ $schema: 'x', sighting_waterway_label: 'Woanders?' },
+			{ $schema: 'x', sighting_waterway_label: 'Where approximately?' }
+		);
+		roots.push(root);
+
+		const result = writeMessageCatalogue(root, samplePlan);
+
+		expect(result.written).toBe(false);
+		expect(result.conflicts).toHaveLength(2);
+		expect(result.conflicts.some((line) => line.includes('messages/de.json'))).toBe(true);
+		expect(result.conflicts.some((line) => line.includes('messages/en.json'))).toBe(true);
+	});
 });
