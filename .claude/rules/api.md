@@ -117,10 +117,11 @@ Datenschutz und Aufbewahrung sind am Tabellen-Docblock in
 ### 100% Kompatibilität erforderlich
 
 Die Legacy API MUSS exakt mit der Original-Spezifikation übereinstimmen.
-Stand 2026-07-30 ist ein Client angebunden: die iOS-App `OstSeeTiere/8` sendet
-über `POST /rest_sichtungen`. Eine Abweichung bricht damit etwas Laufendes und
-kostet echte Daten. Einordnung und Umgang mit offensichtlichen Fehlern:
-`.claude/rules/legacy-api.md`.
+Stand 2026-08-11 sind **drei** Clients angebunden: `OstSeeTiere/8` (iOS),
+`okhttp/3.10.0` (Android) und `OstSeeTiere/6` (ältere iOS-Fassung). Alle drei
+senden über `POST /rest_sichtungen`. Eine Abweichung bricht damit etwas
+Laufendes und kostet echte Daten — zwei der drei sind nicht testbar. Zahlen,
+Herleitung und Umgang mit offensichtlichen Fehlern: `.claude/rules/legacy-api.md`.
 
 **Referenz:** docs/LEGACY_API_SPECIFICATION.md
 
