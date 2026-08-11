@@ -193,4 +193,20 @@ describe('collectFormOptionsSites', () => {
 		);
 		expect(result.sites).toEqual([]);
 	});
+
+	// Anders als der Test darüber HAT diese Deklaration eine Typannotation —
+	// `decl.type !== undefined` lässt sie also durch. Erst das zweite
+	// Typargument (`IconName`, nicht `string`) darf sie stoppen. Nur so wird
+	// die StringKeyword-Prüfung in isStringRecordDeclaration überhaupt erreicht;
+	// der Nachbartest mit `speciesGroups` scheitert schon an der ersten Prüfung.
+	it('lässt Records mit Annotation, aber nicht-string-wertigem Typargument unangetastet', () => {
+		const result = collectFormOptionsSites(
+			`export const speciesIcons: Record<SpeciesEnum, IconName> = {
+				[SpeciesEnum.HARBOR_PORPOISE]: 'custom:porpoise'
+			};`,
+			'src/lib/report/formOptions/species.ts',
+			createKeyRegistry()
+		);
+		expect(result.sites).toEqual([]);
+	});
 });
