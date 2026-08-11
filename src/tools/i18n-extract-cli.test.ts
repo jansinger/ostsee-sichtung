@@ -20,7 +20,20 @@ function fakeFs(): ExtractFileSystem {
 }
 
 describe('planExtraction', () => {
-	it('plant Schema und formOptions gemeinsam, mit gemeinsamem Schlüsselregister', () => {
+	// Befund C: Der Testname behauptete ein "gemeinsames Schlüsselregister", aber
+	// die Assertion prüft nur Eindeutigkeit — und beim aktuellen Schlüsselschema
+	// ist ein gemeinsames Register dafür gar nicht nötig: Schema-Schlüssel
+	// beginnen immer mit `sighting_`, formOptions-Schlüssel immer mit
+	// `formoptions_`, die beiden Präfixe können nie kollidieren. Ein Test mit
+	// getrennten Registern (je eines pro Quelle) wäre hier ebenso grün.
+	//
+	// Geführt wird das gemeinsame Register trotzdem — siehe die Begründung in
+	// planExtraction (i18n-extract-cli.ts): Getrennte Register ließen den
+	// Kollisionszähler (`_2`, `_3`, …) je Quelle bei 1 neu anfangen, sobald die
+	// Präfixe sich einmal ändern oder überschneiden. Das ist eine
+	// Zukunftsabsicherung, keine heute beobachtbare Eigenschaft — der Testname
+	// darf deshalb nicht mehr behaupten, als hier geprüft wird.
+	it('plant Schema und formOptions gemeinsam und liefert über beide Dateien hinweg eindeutige Schlüssel', () => {
 		const plan = planExtraction('/repo', fakeFs());
 		const keys = plan.files.flatMap((f) => f.sites.map((s) => s.key));
 		expect(keys).toEqual(['sighting_waterway_label', 'formoptions_sex_female']);
