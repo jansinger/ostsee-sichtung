@@ -80,7 +80,7 @@ export function getSexLabel(
 
 	const numericValue = typeof value === 'string' ? parseInt(value, 10) : value;
 	const labels = sexLabelsFor(locale);
-	return labels[numericValue as SexEnum] || m.formoptions_sex_unknown({}, { locale });
+	return labels[numericValue as SexEnum] || m.formoptions_sex_invalid({}, { locale });
 }
 
 /**
