@@ -77,3 +77,54 @@ export function planExtraction(
 
 	return { files, skipped };
 }
+
+/** Alle Fundstellen des Plans zu einem Botschaftskatalog zusammengefasst, alphabetisch sortiert. */
+export function collectMessages(plan: ExtractionPlan): Record<string, string> {
+	const messages: Record<string, string> = {};
+	for (const f of plan.files) {
+		for (const site of f.sites) {
+			messages[site.key] = site.text;
+		}
+	}
+	return sortByKey(messages);
+}
+
+export interface MessageConflict {
+	key: string;
+	existingValue: string;
+	incomingValue: string;
+}
+
+export interface MessageMergeResult {
+	merged: Record<string, string>;
+	conflicts: MessageConflict[];
+}
+
+/**
+ * Fügt einen neuen Katalog in einen bestehenden ein.
+ *
+ * Ein bestehender Schlüssel mit ABWEICHENDEM Wert wird nicht überschrieben,
+ * sondern als Konflikt gemeldet — sonst ginge eine bereits gepflegte
+ * Übersetzung (etwa in `messages/en.json`) beim nächsten Lauf still verloren.
+ * Gleicher Wert oder ein neuer Schlüssel sind kein Konflikt.
+ */
+export function mergeMessageCatalogue(
+	existing: Record<string, string>,
+	incoming: Record<string, string>
+): MessageMergeResult {
+	const conflicts: MessageConflict[] = [];
+	const merged: Record<string, string> = { ...existing };
+	for (const [key, value] of Object.entries(incoming)) {
+		const currentValue = merged[key];
+		if (currentValue !== undefined && currentValue !== value) {
+			conflicts.push({ key, existingValue: currentValue, incomingValue: value });
+			continue;
+		}
+		merged[key] = value;
+	}
+	return { merged: sortByKey(merged), conflicts };
+}
+
+function sortByKey(record: Record<string, string>): Record<string, string> {
+	return Object.fromEntries(Object.entries(record).sort(([a], [b]) => a.localeCompare(b)));
+}
