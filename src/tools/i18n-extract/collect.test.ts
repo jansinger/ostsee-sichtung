@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { collectSchemaSites } from './collect';
+import { collectFormOptionsSites, collectSchemaSites } from './collect';
 import { createKeyRegistry } from './messageKey';
 
 function collect(source: string) {
@@ -147,5 +147,50 @@ describe('collectSchemaSites', () => {
 				});
 			`)
 		).toThrow(/tooltipText/);
+	});
+});
+
+describe('collectFormOptionsSites', () => {
+	it('sammelt die Werte eines Record<Enum, string>', () => {
+		const result = collectFormOptionsSites(
+			`
+			export const speciesLabels: Record<SpeciesEnum, string> = {
+				[SpeciesEnum.HARBOR_PORPOISE]: 'Schweinswal',
+				[SpeciesEnum.GREY_SEAL]: 'Kegelrobbe'
+			};
+			`,
+			'src/lib/report/formOptions/species.ts',
+			createKeyRegistry()
+		);
+		expect(result.sites.map((s) => [s.key, s.text])).toEqual([
+			['formoptions_species_harbor_porpoise', 'Schweinswal'],
+			['formoptions_species_grey_seal', 'Kegelrobbe']
+		]);
+	});
+
+	// Diese beiden führt das Inventar als `technisch` — das MIME-Muster
+	// (i18n-inventory.ts:93) ist case-insensitiv und trifft jedes deutsche
+	// Wortpaar mit Schrägstrich. Die strukturelle Regel kennt die Ausnahme nicht:
+	// Was in einem Labels-Record steht, ist Anzeigetext.
+	it('sammelt auch Werte, die das Inventar für MIME-Typen hält', () => {
+		const result = collectFormOptionsSites(
+			`
+			export const mediaTypeLabels: Record<MediaTypeEnum, string> = {
+				[MediaTypeEnum.DRAWING]: 'Zeichnung/Skizze'
+			};
+			`,
+			'src/lib/report/formOptions/mediaType.ts',
+			createKeyRegistry()
+		);
+		expect(result.sites.map((s) => s.text)).toEqual(['Zeichnung/Skizze']);
+	});
+
+	it('lässt Records ohne Record<…, string>-Annotation unangetastet', () => {
+		const result = collectFormOptionsSites(
+			`export const speciesGroups = { Kleinwale: [0, 3] };`,
+			'src/lib/report/formOptions/species.ts',
+			createKeyRegistry()
+		);
+		expect(result.sites).toEqual([]);
 	});
 });

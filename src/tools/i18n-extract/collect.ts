@@ -13,7 +13,7 @@
  */
 import ts from 'typescript';
 import { checkValue, messageArgumentIndex, metaKeyDecision, type SkipReason } from './allowlist';
-import { resolveFieldName, schemaMessageKey } from './messageKey';
+import { formOptionsMessageKey, resolveFieldName, schemaMessageKey } from './messageKey';
 
 export interface ExtractionSite {
 	file: string;
@@ -276,4 +276,88 @@ export function collectSchemaSites(
 
 	skipped.sort((a, b) => a.line - b.line);
 	return { sites, skipped };
+}
+
+/**
+ * Sammelt die Werte der `export const xLabels: Record<Enum, string>`-Literale.
+ *
+ * Bewusst dasselbe strenge Muster wie `analyzeFormOptionsSource`
+ * (i18n-inventory.ts:518) — nicht mehr. Die drei Gruppennamen in `speciesGroups`
+ * sind Objekt-SCHLÜSSEL und zugleich Anzeigetext; sie brauchen eine Trennung von
+ * Schlüssel und Text, die ein Werkzeug nicht raten kann. Sie stehen deshalb in
+ * Entwurf Abschnitt 5 als benannte Handarbeit, nicht hier.
+ */
+export function collectFormOptionsSites(
+	source: string,
+	relativeFilePath: string,
+	taken: Set<string>
+): CollectResult {
+	const sourceFile = ts.createSourceFile(relativeFilePath, source, ts.ScriptTarget.Latest, true);
+	const sites: ExtractionSite[] = [];
+	const skipped: SkippedSite[] = [];
+	const fileBaseName = relativeFilePath.replace(/^.*[/\\]/, '').replace(/\.ts$/, '');
+
+	const visit = (node: ts.Node): void => {
+		if (ts.isVariableStatement(node)) {
+			for (const decl of node.declarationList.declarations) {
+				if (!isStringRecordDeclaration(decl, sourceFile) || !decl.initializer) {
+					continue;
+				}
+				if (!ts.isObjectLiteralExpression(decl.initializer)) {
+					continue;
+				}
+				const recordName = decl.name.getText(sourceFile);
+				for (const prop of decl.initializer.properties) {
+					if (!ts.isPropertyAssignment(prop) || !ts.isStringLiteralLike(prop.initializer)) {
+						continue;
+					}
+					const enumKey = ts.isComputedPropertyName(prop.name)
+						? prop.name.expression.getText(sourceFile)
+						: prop.name.getText(sourceFile);
+					const line =
+						sourceFile.getLineAndCharacterOfPosition(prop.initializer.getStart(sourceFile)).line +
+						1;
+					const check = checkValue(prop.initializer.text);
+					if (!check.ok) {
+						skipped.push({
+							file: relativeFilePath,
+							line,
+							text: prop.initializer.text,
+							aspect: `${recordName}[${enumKey}]`,
+							reason: check.reason,
+							explanation: check.explanation
+						});
+						continue;
+					}
+					sites.push({
+						file: relativeFilePath,
+						line,
+						start: prop.initializer.getStart(sourceFile),
+						end: prop.initializer.getEnd(),
+						text: prop.initializer.text,
+						key: formOptionsMessageKey(fileBaseName, enumKey, taken),
+						aspect: `${recordName}[${enumKey}]`,
+						field: recordName
+					});
+				}
+			}
+		}
+		ts.forEachChild(node, visit);
+	};
+
+	visit(sourceFile);
+	return { sites, skipped };
+}
+
+function isStringRecordDeclaration(
+	decl: ts.VariableDeclaration,
+	sourceFile: ts.SourceFile
+): boolean {
+	return (
+		decl.type !== undefined &&
+		ts.isTypeReferenceNode(decl.type) &&
+		decl.type.typeName.getText(sourceFile) === 'Record' &&
+		decl.type.typeArguments?.length === 2 &&
+		decl.type.typeArguments[1]?.kind === ts.SyntaxKind.StringKeyword
+	);
 }
