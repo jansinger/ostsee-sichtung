@@ -72,6 +72,11 @@ sbom/*.xml
 # Zwischenergebnisse der Ostsee-Geometrie-Pipeline (src/tools/build-baltic-geometry.sh)
 src/tools/out/
 
+# Erzeugter Bericht von src/tools/i18n-inventory.ts (npm run i18n:inventory) — altert
+# mit jedem Markup-Commit, deshalb regenerierbares Artefakt statt versionierter Stand.
+docs/i18n-inventory.json
+docs/i18n-inventory.md
+
 
 # Analysen mit Personen- und Compliance-Bezug gehören nicht in dieses
 # öffentliche Repository (siehe PR #676). Sie liegen außerhalb des Repos.
