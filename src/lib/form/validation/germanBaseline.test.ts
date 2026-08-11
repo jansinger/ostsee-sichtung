@@ -9,6 +9,7 @@ import { collectSchemaSites } from '../../../tools/i18n-extract/collect';
 import { createKeyRegistry } from '../../../tools/i18n-extract/messageKey';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import baseline from './germanBaseline.json';
 
 describe('collectSchemaShape', () => {
 	it('erfasst alle 56 Felder mit Beschriftung und meta', () => {
@@ -147,5 +148,25 @@ describe('collectValidationMessages', () => {
 		const harvested = new Set(await collectValidationMessages());
 		const stale = UNPROVOKABLE_MESSAGES.filter((text) => harvested.has(text));
 		expect(stale).toEqual([]);
+	});
+});
+
+describe('germanBaseline.json', () => {
+	// Bewusst KEIN toMatchSnapshot(): Vitest-Snapshots werden mit -u beiläufig
+	// überschrieben — ein vergessenes Review-Auge reicht dann, um eine
+	// Wortlaut-Änderung durchrutschen zu lassen. Eine eingecheckte JSON-Datei
+	// zwingt jede Änderung stattdessen in den `git diff` und damit ins Review.
+	// Das ist der eigentliche Zweck von Aufgabe i18n-t2 2.3: Extraktor und
+	// Validierungs-Batterie leiten beide live aus sightingSchema.ts ab und
+	// bewegen sich deshalb gemeinsam mit — nur ein eingefrorener, aus einem
+	// früheren Lauf stammender Wortlaut deckt eine Verschiebung auf.
+	it('hält Schema, Labels und Meldungen unverändert gegenüber dem eingecheckten Schnappschuss', async () => {
+		const current = {
+			schema: collectSchemaShape(),
+			labels: collectDomainLabels(),
+			messages: await collectValidationMessages()
+		};
+
+		expect(current).toEqual(baseline);
 	});
 });
