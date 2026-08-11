@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import type { MapTranslations } from './mapUtils';
 import {
 	createClusterInfoText,
@@ -87,6 +87,41 @@ describe('createSightingPopupContent', () => {
 		);
 		expect(html).not.toContain('<script>');
 		expect(html).toContain('Rinne');
+	});
+
+	/**
+	 * M10-Befund: `formatSightingDate` (intern in `popupContent.ts`) läuft seit
+	 * der Umstellung auf `resolveDisplayLocale(getLocale())` statt hartcodiertem
+	 * `'de-DE'` — bewiesen wird das über den tatsächlichen Datumstrenner (`.`
+	 * gegen `/`), nicht nur über die Existenz eines Datums. Muster wie
+	 * `dateUtils.test.ts`/`listViewUtils.test.ts`.
+	 */
+	describe('Locale-Umschaltung (resolveDisplayLocale)', () => {
+		afterEach(async () => {
+			// overwriteGetLocale() überschreibt die Modul-Funktion dauerhaft ohne
+			// eingebauten Reset — auf den echten Default zurückschalten, damit
+			// andere Tests im selben Prozess nicht die englische Locale erben.
+			const { overwriteGetLocale, baseLocale } = await import('$lib/paraglide/runtime');
+			overwriteGetLocale(() => baseLocale);
+		});
+
+		it('formatiert das Datum deutsch, wenn die aktive Locale de ist', async () => {
+			const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
+			overwriteGetLocale(() => 'de');
+
+			const html = createSightingPopupContent(baseProps, translations);
+
+			expect(html).toContain('12.05.2026');
+		});
+
+		it('formatiert das Datum britisch, wenn die aktive Locale en ist', async () => {
+			const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
+			overwriteGetLocale(() => 'en');
+
+			const html = createSightingPopupContent(baseProps, translations);
+
+			expect(html).toContain('12/05/2026');
+		});
 	});
 });
 

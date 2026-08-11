@@ -53,6 +53,22 @@
 
 	// Aufnahmezeit folgt der Anzeigesprache statt hartcodiert 'de-DE', sonst
 	// bleibt sie unter /en deutsch formatiert.
+	//
+	// Verhaltenstest nur für die Aufrufstelle in der Medien-Listenkarte
+	// (`!isPositionStep`-Zweig, Multi-Datei-Modus) — `DropzoneEnhanced.svelte.test.ts`
+	// → „Aufnahmezeit folgt der Locale". Die beiden Aufrufstellen im
+	// Positions-Zweig unten (Karten-Ansicht und kompakte Bestätigungszeile)
+	// lesen dieselbe Variable und sind damit denselben Zusicherungen unterworfen,
+	// bleiben aber bewusst ungetestet: Ein `mediaFile.timestamp` im
+	// Positions-Zweig lässt den `$effect`, der EXIF-Zeiten ins Formular überträgt
+	// (`applyExifDateTime` unten), in der Test-Umgebung in eine Endlosschleife
+	// laufen (`effect_update_depth_exceeded`) — ein vorbestehendes Verhalten
+	// dieses Effekts, unabhängig von dieser Locale-Frage, das eine eigene
+	// Untersuchung braucht statt hier nebenbei „mitgefixt" zu werden. Ein
+	// Rückfall auf hartcodiertes `'de-DE'` fiele trotzdem auf: über
+	// `hardcodedDisplayLocaleScan.test.ts` (Literal-Scan) und weil ein Fehler in
+	// dieser einen Variablen alle drei Aufrufstellen gleichzeitig träfe — die
+	// erste Stelle bleibt der Kanarienvogel für die anderen beiden.
 	const aufnahmeLocale = $derived(resolveDisplayLocale(getLocale()));
 
 	// Merkt sich die zuletzt aus EXIF in den Formularzustand übernommene

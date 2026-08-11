@@ -1010,6 +1010,27 @@ export class SichtungenMap {
 		// M5: timeZone explizit setzen, sonst bestimmt die Browser-Zone das Datum.
 		// Locale kommt aus resolveDisplayLocale, nicht aus einem hartcodierten
 		// Sprach-Tag, sonst bleibt die Anzeige unter /en deutsch formatiert.
+		//
+		// Bewusste Testlücke (i18n-Review, M10-Befund): `SichtungenMap` instanziiert
+		// im Konstruktor echte OpenLayers-Map/View/Layer/Canvas-Objekte und braucht
+		// dafür ein reales DOM + WebGL — deshalb ist diese Datei explizit aus der
+		// Coverage ausgenommen (`vitest.config.ts`, Kommentar „need real
+		// DOM+WebGL") und liegt außerhalb des node-`server`-Projekts. Das
+		// `client`-Browser-Projekt wiederum sammelt nur `*.svelte.{test,spec}.ts`
+		// ein — eine `.test.ts`-Datei für eine reine `.ts`-Klasse würde dort nicht
+		// laufen. Ein Test für genau diese zwei Zeilen wäre also entweder eine
+		// künstlich aufgebohrte Browser-Testdatei nur für dieses eine Feld, oder
+		// er müsste `SichtungenMap` durch einen DOM/WebGL-Mock genug vortäuschen,
+		// dass am Ende nicht mehr die echte Klasse getestet würde.
+		//
+		// Ein Rückfall auf hartcodiertes `'de-DE'` fällt trotzdem auf:
+		// `hardcodedDisplayLocaleScan.test.ts` meldet das Literal, und
+		// `resolveDisplayLocale`/`getLocale` selbst sind über
+		// `dateUtils.test.ts`/`popupContent.test.ts`/`listViewUtils.test.ts`
+		// mit echten `de`/`en`-Zusicherungen abgedeckt — nur die Verdrahtung
+		// genau hier (wird das Ergebnis tatsächlich durchgereicht?) bleibt
+		// ungetestet. E2E-Abdeckung für `/map` unter `?lang=en` wäre der nächste
+		// Schritt, sobald die Karten-Tests eine Sprachumschaltung kennen.
 		const displayLocale = resolveDisplayLocale(getLocale());
 
 		if (timeStartElement) {
