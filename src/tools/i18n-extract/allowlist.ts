@@ -55,7 +55,12 @@ const META_DENY_REASONS: Record<string, string> = {
 	step: 'meta.step ist eine Zahlenschrittweite'
 };
 
-export const NON_TRANSLATABLE_META_KEYS = Object.keys(META_DENY_REASONS) as ReadonlyArray<string>;
+// Befund F: Es gab hier eine `NON_TRANSLATABLE_META_KEYS`-Konstante
+// (Object.keys(META_DENY_REASONS)), die außer dem eigenen Test niemand
+// benutzte. Entfernt statt exportiert zu lassen — META_DENY_REASONS ist die
+// einzige Quelle der Wahrheit, ein zweiter abgeleiteter Export war
+// redundant. Der Test prüft die Überschneidungsfreiheit mit
+// TRANSLATABLE_META_KEYS jetzt über das Verhalten von metaKeyDecision.
 
 export function metaKeyDecision(key: string): MetaDecision {
 	if ((TRANSLATABLE_META_KEYS as readonly string[]).includes(key)) {

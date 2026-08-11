@@ -3,7 +3,6 @@ import {
 	checkValue,
 	messageArgumentIndex,
 	metaKeyDecision,
-	NON_TRANSLATABLE_META_KEYS,
 	TRANSLATABLE_META_KEYS
 } from './allowlist';
 
@@ -39,9 +38,20 @@ describe('metaKeyDecision', () => {
 		});
 	});
 
+	// Befund F: NON_TRANSLATABLE_META_KEYS wurde entfernt (toter Export, siehe
+	// allowlist.ts) — die Überschneidungsfreiheit wird jetzt über das
+	// beobachtbare Verhalten geprüft: Kein sprachlicher Schlüssel darf als
+	// 'skip' entschieden werden, kein verweigerter Schlüssel als 'extract'.
 	it('führt die beiden Listen überschneidungsfrei', () => {
+		const deniedKeys = ['type', 'icon', 'options', 'autocomplete', 'step'];
+		for (const key of TRANSLATABLE_META_KEYS) {
+			expect(metaKeyDecision(key).kind, `${key} sollte extrahiert werden`).toBe('extract');
+		}
+		for (const key of deniedKeys) {
+			expect(metaKeyDecision(key).kind, `${key} sollte verweigert werden`).toBe('skip');
+		}
 		const overlap = TRANSLATABLE_META_KEYS.filter((k) =>
-			(NON_TRANSLATABLE_META_KEYS as readonly string[]).includes(k)
+			(deniedKeys as readonly string[]).includes(k)
 		);
 		expect(overlap).toEqual([]);
 	});
