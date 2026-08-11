@@ -11,8 +11,14 @@
  */
 import type { CustomSchemaMetadata, SchemaDescription } from 'yup';
 import { ValidationError } from 'yup';
-import { adminSightingSchema, sightingSchema } from './sightingSchema';
+import { getAdminSightingSchema, getSightingSchema } from './sightingSchema';
+import { baseLocale } from '$lib/paraglide/runtime';
 import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
+
+// Der deutsche Schnappschuss ist bewusst an `baseLocale` festgenagelt — er
+// friert genau den deutschen Wortlaut ein, nicht "die gerade aktive Locale".
+const sightingSchema = getSightingSchema(baseLocale);
+const adminSightingSchema = getAdminSightingSchema(baseLocale);
 
 import {
 	getAnimalBehaviorLabel,

@@ -7,7 +7,11 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { sightingSchema } from './sightingSchema';
+import { getSightingSchema } from './sightingSchema';
+
+// Testet weiterhin den deutschen Ist-Zustand (Default-Locale) — unveraendert
+// gegenueber der frueheren Modulkonstante.
+const sightingSchema = getSightingSchema();
 
 async function validates(formData: Record<string, unknown>): Promise<boolean> {
 	try {

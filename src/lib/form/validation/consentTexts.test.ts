@@ -12,7 +12,11 @@
  * Siehe docs/archive/MEDIENEINWILLIGUNG_ANALYSE_2026-07-28.md
  */
 import { describe, expect, it } from 'vitest';
-import { sightingSchema } from './sightingSchema';
+import { getSightingSchema } from './sightingSchema';
+
+// Testet weiterhin den deutschen Ist-Zustand (Default-Locale) — unveraendert
+// gegenueber der frueheren Modulkonstante.
+const sightingSchema = getSightingSchema();
 
 type FieldMeta = { helpText?: string; valueText?: string };
 

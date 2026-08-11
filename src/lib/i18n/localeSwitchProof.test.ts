@@ -20,8 +20,10 @@
  * zusammen belegen einen echten Schalter statt eines toten Parameters.
  */
 import { describe, expect, it, vi } from 'vitest';
+import type * as yup from 'yup';
 import { getSpeciesLabel, getSpeciesOptions, SpeciesEnum } from '$lib/report/formOptions/species';
 import { getSeaStateLabel, SeaStateEnum } from '$lib/report/formOptions/seaState';
+import { getSightingSchema } from '$lib/form/validation/sightingSchema';
 
 const DIVERGED_EN_LABEL = 'TEST-ONLY-DIVERGED-ENGLISH-LABEL';
 
@@ -41,7 +43,10 @@ vi.mock('$lib/paraglide/messages', async (importOriginal) => {
 		formoptions_species_harbor_porpoise: divergeInEnglish(
 			actual.formoptions_species_harbor_porpoise
 		),
-		formoptions_seastate_smooth: divergeInEnglish(actual.formoptions_seastate_smooth)
+		formoptions_seastate_smooth: divergeInEnglish(actual.formoptions_seastate_smooth),
+		// Schicht A (Aufgabe 4.2): dieselbe Divergenz-Mechanik für eine
+		// Schema-Botschaft aus sightingSchema.ts.
+		sighting_latitude_label: divergeInEnglish(actual.sighting_latitude_label)
 	};
 });
 
@@ -69,5 +74,16 @@ describe('Sprachwechsel wirkt wirklich (positiver Gegenbeweis zu den Pinning-Tes
 
 		expect(porpoiseEn?.label).toBe(DIVERGED_EN_LABEL);
 		expect(porpoiseDe?.label).toBe('Schweinswal');
+	});
+
+	// Schicht A (Aufgabe 4.2): getSightingSchema(locale) baut das Yup-Schema
+	// je Locale — derselbe Gegenbeweis wie oben, jetzt für eine Schema-Botschaft
+	// statt eine formOptions-Botschaft.
+	it('getSightingSchema: liefert unter "en" die abweichende englische Schema-Botschaft, unter "de" weiterhin die deutsche', () => {
+		const latitudeEn = getSightingSchema('en').describe().fields.latitude as yup.SchemaDescription;
+		const latitudeDe = getSightingSchema('de').describe().fields.latitude as yup.SchemaDescription;
+
+		expect(latitudeEn.label).toBe(DIVERGED_EN_LABEL);
+		expect(latitudeDe.label).toBe('Breitengrad');
 	});
 });

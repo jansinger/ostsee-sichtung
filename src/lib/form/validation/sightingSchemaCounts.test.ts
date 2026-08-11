@@ -18,7 +18,12 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { adminSightingSchema, sightingSchema } from './sightingSchema';
+import { getAdminSightingSchema, getSightingSchema } from './sightingSchema';
+
+// Testet weiterhin den deutschen Ist-Zustand (Default-Locale) — unveraendert
+// gegenueber der frueheren Modulkonstante.
+const sightingSchema = getSightingSchema();
+const adminSightingSchema = getAdminSightingSchema();
 import { legacyApiSchema } from '$lib/legacy-api/yup-validation';
 
 /**
