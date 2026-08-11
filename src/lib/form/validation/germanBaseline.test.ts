@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { collectDomainLabels, collectSchemaShape } from './germanBaseline.testutil';
+import {
+	collectDomainLabels,
+	collectSchemaShape,
+	collectValidationMessages,
+	UNPROVOKABLE_MESSAGES
+} from './germanBaseline.testutil';
+import { collectSchemaSites } from '../../../tools/i18n-extract/collect';
+import { createKeyRegistry } from '../../../tools/i18n-extract/messageKey';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 describe('collectSchemaShape', () => {
 	it('erfasst alle 56 Felder mit Beschriftung und meta', () => {
@@ -80,5 +89,46 @@ describe('collectDomainLabels', () => {
 		// über `options` oder `fallbacks` — beide bleiben für diese Datei leer.
 		expect(speciesIdentification.options).toEqual([]);
 		expect(speciesIdentification.fallbacks).toBeNull();
+	});
+});
+
+/** Die Aspekte, unter denen der Extraktor eine Validierungsmeldung fuehrt. */
+const MESSAGE_ASPECTS = ['max', 'min', 'required', 'matches', 'oneOf', 'email', 'test'];
+
+describe('collectValidationMessages', () => {
+	it('provoziert jede Meldung mindestens einmal', async () => {
+		const harvested = await collectValidationMessages();
+		expect(harvested.length).toBeGreaterThan(0);
+		expect(new Set(harvested).size).toBe(harvested.length);
+	});
+
+	// Die Kreuzpruefung: Der Extraktor aus Aufgabe 1 weiss, WELCHE Meldungen im
+	// Quelltext stehen. Dieser Test haelt dagegen, welche davon im Betrieb
+	// ueberhaupt erscheinen koennen. Was in keiner der beiden Mengen fehlt, ist
+	// belegt; was nur der Extraktor kennt, ist toter Text oder eine Luecke in
+	// der Batterie — beides muss benannt sein, nicht uebergangen.
+	it('deckt jede vom Extraktor gefundene Validierungsmeldung ab', async () => {
+		const path = 'src/lib/form/validation/sightingSchema.ts';
+		const { sites } = collectSchemaSites(
+			readFileSync(resolve(process.cwd(), path), 'utf-8'),
+			path,
+			createKeyRegistry()
+		);
+		const inSource = sites.filter((s) => MESSAGE_ASPECTS.includes(s.aspect)).map((s) => s.text);
+
+		const harvested = new Set(await collectValidationMessages());
+		const missing = inSource.filter(
+			(text) => !harvested.has(text) && !UNPROVOKABLE_MESSAGES.includes(text)
+		);
+
+		expect(missing, `nicht provozierbar und nicht begründet: ${missing.join(' | ')}`).toEqual([]);
+	});
+
+	// Eine Ausnahmeliste ohne Pflege verrottet: Steht dort eine Meldung, die
+	// inzwischen provozierbar ist, verdeckt der Eintrag kuenftig eine echte Luecke.
+	it('führt keine Ausnahme, die inzwischen provozierbar ist', async () => {
+		const harvested = new Set(await collectValidationMessages());
+		const stale = UNPROVOKABLE_MESSAGES.filter((text) => harvested.has(text));
+		expect(stale).toEqual([]);
 	});
 });

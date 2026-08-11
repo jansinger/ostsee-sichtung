@@ -1,15 +1,18 @@
 /**
  * Sammelt den deutschen Ist-Zustand des Formular-Schemas und der
  * Domänen-Labels ein — Grundlage für den eingecheckten Schnappschuss
- * `germanBaseline.json` (Aufgabe i18n-t2 2.1).
+ * `germanBaseline.json` (Aufgabe i18n-t2 2.1) — sowie, seit 2.2, die
+ * Validierungsmeldungen, die `describe()` nicht auflöst (siehe
+ * `collectValidationMessages()` unten).
  *
- * Nicht Teil dieser Aufgabe: Validierungsmeldungen (kommen in 2.2 über
- * echtes Validieren dazu) und der große Bestimmungshilfe-Fließtext in
+ * Nicht Teil dieser Aufgabe: der große Bestimmungshilfe-Fließtext in
  * `speciesIdentification.ts` (Name/Beschreibung je Art) — das ist Fließtext,
  * keine Beschriftung/kein Label, und bläht den Schnappschuss unnötig auf.
  */
 import type { CustomSchemaMetadata, SchemaDescription } from 'yup';
-import { sightingSchema } from './sightingSchema';
+import { ValidationError } from 'yup';
+import { adminSightingSchema, sightingSchema } from './sightingSchema';
+import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
 
 import {
 	getAnimalBehaviorLabel,
@@ -308,3 +311,186 @@ export function collectDomainLabels(): DomainLabelSnapshot {
 	const sortedEntries = Object.entries(unsorted).sort(([a], [b]) => a.localeCompare(b));
 	return Object.fromEntries(sortedEntries) as DomainLabelSnapshot;
 }
+
+// -----------------------------------------------------------------------
+// Schicht C: Validierungsmeldungen (nur per echter Validierung erreichbar)
+// -----------------------------------------------------------------------
+
+/** Eine Yup-Nutzlast — bewusst locker typisiert, sie geht direkt in `schema.validate()`. */
+type ValidationPayload = Record<string, unknown>;
+
+type SchemaUnderTest = typeof sightingSchema | typeof adminSightingSchema;
+
+/**
+ * Ein durchgehend gültiger Grundzustand. Jedes Szenario unten überschreibt
+ * gezielt EIN bis ZWEI Felder mit einem verletzenden Wert — der Rest bleibt
+ * gültig, damit im gesammelten Fehler-Set nicht zufällig ein anderes
+ * Pflichtfeld mitrauscht und der Bezug zum eigentlichen Testziel des
+ * Szenarios lesbar bleibt.
+ */
+const VALID_BASE: ValidationPayload = {
+	privacyConsent: true,
+	firstName: 'Max',
+	lastName: 'Mustermann',
+	email: 'max@example.de',
+	species: 0,
+	totalCount: 1,
+	sightingFrom: SightingFromEnum.SAILBOAT,
+	distance: 1,
+	sightingDate: '2020-01-01',
+	entryChannel: 0,
+	waterway: 'Kieler Bucht'
+};
+
+/** Alle Meldungspositionen, die in `sightingSchema`/`adminSightingSchema` NICHT hinter einem when() stecken. */
+const FLAT_FIELD_SCENARIOS: ValidationPayload[] = [
+	// Komplett leere Eingabe: provoziert die schlichten Pflichtfelder, die in
+	// VALID_BASE sonst immer gültig mitlaufen (waterway, distance — beide über
+	// ihren jeweiligen when()-Normalzweig, siehe CONDITIONAL_BRANCH_SCENARIOS
+	// unten — sowie firstName/lastName/email/privacyConsent ohne when()).
+	{},
+	{ ...VALID_BASE, sightingDate: '' }, // required — .default() greift nur bei undefined, nicht bei ''
+	{ ...VALID_BASE, sightingDate: '2999-01-01' }, // Datum in der Zukunft
+	{ ...VALID_BASE, sightingTime: '99:99' },
+	{ ...VALID_BASE, species: undefined }, // required
+	{ ...VALID_BASE, species: 9999 }, // test: unbekannte Art
+	{ ...VALID_BASE, totalCount: null }, // required — .default(1) greift nur bei undefined
+	{ ...VALID_BASE, totalCount: 0 }, // min
+	{ ...VALID_BASE, totalCount: 99 }, // max
+	{ ...VALID_BASE, juvenileCount: -1 }, // min
+	{ ...VALID_BASE, juvenileCount: 20, totalCount: 1 }, // max
+	{ ...VALID_BASE, totalCount: 1, juvenileCount: 2 }, // test: mehr Jungtiere als Tiere insgesamt
+	{ ...VALID_BASE, deadSex: 9999 }, // test — kein when(), gilt unabhängig von isDead
+	{ ...VALID_BASE, deadSize: -1 }, // min
+	{ ...VALID_BASE, deadSize: 9999 }, // max
+	{ ...VALID_BASE, distance: 9999 }, // test
+	{ ...VALID_BASE, distribution: 9999 },
+	{ ...VALID_BASE, behavior: 9999 },
+	{ ...VALID_BASE, seaState: 9999 },
+	{ ...VALID_BASE, visibility: 9999 },
+	{ ...VALID_BASE, windDirection: 'ZZZ' }, // oneOf
+	{ ...VALID_BASE, windForce: -1 }, // min
+	{ ...VALID_BASE, windForce: 99 }, // max
+	{ ...VALID_BASE, shipCount: -1 }, // min
+	{ ...VALID_BASE, shipCount: 99 }, // max
+	{ ...VALID_BASE, email: 'not-an-email' }, // email
+	{ ...VALID_BASE, entryChannel: 9999 }, // test
+	{ ...VALID_BASE, entryChannel: null }, // required — .default(0) greift nur bei undefined
+	{
+		// Alle `.max(...)`-Freitextfelder in einem Lauf — jedes Feld einzeln zu
+		// überschreiten bräuchte ein eigenes Szenario, ohne dass sich am
+		// Provoziermuster (zu lange Zeichenkette) etwas unterschiede.
+		...VALID_BASE,
+		waterway: 'x'.repeat(300),
+		seaMark: 'x'.repeat(300),
+		distributionText: 'x'.repeat(300),
+		behaviorText: 'x'.repeat(300),
+		reaction: 'x'.repeat(1200),
+		mediaFile: 'x'.repeat(300),
+		shipName: 'x'.repeat(100),
+		homePort: 'x'.repeat(100),
+		boatType: 'x'.repeat(100),
+		boatDriveText: 'x'.repeat(300),
+		firstName: 'x'.repeat(100),
+		lastName: 'x'.repeat(100),
+		email: 'a@' + 'x'.repeat(100) + '.de',
+		fax: 'x'.repeat(100),
+		phone: 'x'.repeat(100),
+		street: 'x'.repeat(100),
+		zipCode: 'x'.repeat(20),
+		city: 'x'.repeat(100),
+		notes: 'x'.repeat(1200),
+		otherObservations: 'x'.repeat(1200),
+		internalComment: 'x'.repeat(1200)
+	}
+];
+
+/**
+ * Die when()-Zweige, die `describe()` nicht auflöst — je Bedingungspaar ein
+ * Szenario für beide Seiten, wie im Brief gefordert:
+ * `hasPosition` true/false, `isDead` true/false, `sightingFrom` an Land/auf
+ * See. (`waterway.required` bei `hasPosition: false` und `distance.required`
+ * bei `isDead: false` sind bereits die Standardwerte in `VALID_BASE` bzw. in
+ * den Szenarien oben und brauchen deshalb kein eigenes Szenario mehr — sie
+ * laufen in praktisch jedem Aufruf mit.)
+ */
+const CONDITIONAL_BRANCH_SCENARIOS: ValidationPayload[] = [
+	{ ...VALID_BASE, hasPosition: true }, // latitude/longitude required
+	{ ...VALID_BASE, hasPosition: true, latitude: 999, longitude: 999 }, // latitude/longitude min+max
+	{ ...VALID_BASE, isDead: true, distance: undefined }, // deadCondition required (distance wird notRequired)
+	{ ...VALID_BASE, isDead: true, deadCondition: 9999 }, // deadCondition test
+	{ ...VALID_BASE, sightingFrom: SightingFromEnum.OTHER }, // sightingFromText required
+	{ ...VALID_BASE, sightingFromText: 'x'.repeat(300) }, // sightingFromText max
+	{ ...VALID_BASE, sightingFrom: 9999 }, // sightingFrom test
+	{ ...VALID_BASE, sightingFrom: SightingFromEnum.SAILBOAT, boatDrive: undefined }, // "auf See": boatDrive required
+	{
+		...VALID_BASE,
+		sightingFrom: SightingFromEnum.LAND,
+		boatDrive: 9999,
+		waterway: 'Strandpromenade'
+	} // "an Land": boatDrive test, nicht required
+];
+
+/** Die drei Meldungen, die `adminSightingSchema` gegenüber der Basis lockert bzw. ersetzt. */
+const ADMIN_SCENARIOS: ValidationPayload[] = [
+	{ ...VALID_BASE, totalCount: -1 }, // min: 'Die Anzahl darf nicht negativ sein'
+	{ ...VALID_BASE, totalCount: 99999 }, // max: 'Bitte eine plausible Anzahl eintragen'
+	{ ...VALID_BASE, totalCount: 99999, juvenileCount: 99999 } // dasselbe max für juvenileCount
+];
+
+async function collectErrors(
+	schema: SchemaUnderTest,
+	payload: ValidationPayload
+): Promise<string[]> {
+	try {
+		await schema.validate(payload, { abortEarly: false });
+		return [];
+	} catch (error) {
+		if (error instanceof ValidationError) {
+			return error.errors;
+		}
+		throw error;
+	}
+}
+
+/**
+ * Provoziert eine gezielte Batterie ungültiger Eingaben gegen `sightingSchema`
+ * UND `adminSightingSchema` (`{ abortEarly: false }`) und sammelt die dabei
+ * tatsächlich ausgelösten deutschen Meldungen, sortiert und dublettenfrei.
+ *
+ * `describe()` kennt diese Texte nicht — `latitude.tests` ist z. B. leer,
+ * weil `min`/`max` in einem `when('hasPosition', …)` stecken, das erst beim
+ * echten Validieren mit konkreten Werten aufgelöst wird. Das ist der Kern
+ * von Aufgabe i18n-t2 2.2: 44 von 73 vom Extraktor gefundenen Meldungen
+ * ließen sich mit einer groben Batterie provozieren, die übrigen 29 stecken
+ * fast alle in genau solchen Zweigen.
+ */
+export async function collectValidationMessages(): Promise<string[]> {
+	const messages = new Set<string>();
+
+	for (const payload of [...FLAT_FIELD_SCENARIOS, ...CONDITIONAL_BRANCH_SCENARIOS]) {
+		for (const message of await collectErrors(sightingSchema, payload)) {
+			messages.add(message);
+		}
+	}
+	for (const payload of ADMIN_SCENARIOS) {
+		for (const message of await collectErrors(adminSightingSchema, payload)) {
+			messages.add(message);
+		}
+	}
+
+	return [...messages].sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * Meldungen, die der Extraktor im Quelltext von `sightingSchema.ts` findet,
+ * sich aber nachweislich nicht provozieren lassen — je Eintrag mit einer
+ * Begründung, WARUM (z. B. eine vorgelagerte Regel, die den Zweig nie
+ * durchlässt). Ein Eintrag hier ist ein Befund über die Anwendung, kein
+ * Verwaltungsakt (siehe Bericht i18n-t2 2.2).
+ *
+ * Aktuell leer: Jede der 73 vom Extraktor gefundenen Meldungen ließ sich in
+ * der Batterie oben mindestens einmal auslösen. Es gibt damit (Stand 2.2)
+ * keinen toten Meldungstext in `sightingSchema.ts`.
+ */
+export const UNPROVOKABLE_MESSAGES: readonly string[] = [];
