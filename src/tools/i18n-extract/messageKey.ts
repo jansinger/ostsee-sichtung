@@ -15,7 +15,7 @@
  * wird übersprungen, ohne dass diese Namen aufgezählt werden müssen.
  */
 import ts from 'typescript';
-import { slugify } from '../i18n-inventory';
+import { slugify } from './slugify';
 
 /**
  * Der Feldname zu einem Knoten, oder `undefined`, wenn er in keinem

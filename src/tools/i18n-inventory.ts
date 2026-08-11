@@ -40,6 +40,13 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { extname, relative, sep } from 'node:path';
 import { parse } from 'svelte/compiler';
 import ts from 'typescript';
+import { slugify } from './i18n-extract/slugify';
+
+// Reiner Re-Export: `slugify` lebt seit Befund D in `i18n-extract/slugify.ts`
+// (der neue Extraktor soll nicht an diesem 30-KB-Altwerkzeug hängen). Dieses
+// Modul importiert und exportiert es unverändert weiter, damit sein eigener
+// Test und seine CLI ohne Änderung laufen.
+export { slugify };
 
 /** Die drei Kategorien — `unklar` ist der sichere Default, nicht `uebersetzbar`. */
 export type Category = 'uebersetzbar' | 'technisch' | 'unklar';
@@ -270,31 +277,7 @@ export function classifyText(raw: string): { category: Category; reason: string 
 // ---------------------------------------------------------------------------
 // Schlüsselvorschläge
 // ---------------------------------------------------------------------------
-
-const UMLAUT_MAP: Record<string, string> = {
-	ä: 'ae',
-	ö: 'oe',
-	ü: 'ue',
-	ß: 'ss',
-	Ä: 'Ae',
-	Ö: 'Oe',
-	Ü: 'Ue'
-};
-
-function transliterate(input: string): string {
-	return input.replace(/[äöüßÄÖÜ]/g, (ch) => UMLAUT_MAP[ch] ?? ch);
-}
-
-/** Baut ein `lower_snake`-Segment aus beliebigem Text, auf maximal `maxLength` gekürzt. */
-export function slugify(input: string, maxLength = 40): string {
-	const transliterated = transliterate(input);
-	const slug = transliterated
-		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, '_')
-		.replace(/^_+|_+$/g, '')
-		.replace(/_+/g, '_');
-	return slug.slice(0, maxLength).replace(/_+$/g, '') || 'text';
-}
+// `slugify` ist ausgelagert — siehe Import und Re-Export oben.
 
 /** Baut ein Pfad-Präfix aus einem relativen Dateipfad, z.B. `report/form/UploadNotice`. */
 function pathPrefix(relativeFilePath: string): string {
