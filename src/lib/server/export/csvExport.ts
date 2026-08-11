@@ -20,6 +20,7 @@ import { getSeaStateLabel } from '$lib/report/formOptions/seaState';
 import { getSightingFromLabel } from '$lib/report/formOptions/sightingFrom';
 import { getSpeciesLabel } from '$lib/report/formOptions/species';
 import { getVisibilityLabel } from '$lib/report/formOptions/visibility';
+import { baseLocale } from '$lib/paraglide/runtime';
 import type { FrontendSighting } from '$lib/types/index';
 import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 import {
@@ -106,7 +107,14 @@ export function generateCsvData(sightings: FrontendSighting[]): string {
 		const time = formatLocalDateTime(sighting.sightingDate, 'time');
 
 		// Enum-Werte in lesbare Labels konvertieren
-		const speciesName = getSpeciesLabel(sighting.species);
+		// Tierart bewusst auf baseLocale ('de') gepinnt: laut
+		// docs/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md Abschnitt 6 bleiben
+		// Exportformate (CSV/XML/KML/JSON) deutsch — sie gehen an die
+		// Wissenschaft, stabile deutsche Kopfzeilen/Werte sind dort ein
+		// Merkmal. `getSpeciesLabel()` würde ohne diesen Parameter sonst die
+		// aktive Anfrage-Locale übernehmen, sobald echte englische Artnamen
+		// eingepflegt sind (heute maskiert das messages/en.json == de.json).
+		const speciesName = getSpeciesLabel(sighting.species, baseLocale);
 		const behaviorText = getAnimalBehaviorLabel(sighting.behavior);
 
 		// Datenschutz: Namen nur bei expliziter Einwilligung anzeigen

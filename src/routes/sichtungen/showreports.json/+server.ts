@@ -25,6 +25,7 @@ import {
 } from '$lib/legacy-api/date-utils.js';
 import { createLogger } from '$lib/logger.server';
 import { getSpeciesLabel } from '$lib/report/formOptions/species.js';
+import { baseLocale } from '$lib/paraglide/runtime';
 import { isAdminUser } from '$lib/server/auth/auth';
 import { db } from '$lib/server/db';
 import { approvedOnly } from '$lib/server/db/approvalFilter';
@@ -379,8 +380,15 @@ export async function GET(event: RequestEvent): Promise<Response> {
 			};
 
 			// Add species name (ta) - convert from enum to German label
+			//
+			// Locale bewusst auf baseLocale ('de') gepinnt: Legacy-API-Vertrag
+			// (CLAUDE.md, "Legacy REST API — 100 % Kompatibilität"; der iOS-Client
+			// OstSeeTiere/8 hängt live daran). Das /de/- bzw. /en/-Präfix, mit dem
+			// dieser Pfad laut .claude/rules/legacy-api.md zusätzlich erreichbar
+			// ist, ist Routenkosmetik, keine Übersetzung — die Antwort muss in
+			// jeder Variante identisch bleiben.
 			if (sighting.species !== null && sighting.species !== undefined) {
-				response.ta = getSpeciesLabel(sighting.species);
+				response.ta = getSpeciesLabel(sighting.species, baseLocale);
 			}
 
 			// Add death finding flag (tf) - convert boolean to 0/1

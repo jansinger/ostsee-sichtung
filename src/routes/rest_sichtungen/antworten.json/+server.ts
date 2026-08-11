@@ -28,6 +28,7 @@ import { VisibilityEnum, visibilityLabels } from '$lib/report/formOptions/visibi
 import { WindDirectionEnum, windDirectionLabels } from '$lib/report/formOptions/windDirection';
 import { WindStrengthEnum, windStrengthLabels } from '$lib/report/formOptions/windStrength';
 import { getClientIp } from '$lib/server/utils/getClientIp';
+import { baseLocale } from '$lib/paraglide/runtime';
 import { json, type RequestEvent } from '@sveltejs/kit';
 
 const logger = createLogger('api:legacy:antworten:pdf-compliant');
@@ -47,11 +48,22 @@ export async function GET(event: RequestEvent): Promise<Response> {
 		// Build response options in EXACT PDF format (value-label object format)
 		const responseOptions = {
 			// Species mapping (tierart) - Note: PDF shows 0-10 range
+			//
+			// Locale bewusst auf baseLocale ('de') gepinnt statt getSpeciesLabel()
+			// die aktive Anfrage-Locale wählen zu lassen: Dieser Endpunkt ist Teil
+			// der Legacy-API (CLAUDE.md, "Legacy REST API — 100 % Kompatibilität"),
+			// an die ein iOS-Client (OstSeeTiere/8) fest gebunden ist. Der
+			// Wertevertrag ist deutsch, unabhängig vom /de/- oder /en/-Präfix, mit
+			// dem dieser Pfad laut .claude/rules/legacy-api.md erreichbar ist —
+			// das Präfix ist Routenkosmetik, keine Übersetzung. messages/en.json
+			// trägt heute noch denselben deutschen Wortlaut wie de.json; sobald
+			// echte englische Artnamen eingepflegt werden, würde ein ungepinnter
+			// Aufruf hier sonst unbemerkt von der deutschen Antwort abweichen.
 			tierart: Object.entries(SpeciesEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.reduce(
 					(acc, [_key, value]) => {
-						acc[value.toString()] = getSpeciesLabel(value as SpeciesEnum);
+						acc[value.toString()] = getSpeciesLabel(value as SpeciesEnum, baseLocale);
 						return acc;
 					},
 					{} as Record<string, string>
