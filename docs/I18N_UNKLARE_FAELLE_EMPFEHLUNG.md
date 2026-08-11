@@ -45,46 +45,46 @@ bereits unter `technisch` einsortiert ist (Zeilen 1622–1627 der
 `i18n-inventory.md`). `email`/`tel` bei `email.meta.autocomplete` /
 `phone.meta.autocomplete` gehören konsistent dazu.
 
-| Datei:Zeile            | Feld (`context`)                  | Text       | Schlüssel (Vorschlag)                      |
-| ---------------------- | --------------------------------- | ---------- | ------------------------------------------ |
-| sightingSchema.ts:216  | `hasPosition.meta.type`           | `toggle`   | `sighting_hasposition_meta_type`           |
-| sightingSchema.ts:245  | `latitude.meta.type`              | `number`   | `sighting_latitude_meta_type`              |
-| sightingSchema.ts:270  | `longitude.meta.type`             | `number`   | `sighting_longitude_meta_type`             |
-| sightingSchema.ts:350  | `sightingDate.meta.type`          | `date`     | `sighting_sightingdate_meta_type`          |
-| sightingSchema.ts:371  | `sightingTime.meta.type`          | `time`     | `sighting_sightingtime_meta_type`          |
-| sightingSchema.ts:396  | `species.meta.type`               | `select`   | `sighting_species_meta_type`               |
-| sightingSchema.ts:503  | `deadCondition.meta.type`         | `select`   | `sighting_deadcondition_meta_type`         |
-| sightingSchema.ts:526  | `deadSex.meta.type`               | `select`   | `sighting_deadsex_meta_type`               |
-| sightingSchema.ts:601  | `sightingFrom.meta.type`          | `select`   | `sighting_sightingfrom_meta_type`          |
-| sightingSchema.ts:669  | `distance.meta.type`              | `select`   | `sighting_distance_meta_type`              |
-| sightingSchema.ts:690  | `distribution.meta.type`          | `select`   | `sighting_distribution_meta_type`          |
-| sightingSchema.ts:730  | `behavior.meta.type`              | `select`   | `sighting_behavior_meta_type`              |
-| sightingSchema.ts:798  | `seaState.meta.type`              | `select`   | `sighting_seastate_meta_type`              |
-| sightingSchema.ts:821  | `visibility.meta.type`            | `select`   | `sighting_visibility_meta_type`            |
-| sightingSchema.ts:842  | `windDirection.meta.type`         | `select`   | `sighting_winddirection_meta_type`         |
-| sightingSchema.ts:863  | `windForce.meta.type`             | `select`   | `sighting_windforce_meta_type`             |
-| sightingSchema.ts:880  | `weatherData.meta.type`           | `hidden`   | `sighting_weatherdata_meta_type`           |
-| sightingSchema.ts:1029 | `boatDrive.meta.type`             | `select`   | `sighting_boatdrive_meta_type`             |
-| sightingSchema.ts:1071 | `shipNameConsent.meta.type`       | `checkbox` | `sighting_shipnameconsent_meta_type`       |
-| sightingSchema.ts:1127 | `email.meta.type`                 | `email`    | `sighting_email_meta_type`                 |
-| sightingSchema.ts:1128 | `email.meta.autocomplete`         | `email`    | `sighting_email_meta_autocomplet`          |
-| sightingSchema.ts:1162 | `phone.meta.type`                 | `tel`      | `sighting_phone_meta_type`                 |
-| sightingSchema.ts:1163 | `phone.meta.autocomplete`         | `tel`      | `sighting_phone_meta_autocomplet`          |
-| sightingSchema.ts:1231 | `nameConsent.meta.type`           | `checkbox` | `sighting_nameconsent_meta_type`           |
-| sightingSchema.ts:1252 | `notes.meta.type`                 | `textarea` | `sighting_notes_meta_type`                 |
-| sightingSchema.ts:1283 | `privacyConsent.meta.type`        | `checkbox` | `sighting_privacyconsent_meta_type`        |
-| sightingSchema.ts:1298 | `persistentDataConsent.meta.type` | `checkbox` | `sighting_persistentdataconsent_meta_type` |
-| sightingSchema.ts:1329 | `internalComment.meta.type`       | `textarea` | `sighting_internalcomment_meta_type`       |
-| sightingSchema.ts:1345 | `entryChannel.meta.type`          | `select`   | `sighting_entrychannel_meta_type`          |
+| Datei:Zeile            | Feld (`context`)                  | Text       |
+| ---------------------- | --------------------------------- | ---------- |
+| sightingSchema.ts:216  | `hasPosition.meta.type`           | `toggle`   |
+| sightingSchema.ts:245  | `latitude.meta.type`              | `number`   |
+| sightingSchema.ts:270  | `longitude.meta.type`             | `number`   |
+| sightingSchema.ts:350  | `sightingDate.meta.type`          | `date`     |
+| sightingSchema.ts:371  | `sightingTime.meta.type`          | `time`     |
+| sightingSchema.ts:396  | `species.meta.type`               | `select`   |
+| sightingSchema.ts:503  | `deadCondition.meta.type`         | `select`   |
+| sightingSchema.ts:526  | `deadSex.meta.type`               | `select`   |
+| sightingSchema.ts:601  | `sightingFrom.meta.type`          | `select`   |
+| sightingSchema.ts:669  | `distance.meta.type`              | `select`   |
+| sightingSchema.ts:690  | `distribution.meta.type`          | `select`   |
+| sightingSchema.ts:730  | `behavior.meta.type`              | `select`   |
+| sightingSchema.ts:798  | `seaState.meta.type`              | `select`   |
+| sightingSchema.ts:821  | `visibility.meta.type`            | `select`   |
+| sightingSchema.ts:842  | `windDirection.meta.type`         | `select`   |
+| sightingSchema.ts:863  | `windForce.meta.type`             | `select`   |
+| sightingSchema.ts:880  | `weatherData.meta.type`           | `hidden`   |
+| sightingSchema.ts:1029 | `boatDrive.meta.type`             | `select`   |
+| sightingSchema.ts:1071 | `shipNameConsent.meta.type`       | `checkbox` |
+| sightingSchema.ts:1127 | `email.meta.type`                 | `email`    |
+| sightingSchema.ts:1128 | `email.meta.autocomplete`         | `email`    |
+| sightingSchema.ts:1162 | `phone.meta.type`                 | `tel`      |
+| sightingSchema.ts:1163 | `phone.meta.autocomplete`         | `tel`      |
+| sightingSchema.ts:1231 | `nameConsent.meta.type`           | `checkbox` |
+| sightingSchema.ts:1252 | `notes.meta.type`                 | `textarea` |
+| sightingSchema.ts:1283 | `privacyConsent.meta.type`        | `checkbox` |
+| sightingSchema.ts:1298 | `persistentDataConsent.meta.type` | `checkbox` |
+| sightingSchema.ts:1329 | `internalComment.meta.type`       | `textarea` |
+| sightingSchema.ts:1345 | `entryChannel.meta.type`          | `select`   |
 
 **Zwei weitere `technisch`-Fälle, aber mit anderer Begründung** — es sind
 `.label()`-Werte, keine `.meta.type`-Werte, und sie sähen für sich genommen wie
 sichtbarer Text aus:
 
-| Datei:Zeile           | Feld                | Text              | Schlüssel (Vorschlag)        |
-| --------------------- | ------------------- | ----------------- | ---------------------------- |
-| sightingSchema.ts:181 | `referenceId.label` | `Referenz-ID`     | `sighting_referenceid_label` |
-| sightingSchema.ts:876 | `weatherData.label` | `API-Wetterdaten` | `sighting_weatherdata_label` |
+| Datei:Zeile           | Feld                | Text              |
+| --------------------- | ------------------- | ----------------- |
+| sightingSchema.ts:181 | `referenceId.label` | `Referenz-ID`     |
+| sightingSchema.ts:876 | `weatherData.label` | `API-Wetterdaten` |
 
 Begründung: `formConfig.ts` (Kommentar über `hiddenFormFields`, Zeile ~466) nennt
 `referenceId`, `entryChannel` und `weatherData.*` explizit als Felder, die „in
