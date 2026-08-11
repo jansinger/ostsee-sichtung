@@ -103,3 +103,49 @@ plus localePinning.test.ts, der die englische Botschaft kuenstlich abweichen lae
 NICHT gruen, nur weil de und en heute gleich sind.
 LEHRE FUER 3.3: Vor jedem Modulumbau die echten Verbraucher pruefen, nicht meiner Grep-Aussage
 glauben. Die 7 uebrigen *Labels-Records in antworten.json/+server.ts sind DIESELBE Falle.
+
+## Aufgabe 4 — Schicht A (`sightingSchema.ts`)
+
+Commits: 3b00af47 (Sprachwechsel-Beweis), 38e6408a + 285b6fc9 (Schema-Fabrik und
+Aufrufstellen), a9858c74 + 765fea02 (Werkzeug-Nachbesserungen), d167a24a (Plan).
+`germanBaseline.json` über alle Commits bitgleich.
+
+### Der wichtigste Befund der ganzen Etappe
+**Bis Aufgabe 4.1 gab es keinen einzigen Nachweis, dass die Zweisprachigkeit
+überhaupt funktioniert.** Alle siebzehn Locale-Zusicherungen im Projekt waren
+negativ formuliert (`expect(x).not.toBe(DIVERGED_EN_LABEL)`) — sie schützten das
+Deutsche dort, wo es deutsch bleiben muss, prüften aber nie, ob das Englische
+ankommt.
+
+Belegt per Mutation: Mit ignoriertem Locale-Argument in `memoizePerLocale`
+blieben `germanBaseline.test.ts` und alle drei `*LocalePinning.test.ts` grün —
+4 Dateien, 29 Tests, keiner bemerkte es. Die Anwendung wäre einsprachig gewesen,
+und nichts hätte es gesagt. Geschlossen durch `src/lib/i18n/localeSwitchProof.test.ts`
+(positive Richtung, Schicht A und B).
+
+Das ist strukturell die Etappe-0-Lehre eine Ebene höher: Dort waren einzelne
+Tests blind, hier war die gesamte Testmenge in eine Richtung blind.
+
+### Zwei Lücken im Extraktor, beide von der Umsetzung gefunden
+1. `.integer(message)` stand in keiner der beiden Methodenlisten — vier Meldungen
+   waren weder Fund noch Übersprungen, also unsichtbar. Ursache war die bewusste
+   Asymmetrie aus Aufgabe 1 (meta-Liste geschlossen, Methodenliste offen) mit der
+   Begründung, der Hartcodiert-Scan aus Aufgabe 5 fange den Rest. Die Begründung
+   trug nicht: Aufgabe 5 existiert nicht. Behoben — unbekannte Methoden mit
+   String-Literal werden jetzt GEMELDET statt still übergangen.
+2. Nach dem Umbau meldete der Extraktor 132 bereits übersetzte `m.*()`-Aufrufe als
+   „von Hand prüfen" — der Prüf-Abschnitt bestand zu 70 % aus Rauschen über
+   erledigte Arbeit. Behoben: `already-translated` wird gezählt, nicht aufgeführt.
+   Verbliebener Abschnitt: 56 Zeilen, alle technisch begründet.
+
+### Fehler in meinem eigenen Auftrag an die Umsetzung
+Ich schrieb, `/api` sei von der Lokalisierung ausgenommen. Der Entwurf sagt das
+Gegenteil: Ein englischer Melder SOLL englische Validierungsfehler bekommen. Die
+Umsetzung ist dem Entwurf gefolgt, nicht meiner Kurzfassung. Richtig so.
+
+### Erledigt, kein offener Fall
+`sightingSchema.ts:1413` (`meta(sightingFromTextBase.spec.meta ?? {})`) erscheint
+im Trockenlauf als zu prüfen. Es ist korrekt: `sightingFromTextBase` ist
+`base.fields.sightingFromText` (Zeile 1374) aus demselben, je Locale gebauten
+Basis-Schema. Das Werkzeug kann diese Herkunft nur nicht sehen. Nicht erneut
+untersuchen.
