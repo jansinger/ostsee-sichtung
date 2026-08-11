@@ -149,3 +149,20 @@ im Trockenlauf als zu prüfen. Es ist korrekt: `sightingFromTextBase` ist
 `base.fields.sightingFromText` (Zeile 1374) aus demselben, je Locale gebauten
 Basis-Schema. Das Werkzeug kann diese Herkunft nur nicht sehen. Nicht erneut
 untersuchen.
+
+### E2E-Nachweis Aufgabe 4
+Zwei saubere Vollläufe: 478 grün / 1 rot (`admin-spam-check.spec.ts:121`), dann
+479 grün / 0 rot. Der Spec besteht isoliert 3/3. Damit ist er unter Parallellast
+flaky, keine Regression des Umbaus — belegt durch den zweiten Vollauf mit
+identischem Code, nicht durch Deutung.
+
+Bemerkenswert: In drei Vollläufen dieser Etappe trafen die Fehlschläge drei
+VERSCHIEDENE Specs (`design-tokens`, `admin-queue`, `admin-spam-check`), nie
+zweimal denselben. Eine echte Regression trifft dieselbe Stelle reproduzierbar.
+Wer hier künftig einen roten Lauf sieht: erst isoliert wiederholen, dann urteilen.
+
+## STAND ETAPPE 1
+Aufgaben 1-4 komplett. OFFEN: Aufgabe 5 aus dem Entwurf — `hardcodedStringScan`
+für Schicht A und B (Entwurf Abschnitt 7). Sie ist das Netz gegen den Rückfall:
+die Zeile, die drei Monate später jemand schnell noch einfügt. Ohne sie hängt
+alles an der Sorgfalt beim Extrahieren.
