@@ -14,7 +14,7 @@ This specification is derived from the original schweinswalsichtung.de API docum
 
 Earlier snapshots of this document named a single client. That was not measured wrongly, it was concluded wrongly: what got counted was what **arrived**. Between 31 July and 9 August 2026 the Android client lost **187** submissions to a forced HTTPS redirect — every single one, for eleven days — and therefore never appeared anywhere anyone was looking. Determining how many clients exist requires the access log, not the inbox: only the log also records what never arrived. That client has been submitting successfully since 10 August 2026; the 187 are gone.
 
-A deviation therefore costs real data and cannot be repaired from this side. Two of the three clients are not available for testing, and their users are not told when a submission fails. Field names, URL paths and data types must only change deliberately and documented; obvious defects may of course be fixed, but only as additions, never as replacements of an existing code path.
+A deviation therefore costs real data and cannot be repaired from this side. Two of the three clients are not available for testing, and their users are not told when a submission fails. Field names, URL paths and data types must only be changed deliberately, and every such change must be documented; obvious defects may of course be fixed, but only as additions, never as replacements of an existing code path.
 
 This is a dated status, not a standing guarantee — re-check whether further clients have been connected before making larger changes. The figures come from an ongoing check running until roughly October 2026; see "Laufende Beobachtung" in `.claude/rules/legacy-api.md`.
 
