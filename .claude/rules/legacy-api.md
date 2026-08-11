@@ -10,17 +10,33 @@ paths:
 Diese Endpunkte implementieren die Spezifikation der Vorgänger-API für Mobile
 Clients.
 
-> **Stand 2026-07-30: ein Client ist angebunden.** Ein neu gebauter iOS-Client
-> (`OstSeeTiere/8`) sendet Sichtungen über `POST /rest_sichtungen`. Die alte
-> Einordnung „bricht nichts Laufendes" gilt damit nicht mehr — eine Abweichung
-> kostet jetzt echte Daten und kann nicht von dieser Seite repariert werden,
-> weil der alte Client nicht mehr testbar ist. Änderungen an Feldnamen, Pfaden
-> und Datentypen bleiben begründungspflichtig; offensichtliche Fehler dürfen
-> behoben werden, aber nur als Ergänzung, nie als Ersatz eines bestehenden
-> Codepfads.
+> **Stand 2026-08-11: drei Clients sind angebunden.** Belegt am
+> Zugriffsprotokoll von `schweinswalsichtung.de`, nicht vermutet:
+>
+> | Client          | Plattform           | erfolgreiche Meldungen |
+> | --------------- | ------------------- | ---------------------- |
+> | `OstSeeTiere/8` | iOS                 | 39                     |
+> | `okhttp/3.10.0` | Android (ca. 2018)  | 5                      |
+> | `OstSeeTiere/6` | iOS, ältere Fassung | 3                      |
+>
+> Die frühere Fassung dieses Absatzes nannte einen einzigen Client. Das war
+> nicht falsch erhoben, sondern falsch geschlossen: Gezählt wurde, was
+> **ankam**. Der Android-Client scheiterte zwischen dem 31.07. und dem 09.08.
+> mit **187** Meldungen an einer erzwungenen HTTPS-Umleitung — jede einzelne,
+> elf Tage lang — und tauchte deshalb nirgends auf, wo man ihn gesucht hätte.
+> Wer die Zahl der Clients bestimmen will, muss ins Zugriffsprotokoll sehen,
+> nicht in den Posteingang: Dort steht auch das, was nie angekommen ist.
+> Seit dem 2026-08-10 meldet er erfolgreich; die 187 sind verloren.
+>
+> Damit wiegt jede Abweichung schwerer als zuvor: Zwei der drei Clients sind
+> nicht testbar, und ihre Nutzer erfahren von einem Fehlschlag nichts.
+> Änderungen an Feldnamen, Pfaden und Datentypen bleiben begründungspflichtig;
+> offensichtliche Fehler dürfen behoben werden, aber nur als Ergänzung, nie
+> als Ersatz eines bestehenden Codepfads.
 >
 > Diese Einordnung ist ein Datumsstand, keine Dauerzusage — vor größeren
-> Änderungen prüfen, ob weitere Clients angebunden sind.
+> Änderungen prüfen, ob weitere Clients angebunden sind. Die Zahlen stammen
+> aus einer laufenden Beobachtung bis etwa Oktober 2026 (siehe unten).
 
 > **PFLICHT:** Lies `docs/LEGACY_API_SPECIFICATION.md` **vollständig**, bevor du
 > einen dieser Endpunkte änderst. Die Datei ist die verbindliche Referenz für
@@ -111,3 +127,33 @@ und `/admin` bleibt das Präfix bewusst 404. Begründung und Grenzen:
 - [ ] Feldnamen und URL-Pfade unverändert
 - [ ] Datentypen geprüft (Strings vs. Zahlen, `0`/`1` vs. Booleans)
 - [ ] Test schreibt die erwartete Response-Struktur fest (siehe `.claude/rules/testing.md`)
+
+---
+
+## Laufende Beobachtung (bis etwa Oktober 2026)
+
+Nach dem Android-Ausfall läuft eine Kontrolle, weil sich zwei der drei Clients
+nicht testen lassen und ihre Nutzer von einem Fehlschlag nichts erfahren. Beide
+Zeitpläne liegen auf `hawking` (Plesk, serverweit) und melden sich **nur bei
+Auffälligkeiten**:
+
+| Aufgabe                                  | Takt          | prüft                                               |
+| ---------------------------------------- | ------------- | --------------------------------------------------- |
+| `legacy-sync/sync.sh` (ID 3090)          | alle 15 min   | überträgt den Posteingang nach Produktion           |
+| `legacy-sync/client-report.sh` (ID 3097) | täglich 07:20 | ob jede gestrige Meldung mit `201` angenommen wurde |
+
+Der Bericht liest das **Zugriffsprotokoll**, nicht den Posteingang. Das ist der
+Kern der Lehre aus dem Ausfall: Der Posteingang kann nur zeigen, was ankam. Was
+nie ankam, steht ausschließlich im Protokoll — und zwar in
+`logs/access_ssl_log.processed`, die Wochen zurückreicht, nicht in
+`proxy_access_ssl_log`, die nur den laufenden Tag hält.
+
+Nachsehen lässt sich jeder vergangene Tag von Hand:
+
+```bash
+ssh hawking "sudo -n /var/www/vhosts/schweinswalsichtung.de/legacy-sync/client-report.sh 31/Jul/2026"
+```
+
+**Vor Ablauf der Beobachtung** den Stand oben mit frischen Zahlen erneuern oder
+die Frist verlängern. Ein Datumsstand, den niemand nachzieht, wird zur
+Behauptung — genau so entstand die Angabe „ein Client".

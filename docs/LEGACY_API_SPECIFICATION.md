@@ -4,9 +4,19 @@
 
 This specification is derived from the original schweinswalsichtung.de API documentation. The legacy APIs MUST maintain 100% compatibility with it, so that mobile clients built against the original API keep working.
 
-**Status 2026-07-30: a client is connected.** A rebuilt iOS app identifying itself as `OstSeeTiere/8` is submitting sightings through `POST /rest_sichtungen`. The "nothing breaks" reasoning from earlier snapshots of this document no longer applies — a deviation now costs real data and cannot be repaired from this side, because the previous app is no longer available for testing and every behaviour it relies on must keep working exactly as documented. Field names, URL paths and data types must only change deliberately and documented; obvious defects may of course be fixed, but only as additions, never as replacements of an existing code path.
+**Status 2026-08-11: three clients are connected.** Established from the access log of `schweinswalsichtung.de`, not assumed:
 
-This is a dated status, not a standing guarantee — re-check whether further clients have been connected before making larger changes.
+| Client          | Platform             | Accepted submissions |
+| --------------- | -------------------- | -------------------- |
+| `OstSeeTiere/8` | iOS                  | 39                   |
+| `okhttp/3.10.0` | Android (circa 2018) | 5                    |
+| `OstSeeTiere/6` | iOS, older build     | 3                    |
+
+Earlier snapshots of this document named a single client. That was not measured wrongly, it was concluded wrongly: what got counted was what **arrived**. Between 31 July and 9 August 2026 the Android client lost **187** submissions to a forced HTTPS redirect — every single one, for eleven days — and therefore never appeared anywhere anyone was looking. Determining how many clients exist requires the access log, not the inbox: only the log also records what never arrived. That client has been submitting successfully since 10 August 2026; the 187 are gone.
+
+A deviation therefore costs real data and cannot be repaired from this side. Two of the three clients are not available for testing, and their users are not told when a submission fails. Field names, URL paths and data types must only change deliberately and documented; obvious defects may of course be fixed, but only as additions, never as replacements of an existing code path.
+
+This is a dated status, not a standing guarantee — re-check whether further clients have been connected before making larger changes. The figures come from an ongoing check running until roughly October 2026; see "Laufende Beobachtung" in `.claude/rules/legacy-api.md`.
 
 ## Base URLs
 
