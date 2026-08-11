@@ -2,6 +2,10 @@
  * Enum für Geschlecht der beobachteten Tiere
  * Die numerischen Werte werden in der Datenbank gespeichert.
  */
+import { memoizePerLocale } from '$lib/i18n/localeMemo';
+import * as m from '$lib/paraglide/messages';
+import { getLocale, type Locale } from '$lib/paraglide/runtime';
+
 export enum SexEnum {
 	UNKNOWN = 0,
 	FEMALE = 1,
@@ -9,13 +13,30 @@ export enum SexEnum {
 }
 
 /**
- * Deutsche Bezeichnungen für die Geschlechter
+ * Baut je Locale die Bezeichnungen der Geschlechter aus dem Botschaftskatalog.
+ *
+ * Modul-intern (kein Export): Kein Verbraucher außerhalb von `formOptions/`
+ * indiziert das Record direkt — geprüft vor diesem Umbau (auch über
+ * mehrzeilige Importe). Der einzige externe Zugriff auf das rohe Record lag
+ * in `antworten.json/+server.ts` und ist auf `getSexLabel(…, baseLocale)`
+ * umgestellt (siehe Kommentar dort).
+ *
+ * Bewusst ein Record von BUILDERN, nicht von aufgelösten Strings — siehe
+ * Begründung in `species.ts`.
  */
-export const sexLabels: Record<SexEnum, string> = {
-	[SexEnum.UNKNOWN]: 'Unbekannt',
-	[SexEnum.FEMALE]: 'Weiblich',
-	[SexEnum.MALE]: 'Männlich'
+const sexLabelBuilders: Record<SexEnum, (locale: Locale) => string> = {
+	[SexEnum.UNKNOWN]: (locale) => m.formoptions_sex_unknown({}, { locale }),
+	[SexEnum.FEMALE]: (locale) => m.formoptions_sex_female({}, { locale }),
+	[SexEnum.MALE]: (locale) => m.formoptions_sex_male({}, { locale })
 };
+
+/** Baut die Geschlechter-Bezeichnungen für eine Locale genau einmal und hält sie danach vor. */
+const sexLabelsFor = memoizePerLocale(
+	(locale) =>
+		Object.fromEntries(
+			Object.entries(sexLabelBuilders).map(([value, build]) => [value, build(locale)])
+		) as Record<SexEnum, string>
+);
 
 export type Sex = SexEnum;
 
@@ -35,24 +56,31 @@ const SELECTABLE_SEXES: readonly SexEnum[] = [SexEnum.FEMALE, SexEnum.MALE];
 
 /**
  * Generiert eine Array-Struktur für Select-Komponenten
+ * @param locale - Locale für die Anzeigetexte; Default die aktuelle Locale
  * @returns Array von Objekten mit value und label
  */
-const sexOptions: Array<{ value: number; label: string }> = SELECTABLE_SEXES.map((value) => ({
-	value,
-	label: sexLabels[value]
-}));
-export const getSexOptions = (): Array<{ value: number; label: string }> => sexOptions;
+export function getSexOptions(
+	locale: Locale = getLocale()
+): Array<{ value: number; label: string }> {
+	const labels = sexLabelsFor(locale);
+	return SELECTABLE_SEXES.map((value) => ({ value, label: labels[value] }));
+}
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert
  * @param value - Der Enum-Wert (z.B. aus der Datenbank)
+ * @param locale - Locale für den Anzeigetext; Default die aktuelle Locale
  * @returns Das zugehörige Label oder einen Fallback-Text
  */
-export function getSexLabel(value: SexEnum | number | null | undefined): string {
-	if (value === null || value === undefined) return 'Nicht angegeben';
+export function getSexLabel(
+	value: SexEnum | number | null | undefined,
+	locale: Locale = getLocale()
+): string {
+	if (value === null || value === undefined) return m.formoptions_sex_not_specified({}, { locale });
 
 	const numericValue = typeof value === 'string' ? parseInt(value, 10) : value;
-	return sexLabels[numericValue as SexEnum] || 'Unbekannt';
+	const labels = sexLabelsFor(locale);
+	return labels[numericValue as SexEnum] || m.formoptions_sex_unknown({}, { locale });
 }
 
 /**

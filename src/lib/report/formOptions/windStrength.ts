@@ -2,6 +2,10 @@
  * Enum für Windstärken (Beaufort-Skala)
  * Die numerischen Werte werden in der Datenbank gespeichert.
  */
+import { memoizePerLocale } from '$lib/i18n/localeMemo';
+import * as m from '$lib/paraglide/messages';
+import { getLocale, type Locale } from '$lib/paraglide/runtime';
+
 export enum WindStrengthEnum {
 	WINDSTILL = 0,
 	LEISER_ZUG = 1,
@@ -19,44 +23,80 @@ export enum WindStrengthEnum {
 }
 
 /**
- * Deutsche Bezeichnungen für die Windstärken
+ * Baut je Locale die Bezeichnungen der Windstärken aus dem Botschaftskatalog.
+ *
+ * Modul-intern (kein Export): Kein Verbraucher außerhalb von `formOptions/`
+ * indiziert das Record direkt — geprüft vor diesem Umbau (auch über
+ * mehrzeilige Importe). Der einzige externe Zugriff auf das rohe Record lag
+ * in `antworten.json/+server.ts` und ist auf `getWindStrengthLabel(…,
+ * baseLocale)` umgestellt (siehe Kommentar dort).
+ *
+ * Bewusst ein Record von BUILDERN, nicht von aufgelösten Strings — siehe
+ * Begründung in `species.ts`.
  */
-export const windStrengthLabels: Record<WindStrengthEnum, string> = {
-	[WindStrengthEnum.WINDSTILL]: '0 - Windstille (< 1 km/h)',
-	[WindStrengthEnum.LEISER_ZUG]: '1 - Leiser Zug (1-5 km/h)',
-	[WindStrengthEnum.LEICHTE_BRISE]: '2 - Leichte Brise (6-11 km/h)',
-	[WindStrengthEnum.SCHWACHE_BRISE]: '3 - Schwache Brise (12-19 km/h)',
-	[WindStrengthEnum.MAESSIGE_BRISE]: '4 - Mäßige Brise (20-28 km/h)',
-	[WindStrengthEnum.FRISCHE_BRISE]: '5 - Frische Brise (29-38 km/h)',
-	[WindStrengthEnum.STARKER_WIND]: '6 - Starker Wind (39-49 km/h)',
-	[WindStrengthEnum.STEIFER_WIND]: '7 - Steifer Wind (50-61 km/h)',
-	[WindStrengthEnum.STUERMISCHER_WIND]: '8 - Stürmischer Wind (62-74 km/h)',
-	[WindStrengthEnum.STURM]: '9 - Sturm (75-88 km/h)',
-	[WindStrengthEnum.SCHWERER_STURM]: '10 - Schwerer Sturm (89-102 km/h)',
-	[WindStrengthEnum.ORKANARTIGER_STURM]: '11 - Orkanartiger Sturm (103-117 km/h)',
-	[WindStrengthEnum.ORKAN]: '12 - Orkan (> 117 km/h)'
+const windStrengthLabelBuilders: Record<WindStrengthEnum, (locale: Locale) => string> = {
+	[WindStrengthEnum.WINDSTILL]: (locale) => m.formoptions_windstrength_windstill({}, { locale }),
+	[WindStrengthEnum.LEISER_ZUG]: (locale) => m.formoptions_windstrength_leiser_zug({}, { locale }),
+	[WindStrengthEnum.LEICHTE_BRISE]: (locale) =>
+		m.formoptions_windstrength_leichte_brise({}, { locale }),
+	[WindStrengthEnum.SCHWACHE_BRISE]: (locale) =>
+		m.formoptions_windstrength_schwache_brise({}, { locale }),
+	[WindStrengthEnum.MAESSIGE_BRISE]: (locale) =>
+		m.formoptions_windstrength_maessige_brise({}, { locale }),
+	[WindStrengthEnum.FRISCHE_BRISE]: (locale) =>
+		m.formoptions_windstrength_frische_brise({}, { locale }),
+	[WindStrengthEnum.STARKER_WIND]: (locale) =>
+		m.formoptions_windstrength_starker_wind({}, { locale }),
+	[WindStrengthEnum.STEIFER_WIND]: (locale) =>
+		m.formoptions_windstrength_steifer_wind({}, { locale }),
+	[WindStrengthEnum.STUERMISCHER_WIND]: (locale) =>
+		m.formoptions_windstrength_stuermischer_wind({}, { locale }),
+	[WindStrengthEnum.STURM]: (locale) => m.formoptions_windstrength_sturm({}, { locale }),
+	[WindStrengthEnum.SCHWERER_STURM]: (locale) =>
+		m.formoptions_windstrength_schwerer_sturm({}, { locale }),
+	[WindStrengthEnum.ORKANARTIGER_STURM]: (locale) =>
+		m.formoptions_windstrength_orkanartiger_sturm({}, { locale }),
+	[WindStrengthEnum.ORKAN]: (locale) => m.formoptions_windstrength_orkan({}, { locale })
 };
+
+/** Baut die Windstärken-Bezeichnungen für eine Locale genau einmal und hält sie danach vor. */
+const windStrengthLabelsFor = memoizePerLocale(
+	(locale) =>
+		Object.fromEntries(
+			Object.entries(windStrengthLabelBuilders).map(([value, build]) => [value, build(locale)])
+		) as Record<WindStrengthEnum, string>
+);
 
 export type WindStrength = WindStrengthEnum;
 
 /**
  * Generiert eine Array-Struktur für Select-Komponenten
+ * @param locale - Locale für die Anzeigetexte; Default die aktuelle Locale
  * @returns Array von Objekten mit value und label
  */
-const windStrengthOptions: Array<{ value: number; label: string }> = Object.entries(
-	windStrengthLabels
-).map(([value, label]) => ({ value: Number(value), label }));
-export const getWindStrengthOptions = (): Array<{ value: number; label: string }> =>
-	windStrengthOptions;
+export function getWindStrengthOptions(
+	locale: Locale = getLocale()
+): Array<{ value: number; label: string }> {
+	const labels = windStrengthLabelsFor(locale);
+	return Object.entries(labels).map(([value, label]) => ({ value: Number(value), label }));
+}
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert
  * @param value - Der Enum-Wert (z.B. aus der Datenbank)
+ * @param locale - Locale für den Anzeigetext; Default die aktuelle Locale
  * @returns Das zugehörige Label oder einen Fallback-Text
  */
-export function getWindStrengthLabel(value: WindStrengthEnum | number | null | undefined): string {
-	if (value === null || value === undefined) return 'Nicht angegeben';
+export function getWindStrengthLabel(
+	value: WindStrengthEnum | number | null | undefined,
+	locale: Locale = getLocale()
+): string {
+	if (value === null || value === undefined)
+		return m.formoptions_windstrength_not_specified({}, { locale });
 
 	const numericValue = typeof value === 'string' ? parseInt(value, 10) : value;
-	return windStrengthLabels[numericValue as WindStrengthEnum] || 'Unbekannt';
+	const labels = windStrengthLabelsFor(locale);
+	return (
+		labels[numericValue as WindStrengthEnum] || m.formoptions_windstrength_unknown({}, { locale })
+	);
 }

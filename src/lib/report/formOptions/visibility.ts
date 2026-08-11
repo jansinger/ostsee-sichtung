@@ -2,6 +2,10 @@
  * Enum für Sichtbarkeitszustände
  * Die numerischen Werte werden in der Datenbank gespeichert.
  */
+import { memoizePerLocale } from '$lib/i18n/localeMemo';
+import * as m from '$lib/paraglide/messages';
+import { getLocale, type Locale } from '$lib/paraglide/runtime';
+
 export enum VisibilityEnum {
 	NONE = 0,
 	EXCEPTIONAL = 1,
@@ -11,15 +15,34 @@ export enum VisibilityEnum {
 }
 
 /**
- * Deutsche Bezeichnungen für die Sichtbarkeitszustände
+ * Baut je Locale die Bezeichnungen der Sichtbarkeitszustände aus dem
+ * Botschaftskatalog.
+ *
+ * Modul-intern (kein Export): Kein Verbraucher außerhalb von `formOptions/`
+ * indiziert das Record direkt — geprüft vor diesem Umbau (auch über
+ * mehrzeilige Importe). Der einzige externe Zugriff auf das rohe Record lag
+ * in `antworten.json/+server.ts` und ist auf `getVisibilityLabel(…,
+ * baseLocale)` umgestellt (siehe Kommentar dort). `csvExport.ts` ruft
+ * `getVisibilityLabel` ebenfalls jetzt mit `baseLocale`.
+ *
+ * Bewusst ein Record von BUILDERN, nicht von aufgelösten Strings — siehe
+ * Begründung in `species.ts`.
  */
-export const visibilityLabels: Record<VisibilityEnum, string> = {
-	[VisibilityEnum.NONE]: 'Keine Angabe',
-	[VisibilityEnum.EXCEPTIONAL]: 'Außergewöhnlich klar (mehr als 20km)',
-	[VisibilityEnum.CLEAR]: 'Klar (bis 20km)',
-	[VisibilityEnum.HAZY]: 'Diesig (bis 4km)',
-	[VisibilityEnum.FOGGY]: 'Nebel (bis 1km)'
+const visibilityLabelBuilders: Record<VisibilityEnum, (locale: Locale) => string> = {
+	[VisibilityEnum.NONE]: (locale) => m.formoptions_visibility_none({}, { locale }),
+	[VisibilityEnum.EXCEPTIONAL]: (locale) => m.formoptions_visibility_exceptional({}, { locale }),
+	[VisibilityEnum.CLEAR]: (locale) => m.formoptions_visibility_clear({}, { locale }),
+	[VisibilityEnum.HAZY]: (locale) => m.formoptions_visibility_hazy({}, { locale }),
+	[VisibilityEnum.FOGGY]: (locale) => m.formoptions_visibility_foggy({}, { locale })
 };
+
+/** Baut die Sichtweiten-Bezeichnungen für eine Locale genau einmal und hält sie danach vor. */
+const visibilityLabelsFor = memoizePerLocale(
+	(locale) =>
+		Object.fromEntries(
+			Object.entries(visibilityLabelBuilders).map(([value, build]) => [value, build(locale)])
+		) as Record<VisibilityEnum, string>
+);
 
 export type Visibility = VisibilityEnum;
 
@@ -40,24 +63,32 @@ const SELECTABLE_VISIBILITIES: readonly VisibilityEnum[] = Object.values(Visibil
 
 /**
  * Generiert eine Array-Struktur für Select-Komponenten
+ * @param locale - Locale für die Anzeigetexte; Default die aktuelle Locale
  * @returns Array von Objekten mit value und label
  */
-const visibilityOptions: Array<{ value: number; label: string }> = SELECTABLE_VISIBILITIES.map(
-	(value) => ({ value, label: visibilityLabels[value] })
-);
-export const getVisibilityOptions = (): Array<{ value: number; label: string }> =>
-	visibilityOptions;
+export function getVisibilityOptions(
+	locale: Locale = getLocale()
+): Array<{ value: number; label: string }> {
+	const labels = visibilityLabelsFor(locale);
+	return SELECTABLE_VISIBILITIES.map((value) => ({ value, label: labels[value] }));
+}
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert
  * @param value - Der Enum-Wert (z.B. aus der Datenbank)
+ * @param locale - Locale für den Anzeigetext; Default die aktuelle Locale
  * @returns Das zugehörige Label oder einen Fallback-Text
  */
-export function getVisibilityLabel(value: VisibilityEnum | number | null | undefined): string {
-	if (value === null || value === undefined) return 'Nicht angegeben';
+export function getVisibilityLabel(
+	value: VisibilityEnum | number | null | undefined,
+	locale: Locale = getLocale()
+): string {
+	if (value === null || value === undefined)
+		return m.formoptions_visibility_not_specified({}, { locale });
 
 	const numericValue = typeof value === 'string' ? parseInt(value, 10) : value;
-	return visibilityLabels[numericValue as VisibilityEnum] || 'Unbekannt';
+	const labels = visibilityLabelsFor(locale);
+	return labels[numericValue as VisibilityEnum] || m.formoptions_visibility_unknown({}, { locale });
 }
 
 /**

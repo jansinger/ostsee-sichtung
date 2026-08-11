@@ -20,13 +20,13 @@ import { BoatDriveEnum, boatDriveLabels } from '$lib/report/formOptions/boatDriv
 import { DistanceEnum, distanceLabels } from '$lib/report/formOptions/distance';
 import { DistributionEnum, distributionLabels } from '$lib/report/formOptions/distribution';
 import { EntryChannelEnum, entryChannelLabels } from '$lib/report/formOptions/entryChannel';
-import { SeaStateEnum, seaStateLabels } from '$lib/report/formOptions/seaState';
-import { SexEnum, sexLabels } from '$lib/report/formOptions/sex';
+import { getSeaStateLabel, SeaStateEnum } from '$lib/report/formOptions/seaState';
+import { getSexLabel, SexEnum } from '$lib/report/formOptions/sex';
 import { SightingFromEnum, sightingFromLabels } from '$lib/report/formOptions/sightingFrom';
 import { getSpeciesLabel, SpeciesEnum } from '$lib/report/formOptions/species';
-import { VisibilityEnum, visibilityLabels } from '$lib/report/formOptions/visibility';
+import { getVisibilityLabel, VisibilityEnum } from '$lib/report/formOptions/visibility';
 import { WindDirectionEnum, windDirectionLabels } from '$lib/report/formOptions/windDirection';
-import { WindStrengthEnum, windStrengthLabels } from '$lib/report/formOptions/windStrength';
+import { getWindStrengthLabel, WindStrengthEnum } from '$lib/report/formOptions/windStrength';
 import { getClientIp } from '$lib/server/utils/getClientIp';
 import { baseLocale } from '$lib/paraglide/runtime';
 import { json, type RequestEvent } from '@sveltejs/kit';
@@ -114,11 +114,13 @@ export async function GET(event: RequestEvent): Promise<Response> {
 				),
 
 			// Sea state mapping (seegang) - Note: PDF shows 0-5 range
+			// Locale bewusst auf baseLocale gepinnt — dieselbe Begründung wie bei
+			// `tierart` oben (Legacy-API-Vertrag, iOS-Client OstSeeTiere/8).
 			seegang: Object.entries(SeaStateEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.reduce(
 					(acc, [_key, value]) => {
-						acc[value.toString()] = seaStateLabels[value as SeaStateEnum];
+						acc[value.toString()] = getSeaStateLabel(value as SeaStateEnum, baseLocale);
 						return acc;
 					},
 					{} as Record<string, string>
@@ -139,22 +141,26 @@ export async function GET(event: RequestEvent): Promise<Response> {
 			})(),
 
 			// Wind strength mapping (windstaerke) - Note: PDF shows 1-12 range as strings
+			// Locale bewusst auf baseLocale gepinnt — dieselbe Begründung wie bei
+			// `tierart` oben (Legacy-API-Vertrag, iOS-Client OstSeeTiere/8).
 			windstaerke: Object.entries(WindStrengthEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.reduce(
 					(acc, [_key, value]) => {
-						acc[value.toString()] = windStrengthLabels[value as WindStrengthEnum];
+						acc[value.toString()] = getWindStrengthLabel(value as WindStrengthEnum, baseLocale);
 						return acc;
 					},
 					{} as Record<string, string>
 				),
 
 			// Visibility mapping (sichtweite) - Note: PDF shows 1-4 range
+			// Locale bewusst auf baseLocale gepinnt — dieselbe Begründung wie bei
+			// `tierart` oben (Legacy-API-Vertrag, iOS-Client OstSeeTiere/8).
 			sichtweite: Object.entries(VisibilityEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.reduce(
 					(acc, [_key, value]) => {
-						acc[value.toString()] = visibilityLabels[value as VisibilityEnum];
+						acc[value.toString()] = getVisibilityLabel(value as VisibilityEnum, baseLocale);
 						return acc;
 					},
 					{} as Record<string, string>
@@ -194,11 +200,13 @@ export async function GET(event: RequestEvent): Promise<Response> {
 				),
 
 			// Dead animal sex mapping (totfund_geschlecht) - Note: PDF shows 0-2 range
+			// Locale bewusst auf baseLocale gepinnt — dieselbe Begründung wie bei
+			// `tierart` oben (Legacy-API-Vertrag, iOS-Client OstSeeTiere/8).
 			totfund_geschlecht: Object.entries(SexEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.reduce(
 					(acc, [_key, value]) => {
-						acc[value.toString()] = sexLabels[value as SexEnum];
+						acc[value.toString()] = getSexLabel(value as SexEnum, baseLocale);
 						return acc;
 					},
 					{} as Record<string, string>

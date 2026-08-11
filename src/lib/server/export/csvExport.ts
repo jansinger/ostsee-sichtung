@@ -144,8 +144,10 @@ export function generateCsvData(sightings: FrontendSighting[]): string {
 			sighting.deadSize || '',
 			sighting.waterway || '',
 			sighting.seaMark || '',
-			getSeaStateLabel(sighting.seaState),
-			getVisibilityLabel(sighting.visibility),
+			// Seegang/Sicht bewusst auf baseLocale gepinnt — dieselbe Begründung
+			// wie bei `speciesName` oben (Exportformate bleiben deutsch).
+			getSeaStateLabel(sighting.seaState, baseLocale),
+			getVisibilityLabel(sighting.visibility, baseLocale),
 			sighting.windDirection || '',
 			sighting.windForce || '',
 			sighting.shipNameConsent ? sighting.shipName || '' : '',
