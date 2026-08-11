@@ -141,7 +141,9 @@ export function generateCsvData(sightings: FrontendSighting[]): string {
 			behaviorText,
 			sighting.reaction || '',
 			getDistanceLabel(sighting.distance, baseLocale),
-			getSightingFromLabel(sighting.sightingFrom),
+			// Sichtung von bewusst auf baseLocale gepinnt — dieselbe Begründung wie
+			// bei `speciesName` oben (Exportformate bleiben deutsch).
+			getSightingFromLabel(sighting.sightingFrom, baseLocale),
 			sighting.isDead ? 'Ja' : 'Nein',
 			sighting.deadCondition || '',
 			sighting.deadSex || '',
@@ -157,7 +159,9 @@ export function generateCsvData(sightings: FrontendSighting[]): string {
 			sighting.shipNameConsent ? sighting.shipName || '' : '',
 			sighting.homePort || '',
 			sighting.boatType || '',
-			getBoatDriveLabel(sighting.boatDrive),
+			// Bootsantrieb bewusst auf baseLocale gepinnt — dieselbe Begründung wie
+			// bei `speciesName` oben (Exportformate bleiben deutsch).
+			getBoatDriveLabel(sighting.boatDrive, baseLocale),
 			sighting.shipCount || '',
 			sighting.mediaUpload ? 'Ja' : 'Nein',
 			name,

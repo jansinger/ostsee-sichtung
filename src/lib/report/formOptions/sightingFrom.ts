@@ -1,7 +1,12 @@
 /**
  * Enum für die Art des Beobachtungsorts
  * Die numerischen Werte werden in der Datenbank gespeichert.
- *
+ */
+import { memoizePerLocale } from '$lib/i18n/localeMemo';
+import * as m from '$lib/paraglide/messages';
+import { getLocale, type Locale } from '$lib/paraglide/runtime';
+
+/**
  * **Achtung bei `OTHER = 0`:** Die Spalte `vonwo` ist
  * `integer default(0) notNull` — `0` ist also gleichzeitig der Default und die
  * Bedeutung "Sonstiges". Anders als beim Bootsantrieb ist "Sonstiges" hier eine
@@ -26,16 +31,32 @@ export enum SightingFromEnum {
 }
 
 /**
- * Deutsche Bezeichnungen für die Beobachtungsorte
+ * Baut je Locale die Bezeichnungen der Beobachtungsorte aus dem Botschaftskatalog.
+ *
+ * Modul-intern (kein Export): Der einzige externe Zugriff auf das rohe Record
+ * lag in `antworten.json/+server.ts` und ist auf `getSightingFromLabel(…,
+ * baseLocale)` umgestellt (siehe Kommentar dort). `csvExport.ts` ruft
+ * `getSightingFromLabel` ebenfalls jetzt mit `baseLocale`.
+ *
+ * Bewusst ein Record von BUILDERN, nicht von aufgelösten Strings — siehe
+ * Begründung in `species.ts`.
  */
-export const sightingFromLabels: Record<SightingFromEnum, string> = {
-	[SightingFromEnum.OTHER]: 'Sonstiges',
-	[SightingFromEnum.SAILBOAT]: 'Segelschiff',
-	[SightingFromEnum.MOTORBOAT]: 'Motorboot',
-	[SightingFromEnum.LAND]: 'Land',
-	[SightingFromEnum.FERRY]: 'Fähre',
-	[SightingFromEnum.UNKNOWN]: 'Keine Angabe'
+const sightingFromLabelBuilders: Record<SightingFromEnum, (locale: Locale) => string> = {
+	[SightingFromEnum.OTHER]: (locale) => m.formoptions_sightingfrom_other({}, { locale }),
+	[SightingFromEnum.SAILBOAT]: (locale) => m.formoptions_sightingfrom_sailboat({}, { locale }),
+	[SightingFromEnum.MOTORBOAT]: (locale) => m.formoptions_sightingfrom_motorboat({}, { locale }),
+	[SightingFromEnum.LAND]: (locale) => m.formoptions_sightingfrom_land({}, { locale }),
+	[SightingFromEnum.FERRY]: (locale) => m.formoptions_sightingfrom_ferry({}, { locale }),
+	[SightingFromEnum.UNKNOWN]: (locale) => m.formoptions_sightingfrom_unknown({}, { locale })
 };
+
+/** Baut die Beobachtungsort-Bezeichnungen für eine Locale genau einmal und hält sie danach vor. */
+const sightingFromLabelsFor = memoizePerLocale(
+	(locale) =>
+		Object.fromEntries(
+			Object.entries(sightingFromLabelBuilders).map(([value, build]) => [value, build(locale)])
+		) as Record<SightingFromEnum, string>
+);
 
 export type SightingFrom = SightingFromEnum;
 
@@ -64,24 +85,34 @@ const SELECTABLE_SIGHTING_FROM: readonly SightingFromEnum[] = [
 
 /**
  * Generiert eine Array-Struktur für Select-Komponenten
+ * @param locale - Locale für die Anzeigetexte; Default die aktuelle Locale
  * @returns Array von Objekten mit value und label
  */
-const sightingFromOptions: Array<{ value: number; label: string }> = SELECTABLE_SIGHTING_FROM.map(
-	(value) => ({ value, label: sightingFromLabels[value] })
-);
-export const getSightingFromOptions = (): Array<{ value: number; label: string }> =>
-	sightingFromOptions;
+export function getSightingFromOptions(
+	locale: Locale = getLocale()
+): Array<{ value: number; label: string }> {
+	const labels = sightingFromLabelsFor(locale);
+	return SELECTABLE_SIGHTING_FROM.map((value) => ({ value, label: labels[value] }));
+}
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert
  * @param value - Der Enum-Wert (z.B. aus der Datenbank)
+ * @param locale - Locale für den Anzeigetext; Default die aktuelle Locale
  * @returns Das zugehörige Label oder einen Fallback-Text
  */
-export function getSightingFromLabel(value: SightingFromEnum | number | null | undefined): string {
-	if (value === null || value === undefined) return 'Nicht angegeben';
+export function getSightingFromLabel(
+	value: SightingFromEnum | number | null | undefined,
+	locale: Locale = getLocale()
+): string {
+	if (value === null || value === undefined)
+		return m.formoptions_sightingfrom_not_specified({}, { locale });
 
 	const numericValue = typeof value === 'string' ? parseInt(value, 10) : value;
-	return sightingFromLabels[numericValue as SightingFromEnum] || 'Unbekannt';
+	const labels = sightingFromLabelsFor(locale);
+	return (
+		labels[numericValue as SightingFromEnum] || m.formoptions_sightingfrom_invalid({}, { locale })
+	);
 }
 
 /**

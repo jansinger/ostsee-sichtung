@@ -18,6 +18,9 @@
  * Seit Aufgabe 3.3 (Gruppe 3) gilt sie zusätzlich für
  * `getAnimalBehaviorLabel()` und `getAnimalConditionLabel()`.
  *
+ * Seit Aufgabe 3.3 (Gruppe 4) gilt sie zusätzlich für `getSightingFromLabel()`,
+ * `getEntryChannelLabel()` und `getBoatDriveLabel()`.
+ *
  * Ein Test, der sich auf den heutigen Wortlaut von `messages/en.json`
  * verlässt, wäre nutzlos: die Datei trägt vorerst denselben deutschen Text
  * wie `de.json`, ein ungepinnter Aufruf sähe also identisch aus. Deshalb wird
@@ -55,7 +58,10 @@ vi.mock('$lib/paraglide/messages', async (importOriginal) => {
 		formoptions_animalbehavior_other: divergeInEnglish(actual.formoptions_animalbehavior_other),
 		formoptions_animalcondition_unknown: divergeInEnglish(
 			actual.formoptions_animalcondition_unknown
-		)
+		),
+		formoptions_sightingfrom_sailboat: divergeInEnglish(actual.formoptions_sightingfrom_sailboat),
+		formoptions_entrychannel_web: divergeInEnglish(actual.formoptions_entrychannel_web),
+		formoptions_boatdrive_motor: divergeInEnglish(actual.formoptions_boatdrive_motor)
 	};
 });
 
@@ -228,5 +234,53 @@ describe('GET /rest_sichtungen/antworten.json — Locale-Pinnung', () => {
 
 		expect(body.totfund_zustand['0']).toBe('Unbekannt');
 		expect(body.totfund_zustand['0']).not.toBe(DIVERGED_EN_LABEL);
+	});
+
+	it('liefert den deutschen Beobachtungsort-Text (vonwo), obwohl die aktive Locale Englisch ist und die englische Botschaft nachweislich abweicht', async () => {
+		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
+		overwriteGetLocale(() => 'en');
+
+		const { GET } = await import('./+server');
+		const response = await GET({
+			url: new URL('https://localhost/rest_sichtungen/antworten.json'),
+			getClientAddress: () => '127.0.0.1',
+			request: new Request('https://localhost/rest_sichtungen/antworten.json')
+		} as never);
+		const body = await response.json();
+
+		expect(body.vonwo['1']).toBe('Segelschiff');
+		expect(body.vonwo['1']).not.toBe(DIVERGED_EN_LABEL);
+	});
+
+	it('liefert den deutschen Eingangskanal-Text, obwohl die aktive Locale Englisch ist und die englische Botschaft nachweislich abweicht', async () => {
+		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
+		overwriteGetLocale(() => 'en');
+
+		const { GET } = await import('./+server');
+		const response = await GET({
+			url: new URL('https://localhost/rest_sichtungen/antworten.json'),
+			getClientAddress: () => '127.0.0.1',
+			request: new Request('https://localhost/rest_sichtungen/antworten.json')
+		} as never);
+		const body = await response.json();
+
+		expect(body.eingangskanal['0']).toBe('Web');
+		expect(body.eingangskanal['0']).not.toBe(DIVERGED_EN_LABEL);
+	});
+
+	it('liefert den deutschen Bootsantrieb-Text, obwohl die aktive Locale Englisch ist und die englische Botschaft nachweislich abweicht', async () => {
+		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
+		overwriteGetLocale(() => 'en');
+
+		const { GET } = await import('./+server');
+		const response = await GET({
+			url: new URL('https://localhost/rest_sichtungen/antworten.json'),
+			getClientAddress: () => '127.0.0.1',
+			request: new Request('https://localhost/rest_sichtungen/antworten.json')
+		} as never);
+		const body = await response.json();
+
+		expect(body.bootsantrieb['1']).toBe('Motor');
+		expect(body.bootsantrieb['1']).not.toBe(DIVERGED_EN_LABEL);
 	});
 });

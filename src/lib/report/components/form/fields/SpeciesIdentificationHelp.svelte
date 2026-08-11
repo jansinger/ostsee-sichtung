@@ -3,8 +3,8 @@
 	import type { InfoVariant } from '$lib/components/info/variant';
 	import { speciesGroups } from '$lib/report/formOptions/species';
 	import {
-		frequencyLabels,
-		observabilityLabels,
+		getFrequencyLabels,
+		getObservabilityLabels,
 		speciesIdentification,
 		type FrequencyLevel,
 		type Observability
@@ -258,7 +258,7 @@
 											{species.name}
 										</span>
 										<span class="badge badge-xs {frequencyBadge[species.frequency.level]}">
-											{frequencyLabels[species.frequency.level]}
+											{getFrequencyLabels()[species.frequency.level]}
 										</span>
 									</div>
 								</summary>
@@ -344,7 +344,7 @@
 													{#if features.length > 0}
 														<div>
 															<span class="badge badge-xs {observabilityBadge[level]} mb-1">
-																{observabilityLabels[level]}
+																{getObservabilityLabels()[level]}
 															</span>
 															<ul class={styles.list}>
 																{#each features as feature (feature.text)}
@@ -637,5 +637,4 @@
 	:global(.text-base-content\/70 a:hover) {
 		opacity: 0.8;
 	}
-
 </style>

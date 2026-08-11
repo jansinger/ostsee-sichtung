@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
 	BoatDriveEnum,
-	boatDriveLabels,
 	getBoatDriveLabel,
 	getBoatDriveOptions,
-	isValidBoatDrive,
-	PUBLIC_BOAT_DRIVE_OPTIONS
+	getPublicBoatDriveOptions,
+	isValidBoatDrive
 } from './boatDrive';
 
 /**
@@ -26,7 +25,7 @@ describe('BoatDriveEnum.NONE', () => {
 	});
 
 	it('hat ein eigenes Label', () => {
-		expect(boatDriveLabels[BoatDriveEnum.NONE]).toBe('Kein Boot');
+		expect(getBoatDriveLabel(BoatDriveEnum.NONE)).toBe('Kein Boot');
 	});
 
 	it('wird von getBoatDriveLabel aufgelöst statt als "Unbekannt" zu enden', () => {
@@ -98,16 +97,16 @@ describe('BoatDriveEnum.MOTOR_OFF (PR 4 — Motor an/aus)', () => {
  * Konstante und keine gefilterte Sicht auf `getBoatDriveOptions()`: die Labels
  * ("Motor lief" statt "Motor") sind auf die Frage zugeschnitten.
  */
-describe('PUBLIC_BOAT_DRIVE_OPTIONS (Meldeformular)', () => {
+describe('getPublicBoatDriveOptions() (Meldeformular)', () => {
 	it('bietet genau zwei Antworten an — Motor an und Motor aus', () => {
-		expect(PUBLIC_BOAT_DRIVE_OPTIONS).toEqual([
+		expect(getPublicBoatDriveOptions()).toEqual([
 			{ value: BoatDriveEnum.MOTOR, label: 'Motor lief' },
 			{ value: BoatDriveEnum.MOTOR_OFF, label: 'Motor lief nicht' }
 		]);
 	});
 
 	it('enthält keinen der feineren Alt-Werte, die nur die Admin-Maske führt', () => {
-		const values = PUBLIC_BOAT_DRIVE_OPTIONS.map((option) => option.value);
+		const values = getPublicBoatDriveOptions().map((option) => option.value);
 		expect(values).not.toContain(BoatDriveEnum.OTHER);
 		expect(values).not.toContain(BoatDriveEnum.SAIL);
 		expect(values).not.toContain(BoatDriveEnum.DRIFTING);
@@ -123,7 +122,7 @@ describe('PUBLIC_BOAT_DRIVE_OPTIONS (Meldeformular)', () => {
  * nachstellen (Browser-Prüfung gegen den Dev-Server, beide Radios trugen
  * `value="1"` bzw. `value="6"`).
  *
- * Warum trotzdem ein Test: `PUBLIC_BOAT_DRIVE_OPTIONS` ist zwar per `toEqual`
+ * Warum trotzdem ein Test: `getPublicBoatDriveOptions()` ist zwar per `toEqual`
  * oben festgenagelt, die aus `Object.values(BoatDriveEnum)` **abgeleitete**
  * Admin-Liste aber nur auf Vollständigkeit geprüft, nie auf die Beschaffenheit
  * ihrer Werte. Der Optionswert macht auf dem Weg zur Validierung eine DOM-Runde
@@ -134,7 +133,7 @@ describe('PUBLIC_BOAT_DRIVE_OPTIONS (Meldeformular)', () => {
  */
 describe('Optionswerte überstehen die DOM-Runde (value-Attribut → Yup-Cast)', () => {
 	const optionsListen = [
-		['PUBLIC_BOAT_DRIVE_OPTIONS (Meldeformular)', PUBLIC_BOAT_DRIVE_OPTIONS],
+		['getPublicBoatDriveOptions() (Meldeformular)', getPublicBoatDriveOptions()],
 		['getBoatDriveOptions() (Admin-Maske)', getBoatDriveOptions()]
 	] as const;
 

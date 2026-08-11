@@ -37,8 +37,8 @@ import { getSexLabel, getSexOptions } from '$lib/report/formOptions/sex';
 import { getSightingFromLabel, getSightingFromOptions } from '$lib/report/formOptions/sightingFrom';
 import { getSpeciesLabel, getSpeciesOptions, speciesGroups } from '$lib/report/formOptions/species';
 import {
-	frequencyLabels,
-	observabilityLabels
+	getFrequencyLabels,
+	getObservabilityLabels
 } from '$lib/report/formOptions/speciesIdentification';
 import { getVisibilityLabel, getVisibilityOptions } from '$lib/report/formOptions/visibility';
 import {
@@ -292,14 +292,14 @@ export function collectDomainLabels(): DomainLabelSnapshot {
 			labelSets: [
 				{
 					name: 'observability',
-					options: Object.entries(observabilityLabels).map(([value, label]) => ({
+					options: Object.entries(getObservabilityLabels()).map(([value, label]) => ({
 						value,
 						label
 					}))
 				},
 				{
 					name: 'frequency',
-					options: Object.entries(frequencyLabels).map(([value, label]) => ({ value, label }))
+					options: Object.entries(getFrequencyLabels()).map(([value, label]) => ({ value, label }))
 				}
 			]
 		},

@@ -16,13 +16,13 @@ import {
 	AnimalConditionEnum,
 	getAnimalConditionLabel
 } from '$lib/report/formOptions/animalCondition';
-import { BoatDriveEnum, boatDriveLabels } from '$lib/report/formOptions/boatDrive';
+import { BoatDriveEnum, getBoatDriveLabel } from '$lib/report/formOptions/boatDrive';
 import { DistanceEnum, getDistanceLabel } from '$lib/report/formOptions/distance';
 import { DistributionEnum, getDistributionLabel } from '$lib/report/formOptions/distribution';
-import { EntryChannelEnum, entryChannelLabels } from '$lib/report/formOptions/entryChannel';
+import { EntryChannelEnum, getEntryChannelLabel } from '$lib/report/formOptions/entryChannel';
 import { getSeaStateLabel, SeaStateEnum } from '$lib/report/formOptions/seaState';
 import { getSexLabel, SexEnum } from '$lib/report/formOptions/sex';
-import { SightingFromEnum, sightingFromLabels } from '$lib/report/formOptions/sightingFrom';
+import { getSightingFromLabel, SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
 import { getSpeciesLabel, SpeciesEnum } from '$lib/report/formOptions/species';
 import { getVisibilityLabel, VisibilityEnum } from '$lib/report/formOptions/visibility';
 import { getWindDirectionLabel, WindDirectionEnum } from '$lib/report/formOptions/windDirection';
@@ -70,11 +70,13 @@ export async function GET(event: RequestEvent): Promise<Response> {
 				),
 
 			// Observation location mapping (vonwo) - Note: PDF uses "vonwo" not "beobachtungsort"
+			// Locale bewusst auf baseLocale gepinnt — dieselbe Begründung wie bei
+			// `tierart` oben (Legacy-API-Vertrag, iOS-Client OstSeeTiere/8).
 			vonwo: Object.entries(SightingFromEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.reduce(
 					(acc, [_key, value]) => {
-						acc[value.toString()] = sightingFromLabels[value as SightingFromEnum];
+						acc[value.toString()] = getSightingFromLabel(value as SightingFromEnum, baseLocale);
 						return acc;
 					},
 					{} as Record<string, string>
@@ -175,22 +177,26 @@ export async function GET(event: RequestEvent): Promise<Response> {
 				),
 
 			// Boat drive mapping (bootsantrieb) - Note: PDF shows 0-4 range
+			// Locale bewusst auf baseLocale gepinnt — dieselbe Begründung wie bei
+			// `tierart` oben (Legacy-API-Vertrag, iOS-Client OstSeeTiere/8).
 			bootsantrieb: Object.entries(BoatDriveEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.reduce(
 					(acc, [_key, value]) => {
-						acc[value.toString()] = boatDriveLabels[value as BoatDriveEnum];
+						acc[value.toString()] = getBoatDriveLabel(value as BoatDriveEnum, baseLocale);
 						return acc;
 					},
 					{} as Record<string, string>
 				),
 
 			// Entry channel mapping (eingangskanal) - Note: PDF shows 0-5 range
+			// Locale bewusst auf baseLocale gepinnt — dieselbe Begründung wie bei
+			// `tierart` oben (Legacy-API-Vertrag, iOS-Client OstSeeTiere/8).
 			eingangskanal: Object.entries(EntryChannelEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.reduce(
 					(acc, [_key, value]) => {
-						acc[value.toString()] = entryChannelLabels[value as EntryChannelEnum];
+						acc[value.toString()] = getEntryChannelLabel(value as EntryChannelEnum, baseLocale);
 						return acc;
 					},
 					{} as Record<string, string>

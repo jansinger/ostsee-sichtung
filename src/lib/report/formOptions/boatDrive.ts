@@ -1,7 +1,12 @@
 /**
  * Enum für Bootsantriebsarten
  * Die numerischen Werte werden in der Datenbank gespeichert.
- *
+ */
+import { memoizePerLocale } from '$lib/i18n/localeMemo';
+import * as m from '$lib/paraglide/messages';
+import { getLocale, type Locale } from '$lib/paraglide/runtime';
+
+/**
  * **Achtung bei `OTHER = 0`:** Die Spalte `bootsantrieb` ist
  * `integer default(0) notNull` — `0` ist also gleichzeitig der Default und die
  * Bedeutung "Sonstiger Bootsantrieb". Wer nie ein Boot hatte, darf deshalb
@@ -36,17 +41,33 @@ export enum BoatDriveEnum {
 }
 
 /**
- * Deutsche Bezeichnungen für die Bootsantriebsarten
+ * Baut je Locale die Bezeichnungen der Bootsantriebsarten aus dem Botschaftskatalog.
+ *
+ * Modul-intern (kein Export): Der einzige externe Zugriff auf das rohe Record
+ * lag in `antworten.json/+server.ts` und ist auf `getBoatDriveLabel(…,
+ * baseLocale)` umgestellt (siehe Kommentar dort). `csvExport.ts` ruft
+ * `getBoatDriveLabel` ebenfalls jetzt mit `baseLocale`.
+ *
+ * Bewusst ein Record von BUILDERN, nicht von aufgelösten Strings — siehe
+ * Begründung in `species.ts`.
  */
-export const boatDriveLabels: Record<BoatDriveEnum, string> = {
-	[BoatDriveEnum.OTHER]: 'Sonstiger Bootsantrieb',
-	[BoatDriveEnum.MOTOR]: 'Motor',
-	[BoatDriveEnum.SAIL]: 'Segel',
-	[BoatDriveEnum.DRIFTING]: 'Treibend',
-	[BoatDriveEnum.ANCHORED]: 'Vor Anker',
-	[BoatDriveEnum.NONE]: 'Kein Boot',
-	[BoatDriveEnum.MOTOR_OFF]: 'Motor aus'
+const boatDriveLabelBuilders: Record<BoatDriveEnum, (locale: Locale) => string> = {
+	[BoatDriveEnum.OTHER]: (locale) => m.formoptions_boatdrive_other({}, { locale }),
+	[BoatDriveEnum.MOTOR]: (locale) => m.formoptions_boatdrive_motor({}, { locale }),
+	[BoatDriveEnum.SAIL]: (locale) => m.formoptions_boatdrive_sail({}, { locale }),
+	[BoatDriveEnum.DRIFTING]: (locale) => m.formoptions_boatdrive_drifting({}, { locale }),
+	[BoatDriveEnum.ANCHORED]: (locale) => m.formoptions_boatdrive_anchored({}, { locale }),
+	[BoatDriveEnum.NONE]: (locale) => m.formoptions_boatdrive_none({}, { locale }),
+	[BoatDriveEnum.MOTOR_OFF]: (locale) => m.formoptions_boatdrive_motor_off({}, { locale })
 };
+
+/** Baut die Antriebs-Bezeichnungen für eine Locale genau einmal und hält sie danach vor. */
+const boatDriveLabelsFor = memoizePerLocale(
+	(locale) =>
+		Object.fromEntries(
+			Object.entries(boatDriveLabelBuilders).map(([value, build]) => [value, build(locale)])
+		) as Record<BoatDriveEnum, string>
+);
 
 export type BoatDrive = BoatDriveEnum;
 
@@ -72,12 +93,15 @@ const SELECTABLE_BOAT_DRIVES: readonly BoatDriveEnum[] = [
 
 /**
  * Generiert eine Array-Struktur für Select-Komponenten
+ * @param locale - Locale für die Anzeigetexte; Default die aktuelle Locale
  * @returns Array von Objekten mit value und label
  */
-const boatDriveOptions: Array<{ value: number; label: string }> = SELECTABLE_BOAT_DRIVES.map(
-	(value) => ({ value, label: boatDriveLabels[value] })
-);
-export const getBoatDriveOptions = (): Array<{ value: number; label: string }> => boatDriveOptions;
+export function getBoatDriveOptions(
+	locale: Locale = getLocale()
+): Array<{ value: number; label: string }> {
+	const labels = boatDriveLabelsFor(locale);
+	return SELECTABLE_BOAT_DRIVES.map((value) => ({ value, label: labels[value] }));
+}
 
 /**
  * Die im **Meldeformular** angebotene Zweier-Auswahl (PR 4, Museum 2026-08-04).
@@ -85,22 +109,48 @@ export const getBoatDriveOptions = (): Array<{ value: number; label: string }> =
  * Es geht dort allein um Motorgeräusche; die feinere Unterscheidung der
  * Alt-Werte bleibt der Admin-Maske vorbehalten, die weiterhin
  * `getBoatDriveOptions()` verwendet.
+ *
+ * Als Funktion statt als Modulkonstante (Entscheidung 2026-08-11, mit im
+ * Umfang der Etappe-1-Umstellung): eine eingefrorene Array-Konstante hätte
+ * `m.…()` genau einmal beim Modulladen ausgewertet — derselbe Fehler, den der
+ * Entwurf in 2.3/4.1 für Modulkonstanten beschreibt. Die beiden Texte haben
+ * eigene Schlüssel (`formoptions_boatdrive_public_motor_running`/
+ * `…_not_running`), nicht `formoptions_boatdrive_motor`/`…_motor_off`: Das
+ * sind andere Aussagen ("Motor lief" als Ja/Nein-Antwort auf die
+ * Meldeformular-Frage vs. "Motor" als Auswahloption in der Admin-Maske) und
+ * dürfen sich in der Übersetzung unterscheiden (siehe Teil 1, `sex.ts`).
  */
-export const PUBLIC_BOAT_DRIVE_OPTIONS = [
-	{ value: BoatDriveEnum.MOTOR, label: 'Motor lief' },
-	{ value: BoatDriveEnum.MOTOR_OFF, label: 'Motor lief nicht' }
-];
+export function getPublicBoatDriveOptions(
+	locale: Locale = getLocale()
+): Array<{ value: BoatDriveEnum; label: string }> {
+	return [
+		{
+			value: BoatDriveEnum.MOTOR,
+			label: m.formoptions_boatdrive_public_motor_running({}, { locale })
+		},
+		{
+			value: BoatDriveEnum.MOTOR_OFF,
+			label: m.formoptions_boatdrive_public_motor_not_running({}, { locale })
+		}
+	];
+}
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert
  * @param value - Der Enum-Wert (z.B. aus der Datenbank)
+ * @param locale - Locale für den Anzeigetext; Default die aktuelle Locale
  * @returns Das zugehörige Label oder einen Fallback-Text
  */
-export function getBoatDriveLabel(value: BoatDriveEnum | number | null | undefined): string {
-	if (value === null || value === undefined) return 'Nicht angegeben';
+export function getBoatDriveLabel(
+	value: BoatDriveEnum | number | null | undefined,
+	locale: Locale = getLocale()
+): string {
+	if (value === null || value === undefined)
+		return m.formoptions_boatdrive_not_specified({}, { locale });
 
 	const numericValue = typeof value === 'string' ? parseInt(value, 10) : value;
-	return boatDriveLabels[numericValue as BoatDriveEnum] || 'Unbekannt';
+	const labels = boatDriveLabelsFor(locale);
+	return labels[numericValue as BoatDriveEnum] || m.formoptions_boatdrive_invalid({}, { locale });
 }
 
 /**

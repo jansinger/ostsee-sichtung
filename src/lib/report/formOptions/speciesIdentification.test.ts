@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { SpeciesEnum, getSpeciesLabel, speciesGroups } from './species';
 import {
-	frequencyLabels,
-	observabilityLabels,
+	getFrequencyLabels,
+	getObservabilityLabels,
 	speciesIdentification,
 	type Observability
 } from './speciesIdentification';
@@ -68,13 +68,13 @@ describe('Merkmale', () => {
 	it('ordnet jede Art nach Häufigkeit ein', () => {
 		for (const species of allSpecies) {
 			const { level, text } = speciesIdentification[species].frequency;
-			expect(Object.keys(frequencyLabels)).toContain(level);
+			expect(Object.keys(getFrequencyLabels())).toContain(level);
 			expect(text.trim().length).toBeGreaterThan(0);
 		}
 	});
 
 	it('hat für jede Beobachtbarkeitsstufe ein Label', () => {
-		expect(Object.keys(observabilityLabels).sort()).toEqual(
+		expect(Object.keys(getObservabilityLabels()).sort()).toEqual(
 			['background', 'closeup', 'distance'].sort()
 		);
 	});

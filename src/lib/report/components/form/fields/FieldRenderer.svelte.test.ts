@@ -2,7 +2,7 @@ import { render } from 'vitest-browser-svelte';
 import { describe, it, expect } from 'vitest';
 import { page } from 'vitest/browser';
 import FieldRenderer from './FieldRenderer.svelte';
-import { PUBLIC_BOAT_DRIVE_OPTIONS } from '$lib/report/formOptions/boatDrive';
+import { getPublicBoatDriveOptions } from '$lib/report/formOptions/boatDrive';
 import type * as yup from 'yup';
 
 // Mock field configs that mirror the real schema's .describe() output
@@ -234,7 +234,7 @@ describe('FieldRenderer', () => {
 
 		// Die echte Konstante, nicht eine Kopie: So fällt hier auf, wenn die
 		// öffentliche Auswahl aus `formOptions/boatDrive.ts` wegdriftet.
-		const publicBoatDriveOptions = PUBLIC_BOAT_DRIVE_OPTIONS;
+		const publicBoatDriveOptions = getPublicBoatDriveOptions();
 
 		it('rendert bei type="radio" + eigenen options eine Radiogruppe mit genau diesen Optionen', async () => {
 			render(FieldRenderer, {
@@ -533,7 +533,7 @@ describe('FieldRenderer', () => {
 				meta: {
 					type: 'radio',
 					icon: 'lucide:zap',
-					options: PUBLIC_BOAT_DRIVE_OPTIONS
+					options: getPublicBoatDriveOptions()
 				}
 			});
 
