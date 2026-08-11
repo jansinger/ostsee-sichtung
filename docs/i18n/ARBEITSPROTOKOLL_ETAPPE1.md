@@ -166,3 +166,53 @@ Aufgaben 1-4 komplett. OFFEN: Aufgabe 5 aus dem Entwurf — `hardcodedStringScan
 für Schicht A und B (Entwurf Abschnitt 7). Sie ist das Netz gegen den Rückfall:
 die Zeile, die drei Monate später jemand schnell noch einfügt. Ohne sie hängt
 alles an der Sorgfalt beim Extrahieren.
+
+## Aufgabe 5 — Hartcodiert-Scan (Schicht A und B)
+
+Commits: e041c229 (Plan), 9fbf9945 (Guard), d3ecb6be (blinder Fleck behoben).
+`src/lib/form/validation/hardcodedStringScan.test.ts`, 24 Tests.
+
+### Zwei Entwurfsentscheidungen, die nicht offensichtlich waren
+1. **Der Guard benutzt den Extraktor NICHT.** Naheliegend waere gewesen,
+   `collectSchemaSites` wiederzuverwenden — es meldet fuer diese Dateien 0 Funde,
+   der Guard waere eine Zeile. Aber `.integer(message)` war fuer den Extraktor
+   unsichtbar (Aufgabe 4); ein darauf gestuetzter Guard waere fuer genau dasselbe
+   blind gewesen. Zwei unabhaengige Mechanismen sind Redundanz, einer doppelt
+   gezaehlt ist keine. Der Guard laeuft ueber `sourceScan.testutil.ts` wie die
+   vier bestehenden Scans des Projekts.
+2. **Keine Sprachheuristik, keine Ausnahmeliste.** Regel: ein Literal mit
+   Leerzeichen und mindestens zwei Buchstabengruppen. Trifft 'Bitte waehlen Sie
+   eine Tierart' und 'Please select a species' gleichermassen — der Entwurf
+   verbietet die Umlaut-Heuristik, weil ein versehentlich englischer Text keine
+   Umlaute hat. Gemessen: ausserhalb `speciesIdentification.ts` gibt es davon
+   derzeit NULL. Der Guard ist ab Tag eins gruen; das war die Bedingung dafuer,
+   dass er nicht nach einer Woche abgeschaltet wird (Entwurf Abschnitt 7).
+
+### Der Befund des Reviews
+Die erste Fassung geriet ueber `sightingSchema.ts` in katastrophales Backtracking
+(unverpaartes Backtick, >60 s). Behoben mit einer festen Randgrenze
+`MAX_LITERAL_EDGE = 300` — die aber einen blinden Fleck erzeugte: ein
+637-Zeichen-Literal mit langem nicht-buchstaeblichem Nachlauf entkam, reiner
+Fliesstext ab ~650 Zeichen. Folgenlos beim heutigen Bestand (laengstes Literal
+218 Zeichen), aber der Guard ist fuer die Zukunft gebaut.
+
+Behoben durch Trennung von Extraktion und Pruefung: lineares Muster sammelt die
+Literale, JavaScript prueft die Zwei-Wort-Bedingung. Die verschachtelten
+Quantoren, die BEIDE Probleme verursachten, entfallen. End-to-end verifiziert:
+729-Zeichen-Fliesstext und der Nachlauf-Fall werden beide gemeldet.
+
+## ETAPPE 1 ABGESCHLOSSEN
+Aufgaben 1-5 komplett. Schicht A (259 Botschaften) und Schicht B (17 Dateien)
+liefern aus dem Botschaftskatalog; `messages/en.json` traegt vorerst den
+deutschen Wortlaut. `germanBaseline.json` ist seit dem Einfrieren bitgleich.
+
+### Was als Naechstes zu entscheiden ist
+- Die eigentliche Uebersetzung ist jetzt ein Diff auf EINER Datei
+  (`messages/en.json`), ohne Quelltextaenderung. Die englischen Artnamen sind
+  weiterhin ein ungepruefter Vorschlag (`I18N_ARTNAMEN_VORSCHLAG.md`).
+- `TRANSLATION_ROLLOUT_COMPLETE` bleibt `false`, bis Etappe 2 (Schicht C) und
+  `hreflang` folgen — die drei Schritte gehoeren zusammen, siehe
+  `src/lib/i18n/translationRolloutStage.ts`.
+- Etappe 2 erbt drei Dinge aus dieser Etappe: die Locale-Falle (dreimal
+  zugeschlagen), den positiven Sprachwechsel-Nachweis als Muster, und den
+  Hartcodiert-Scan, der um Schicht C zu erweitern ist.
