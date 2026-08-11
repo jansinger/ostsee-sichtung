@@ -123,8 +123,15 @@ export interface DomainFileSnapshot {
  * 17 Dateien unter `src/lib/report/formOptions/`, namentlich als
  * Interface-Properties statt als Index-Signatur. Das macht `labels['species']`
  * zu einem bekannten Property-Zugriff (kein `| undefined` durch
- * `noUncheckedIndexedAccess`) und lässt eine vergessene 18. Datei den
- * Typ-Check brechen statt still zu fehlen.
+ * `noUncheckedIndexedAccess`).
+ *
+ * Was das NICHT leistet: Eine neue, 18. Datei bricht hier gar nichts von
+ * selbst — `collectDomainLabels()` unten muss den neuen Eintrag erst
+ * ausdrücklich zurückgeben, sonst bleibt sie unbemerkt draußen. Was das
+ * Interface tatsächlich erzwingt: Fehlt im Rückgabeobjekt von
+ * `collectDomainLabels()` eine der 17 HIER benannten Eigenschaften, bricht
+ * der Typ-Check — das schützt vor einem versehentlich ausgelassenen
+ * bekannten Eintrag, nicht vor einer vergessenen neuen Datei.
  */
 export interface DomainLabelSnapshot {
 	animalBehavior: DomainFileSnapshot;
@@ -168,9 +175,15 @@ function standardFile(
  * Deckt alle 17 Dateien unter `src/lib/report/formOptions/` ab — namentlich
  * aufgeführt statt zur Laufzeit gelistet, damit eine neue Datei diesen Test
  * bricht, statt still mitzulaufen.
+ *
+ * Die Reihenfolge unten im Quelltext ist von Hand alphabetisch gepflegt —
+ * das ist Handdisziplin, kein Determinismus. Damit ein künftiger, unsortiert
+ * eingetragener Eintrag nicht unbemerkt Diff-Rauschen in den Schnappschuss
+ * bringt, sortiert die Rückgabe hier programmatisch nach Schlüssel, genau
+ * wie `collectSchemaShape()` es für die Feld-Reihenfolge bereits tut.
  */
 export function collectDomainLabels(): DomainLabelSnapshot {
-	return {
+	const unsorted: DomainLabelSnapshot = {
 		animalBehavior: standardFile(
 			getAnimalBehaviorOptions(),
 			getAnimalBehaviorLabel(null),
@@ -242,6 +255,21 @@ export function collectDomainLabels(): DomainLabelSnapshot {
 		// direkt als Konstanten (observabilityLabels, frequencyLabels), ohne
 		// Options-Generator und ohne Fallback-Funktion. Deshalb hier ueber
 		// `labelSets` erfasst statt ueber `options`/`fallbacks`.
+		//
+		// AUSDRÜCKLICHE GRENZE: `labelSets` erfasst NUR diese zwei schmalen
+		// Label-Records. Der `speciesIdentification`-Export selbst (elf
+		// vollständige Artdatensätze: name, scientificName, size, weight,
+		// frequency.text, surfacing[], distinguishing[].text, behavior[],
+		// confusion[], fieldTip, images[].alt — rund 316 deutsche
+		// String-Literale Fließtext) ist HIER NICHT erfasst. Das ist
+		// beabsichtigt: Dieser Text ist Bestimmungshilfe-Fließtext (Schicht E),
+		// keine Beschriftung/kein Label, und gehört zu einer eigenen, späteren
+		// Migrations-Etappe, nicht zu diesem Schnappschuss. Woran man eine
+		// Verschiebung dieser Grenze erkennt: der Test „markiert die
+		// Ausschlussgrenze der Artdatensätze" in germanBaseline.test.ts hält
+		// `labelSets` exakt auf die zwei Namen 'observability'/'frequency' fest
+		// — wer die Artdatensätze hier mit aufnehmen will, muss diesen Test
+		// anfassen, nicht nur diese Datei.
 		speciesIdentification: {
 			options: [],
 			fallbacks: null,
@@ -276,4 +304,7 @@ export function collectDomainLabels(): DomainLabelSnapshot {
 			getWindStrengthLabel(INVALID_NUMERIC_VALUE)
 		)
 	};
+
+	const sortedEntries = Object.entries(unsorted).sort(([a], [b]) => a.localeCompare(b));
+	return Object.fromEntries(sortedEntries) as DomainLabelSnapshot;
 }

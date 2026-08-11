@@ -59,4 +59,26 @@ describe('collectDomainLabels', () => {
 		const labels = collectDomainLabels();
 		expect(labels['species'].groups).toEqual(['Kleinwale', 'Großwale', 'Robben']);
 	});
+
+	// Befund A (2.1-Review): speciesIdentification.ts trägt neben den beiden
+	// schmalen Label-Sets auch elf vollständige Artdatensätze mit deutschem
+	// Fließtext (name, scientificName, size, weight, frequency.text, surfacing,
+	// distinguishing, behavior, confusion, fieldTip, images.alt). Dieser Test
+	// markiert die Ausschlussgrenze ausdrücklich: der Schnappschuss deckt davon
+	// GENAU die zwei Label-Sets ab, nicht die Artdatensätze — die gehören zu
+	// einer eigenen, späteren Etappe (Schicht E). Wer das ändern will, muss
+	// diesen Test anfassen, nicht nur `germanBaseline.testutil.ts`.
+	it('markiert die Ausschlussgrenze der Artdatensätze in speciesIdentification', () => {
+		const labels = collectDomainLabels();
+		const speciesIdentification = labels['speciesIdentification'];
+
+		expect(speciesIdentification.labelSets?.map((set) => set.name)).toEqual([
+			'observability',
+			'frequency'
+		]);
+		// Die Artdatensätze (name/scientificName/size/... je Art) laufen nicht
+		// über `options` oder `fallbacks` — beide bleiben für diese Datei leer.
+		expect(speciesIdentification.options).toEqual([]);
+		expect(speciesIdentification.fallbacks).toBeNull();
+	});
 });
