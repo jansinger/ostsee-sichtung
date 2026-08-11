@@ -10,7 +10,7 @@
 	import { page } from '$app/state';
 	import { connection, watchConnection } from '$lib/stores/connectionState.svelte';
 	import { describeSubmitFailure, submitSightingForm } from '$lib/form/submitSightingForm';
-	import { sightingSchema } from '$lib/form/validation/sightingSchema';
+	import { getSightingSchema } from '$lib/form/validation/sightingSchema';
 	import { createLogger } from '$lib/logger';
 	import {
 		fieldsOutsideReportKind,
@@ -291,7 +291,7 @@
 	 * wer dort auf `stripUnknown`/`noUnknown` umstellt, bricht das hier.
 	 */
 	function reachableSchema(values: SightingFormData) {
-		return sightingSchema.omit(hiddenFormFields(values));
+		return getSightingSchema().omit(hiddenFormFields(values));
 	}
 
 	// Formular initialisieren

@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { page } from 'vitest/browser';
 import { get } from 'svelte/store';
 import { renderWithFormContext } from '$lib/report/components/testing/renderWithFormContext.testutil';
-import { sightingSchema } from '$lib/form/validation/sightingSchema';
+import { getSightingSchema } from '$lib/form/validation/sightingSchema';
+
+// Testet weiterhin den deutschen Ist-Zustand (Default-Locale) — unveraendert
+// gegenueber der frueheren Modulkonstante.
+const sightingSchema = getSightingSchema();
 import { getPublicBoatDriveOptions } from '$lib/report/formOptions/boatDrive';
 import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
 import type { SightingFormData } from '$lib/types';

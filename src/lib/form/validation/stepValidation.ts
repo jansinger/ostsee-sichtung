@@ -2,7 +2,7 @@ import { createLogger } from '$lib/logger';
 import { getFormSteps } from '$lib/report/formConfig';
 import type { SightingFormData } from '$lib/report/types';
 import { ValidationError } from 'yup';
-import { sightingSchema } from './sightingSchema';
+import { getSightingSchema } from './sightingSchema';
 
 const logger = createLogger('stepValidation');
 
@@ -22,7 +22,7 @@ export function isStepValid(currentStep: number, formData: Partial<SightingFormD
 	}
 
 	try {
-		sightingSchema
+		getSightingSchema()
 			.pick(validateFields as Array<keyof SightingFormData>)
 			.validateSync(formData, { abortEarly: false });
 		return true;
@@ -54,7 +54,7 @@ export function validateStep(
 	}
 
 	try {
-		sightingSchema
+		getSightingSchema()
 			.pick(validateFields as Array<keyof SightingFormData>)
 			.validateSync(formData, { abortEarly: false });
 		return { isValid: true, errors };

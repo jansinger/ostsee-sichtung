@@ -4,11 +4,16 @@ import { SightingFromEnum } from './formOptions/sightingFrom';
 import {
 	formStepsConfig,
 	getFormSteps,
+	getSightingSchemaFields,
 	hiddenFormFields,
-	sightingSchemaFields,
 	type FormStepsInput
 } from './formConfig';
-import { sightingSchema } from '$lib/form/validation/sightingSchema';
+import { getSightingSchema } from '$lib/form/validation/sightingSchema';
+
+// Testet weiterhin den deutschen Ist-Zustand (Default-Locale) — unveraendert
+// gegenueber der frueheren Modulkonstante.
+const sightingSchemaFields = getSightingSchemaFields();
+const sightingSchema = getSightingSchema();
 import type { SightingFormData } from './types';
 import type { UploadedFileInfo } from '$lib/types';
 

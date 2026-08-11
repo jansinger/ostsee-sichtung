@@ -1,5 +1,5 @@
 import { env } from '$env/dynamic/private';
-import { sightingSchema } from '$lib/form/validation/sightingSchema';
+import { getSightingSchema } from '$lib/form/validation/sightingSchema';
 import { createLogger } from '$lib/logger.server';
 import { getClientIp } from '$lib/server/utils/getClientIp';
 import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
@@ -215,7 +215,7 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress }
 			internalComment: undefined // Keine internen Kommentare von Clients
 		};
 
-		await sightingSchema.validate(formDataWithDefaults, { abortEarly: false });
+		await getSightingSchema().validate(formDataWithDefaults, { abortEarly: false });
 
 		// Extract and validate weather data from form if available
 		let weatherData: StoredWeatherData | undefined;

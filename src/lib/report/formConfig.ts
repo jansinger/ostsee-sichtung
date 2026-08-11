@@ -3,7 +3,8 @@
  * Richtlinien: docs/DESIGN_GUIDE.md, verbindliche Regeln: .claude/rules/design-system.md
  */
 
-import { sightingSchema } from '$lib/form/validation/sightingSchema';
+import { getSightingSchema } from '$lib/form/validation/sightingSchema';
+import { baseLocale, getLocale, type Locale } from '$lib/paraglide/runtime';
 import { SightingFromEnum } from './formOptions/sightingFrom';
 import type { FormStep, SightingFormData } from './types';
 // Typ-Import, kein Laufzeit-Import — der Zyklus formConfig.ts →
@@ -12,12 +13,40 @@ import type { FormStep, SightingFormData } from './types';
 // formConfig.ts lädt, und ein reiner Typ-Import wird beim Bundling ohnehin
 // vollständig entfernt.
 import type { SightingFromValue } from './components/sections/boatDriveReset';
+import type { SchemaObjectDescription } from 'yup';
 
-export const sightingSchemaDescription = sightingSchema.describe();
+/**
+ * Beschreibung des Sichtungs-Schemas fuer eine Locale. Ersetzt seit Aufgabe 4.2
+ * die fruehere Modulkonstante — `describe()` wertet die im Schema hinterlegten
+ * Botschaften aus, und die haengen jetzt an der Locale.
+ */
+export function getSightingSchemaDescription(
+	locale: Locale = getLocale()
+): SchemaObjectDescription {
+	return getSightingSchema(locale).describe();
+}
 
-export const initialFormState: SightingFormData =
-	sightingSchemaDescription.default as SightingFormData;
-export const sightingSchemaFields = sightingSchemaDescription.fields;
+/**
+ * `initialFormState` bleibt bewusst eine Konstante: Es traegt ausschliesslich
+ * Vorgabewerte (`.default(...)` im Schema) — Zahlen, Booleans, leere Arrays —,
+ * keine Anzeigetexte. Diese Werte sind fuer jede Locale identisch, ein
+ * Locale-Parameter waere hier ohne Wirkung. Aus `baseLocale` abgeleitet, damit
+ * die Herkunft (irgendeine feste, gebaute Schema-Instanz) sichtbar bleibt,
+ * statt eine dritte, unabhaengige Quelle fuer dieselben Vorgabewerte zu sein.
+ */
+export const initialFormState: SightingFormData = getSightingSchemaDescription(baseLocale)
+	.default as SightingFormData;
+
+/**
+ * Feldbeschreibungen (Label, `meta`, Typ) fuer eine Locale. Ersetzt die
+ * fruehere Modulkonstante `sightingSchemaFields` aus denselben Gruenden wie
+ * `getSightingSchemaDescription` oben.
+ */
+export function getSightingSchemaFields(
+	locale: Locale = getLocale()
+): SchemaObjectDescription['fields'] {
+	return getSightingSchemaDescription(locale).fields;
+}
 
 /**
  * Multi-step form structure following UX best practices

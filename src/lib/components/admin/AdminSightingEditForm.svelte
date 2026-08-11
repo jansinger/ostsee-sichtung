@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { beforeNavigate } from '$app/navigation';
 	import { isFormDirty } from '$lib/form/isFormDirty';
-	import { adminSightingSchema } from '$lib/form/validation/sightingSchema';
+	import { getAdminSightingSchema } from '$lib/form/validation/sightingSchema';
 	import Form from '$lib/report/components/form/Form.svelte';
 	import Administrative from '$lib/report/components/sections/Administrative.svelte';
 	import AnimalInfo from '$lib/report/components/sections/AnimalInfo.svelte';
@@ -77,7 +77,7 @@
 	// Initialisiere das Formular mit den vorhandenen Daten (one-time, untracked)
 	const initProps = untrack(() => ({
 		initialValues: buildAdminEditInitialValues(sighting),
-		validationSchema: adminSightingSchema,
+		validationSchema: getAdminSightingSchema(),
 		onSubmit: submitForm
 	}));
 	let isValid = $derived(formContext.isValid);

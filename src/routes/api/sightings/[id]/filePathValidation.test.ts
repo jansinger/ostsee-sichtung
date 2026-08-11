@@ -39,13 +39,13 @@ vi.mock('drizzle-orm', () => ({
 }));
 
 vi.mock('$lib/form/validation/sightingSchema', () => ({
-	sightingSchema: {
+	getSightingSchema: vi.fn(() => ({
 		validate: vi.fn().mockResolvedValue(undefined)
-	},
+	})),
 	// PUT validiert gegen das Admin-Schema (siehe +server.ts).
-	adminSightingSchema: {
+	getAdminSightingSchema: vi.fn(() => ({
 		validate: vi.fn().mockResolvedValue(undefined)
-	}
+	}))
 }));
 
 vi.mock('$lib/server/db/sightingRepository', () => ({

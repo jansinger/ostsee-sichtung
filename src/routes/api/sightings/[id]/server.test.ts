@@ -23,15 +23,19 @@ vi.mock('$lib/server/audit/auditService', () => ({
 	logAuditEvent: vi.fn().mockResolvedValue(undefined)
 }));
 
-vi.mock('$lib/form/validation/sightingSchema', () => ({
-	sightingSchema: {
-		validate: vi.fn().mockResolvedValue(undefined)
-	},
+vi.mock('$lib/form/validation/sightingSchema', () => {
+	// Stabile Objektreferenz je Schema — `getAdminSightingSchema()` wird von
+	// `+server.ts` mehrfach aufgerufen und muss jedes Mal dasselbe gemockte
+	// `validate` liefern, sonst greift `vi.mocked(...).mockRejectedValueOnce`
+	// unten am falschen Objekt.
+	const sightingSchemaMock = { validate: vi.fn().mockResolvedValue(undefined) };
 	// PUT validiert gegen das Admin-Schema (siehe +server.ts).
-	adminSightingSchema: {
-		validate: vi.fn().mockResolvedValue(undefined)
-	}
-}));
+	const adminSightingSchemaMock = { validate: vi.fn().mockResolvedValue(undefined) };
+	return {
+		getSightingSchema: vi.fn(() => sightingSchemaMock),
+		getAdminSightingSchema: vi.fn(() => adminSightingSchemaMock)
+	};
+});
 
 vi.mock('$lib/logger.server', () => ({
 	createLogger: vi.fn(() => ({
@@ -52,7 +56,9 @@ vi.mock('$lib/logger', () => ({
 }));
 
 import { db } from '$lib/server/db';
-import { adminSightingSchema } from '$lib/form/validation/sightingSchema';
+import { getAdminSightingSchema } from '$lib/form/validation/sightingSchema';
+
+const adminSightingSchema = getAdminSightingSchema();
 import { updateSighting } from '$lib/server/db/sightingRepository';
 import { logAuditEvent } from '$lib/server/audit/auditService';
 import { PUT } from './+server';
