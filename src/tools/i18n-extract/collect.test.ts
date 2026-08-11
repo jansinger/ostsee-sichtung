@@ -148,6 +148,93 @@ describe('collectSchemaSites', () => {
 			`)
 		).toThrow(/tooltipText/);
 	});
+
+	// Befund A: vier Formen, an denen die geschlossene meta-Allowlist bisher
+	// still umgangen wurde — jede muss jetzt als `skipped` erscheinen.
+
+	// sightingSchema.ts:1422 — `.meta(sightingFromTextBase.spec.meta ?? {})`.
+	it('meldet .meta(...) mit einem Argument, das kein Objektliteral ist', () => {
+		const result = collect(`
+			const s = yup.object().shape({
+				sightingFromText: yup.string().meta(sightingFromTextBase.spec.meta ?? {})
+			});
+		`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => s.reason)).toEqual(['non-literal-argument']);
+		expect(result.skipped[0]?.aspect).toBe('meta');
+	});
+
+	it('meldet ein Spread in einem meta-Objektliteral', () => {
+		const result = collect(`
+			const s = yup.object().shape({
+				a: yup.string().meta({ ...baseMeta })
+			});
+		`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => s.reason)).toEqual(['non-literal-argument']);
+		expect(result.skipped[0]?.aspect).toBe('meta');
+	});
+
+	it('meldet eine ShorthandPropertyAssignment in meta({ helpText })', () => {
+		const result = collect(`
+			const s = yup.object().shape({
+				a: yup.string().meta({ helpText })
+			});
+		`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => s.reason)).toEqual(['non-literal-argument']);
+		expect(result.skipped[0]?.aspect).toBe('meta.helpText');
+	});
+
+	it('meldet einen erlaubten meta-Schlüssel mit nicht-literalem Initializer', () => {
+		const result = collect(`
+			const s = yup.object().shape({
+				a: yup.string().meta({ helpText: someVar })
+			});
+		`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => s.reason)).toEqual(['non-literal-argument']);
+		expect(result.skipped[0]?.aspect).toBe('meta.helpText');
+	});
+
+	// Dieselben vier Formen gelten sinngemäß für die Objektform von .test().
+	it('meldet ein Spread in der Objektform von .test({...}), lässt ein literales message aber weiter extrahieren', () => {
+		const result = collect(`
+			const s = base.shape({
+				distance: field.test({ ...baseTest, message: 'x' })
+			});
+		`);
+		// Der Spread selbst kann eine eigene message tragen — das ersetzt das
+		// literale message hier nicht, deshalb bleibt es eine reguläre Fundstelle.
+		expect(result.sites.map((s) => s.text)).toEqual(['x']);
+		expect(result.skipped.map((s) => s.reason)).toEqual(['non-literal-argument']);
+		expect(result.skipped[0]?.aspect).toBe('test');
+	});
+
+	it('meldet eine ShorthandPropertyAssignment in der Objektform von .test({ message })', () => {
+		const result = collect(`
+			const s = base.shape({
+				distance: field.test({ message })
+			});
+		`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => s.reason)).toEqual(['non-literal-argument']);
+		expect(result.skipped[0]?.aspect).toBe('test');
+	});
+
+	it('meldet ein nicht-literales message in der Objektform von .test()', () => {
+		const result = collect(`
+			const s = base.shape({
+				distance: field.test({ name: 'x', message: someVar, test: fn })
+			});
+		`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => s.reason)).toEqual([
+			'test-name-argument',
+			'non-literal-argument'
+		]);
+		expect(result.skipped[1]?.aspect).toBe('test');
+	});
 });
 
 describe('collectFormOptionsSites', () => {

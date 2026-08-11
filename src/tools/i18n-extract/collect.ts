@@ -161,10 +161,51 @@ export function collectSchemaSites(
 
 	function handleMeta(node: ts.CallExpression): void {
 		const arg = node.arguments[0];
-		if (!arg || !ts.isObjectLiteralExpression(arg)) {
+		if (!arg) {
+			// .meta() ohne Argument — nichts zu entscheiden, nichts zu melden.
+			return;
+		}
+		if (!ts.isObjectLiteralExpression(arg)) {
+			// z.B. `.meta(sightingFromTextBase.spec.meta ?? {})` (sightingSchema.ts:1422).
+			// Die geschlossene Allowlist gilt nur für Objektliterale — hier kann sie gar
+			// nicht prüfen, ob ein sprachlicher Schlüssel drinsteckt.
+			addSkip(
+				arg,
+				arg.getText(sourceFile),
+				'meta',
+				'non-literal-argument',
+				'meta(...) erhält kein Objektliteral, sondern einen Ausdruck — von Hand prüfen, ' +
+					'ob die referenzierte(n) Quelle(n) sprachliche Schlüssel (helpText/placeholder/valueText) tragen'
+			);
 			return;
 		}
 		for (const prop of arg.properties) {
+			if (ts.isSpreadAssignment(prop)) {
+				// `{ ...base, type: 'x' }` — die gespreadeten Eigenschaften entziehen sich
+				// der Schlüsselprüfung komplett.
+				addSkip(
+					prop,
+					prop.getText(sourceFile),
+					'meta',
+					'non-literal-argument',
+					'Spread in meta({...}) — von Hand prüfen, ob die gespreadete Quelle sprachliche ' +
+						'meta-Schlüssel (helpText/placeholder/valueText) enthält'
+				);
+				continue;
+			}
+			if (ts.isShorthandPropertyAssignment(prop)) {
+				// `{ helpText }` — derselbe erlaubte Schlüssel, aber ohne Literal-Initializer.
+				const key = prop.name.getText(sourceFile);
+				addSkip(
+					prop,
+					prop.getText(sourceFile),
+					`meta.${key}`,
+					'non-literal-argument',
+					`meta.${key} steht als Kurzschreibweise ({ ${key} }) ohne Literal — von Hand prüfen, ` +
+						`ob die referenzierte Variable ${key} sprachlich ist`
+				);
+				continue;
+			}
 			if (!ts.isPropertyAssignment(prop) || ts.isComputedPropertyName(prop.name)) {
 				continue;
 			}
@@ -191,7 +232,18 @@ export function collectSchemaSites(
 			}
 			if (ts.isStringLiteralLike(prop.initializer)) {
 				addSite(prop.initializer, `meta.${key}`);
+				continue;
 			}
+			// Erlaubter Schlüssel (z.B. helpText), aber der Wert ist kein Literal
+			// (`{ helpText: someVar }`) — die Allowlist kann den Inhalt nicht prüfen.
+			addSkip(
+				prop.initializer,
+				prop.initializer.getText(sourceFile),
+				`meta.${key}`,
+				'non-literal-argument',
+				`meta.${key} ist ein sprachlicher Schlüssel, aber der Wert ist kein Literal — von Hand ` +
+					'prüfen, ob der referenzierte Ausdruck einen Anzeigetext liefert'
+			);
 		}
 	}
 
@@ -206,23 +258,62 @@ export function collectSchemaSites(
 			return;
 		}
 		for (const prop of arg.properties) {
+			if (ts.isSpreadAssignment(prop)) {
+				// `{ ...base, message: 'x' }` — ob darin ein `message` steckt, entzieht
+				// sich der Prüfung komplett.
+				addSkip(
+					prop,
+					prop.getText(sourceFile),
+					'test',
+					'non-literal-argument',
+					'Spread in der Objektform von .test({...}) — von Hand prüfen, ob die gespreadete ' +
+						'Quelle eine message trägt'
+				);
+				continue;
+			}
+			if (ts.isShorthandPropertyAssignment(prop)) {
+				// `{ message }` — derselbe erlaubte Schlüssel, aber ohne Literal-Initializer.
+				const key = prop.name.getText(sourceFile);
+				addSkip(
+					prop,
+					prop.getText(sourceFile),
+					'test',
+					'non-literal-argument',
+					`test({ ${key} }) steht als Kurzschreibweise ohne Literal — von Hand prüfen, ob die ` +
+						`referenzierte Variable ${key} sprachlich ist`
+				);
+				continue;
+			}
 			if (!ts.isPropertyAssignment(prop) || ts.isComputedPropertyName(prop.name)) {
 				continue;
 			}
 			const key = prop.name.getText(sourceFile);
-			if (!ts.isStringLiteralLike(prop.initializer)) {
+			if (key === 'name') {
+				if (ts.isStringLiteralLike(prop.initializer)) {
+					addSkip(
+						prop.initializer,
+						prop.initializer.text,
+						'test.name',
+						'test-name-argument',
+						'name in der Objektform von .test() ist der Testname'
+					);
+				}
 				continue;
 			}
-			if (key === 'name') {
+			if (key === 'message') {
+				if (ts.isStringLiteralLike(prop.initializer)) {
+					addSite(prop.initializer, 'test');
+					continue;
+				}
+				// Erlaubter Schlüssel, aber der Wert ist kein Literal — von Hand zu prüfen.
 				addSkip(
 					prop.initializer,
-					prop.initializer.text,
-					'test.name',
-					'test-name-argument',
-					'name in der Objektform von .test() ist der Testname'
+					prop.initializer.getText(sourceFile),
+					'test',
+					'non-literal-argument',
+					'message in der Objektform von .test() ist kein Literal — von Hand prüfen, ob der ' +
+						'referenzierte Ausdruck einen Anzeigetext liefert'
 				);
-			} else if (key === 'message') {
-				addSite(prop.initializer, 'test');
 			}
 		}
 	}
