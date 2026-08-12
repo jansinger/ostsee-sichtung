@@ -75,6 +75,38 @@ export function formOptionsMessageKey(
 }
 
 /**
+ * Pfadpräfix für eine `.svelte`-Datei, z.B.
+ * `src/lib/report/components/SubmissionSuccess.svelte` → `report_components_submissionsuccess`.
+ *
+ * Dasselbe Muster wie `pathPrefix()` in `i18n-inventory.ts` (eigene
+ * Implementierung, kein Import — siehe Dateikopf von `collect.ts`): `src` und
+ * `lib` tragen keine Information, jedes übrige Pfadsegment wird slugifiziert.
+ */
+function sveltePathPrefix(relativeFilePath: string): string {
+	const withoutExt = relativeFilePath.replace(/\.svelte$/, '');
+	const segments = withoutExt.split(/[/\\]/).filter((s) => s !== 'src' && s !== 'lib');
+	return segments.map((s) => slugify(s, 24)).join('_');
+}
+
+/**
+ * Schlüssel für eine Svelte-Markup-Fundstelle: Pfadpräfix + Aspekt (`text` oder
+ * Attributname) + Slug der ersten Wörter — dasselbe Schema wie
+ * `suggestKeyForSvelte()` in `i18n-inventory.ts`, damit `docs/i18n-inventory.md`
+ * als Nachschlagewerk lesbar bleibt (Auftrag, Schritt 3).
+ */
+export function svelteMessageKey(
+	relativeFilePath: string,
+	aspect: string,
+	text: string,
+	taken: Set<string>
+): string {
+	const prefix = sveltePathPrefix(relativeFilePath);
+	const words = text.trim().split(/\s+/).slice(0, 5).join(' ');
+	const base = [prefix, aspect, slugify(words)].filter(Boolean).join('_');
+	return register(base, taken);
+}
+
+/**
  * Vergibt den Schlüssel und hängt bei Kollision ein Zählsuffix an.
  *
  * Kein Feld darf zwei Botschaften unter einem Schlüssel führen — das wäre die

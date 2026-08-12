@@ -30,3 +30,45 @@ export function applySitesToSource(source: string, sites: ExtractionSite[]): str
 	}
 	return result;
 }
+
+/**
+ * Die Ersetzungsform für eine Svelte-Markup-Fundstelle — je Position anders
+ * (Auftrag, Aufgabe 2.2, Schritt 4):
+ *
+ *  - Textknoten: `{m.key()}` — der Knoten trägt bereits nur den reinen Text,
+ *    keine Anführungszeichen zu ersetzen.
+ *  - Attribut: `attr={m.key()}`, **einschließlich** der Anführungszeichen —
+ *    `attr="{m.key()}"` wäre eine Zeichenketten-Interpolation, nicht der Wert
+ *    selbst (Auftrag).
+ *
+ * **Kein `{ locale }`-Argument**, anders als `messageCall()` oben für Schicht
+ * A/B: In Komponenten gibt es kein `locale`-Argument, Paraglide löst über die
+ * aktive Locale auf — eine Komponente rendert immer in der Sprache der
+ * Anfrage (Auftrag).
+ */
+function svelteMessageCall(key: string): string {
+	return `m.${key}()`;
+}
+
+function svelteReplacement(site: ExtractionSite): string {
+	if (site.aspect === 'text') {
+		return `{${svelteMessageCall(site.key)}}`;
+	}
+	// Jeder andere Aspekt ist ein Attributname (siehe `SVELTE_TARGET_ATTRIBUTES`
+	// in `collect.ts`) — `site.start`/`site.end` decken bei Attribut-Fundstellen
+	// die GESAMTE Attributzuweisung ab (`name="wert"`), nicht nur den Wert.
+	return `${site.aspect}={${svelteMessageCall(site.key)}}`;
+}
+
+/**
+ * Ersetzt alle Svelte-Fundstellen einer Datei — von hinten nach vorn, aus
+ * demselben Grund wie `applySitesToSource`.
+ */
+export function applySvelteSitesToSource(source: string, sites: ExtractionSite[]): string {
+	const ordered = [...sites].sort((a, b) => b.start - a.start);
+	let result = source;
+	for (const site of ordered) {
+		result = result.slice(0, site.start) + svelteReplacement(site) + result.slice(site.end);
+	}
+	return result;
+}

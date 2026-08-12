@@ -160,7 +160,6 @@ verifiziert, siehe Nachweise oben.
 Werden einzeln geplant, sobald 2.1 abgenommen ist — nach der Lehre aus Etappe 0
 („Pläne klein schneiden. Neun Tasks in einem Dokument waren zu viel.").
 
-
 ---
 
 ## Aufgabe 2.2 — Der Extraktor lernt Svelte
@@ -175,8 +174,10 @@ In Schicht A und B war die Ersetzung ein Literaltausch an einer Aufrufstelle. Im
 Markup ist sie ein Formwechsel, und er ist je Position verschieden:
 
 ```svelte
-<p>Ein Text</p>                    →  <p>{m.key()}</p>
-placeholder="Ein Text"             →  placeholder={m.key()}
+<p>Ein Text</p>
+→
+<p>{m.key()}</p>
+placeholder="Ein Text" → placeholder={m.key()}
 ```
 
 Bei Attributen müssen die **Anführungszeichen mit ersetzt** werden:
@@ -194,17 +195,17 @@ Buchstabengruppe. **Keine Sprachheuristik**, aus demselben Grund wie in Etappe 1
 
 ### Was extrahiert wird
 
-| Fall | Ersetzung |
-| --- | --- |
-| Textknoten, **einziges Kind** seines Elements, mit ≥1 Buchstabengruppe, ohne `{…}` | `{m.key()}` |
-| Attribut `placeholder`/`title`/`aria-label`/`alt` mit rein statischem Wert | `attr={m.key()}` |
+| Fall                                                                               | Ersetzung        |
+| ---------------------------------------------------------------------------------- | ---------------- |
+| Textknoten, **einziges Kind** seines Elements, mit ≥1 Buchstabengruppe, ohne `{…}` | `{m.key()}`      |
+| Attribut `placeholder`/`title`/`aria-label`/`alt` mit rein statischem Wert         | `attr={m.key()}` |
 
 ### Was verweigert und gemeldet wird
 
 Jeder Fall mit Grund im Abschnitt „Übersprungen — bitte durchsehen":
 
 1. **Satzfragment** — der Textknoten hat Geschwister-Elemente. `Vielen Dank für
-   Ihre <strong>Meldung</strong>!` zerfällt in drei Knoten; sie einzeln zu
+Ihre <strong>Meldung</strong>!` zerfällt in drei Knoten; sie einzeln zu
    übersetzen bricht die Wortstellung in jeder Zielsprache. Das ist **kein
    Randfall**: allein in drei Dateien stehen 53 Inline-Elemente. Diese Stellen
    brauchen eine Botschaft über das ganze Element, mit Auszeichnung als Parameter
@@ -218,7 +219,7 @@ Jeder Fall mit Grund im Abschnitt „Übersprungen — bitte durchsehen":
 
 ### Schritte
 
-- [ ] **1. Tests zuerst**, gegen konstruiertes Markup: je Fall der Tabelle eine
+- [x] **1. Tests zuerst**, gegen konstruiertes Markup: je Fall der Tabelle eine
       Positivprobe, je Verweigerungsgrund eine Gegenprobe. Dazu die Probe, die in
       Etappe 1 den Ausschlag gab: **ein deutscher Satz im Markup-Kommentar
       (`<!-- … -->`) darf nicht gefunden werden.** Dieses Projekt schreibt
@@ -226,26 +227,53 @@ Jeder Fall mit Grund im Abschnitt „Übersprungen — bitte durchsehen":
       diesen Fall wäre von Anfang an unbrauchbar. Der AST macht das von selbst —
       `Comment`-Knoten tragen ihren Inhalt in `data`, die Traversierung steigt
       dort nie ab. Genau deshalb AST und nicht Regex.
-- [ ] **2. `collectSvelteSites`** in `src/tools/i18n-extract/collect.ts`,
+- [x] **2. `collectSvelteSites`** in `src/tools/i18n-extract/collect.ts`,
       Rückgabe wie die beiden bestehenden Sammler (`ExtractionSite[]`,
       `SkippedSite[]`). Parsen über `svelte/compiler`, wie
       `analyzeSvelteSource` es im Inventar-Werkzeug bereits tut — die dortige
       Traversierung ist die Vorlage, nicht der Import.
-- [ ] **3. Schlüsselschema** wie in Etappe 1 beibehalten, damit
+- [x] **3. Schlüsselschema** wie in Etappe 1 beibehalten, damit
       `docs/i18n-inventory.md` lesbar bleibt: Pfadpräfix plus Aspekt plus Slug,
       z. B. `report_components_submissionsuccess_text_vielen_dank`. Kollisionen
       mit Zählsuffix, Vergabe in Quelltextreihenfolge (zwei Durchgänge, wie in
       `collectSchemaSites`).
-- [ ] **4. Ersetzungsform je Position** in `apply.ts`: Textknoten bekommen
+- [x] **4. Ersetzungsform je Position** in `apply.ts`: Textknoten bekommen
       `{m.key()}`, Attribute `attr={m.key()}` **einschließlich der
       Anführungszeichen**. Ein Test je Form, der die erzeugte Quelle mit dem
       Svelte-Compiler wieder parst — erzeugt die Ersetzung gültiges Markup?
-- [ ] **5. Trockenlauf über alle 68 Dateien.** Zahlen nennen: gefunden,
-      verweigert je Grund. Den Abschnitt „Übersprungen" **vollständig lesen** und
-      im Bericht beurteilen: Steht dort etwas, das eigentlich mechanisch machbar
-      wäre? Und wie viele Satzfragmente sind es wirklich? Diese Zahl bestimmt den
-      Aufwand von Aufgabe 2.3.
-- [ ] **6. Nachweise.** Mutation je Verweigerungsgrund (Regel entfernen → die
+- [x] **5. Trockenlauf über alle 68 Dateien.** Zahlen (per Skript im
+      Scratchpad erhoben, nicht Teil des Werkzeugs — der strukturelle Umbau
+      ist Aufgabe 2.3):
+
+      | | Anzahl |
+          | --- | ---: |
+          | Dateien im Umfang | 68 |
+          | Gefunden (extrahierbar) | 325 |
+          | Übersprungen gesamt | 362 |
+          | davon Satzfragment | **244** |
+          | davon Interpolation | 65 |
+          | davon dynamisches Attribut | 35 |
+          | davon keine Buchstabengruppe | 11 |
+          | davon Plural-Kandidat | 7 |
+
+          **244 Satzfragmente** sind die Planungsgrundlage für Aufgabe 2.3 — mehr
+          als die 53 Inline-Elemente aus der ursprünglichen Schätzung, weil jedes
+          betroffene Element mehrere Textknoten gleichzeitig verwirft (z. B. drei
+          Knoten für ein Element mit einem ausgezeichneten Wort).
+
+          **Nacharbeit während des Trockenlaufs:** Die ursprüngliche Regel prüfte
+          nur direkte Geschwister eines Textknotens. Ein Textknoten, der
+          innerhalb eines Inline-Elements (`<strong>`) tatsächlich einziges Kind
+          ist, wurde dadurch trotzdem extrahiert, obwohl das umschließende
+          Element (`<p>`) gemischten Inhalt hat — die Regel griff eine Ebene zu
+          flach. Behoben durch Weiterreichen eines `ancestorMixed`-Flags durch
+          die Fragment-Traversierung: Ein Fragment gilt als gemischt, wenn es
+          sowohl einen Textknoten mit Buchstaben als auch ein Element-/Ausdrucks-
+          Kind enthält; dieser Status vererbt sich auf jedes Fragment darunter.
+          Verschachtelung allein (`<div><p>Text</p></div>`) bleibt unberührt —
+          keines der beiden beteiligten Fragmente ist für sich gemischt.
+
+- [x] **6. Nachweise.** Mutation je Verweigerungsgrund (Regel entfernen → die
       zugehörige Gegenprobe wird rot). `npm run test:quick` grün.
       `germanBaseline.json` unverändert. Der Arbeitsbaum enthält **keine**
       Änderung an einer `.svelte`-Datei — dies ist ein Trockenlauf.
@@ -257,3 +285,18 @@ Jeder Fall mit Grund im Abschnitt „Übersprungen — bitte durchsehen":
 2. Die erzeugten Ersetzungen parsen als gültiges Svelte.
 3. Jede Verweigerungskategorie ist per Mutation belegt.
 4. Die Zahl der Satzfragmente ist erhoben — sie ist die Planungsgrundlage für 2.3.
+
+**Aufgabe 2.2 abgeschlossen** (2026-08-12). Alle sechs Schritte umgesetzt und
+verifiziert; Zahlen und Mutationsergebnisse siehe oben und
+`src/tools/i18n-extract/collectSvelte.test.ts`. Beurteilung des
+„Übersprungen"-Abschnitts (Auftrag): Ein Teil der 244 Satzfragmente und 65
+Interpolationen sind Einzelwörter neben einem reinen Icon-Element ohne Text
+(z. B. „Abmelden“, „Offline“ neben einem `~icons/...`-Svelte-Icon) — dort
+trüge eine Wortstellungs-Verschiebung kein Risiko, weil das Geschwister keinen
+Text besitzt. Die aktuelle Regel unterscheidet das bewusst nicht (keine
+Sprachheuristik, siehe Dateikopf `collect.ts`) und verwirft sie trotzdem —
+mechanisch enger als nötig, aber sicher in die falsche Richtung. Umgekehrt: In
+der Stichprobe der 325 extrahierten Fundstellen war nichts, das besser
+Handarbeit gewesen wäre — jede geprüfte Fundstelle ist ein eigenständiger,
+kontextfreier Anzeigetext (Navigationseinträge, Labels, Logo-`alt`-Texte,
+Meldungen).

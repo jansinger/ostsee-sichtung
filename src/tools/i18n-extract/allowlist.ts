@@ -65,7 +65,31 @@ export type SkipReason =
 	// übersprungen — nicht eingesammelt UND nicht gemeldet. Ein Mensch muss hier
 	// von Hand entscheiden, ob und wie extrahiert wird; das Werkzeug kann die
 	// Struktur nicht auf Anhieb in Schlüssel und Text zerlegen.
-	| 'record-pattern-miss';
+	| 'record-pattern-miss'
+	// --- Ab hier: `collectSvelteSites` (Aufgabe 2.2) ---
+	//
+	// Der wichtigste Grund von allen (siehe Dateikopf von collect.ts): Ein
+	// Textknoten mit Geschwister-ELEMENTEN (`Vielen Dank für Ihre
+	// <strong>Meldung</strong>!`). Die drei Textknoten einzeln zu übersetzen
+	// bricht die Wortstellung in jeder Zielsprache — auf Englisch steht das
+	// ausgezeichnete Wort woanders. Braucht eine Botschaft über das ganze
+	// Element, mit Auszeichnung als Parameter (Aufgabe 2.3, Handarbeit).
+	| 'sentence-fragment'
+	// Ein Textknoten mit einem `ExpressionTag`-Geschwister (`Insgesamt {count}
+	// Tiere`). Braucht eine ICU-Botschaft mit Parameter statt eines reinen
+	// Textbausteins.
+	| 'interpolation'
+	// Der Text (Textknoten oder Attributwert) enthält eine Ziffer — möglicher
+	// ICU-Plural. Menschliche Entscheidung (Aufgabe 2.4), nicht mechanisch.
+	| 'plural-candidate'
+	// Reine Satzzeichen, Symbole oder Zahlen ohne eine einzige Buchstabengruppe
+	// — kein Fließtext, nichts zu übersetzen.
+	| 'no-letter-group'
+	// Ein Attributwert (`placeholder`/`title`/`aria-label`/`alt`) ist kein
+	// reines Literal — enthält mindestens einen dynamischen Anteil
+	// (`{ausdruck}`). Die Ersetzung `attr={m.key()}` ginge sonst kaputt: Der
+	// dynamische Anteil hätte keinen Platz mehr in der Botschaft.
+	| 'dynamic-attribute';
 
 export type MetaDecision =
 	| { kind: 'extract' }

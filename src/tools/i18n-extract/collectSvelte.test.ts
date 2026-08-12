@@ -1,0 +1,212 @@
+import { parse } from 'svelte/compiler';
+import { describe, expect, it } from 'vitest';
+import { applySvelteSitesToSource } from './apply';
+import { collectSvelteSites } from './collect';
+import { createKeyRegistry } from './messageKey';
+
+const FILE = 'src/lib/report/components/SubmissionSuccess.svelte';
+
+function collect(source: string) {
+	return collectSvelteSites(source, FILE, createKeyRegistry());
+}
+
+describe('collectSvelteSites — Extraktion', () => {
+	it('extrahiert einen Textknoten, der einziges Kind seines Elements ist', () => {
+		const result = collect(`<p>Ein Text</p>`);
+		expect(result.sites.map((s) => [s.key, s.text, s.aspect])).toEqual([
+			['report_components_submissionsuccess_text_ein_text', 'Ein Text', 'text']
+		]);
+		expect(result.skipped).toEqual([]);
+	});
+
+	it('extrahiert einen rein statischen Attributwert (placeholder/title/aria-label/alt)', () => {
+		const result = collect(
+			`<input placeholder="Bitte eingeben" title="Ein Titel" aria-label="Eine Beschriftung" alt="Ein Bild" />`
+		);
+		expect(result.sites.map((s) => [s.aspect, s.text])).toEqual([
+			['placeholder', 'Bitte eingeben'],
+			['title', 'Ein Titel'],
+			['aria-label', 'Eine Beschriftung'],
+			['alt', 'Ein Bild']
+		]);
+	});
+
+	it('markiert die Offsets eines Textknotens so, dass genau der getrimmte Text ersetzbar ist', () => {
+		const source = `<p>\n\tEin Text\n</p>`;
+		const [site] = collect(source).sites;
+		expect(source.slice(site!.start, site!.end)).toBe('Ein Text');
+	});
+
+	it('markiert die Offsets eines Attributs so, dass die gesamte Zuweisung inkl. Anführungszeichen ersetzbar ist', () => {
+		const source = `<input placeholder="Bitte eingeben" />`;
+		const [site] = collect(source).sites;
+		expect(source.slice(site!.start, site!.end)).toBe('placeholder="Bitte eingeben"');
+	});
+
+	it('ignoriert Bool-Shortcut-Attribute (disabled) und rein dynamische Attribute ohne Meldung', () => {
+		const result = collect(`<input disabled />`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped).toEqual([]);
+	});
+
+	// Die Reihenfolge ist nicht Kosmetik — siehe der gleichnamige Test in
+	// collect.test.ts für collectSchemaSites. Ein Walk über die Kind-Arrays des
+	// Svelte-AST besucht ein Fragment zwar bereits in Quelltextreihenfolge
+	// (anders als ts.forEachChild über eine Aufrufkette), aber die
+	// Kollisionssuffix-Vergabe im zweiten Durchgang bleibt in collect.ts
+	// trotzdem bestehen — dieser Test belegt, dass sie hier ebenfalls in
+	// Quelltextreihenfolge landet.
+	it('liefert Fundstellen in Quelltextreihenfolge und vergibt Kollisionssuffixe entsprechend', () => {
+		const result = collect(`<p>Ein Text</p>\n<p>Ein Text</p>`);
+		expect(result.sites.map((s) => s.key)).toEqual([
+			'report_components_submissionsuccess_text_ein_text',
+			'report_components_submissionsuccess_text_ein_text_2'
+		]);
+	});
+});
+
+describe('collectSvelteSites — Verweigerungsregeln', () => {
+	it('verweigert ein Satzfragment: Textknoten mit Geschwister-Element', () => {
+		const result = collect(`<p>Vielen Dank für Ihre <strong>Meldung</strong>!</p>`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => [s.text, s.reason])).toEqual([
+			['Vielen Dank für Ihre', 'sentence-fragment'],
+			['Meldung', 'sentence-fragment'],
+			['!', 'sentence-fragment']
+		]);
+	});
+
+	it('verweigert eine Interpolation: Textknoten mit Geschwister-Ausdruck', () => {
+		const result = collect(`<p>Insgesamt {count} Tiere gesichtet</p>`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => [s.text, s.reason])).toEqual([
+			['Insgesamt', 'interpolation'],
+			['Tiere gesichtet', 'interpolation']
+		]);
+	});
+
+	it('verweigert einen Plural-Kandidaten: Text mit Ziffer', () => {
+		const result = collect(`<p>Noch 3 Schritte</p>`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped).toEqual([
+			{
+				file: FILE,
+				line: 1,
+				text: 'Noch 3 Schritte',
+				aspect: 'text',
+				reason: 'plural-candidate',
+				explanation:
+					'enthält eine Ziffer — möglicher ICU-Plural, menschliche Entscheidung (Aufgabe 2.4)'
+			}
+		]);
+	});
+
+	it('verweigert einen Plural-Kandidaten auch in einem Attribut', () => {
+		const result = collect(`<input placeholder="Bitte 3 Zeichen eingeben" />`);
+		expect(result.skipped.map((s) => s.reason)).toEqual(['plural-candidate']);
+	});
+
+	it('verweigert Text ohne Buchstabengruppe: reine Satzzeichen/Symbole/Zahlen', () => {
+		const result = collect(`<p>—</p>`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped).toEqual([
+			{
+				file: FILE,
+				line: 1,
+				text: '—',
+				aspect: 'text',
+				reason: 'no-letter-group',
+				explanation: 'keine Buchstabengruppe — reine Satzzeichen, Symbole oder Zahlen'
+			}
+		]);
+	});
+
+	it('verweigert ein dynamisches Attribut', () => {
+		const result = collect(`<input title={dynamicTitle} />`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => [s.aspect, s.reason])).toEqual([
+			['title', 'dynamic-attribute']
+		]);
+	});
+
+	it('verweigert ein Attribut mit gemischtem statisch/dynamischem Wert', () => {
+		const result = collect(`<input title="Hallo {name}" />`);
+		expect(result.skipped.map((s) => s.reason)).toEqual(['dynamic-attribute']);
+	});
+
+	// Die Kommentar-Gegenprobe (Auftrag, Schritt 1): Ein deutscher Satz im
+	// Markup-Kommentar darf nicht gefunden werden — weder als Fund noch als
+	// Übersprungen. `Comment`-Knoten tragen ihren Inhalt in `data`, die
+	// Traversierung steigt dort nie ab (siehe `visitNode` in collect.ts).
+	it('findet einen deutschen Satz in einem Markup-Kommentar NICHT', () => {
+		const result = collect(
+			`<!-- Dieser Hinweis erklärt, warum das Formular hier absichtlich leer bleibt -->\n<p>Ein Text</p>`
+		);
+		expect(result.sites).toHaveLength(1);
+		expect(result.sites[0]!.text).toBe('Ein Text');
+		expect(result.skipped).toEqual([]);
+	});
+
+	it('ignoriert Attribute außerhalb der Ziel-Liste (z.B. class) vollständig', () => {
+		const result = collect(`<div class="btn btn-primary">Ein Text</div>`);
+		expect(result.sites.map((s) => s.aspect)).toEqual(['text']);
+		expect(result.skipped).toEqual([]);
+	});
+
+	// Abgrenzung 1 (Auftrag): Verschachtelung ist KEIN gemischter Inhalt. `div`s
+	// eigenes Fragment enthält nur das Element `p`, keinen Text — nicht mixed.
+	// `p`s eigenes Fragment enthält nur Text, kein Element — ebenfalls nicht
+	// mixed. Der innere Text bleibt extrahierbar.
+	it('macht aus reiner Verschachtelung (Element enthält nur ein Element) kein Satzfragment', () => {
+		const result = collect(`<div><p>Text</p></div>`);
+		expect(result.sites.map((s) => [s.text, s.aspect])).toEqual([['Text', 'text']]);
+		expect(result.skipped).toEqual([]);
+	});
+
+	// Abgrenzung 2 (Auftrag): der gesunde Fall bleibt extrahierbar, auch mit
+	// einem Element, dessen einziges Kind ein Textknoten ist.
+	it('extrahiert Text in einem Listenelement ohne Geschwister', () => {
+		const result = collect(`<li>Nur Text</li>`);
+		expect(result.sites.map((s) => [s.text, s.aspect])).toEqual([['Nur Text', 'text']]);
+		expect(result.skipped).toEqual([]);
+	});
+});
+
+describe('applySvelteSitesToSource — Ersetzungsformen parsen als gültiges Svelte', () => {
+	it('ersetzt einen Textknoten durch {m.key()} — Ergebnis parst erneut', () => {
+		const source = `<p>Ein Text</p>`;
+		const result = collect(source);
+		const after = applySvelteSitesToSource(source, result.sites);
+		expect(after).toBe('<p>{m.report_components_submissionsuccess_text_ein_text()}</p>');
+		expect(() => parse(after, { modern: true })).not.toThrow();
+	});
+
+	it('ersetzt ein Attribut durch attr={m.key()} inkl. Anführungszeichen — Ergebnis parst erneut', () => {
+		const source = `<input placeholder="Bitte eingeben" />`;
+		const result = collect(source);
+		const after = applySvelteSitesToSource(source, result.sites);
+		expect(after).toBe(
+			'<input placeholder={m.report_components_submissionsuccess_placeholder_bitte_eingeben()} />'
+		);
+		expect(() => parse(after, { modern: true })).not.toThrow();
+	});
+
+	it('ersetzt mehrere Fundstellen (Text + mehrere Attribute) in einer Datei — Ergebnis parst erneut', () => {
+		const source = `<input placeholder="Bitte eingeben" title="Ein Titel" />\n<p>Ein Text</p>`;
+		const result = collect(source);
+		const after = applySvelteSitesToSource(source, result.sites);
+		expect(() => parse(after, { modern: true })).not.toThrow();
+		expect(after).toContain('{m.');
+		expect(after).not.toContain('"Bitte eingeben"');
+		expect(after).not.toContain('"Ein Titel"');
+		expect(after).not.toContain('>Ein Text<');
+	});
+
+	it('lässt keine Anführungszeichen um den Botschaftsaufruf eines Attributs übrig (attr="{m.key()}" wäre falsch)', () => {
+		const source = `<input alt="Ein Bild" />`;
+		const result = collect(source);
+		const after = applySvelteSitesToSource(source, result.sites);
+		expect(after).not.toMatch(/alt="\{m\./);
+		expect(after).toMatch(/alt=\{m\.[a-z0-9_]+\(\)\}/);
+	});
+});

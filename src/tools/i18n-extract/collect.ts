@@ -11,6 +11,7 @@
  * ist die einzige Stelle, an der ein Mensch eine zu enge Allowlist bemerken
  * kann.
  */
+import { parse } from 'svelte/compiler';
 import ts from 'typescript';
 import {
 	checkValue,
@@ -19,7 +20,12 @@ import {
 	metaKeyDecision,
 	type SkipReason
 } from './allowlist';
-import { formOptionsMessageKey, resolveFieldName, schemaMessageKey } from './messageKey';
+import {
+	formOptionsMessageKey,
+	resolveFieldName,
+	schemaMessageKey,
+	svelteMessageKey
+} from './messageKey';
 
 export interface ExtractionSite {
 	file: string;
@@ -655,4 +661,342 @@ function isStringRecordDeclaration(
 		decl.type.typeArguments?.length === 2 &&
 		decl.type.typeArguments[1]?.kind === ts.SyntaxKind.StringKeyword
 	);
+}
+
+// ---------------------------------------------------------------------------
+// collectSvelteSites — Aufgabe 2.2 ("Der Extraktor lernt Svelte")
+// ---------------------------------------------------------------------------
+
+/**
+ * Sammelt Textknoten und Attributwerte aus Svelte-Markup, die zu Botschaften
+ * werden können.
+ *
+ * Traversierung angelehnt an `analyzeSvelteSource` (i18n-inventory.ts:424) —
+ * VORLAGE, nicht Import (siehe Dateikopf): `classifyText` von dort liegt an
+ * belegten Stellen falsch, dieser Sammler entscheidet stattdessen rein
+ * strukturell (siehe Tabelle in `docs/i18n/PLAN_ETAPPE2.md`, Aufgabe 2.2).
+ * Derselbe Grund, aus dem `Comment`-Knoten nie als Text erfasst werden, gilt
+ * hier unverändert: Ihr Inhalt steckt im String-Feld `data`, die Traversierung
+ * steigt dort nie ab (`visitNode` gibt für `'Comment'` sofort zurück).
+ */
+const SVELTE_TARGET_ATTRIBUTES = new Set(['placeholder', 'title', 'aria-label', 'alt']);
+
+/** Mindestens eine Buchstabengruppe — Unicode-bewusst (Umlaute zählen als Buchstaben). */
+const LETTER_GROUP = /\p{L}/u;
+const HAS_DIGIT = /\d/;
+
+interface SvelteAstNode {
+	type?: string;
+	start?: number;
+	end?: number;
+	data?: string;
+	name?: string;
+	[key: string]: unknown;
+}
+
+function isSvelteNode(value: unknown): value is SvelteAstNode {
+	return (
+		typeof value === 'object' && value !== null && typeof (value as SvelteAstNode).type === 'string'
+	);
+}
+
+export function collectSvelteSites(
+	source: string,
+	relativeFilePath: string,
+	taken: Set<string>
+): CollectResult {
+	const skipped: SkippedSite[] = [];
+
+	// Zweiter Durchgang wie in `collectSchemaSites` (siehe dortiger Kommentar):
+	// Kandidaten sammeln, nach `start` sortieren, dann erst Schlüssel vergeben.
+	// Anders als bei `ts.forEachChild` über Aufrufketten besucht ein Walk über
+	// die Kind-Arrays des Svelte-AST ein Fragment bereits in Quelltextreihenfolge
+	// — der Test „liefert Fundstellen in Quelltextreihenfolge" unten belegt das.
+	// Der zweite Durchgang bleibt trotzdem stehen: Er ist unabhängig von dieser
+	// Beobachtung immer korrekt, und sich auf eine unbewiesene Traversierungs-
+	// Eigenschaft zu verlassen wäre genau der Fehler, den `collectSchemaSites`
+	// einmal gemacht hat.
+	const candidates: Array<Omit<ExtractionSite, 'key'>> = [];
+
+	let ast: ReturnType<typeof parse>;
+	try {
+		ast = parse(source, { modern: true });
+	} catch {
+		// Nicht parsebares Markup wird übersprungen statt den ganzen Lauf
+		// abzubrechen — dieselbe Grenze wie `analyzeSvelteSource`.
+		return { sites: [], skipped: [] };
+	}
+
+	const lineOf = (offset: number): number => {
+		let line = 1;
+		for (let i = 0; i < offset && i < source.length; i++) {
+			if (source[i] === '\n') {
+				line++;
+			}
+		}
+		return line;
+	};
+
+	const addSite = (
+		start: number,
+		end: number,
+		text: string,
+		aspect: string,
+		elementName: string
+	): void => {
+		if (HAS_DIGIT.test(text)) {
+			skipped.push({
+				file: relativeFilePath,
+				line: lineOf(start),
+				text,
+				aspect,
+				reason: 'plural-candidate',
+				explanation:
+					'enthält eine Ziffer — möglicher ICU-Plural, menschliche Entscheidung (Aufgabe 2.4)'
+			});
+			return;
+		}
+		if (!LETTER_GROUP.test(text)) {
+			skipped.push({
+				file: relativeFilePath,
+				line: lineOf(start),
+				text,
+				aspect,
+				reason: 'no-letter-group',
+				explanation: 'keine Buchstabengruppe — reine Satzzeichen, Symbole oder Zahlen'
+			});
+			return;
+		}
+		candidates.push({
+			file: relativeFilePath,
+			line: lineOf(start),
+			start,
+			end,
+			text,
+			aspect,
+			field: elementName
+		});
+	};
+
+	/** Attributwerte: `placeholder`/`title`/`aria-label`/`alt`, rein statisch. */
+	function handleAttributes(attributes: unknown, elementName: string): void {
+		if (!Array.isArray(attributes)) {
+			return;
+		}
+		for (const attr of attributes) {
+			if (!isSvelteNode(attr) || attr.type !== 'Attribute') {
+				continue; // Spread-Attribute, Direktiven (`use:`, `on:`, …) — nicht unser Fall
+			}
+			const name = typeof attr.name === 'string' ? attr.name : '';
+			if (!SVELTE_TARGET_ATTRIBUTES.has(name)) {
+				continue;
+			}
+			const value = attr.value;
+			if (value === true || value === undefined) {
+				continue; // Bool-Shortcut (`disabled`) oder ohne Wert — kein Sprachtext
+			}
+			const start = typeof attr.start === 'number' ? attr.start : 0;
+			const end = typeof attr.end === 'number' ? attr.end : 0;
+			const parts: unknown[] = Array.isArray(value) ? value : [value];
+			let text = '';
+			let isDynamic = false;
+			for (const part of parts) {
+				if (isSvelteNode(part) && part.type === 'Text' && typeof part.data === 'string') {
+					text += part.data;
+				} else {
+					isDynamic = true;
+				}
+			}
+			if (isDynamic) {
+				// Enthält mindestens einen `{ausdruck}`-Anteil — `attr={m.key()}` hätte
+				// keinen Platz mehr dafür.
+				skipped.push({
+					file: relativeFilePath,
+					line: lineOf(start),
+					text: source.slice(start, end),
+					aspect: name,
+					reason: 'dynamic-attribute',
+					explanation: `Attribut ${name} enthält einen dynamischen Anteil ({ausdruck}) — kein reines Literal`
+				});
+				continue;
+			}
+			const trimmed = text.trim();
+			if (trimmed.length === 0) {
+				continue; // z.B. `alt=""` — kein Fund, keine Meldung
+			}
+			addSite(start, end, trimmed, name, elementName);
+		}
+	}
+
+	/** Geschwister eines Textknotens, ohne reine Formatierung (Whitespace/Kommentar). */
+	function significantSiblings(siblings: SvelteAstNode[], self: SvelteAstNode): SvelteAstNode[] {
+		return siblings.filter(
+			(n) =>
+				n !== self &&
+				n.type !== 'Comment' &&
+				!(n.type === 'Text' && typeof n.data === 'string' && n.data.trim() === '')
+		);
+	}
+
+	function handleText(
+		node: SvelteAstNode,
+		siblings: SvelteAstNode[],
+		elementName: string,
+		ancestorMixed: boolean
+	): void {
+		const data = typeof node.data === 'string' ? node.data : '';
+		if (data.trim().length === 0) {
+			return; // reine Einrückung/Zeilenumbruch zwischen Elementen — kein Fund
+		}
+		const start = typeof node.start === 'number' ? node.start : 0;
+		const end = typeof node.end === 'number' ? node.end : 0;
+
+		const others = significantSiblings(siblings, node);
+		if (others.length > 0) {
+			// Fall 1 (Satzfragment) und Fall 2 (Interpolation) der Tabelle: Der
+			// Textknoten ist nicht das einzige Kind seines Elements. Enthält die
+			// Geschwistergruppe einen Ausdrucksknoten, ist eine ICU-Botschaft mit
+			// Parameter nötig; sonst ist es ausgezeichneter Text (z.B. `<strong>`),
+			// dessen Wortstellung eine Übersetzung pro Teilknoten bricht.
+			const hasExpressionSibling = others.some((n) => n.type === 'ExpressionTag');
+			skipped.push({
+				file: relativeFilePath,
+				line: lineOf(start),
+				text: data.trim(),
+				aspect: 'text',
+				reason: hasExpressionSibling ? 'interpolation' : 'sentence-fragment',
+				explanation: hasExpressionSibling
+					? 'Geschwister-Ausdruck ({…}) im selben Element — braucht eine ICU-Botschaft mit Parameter'
+					: 'Textknoten hat Geschwister-Elemente — einzeln übersetzt bricht die Wortstellung ' +
+						'in jeder Zielsprache (Handarbeit, Aufgabe 2.3)'
+			});
+			return;
+		}
+
+		if (ancestorMixed) {
+			// Der Textknoten ist zwar selbst einziges Kind seines direkten
+			// Elements (z.B. innerhalb von `<strong>`), aber ein VORFAHR hat
+			// gemischten Inhalt — Textknoten mit Buchstaben UND Element-Kinder
+			// im selben Fragment (z.B. das umschließende `<p>`). Die Regel „nur
+			// direkte Geschwister prüfen" greift dort eine Ebene zu flach: Auf
+			// Englisch steht das ausgezeichnete Wort an anderer Stelle im Satz
+			// („Thank you for your report" vs. „Vielen Dank für Ihre Meldung"),
+			// drei getrennte Botschaften ließen sich nicht zu einem korrekten
+			// englischen Satz zusammensetzen (Auftrag, Diagnose).
+			skipped.push({
+				file: relativeFilePath,
+				line: lineOf(start),
+				text: data.trim(),
+				aspect: 'text',
+				reason: 'sentence-fragment',
+				explanation:
+					'ein Vorfahr-Element hat gemischten Inhalt (Text und Element-Kinder) — dieser ' +
+					'Textknoten ist Teil eines Satzes, der zusammen mit den Geschwister-Elementen des ' +
+					'Vorfahrs übersetzt werden muss (Handarbeit, Aufgabe 2.3)'
+			});
+			return;
+		}
+
+		// Einziges (bedeutsames) Kind, kein gemischter Vorfahr — aber die
+		// Ersetzung soll die Einrückung drumherum nicht mit auffressen:
+		// `<p>\n\tEin Text\n</p>` → nur "Ein Text" wird ersetzt, die
+		// Zeilenumbrüche bleiben stehen.
+		const leadingWs = data.length - data.trimStart().length;
+		const trailingWs = data.length - data.trimEnd().length;
+		addSite(start + leadingWs, end - trailingWs, data.trim(), 'text', elementName);
+	}
+
+	/**
+	 * Hat dieses Fragment (eine Geschwistergruppe) gemischten Inhalt — mindestens
+	 * einen Textknoten mit Buchstaben UND mindestens ein Element-/Ausdrucks-Kind?
+	 * Whitespace-Text und Kommentare zählen für keine der beiden Seiten.
+	 *
+	 * Das ist die Definition aus dem Auftrag, wörtlich: „kein Vorfahr sowohl
+	 * Textknoten mit Buchstaben ALS AUCH Element-Kinder besitzt". `<div><p>Text</p></div>`
+	 * ist NICHT mixed — `div`s Fragment enthält nur das Element `p`, keinen Text;
+	 * `<li>Nur Text</li>` ist NICHT mixed — `li`s Fragment enthält nur Text, kein
+	 * Element. Erst `<p>Text <strong>x</strong></p>` ist mixed.
+	 */
+	function fragmentHasMixedContent(nodes: SvelteAstNode[]): boolean {
+		let hasLetterText = false;
+		let hasNonTextChild = false;
+		for (const n of nodes) {
+			if (n.type === 'Comment') {
+				continue;
+			}
+			if (n.type === 'Text') {
+				const data = typeof n.data === 'string' ? n.data : '';
+				if (data.trim().length > 0 && LETTER_GROUP.test(data)) {
+					hasLetterText = true;
+				}
+				continue;
+			}
+			hasNonTextChild = true;
+		}
+		return hasLetterText && hasNonTextChild;
+	}
+
+	function visitFragmentNodes(nodes: unknown, elementName: string, ancestorMixed: boolean): void {
+		if (!Array.isArray(nodes)) {
+			return;
+		}
+		const typed = nodes.filter(isSvelteNode);
+		const disqualified = ancestorMixed || fragmentHasMixedContent(typed);
+		for (const node of typed) {
+			visitNode(node, typed, elementName, disqualified);
+		}
+	}
+
+	function visitNode(
+		node: SvelteAstNode,
+		siblings: SvelteAstNode[],
+		parentElementName: string,
+		ancestorMixed: boolean
+	): void {
+		if (node.type === 'Comment') {
+			return; // bewusst kein Abstieg — die Kommentar-Gegenprobe im Test belegt das
+		}
+		if (node.type === 'Text') {
+			handleText(node, siblings, parentElementName, ancestorMixed);
+			return;
+		}
+		if (node.type === 'ExpressionTag') {
+			return; // reiner Ausdrucksknoten, kein Markup darunter zu besuchen
+		}
+
+		const elementName = typeof node.name === 'string' ? node.name : parentElementName;
+		if (Array.isArray(node.attributes)) {
+			handleAttributes(node.attributes, elementName);
+		}
+
+		// Generischer Abstieg über jedes Feld, dessen Wert selbst ein
+		// `Fragment`-Knoten ist: `fragment` bei Elementen/Komponenten,
+		// `consequent`/`alternate` bei `IfBlock`, `body`/`fallback` bei
+		// `EachBlock`, `then`/`catch`/`pending` bei `AwaitBlock`, `fragment` bei
+		// `SnippetBlock`, … Jedes gefundene Fragment liefert eine EIGENE
+		// Geschwistergruppe — ein Textknoten im `then`-Zweig hat nichts mit einem
+		// im `else`-Zweig zu tun. `ancestorMixed` reicht weiter: Ist DIESES Element
+		// selbst Teil eines gemischten Vorfahren-Fragments, gilt das für jedes
+		// Fragment darunter ebenfalls.
+		for (const [key, value] of Object.entries(node)) {
+			if (key === 'start' || key === 'end' || key === 'loc' || key === 'name_loc') {
+				continue; // reine Positions-Metadaten, keine Kindknoten
+			}
+			if (isSvelteNode(value) && value.type === 'Fragment') {
+				visitFragmentNodes(value.nodes, elementName, ancestorMixed);
+			}
+		}
+	}
+
+	visitFragmentNodes((ast.fragment as { nodes?: unknown }).nodes, relativeFilePath, false);
+
+	const sites: ExtractionSite[] = candidates
+		.sort((a, b) => a.start - b.start)
+		.map((candidate) => ({
+			...candidate,
+			key: svelteMessageKey(relativeFilePath, candidate.aspect, candidate.text, taken)
+		}));
+
+	skipped.sort((a, b) => a.line - b.line);
+	return { sites, skipped };
 }
