@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
+	import * as m from '$lib/paraglide/messages';
 
 	/**
 	 * Nur noch `initial`.
@@ -41,14 +42,14 @@
 		<!-- Backdrop (rein visuell). Schleier über der Kartenkachel, kein Theme-Ton:
 		     bg-scrim/<n> (--scrim-surface in tokens.css). -->
 		<div
-			class="animate-fade-in bg-scrim/30 fixed inset-0 z-overlay backdrop-blur-sm transition-all duration-panel"
+			class="animate-fade-in bg-scrim/30 z-overlay duration-panel fixed inset-0 backdrop-blur-sm transition-all"
 		></div>
 
 		<!-- Loading Content -->
-		<div class="fixed inset-0 z-overlay flex items-center justify-center p-4">
+		<div class="z-overlay fixed inset-0 flex items-center justify-center p-4">
 			<div
 				data-testid="map-loading-content"
-				class="animate-bounce-in bg-base-100 mx-auto w-full max-w-sm scale-100 transform rounded-2xl p-8 shadow-floating transition-all duration-panel"
+				class="animate-bounce-in bg-base-100 shadow-floating duration-panel mx-auto w-full max-w-sm scale-100 transform rounded-2xl p-8 transition-all"
 			>
 				<!-- Header -->
 				<div class="mb-6 text-center">
@@ -82,8 +83,15 @@
 				{#if type === 'initial'}
 					<div class="text-base-content/60 mt-4 text-center text-sm">
 						<!-- H7: Kürzel wirken nur bei fokussierter Karte (WCAG 2.1.4) -->
-						<p>
-							Tastaturkürzel: Karte fokussieren, dann <kbd class="kbd kbd-xs">H</kbd> drücken
+						<!-- Muster C (i18n Etappe 2, Aufgabe 2.3): `H` stand vorher mitten im
+						     Satz („dann H drücken"); auf Englisch wandert die Taste hinter
+						     das Verb („then press H") — zwei DOM-Positionen, die sich nicht
+						     durch feste Reihenfolge auflösen lassen. Der Satz ist deshalb so
+						     umformuliert, dass er ohne den Tastennamen auskommt und die Taste
+						     als eigenständiges, reihenfolgeunabhängiges Element danebensteht. -->
+						<p class="flex flex-wrap items-center justify-center gap-1">
+							<span>{m.components_map_loadingoverlay_text_tastaturkuerzel_hinweis()}</span>
+							<kbd class="kbd kbd-xs">H</kbd>
 						</p>
 					</div>
 				{/if}

@@ -20,6 +20,7 @@
   fachlich richtig ein, für Bord- wie für Landmelder gleichermaßen.
 -->
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import { getFormContext } from '$lib/report/formContext';
 	import { isFromLand } from '$lib/report/formConfig';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
@@ -29,10 +30,12 @@
 </script>
 
 {#if !isFromLand($form.sightingFrom)}
-	<SectionCard title="Boot-/Schiffsinformationen" icon="lucide:anchor">
+	<SectionCard
+		title={m.report_components_sections_boatinfo_title_boot_schiffsinformationen()}
+		icon="lucide:anchor"
+	>
 		<p class="text-base-content/70 mb-4 text-sm">
-			Falls Sie von einem Boot aus beobachtet haben — diese Angaben helfen, die Sichtung
-			einzuordnen.
+			{m.report_components_sections_boatinfo_text_falls_sie_von_einem_boot()}
 		</p>
 
 		<!-- `shipName`/`homePort`/`boatType` betreffen das EIGENE Wasserfahrzeug und

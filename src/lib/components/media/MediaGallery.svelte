@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import Icon from '$lib/components/Icon.svelte';
 	import type { UploadedFileInfo } from '$lib/types';
 	import MediaModal from './MediaModal.svelte';
@@ -100,7 +101,7 @@
 				</div>
 				<div class="space-y-2">
 					{#each otherFiles as file (file.id)}
-						<div class="bg-base-100 flex items-center gap-3 rounded-lg p-3 shadow-raised">
+						<div class="bg-base-100 shadow-raised flex items-center gap-3 rounded-lg p-3">
 							<Icon icon={getFileTypeIcon(file.mimeType)} width="20" class="text-base-content/60" />
 							<div class="min-w-0 flex-1">
 								<p class="text-base-content truncate text-sm font-medium">
@@ -114,9 +115,9 @@
 								href={`/api/media/${file.filePath}`}
 								download={file.originalName}
 								class="btn btn-ghost btn-sm"
-								aria-label="Datei herunterladen"
+								aria-label={m.components_media_mediagallery_aria_label_datei_herunterladen()}
 							>
-								Herunterladen
+								{m.components_media_mediagallery_text_herunterladen()}
 							</a>
 						</div>
 					{/each}
@@ -133,7 +134,9 @@
 	<div class="bg-base-100 flex items-center justify-center rounded-lg p-8 text-center">
 		<div class="space-y-3">
 			<Icon icon="lucide:images" width="32" class="text-base-content/70 mx-auto" />
-			<p class="text-base-content/60 text-sm">Keine Medien vorhanden</p>
+			<p class="text-base-content/60 text-sm">
+				{m.components_media_mediagallery_text_keine_medien_vorhanden()}
+			</p>
 		</div>
 	</div>
 {/if}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import type { SightingFile } from '$lib/types';
 	import type { UploadedFileInfo } from '$lib/types/';
 	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
@@ -114,16 +115,16 @@
 					href={`/api/media/${file.filePath}`}
 					download={file.originalName}
 					class="btn btn-ghost btn-sm"
-					aria-label="Datei herunterladen"
+					aria-label={m.components_media_mediamodal_aria_label_datei_herunterladen()}
 				>
 					<Icon icon="lucide:download" width="16" />
-					Herunterladen
+					{m.components_media_mediamodal_text_herunterladen()}
 				</a>
 				<button
 					type="button"
 					class="btn btn-ghost btn-sm btn-circle"
 					onclick={onClose}
-					aria-label="Modal schließen"
+					aria-label={m.components_media_mediamodal_aria_label_modal_schliessen()}
 				>
 					<Icon icon="lucide:x" width="16" />
 				</button>
@@ -161,22 +162,26 @@
 							preload="metadata"
 						>
 							<track kind="captions" />
-							Ihr Browser unterstützt das Video-Element nicht.
+							{m.components_media_mediamodal_text_ihr_browser_unterstuetzt_das_video_eleme()}
 						</video>
 					</div>
 				{:else}
 					<!-- Andere Dateitypen - Vorschau nicht möglich -->
 					<div class="flex flex-col items-center justify-center py-12 text-center">
 						<Icon icon="lucide:file-type" width="48" class="text-base-content/70 mb-4" />
-						<h4 class="mb-2 text-lg font-semibold">Vorschau nicht verfügbar</h4>
-						<p class="text-base-content/60 mb-4">Für diesen Dateityp ist keine Vorschau möglich.</p>
+						<h4 class="mb-2 text-lg font-semibold">
+							{m.components_media_mediamodal_text_vorschau_nicht_verfuegbar()}
+						</h4>
+						<p class="text-base-content/60 mb-4">
+							{m.components_media_mediamodal_text_fuer_diesen_dateityp_ist_keine()}
+						</p>
 						<a
 							href={`/api/media/${file.filePath}`}
 							download={file.originalName}
 							class="btn btn-primary"
 						>
 							<Icon icon="lucide:download" width="16" />
-							Datei herunterladen
+							{m.components_media_mediamodal_text_datei_herunterladen()}
 						</a>
 					</div>
 				{/if}
@@ -189,17 +194,19 @@
 			<div class="grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">
 				<div class="flex items-center gap-2">
 					<Icon icon="lucide:file-type" width="14" class="text-base-content/60" />
-					<span class="text-base-content/60">Typ:</span>
+					<span class="text-base-content/60">{m.components_media_mediamodal_text_typ()}</span>
 					<span class="font-medium">{file.mimeType}</span>
 				</div>
 				<div class="flex items-center gap-2">
 					<Icon icon="lucide:hard-drive" width="14" class="text-base-content/60" />
-					<span class="text-base-content/60">Größe:</span>
+					<span class="text-base-content/60">{m.components_media_mediamodal_text_groesse()}</span>
 					<span class="font-medium">{formatFileSize(file.size)}</span>
 				</div>
 				<div class="flex items-center gap-2">
 					<Icon icon="lucide:calendar" width="14" class="text-base-content/60" />
-					<span class="text-base-content/60">Hochgeladen:</span>
+					<span class="text-base-content/60"
+						>{m.components_media_mediamodal_text_hochgeladen()}</span
+					>
 					<span class="font-medium"
 						>{file.uploadedAt ? formatLocalDateTime(file.uploadedAt) : 'Unbekannt'}</span
 					>
@@ -228,18 +235,22 @@
 									<div class="bg-base-200 rounded-lg p-3">
 										<h5 class="mb-2 flex items-center gap-1 text-xs font-medium">
 											<Icon icon="lucide:map-pin" width="12" class="text-success-strong" />
-											GPS-Position
+											{m.components_media_mediamodal_text_gps_position()}
 										</h5>
 										<div class="space-y-1 text-xs">
 											<div>
-												<span class="text-base-content/60">Koordinaten:</span>
+												<span class="text-base-content/60"
+													>{m.components_media_mediamodal_text_koordinaten()}</span
+												>
 												<span class="ml-1 font-medium"
 													>{formatLocation(file.exifData?.longitude, file.exifData?.latitude)}</span
 												>
 											</div>
 											{#if file.exifData.altitude}
 												<div>
-													<span class="text-base-content/60">Höhe:</span>
+													<span class="text-base-content/60"
+														>{m.components_media_mediamodal_text_hoehe()}</span
+													>
 													<span class="ml-1 font-medium">{file.exifData.altitude.toFixed(1)} m</span
 													>
 												</div>
@@ -253,12 +264,14 @@
 									<div class="bg-base-200 rounded-lg p-3">
 										<h5 class="mb-2 flex items-center gap-1 text-xs font-medium">
 											<Icon icon="lucide:settings" width="12" class="text-secondary-strong" />
-											Kamera-Einstellungen
+											{m.components_media_mediamodal_text_kamera_einstellungen()}
 										</h5>
 										<div class="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
 											{#if file.exifData.make || file.exifData.model}
 												<div>
-													<span class="text-base-content/60">Kamera:</span>
+													<span class="text-base-content/60"
+														>{m.components_media_mediamodal_text_kamera()}</span
+													>
 													<span class="ml-1 font-medium"
 														>{[file.exifData.make, file.exifData.model]
 															.filter(Boolean)
@@ -268,37 +281,49 @@
 											{/if}
 											{#if file.exifData.dateTimeOriginal}
 												<div>
-													<span class="text-base-content/60">Aufgenommen:</span>
+													<span class="text-base-content/60"
+														>{m.components_media_mediamodal_text_aufgenommen()}</span
+													>
 													<span class="ml-1 font-medium">{formatCaptureDateTime()}</span>
 												</div>
 											{/if}
 											{#if file.exifData.exposureTime}
 												<div>
-													<span class="text-base-content/60">Belichtung:</span>
+													<span class="text-base-content/60"
+														>{m.components_media_mediamodal_text_belichtung()}</span
+													>
 													<span class="ml-1 font-medium">{file.exifData.exposureTime}</span>
 												</div>
 											{/if}
 											{#if file.exifData.fNumber}
 												<div>
-													<span class="text-base-content/60">Blende:</span>
+													<span class="text-base-content/60"
+														>{m.components_media_mediamodal_text_blende()}</span
+													>
 													<span class="ml-1 font-medium">f/{file.exifData.fNumber}</span>
 												</div>
 											{/if}
 											{#if file.exifData.iso}
 												<div>
-													<span class="text-base-content/60">ISO:</span>
+													<span class="text-base-content/60"
+														>{m.components_media_mediamodal_text_iso()}</span
+													>
 													<span class="ml-1 font-medium">{file.exifData.iso}</span>
 												</div>
 											{/if}
 											{#if file.exifData.focalLength}
 												<div>
-													<span class="text-base-content/60">Brennweite:</span>
+													<span class="text-base-content/60"
+														>{m.components_media_mediamodal_text_brennweite()}</span
+													>
 													<span class="ml-1 font-medium">{file.exifData.focalLength} mm</span>
 												</div>
 											{/if}
 											{#if file.exifData.width && file.exifData.height}
 												<div>
-													<span class="text-base-content/60">Auflösung:</span>
+													<span class="text-base-content/60"
+														>{m.components_media_mediamodal_text_aufloesung()}</span
+													>
 													<span class="ml-1 font-medium"
 														>{file.exifData.width} × {file.exifData.height}</span
 													>
@@ -306,7 +331,9 @@
 											{/if}
 											{#if file.exifData.flash !== undefined}
 												<div>
-													<span class="text-base-content/60">Blitz:</span>
+													<span class="text-base-content/60"
+														>{m.components_media_mediamodal_text_blitz()}</span
+													>
 													<span class="ml-1 font-medium">{file.exifData.flash ? 'Ja' : 'Nein'}</span
 													>
 												</div>
@@ -325,7 +352,11 @@
 	<!-- Backdrop. Schleier über der Seite dahinter, kein Theme-Ton: bg-scrim/<n>
 	     (--scrim-surface in tokens.css). -->
 	<form method="dialog" class="modal-backdrop bg-scrim/60 backdrop-blur-sm">
-		<button onclick={onClose} aria-label="Modal schließen">Schließen</button>
+		<button
+			onclick={onClose}
+			aria-label={m.components_media_mediamodal_aria_label_modal_schliessen_2()}
+			>{m.components_media_mediamodal_text_schliessen()}</button
+		>
 	</form>
 </dialog>
 

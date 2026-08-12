@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import Icon from '$lib/components/Icon.svelte';
 	import { getDaysInYear } from '$lib/map/dateUtils';
 	import DualRangeSlider from './DualRangeSlider.svelte';
@@ -50,7 +51,7 @@
 <MapPanel
 	panelId="filter-panel"
 	titleId="filter-title"
-	title="Filter"
+	title={m.components_map_panel_filterpanel_title_filter()}
 	toggleText="FILTER"
 	icon="lucide:filter"
 	togglePositionClass="top-20"
@@ -62,7 +63,7 @@
 	<div class="space-y-4">
 		<div class="fieldset w-full">
 			<label for="year-select" class="label py-1">
-				<span class="text-sm font-medium">Jahr</span>
+				<span class="text-sm font-medium">{m.components_map_panel_filterpanel_text_jahr()}</span>
 				{#if isLoading}
 					<Icon icon="lucide:loader-2" class="text-primary ml-2 h-3 w-3 animate-spin" />
 				{/if}
@@ -70,7 +71,7 @@
 			<select
 				id="year-select"
 				class="select select-sm focus:select-primary w-full text-sm {isLoading ? 'loading' : ''}"
-				title="Wählen Sie das Jahr aus, für das Sichtungen angezeigt werden sollen"
+				title={m.components_map_panel_filterpanel_title_waehlen_sie_das_jahr_aus()}
 				onchange={handleYearChange}
 			>
 				{#each years as year (year)}
@@ -83,16 +84,16 @@
 
 		<div class="fieldset w-full">
 			<label for="filter-input" class="label py-1">
-				<span class="text-sm font-medium">Suchen</span>
+				<span class="text-sm font-medium">{m.components_map_panel_filterpanel_text_suchen()}</span>
 			</label>
 			<div class="relative">
 				<input
 					id="filter-input"
 					type="text"
 					bind:value={searchValue}
-					placeholder="Fahrwasser, Schiffsname, Name…"
+					placeholder={m.components_map_panel_filterpanel_placeholder_fahrwasser_schiffsname_name()}
 					class="input input-sm focus:input-primary w-full pr-10"
-					title="Nach Fahrwasser, Seezeichen, Schiffsname oder Name filtern. Filtert automatisch beim Tippen."
+					title={m.components_map_panel_filterpanel_title_nach_fahrwasser_seezeichen_schiffsname_o()}
 					aria-describedby="filter-help"
 				/>
 				{#if isLoading}
@@ -112,7 +113,8 @@
 
 		<div class="space-y-2">
 			<div class="label py-1">
-				<span class="text-sm font-medium">Zeitraum</span>
+				<span class="text-sm font-medium">{m.components_map_panel_filterpanel_text_zeitraum()}</span
+				>
 			</div>
 
 			<!-- M10: Ein Track, zwei Griffe, gefüllter Bereich; Datums-Felder als

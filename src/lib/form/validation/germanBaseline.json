@@ -1,0 +1,1139 @@
+{
+	"schema": {
+		"behavior": {
+			"meta": {
+				"type": "select",
+				"helpText": "Beschreiben Sie das Verhalten der Tiere - Tipp: \"Schwimmen in eine Richtung\" = konstanter Kurs",
+				"valueText": "Verhaltensbeobachtungen zeigen Stresslevel und Nahrungssuche - entscheidend für Schutzgebietsplanung"
+			},
+			"label": "Verhalten der Tiere"
+		},
+		"behaviorText": {
+			"meta": {
+				"placeholder": "z.B. Spielverhalten, Jagd, Paarung, Interaktion mit Booten",
+				"helpText": "Beschreiben Sie das Verhalten in eigenen Worten",
+				"valueText": "Freitext erfasst auch Verhalten, für das es in der Auswahlliste keine Kategorie gibt"
+			},
+			"label": "Sonstiges Verhalten"
+		},
+		"boatDrive": {
+			"meta": {
+				"type": "select",
+				"helpText": "Welcher Antrieb wurde während der Sichtung verwendet?",
+				"valueText": "Die Antriebsart bestimmt den Unterwasserlärm und damit, wie stark Tiere gestört werden"
+			},
+			"label": "Bootsantrieb"
+		},
+		"boatDriveText": {
+			"meta": {
+				"placeholder": "z.B. Hybridantrieb, Wasserstoff, Solar-Elektro",
+				"helpText": "Innovative Antriebe interessieren besonders für Lärmstudien",
+				"valueText": "Neue Antriebstechnologien könnten Wildtierbeobachtungen revolutionieren"
+			},
+			"label": "Sonstiger Antrieb"
+		},
+		"boatType": {
+			"meta": {
+				"placeholder": "z.B. Segelboot, Motoryacht, Kajak, Fischkutter",
+				"helpText": "Art Ihres Wasserfahrzeugs (optional)",
+				"valueText": "Segelboote ermöglichen leiseste Annäherung - Kajaks erreichen flachste Gewässer für einzigartige Beobachtungen"
+			},
+			"label": "Bootstyp"
+		},
+		"city": {
+			"meta": {
+				"placeholder": "Musterstadt",
+				"helpText": "Ihr Wohnort (optional)",
+				"valueText": "Regionale Verteilung der Beobachter"
+			},
+			"label": "Wohnort"
+		},
+		"deadCondition": {
+			"meta": {
+				"type": "select",
+				"helpText": "Beschreibung des Erhaltungszustands",
+				"valueText": "Der Zustand hilft bei der wissenschaftlichen Auswertung"
+			},
+			"label": "Zustand des toten Tieres"
+		},
+		"deadPhoneContact": {
+			"meta": {
+				"helpText": "Wurde das Meeresmuseum bereits über den Totfund benachrichtigt?",
+				"valueText": "Vermeidet Doppelmeldungen und koordiniert Bergung"
+			},
+			"label": "Meeresmuseum informiert"
+		},
+		"deadSex": {
+			"meta": {
+				"type": "select",
+				"helpText": "Falls erkennbar",
+				"valueText": "Die Geschlechtsverteilung ist wichtig für Populationsstruktur"
+			},
+			"label": "Geschlecht (Totfund)"
+		},
+		"deadSize": {
+			"meta": {
+				"placeholder": "z.B. 150",
+				"helpText": "Geschätzte oder gemessene Länge",
+				"valueText": "Die Körpergröße hilft bei Altersbestimmung"
+			},
+			"label": "Körperlänge (cm)"
+		},
+		"distance": {
+			"meta": {
+				"type": "select",
+				"helpText": "Wie weit waren die Tiere entfernt? (Schätzung)",
+				"valueText": "Je geringer die Entfernung, desto verlässlicher lassen sich Art und Anzahl bestimmen - die Angabe hilft, Beobachtungen zu gewichten"
+			},
+			"label": "Entfernung zum Tier"
+		},
+		"distribution": {
+			"meta": {
+				"type": "select",
+				"helpText": "Wie waren die Tiere räumlich angeordnet?",
+				"valueText": "Gruppenformationen verraten Familienstrukturen - Mutter-Kalb-Paare schwimmen dicht beieinander, Männchen oft einzeln"
+			},
+			"label": "Verteilung der Tiere"
+		},
+		"distributionText": {
+			"meta": {
+				"placeholder": "z.B. V-Formation, kreisförmig, entlang der Küstenlinie",
+				"helpText": "Besondere Gruppenformationen geben Hinweise auf Sozialverhalten",
+				"valueText": "Ungewöhnliche Formationen könnten Jagdstrategien oder Schutzverhalten zeigen"
+			},
+			"label": "Sonstige Verteilung"
+		},
+		"email": {
+			"meta": {
+				"type": "email",
+				"placeholder": "max.mustermann@email.de",
+				"helpText": "Wie können wir Sie erreichen?",
+				"valueText": "Für Rückfragen und zur Bestätigung der Sichtung"
+			},
+			"label": "E-Mail-Adresse"
+		},
+		"entryChannel": {
+			"meta": {
+				"type": "select",
+				"helpText": "Über welchen Kanal wurde die Sichtung gemeldet?",
+				"valueText": "Bestimmt den Ursprung der Meldung für statistische Auswertungen"
+			},
+			"label": "Eingangskanal"
+		},
+		"fax": {
+			"meta": {},
+			"label": "Faxnummer"
+		},
+		"firstName": {
+			"meta": {
+				"placeholder": "Max",
+				"helpText": "Wie dürfen wir Sie ansprechen?",
+				"valueText": "Für die persönliche Kontaktaufnahme"
+			},
+			"label": "Vorname"
+		},
+		"hasPosition": {
+			"meta": {
+				"type": "toggle",
+				"helpText": "Wissen Sie die genaue GPS-Position oder haben Sie ein Bild mit GPS Daten?",
+				"valueText": "Falls nein, können Sie das Gebiet beschreiben"
+			},
+			"label": "Position verfügbar"
+		},
+		"homePort": {
+			"meta": {
+				"placeholder": "z.B. Heiligenhafen, Kiel, Rostock, Stralsund",
+				"helpText": "Wo ist Ihr Boot registriert? (optional)",
+				"valueText": "Heimathäfen zeigen regionale Beobachtungsnetzwerke - Baltic Sea Citizen Science"
+			},
+			"label": "Heimathafen"
+		},
+		"internalComment": {
+			"meta": {
+				"type": "textarea",
+				"placeholder": "Interne Notizen zur Sichtung...",
+				"helpText": "Kommentare für interne Verwaltung",
+				"valueText": "Hilft bei der Datenqualitätssicherung"
+			},
+			"label": "Interne Kommentare"
+		},
+		"isDead": {
+			"meta": {
+				"helpText": "Handelte es sich um lebende Tiere oder einen Totfund?",
+				"valueText": "Totfunde liefern wichtige Informationen über Todesursachen"
+			},
+			"label": "Handelt es sich um einen Totfund?"
+		},
+		"juvenileCount": {
+			"meta": {
+				"placeholder": "0",
+				"helpText": "Waren junge Tiere dabei? Bitte geben Sie die Anzahl ein.",
+				"valueText": "Nachwuchsrate zeigt Gesundheit der Population"
+			},
+			"label": "Davon Jungtiere"
+		},
+		"lastName": {
+			"meta": {
+				"placeholder": "Mustermann",
+				"helpText": "Ihr Familienname",
+				"valueText": "Zur eindeutigen Zuordnung der Meldung"
+			},
+			"label": "Nachname"
+		},
+		"latitude": {
+			"meta": {
+				"type": "number",
+				"placeholder": "z.B. 54.123456",
+				"helpText": "Nördliche Position (N) - je mehr Nachkommastellen, desto genauer",
+				"valueText": "GPS-Präzision: 6 Nachkommastellen = 11cm Genauigkeit"
+			},
+			"label": "Breitengrad"
+		},
+		"longitude": {
+			"meta": {
+				"type": "number",
+				"placeholder": "z.B. 13.456789",
+				"helpText": "Östliche Position (E) - je mehr Nachkommastellen, desto genauer",
+				"valueText": "Ihre GPS-Koordinaten werden mit anderen Sichtungen verglichen"
+			},
+			"label": "Längengrad"
+		},
+		"mediaConsent": {
+			"meta": {
+				"helpText": "Dürfen wir Ihre Aufnahmen veröffentlichen — etwa auf der Sichtungskarte oder in der Öffentlichkeitsarbeit des Meeresmuseums?",
+				"valueText": "Ohne Ihre Zustimmung dienen die Aufnahmen ausschließlich der Prüfung Ihrer Meldung"
+			},
+			"label": "Veröffentlichung meiner Aufnahmen"
+		},
+		"mediaFile": {
+			"meta": {
+				"placeholder": "z.B. 3 Fotos Schweinswal-Gruppe, 1 Video springender Wal",
+				"helpText": "Jedes Foto ist wertvoll - auch unscharfe Aufnahmen helfen bei der Identifikation",
+				"valueText": "Aufnahmen machen Artbestimmung und Verhalten nachträglich überprüfbar - das erhöht den Wert Ihrer Meldung erheblich"
+			},
+			"label": "Foto-/Videobeschreibung"
+		},
+		"mediaUpload": {
+			"meta": {
+				"helpText": "Möchten Sie Fotos oder Videos hochladen?",
+				"valueText": "Medien erhöhen Qualität der Dokumentation"
+			},
+			"label": "Medien hochladen"
+		},
+		"nameConsent": {
+			"meta": {
+				"type": "checkbox",
+				"helpText": "Ich stimme zu, dass mein Name (Vor- und Nachname) öffentlich auf der Karte angezeigt wird und in Berichten genannt werden darf.",
+				"valueText": "Ermöglicht die Würdigung der Beobachter in Publikationen"
+			},
+			"label": "Namen veröffentlichen"
+		},
+		"notes": {
+			"meta": {
+				"type": "textarea",
+				"placeholder": "Zusätzliche Beobachtungen, Besonderheiten...",
+				"helpText": "Was möchten Sie noch mitteilen?",
+				"valueText": "Das Deutsche Meeresmuseum gibt die Sichtungsdaten direkt an die internationalen Gremien für den Schutz der Ostsee-Schweinswale weiter (HELCOM und ASCOBANS)"
+			},
+			"label": "Bemerkungen"
+		},
+		"otherObservations": {
+			"meta": {
+				"placeholder": "Klimawandel-Effekte, Plastikverschmutzung, andere Meerestiere...",
+				"helpText": "Verhaltensänderungen zeigen Klimawandel-Einfluss auf Meerestiere",
+				"valueText": "Auffälligkeiten am Lebensraum helfen, Sichtungen in ihren Umweltkontext einzuordnen"
+			},
+			"label": "Sonstige Auffälligkeiten"
+		},
+		"persistentDataConsent": {
+			"meta": {
+				"type": "checkbox",
+				"helpText": "Ich stimme zu, dass meine Kontaktdaten dauerhaft auf diesem Gerät gespeichert werden, um sie bei zukünftigen Meldungen automatisch zu verwenden. Ohne diese Zustimmung werden die Daten beim Schließen des Browsers gelöscht.",
+				"valueText": "Ermöglicht automatisches Ausfüllen bei zukünftigen Meldungen"
+			},
+			"label": "Kontaktdaten dauerhaft speichern"
+		},
+		"phone": {
+			"meta": {
+				"type": "tel",
+				"placeholder": "+49 123 456789",
+				"helpText": "Falls wir Sie anrufen dürfen (optional)",
+				"valueText": "Für schnelle Klärung bei unklaren Angaben"
+			},
+			"label": "Telefonnummer"
+		},
+		"privacyConsent": {
+			"meta": {
+				"type": "checkbox",
+				"helpText": "Ich stimme zu, dass meine Sichtungsdaten (Datum, Position, Tierart, Anzahl) öffentlich auf der Karte angezeigt und wissenschaftlich ausgewertet werden. Von mir hochgeladene Aufnahmen werden übertragen und zur fachlichen Prüfung meiner Meldung verwendet; über eine Veröffentlichung entscheide ich gesondert. Meine Kontaktdaten werden nur für Rückfragen verwendet. Ich bestätige die Richtigkeit meiner Angaben.",
+				"valueText": "Ermöglicht Datenverarbeitung für Wissenschaft und öffentliche Darstellung"
+			},
+			"label": "Einverständniserklärung"
+		},
+		"reaction": {
+			"meta": {
+				"placeholder": "z.B. neugierig genähert, geflohen, ignoriert...",
+				"helpText": "Wie haben die Tiere auf Ihre Anwesenheit reagiert?",
+				"valueText": "Reaktionen auf Boote zeigen Störungsgrad - \"Flucht\" deutet auf Stress hin und beeinflusst Schutzgebietsgrößen"
+			},
+			"label": "Reaktion auf Ihr Boot"
+		},
+		"referenceId": {
+			"meta": {},
+			"label": "Referenz-ID"
+		},
+		"seaMark": {
+			"meta": {
+				"placeholder": "z.B. Leuchtturm Dahmeshöved, Tonne 14, Ansteuerungstonne",
+				"helpText": "Wird im Meldeformular nicht mehr erfasst — neue Meldungen beschreiben den Ort im Feld darüber. Bleibt für Altmeldungen und die Legacy-Schnittstelle bearbeitbar.",
+				"valueText": "Seezeichen helfen Wissenschaftlern bei der Positionsverifizierung und schaffen Vertrauen in die Datenqualität"
+			},
+			"label": "Seezeichen (nur Altbestand)"
+		},
+		"seaState": {
+			"meta": {
+				"type": "select",
+				"helpText": "Wie war die Beschaffenheit der Meeresoberfläche?",
+				"valueText": "Bei unruhiger See schrumpft der Streifen Meer, den Beobachter verlässlich absuchen können, um rund ein Drittel (Ostsee-Erfassung SCANS 2023) - deshalb hilft Ihre Angabe, Sichtungszahlen richtig einzuordnen"
+			},
+			"label": "Seegang"
+		},
+		"shipCount": {
+			"meta": {
+				"placeholder": "z.B. 2",
+				"helpText": "Wie viele andere Boote waren in der Nähe?",
+				"valueText": "Die Anzahl umliegender Schiffe hilft, den Einfluss von Unterwasserlärm einzuordnen. Auch \"0 Schiffe\" ist eine wichtige Information"
+			},
+			"label": "Anzahl anderer Schiffe in näherer Umgebung"
+		},
+		"shipName": {
+			"meta": {
+				"placeholder": "z.B. MS Seelöwe, SY Nordwind, FFK Seeadler",
+				"helpText": "Name Ihres Bootes/Schiffes (optional)",
+				"valueText": "Schiffsnamen ermöglichen Langzeitauswertungen - einzelne Schiffe melden laut unserer Sichtungsdatenbank seit über 20 Jahren immer wieder Sichtungen"
+			},
+			"label": "Schiffsname"
+		},
+		"shipNameConsent": {
+			"meta": {
+				"type": "checkbox",
+				"helpText": "Ich stimme zu, dass der Schiffsname öffentlich auf der Karte angezeigt wird und in Berichten genannt werden darf.",
+				"valueText": "Ermöglicht die Würdigung der Beobachtenden in Publikationen"
+			},
+			"label": "Schiffsname veröffentlichen"
+		},
+		"sightingDate": {
+			"meta": {
+				"type": "date",
+				"helpText": "An welchem Tag war die Sichtung?",
+				"valueText": "Hilft bei der saisonalen Zuordnung"
+			},
+			"label": "Sichtungsdatum"
+		},
+		"sightingFrom": {
+			"meta": {
+				"type": "select",
+				"helpText": "Wählen Sie Ihre Beobachtungsposition",
+				"valueText": "Ob vom Boot oder von Land aus beobachtet wurde, bestimmt mit, welcher Bereich überhaupt einsehbar war - das ist für die Einordnung der Meldung wichtig"
+			},
+			"label": "Von wo aus wurde die Sichtung gemacht?"
+		},
+		"sightingFromText": {
+			"meta": {
+				"placeholder": "z.B. Brücke, Balkon, Strand...",
+				"helpText": "Beschreiben Sie Ihren Standort genauer"
+			},
+			"label": "Sonstiger Ort"
+		},
+		"sightingTime": {
+			"meta": {
+				"type": "time",
+				"placeholder": "z.B. 14:30 oder 09:15",
+				"helpText": "Zu welchem Zeitpunkt ungefähr? (optional)",
+				"valueText": "Uhrzeitangaben helfen dabei, Tagesrhythmen der Tiere zu erkennen - auch eine grobe Schätzung ist wertvoll"
+			},
+			"label": "Uhrzeit"
+		},
+		"species": {
+			"meta": {
+				"type": "select",
+				"helpText": "Bei Unsicherheit wählen Sie \"Unbekannte Walart\" bzw. \"Unbekannte Robbenart\" statt zu raten",
+				"valueText": "Artbestimmung hilft beim Populationsmonitoring"
+			},
+			"label": "Welche Tierart haben Sie gesehen?"
+		},
+		"street": {
+			"meta": {
+				"placeholder": "Musterstraße 123",
+				"helpText": "Ihre Adresse (optional)",
+				"valueText": "Ermöglicht lokale Zuordnung der Beobachter"
+			},
+			"label": "Straße und Hausnummer"
+		},
+		"totalCount": {
+			"meta": {
+				"placeholder": "1",
+				"helpText": "Schätzen Sie die Gesamtzahl",
+				"valueText": "Die Gruppengröße ist wichtig für Populationsanalysen"
+			},
+			"label": "Anzahl Tiere"
+		},
+		"uploadedFiles": {
+			"meta": {}
+		},
+		"verified": {
+			"meta": {
+				"helpText": "Wurde die Sichtung durch einen Administrator verifiziert?",
+				"valueText": "Kennzeichnet qualitätsgeprüfte Sichtungen"
+			},
+			"label": "Sichtung bestätigt"
+		},
+		"visibility": {
+			"meta": {
+				"type": "select",
+				"helpText": "Wie weit konnten Sie sehen?",
+				"valueText": "Die Sichtweite bestimmt mit, welcher Bereich überhaupt einsehbar war - auch eine grobe Schätzung hilft bei der Auswertung"
+			},
+			"label": "Sichtbedingungen"
+		},
+		"waterway": {
+			"meta": {
+				"placeholder": "z. B. Kieler Bucht, Fehmarnbelt, vor Leuchtturm Dahmeshöved",
+				"helpText": "Seegebiet, Fahrwasser oder Orientierungspunkte in der Nähe",
+				"valueText": "Gewässerbezeichnungen und Orientierungspunkte helfen bei der regionalen Populationsverteilung - auch ungefähre Angaben sind wissenschaftlich wertvoll"
+			},
+			"label": "Wo ungefähr?"
+		},
+		"weatherData": {
+			"meta": {
+				"type": "hidden",
+				"helpText": "Automatisch geladene Wetterdaten von Open-Meteo API",
+				"valueText": "Ergänzt manuelle Wetterangaben mit präzisen API-Daten"
+			},
+			"label": "API-Wetterdaten"
+		},
+		"windDirection": {
+			"meta": {
+				"type": "select",
+				"helpText": "Aus welcher Richtung kam der Wind?",
+				"valueText": "Wind beeinflusst Seegang und Sichtbedingungen - Ihre Wetterangaben vervollständigen das ökologische Bild"
+			},
+			"label": "Windrichtung"
+		},
+		"windForce": {
+			"meta": {
+				"type": "select",
+				"placeholder": "z.B. 3",
+				"helpText": "Welche Windstärke wurde beobachtet?",
+				"valueText": "Bei höherer Windstärke sind auftauchende Tiere zwischen den Wellen schwerer zu erkennen - das hilft, Sichtungszahlen einzuordnen"
+			},
+			"label": "Windstärke (Beaufort)"
+		},
+		"zipCode": {
+			"meta": {
+				"placeholder": "12345",
+				"helpText": "Ihre PLZ (optional)",
+				"valueText": "Geografische Zuordnung der Beobachter"
+			},
+			"label": "Postleitzahl"
+		}
+	},
+	"labels": {
+		"animalBehavior": {
+			"options": [
+				{
+					"value": 1,
+					"label": "Konstanter Kurs, regelmäßiges Tauchen (schwimmen, ziehen)"
+				},
+				{
+					"value": 2,
+					"label": "Unterschiedlicher Kurs, kreisend, unregelmäßiges Tauchen (futtersuchend)"
+				},
+				{
+					"value": 3,
+					"label": "Langsames Schwimmen, längere Zeit an der Wasseroberfläche (ruhend)"
+				},
+				{
+					"value": 0,
+					"label": "Sonstiges Verhalten"
+				}
+			],
+			"fallbacks": {
+				"nullish": "Nicht angegeben",
+				"unknown": "Unbekannt"
+			},
+			"groups": null,
+			"labelSets": null
+		},
+		"animalCondition": {
+			"options": [
+				{
+					"value": 1,
+					"label": "Extrem frisch"
+				},
+				{
+					"value": 2,
+					"label": "Frisch, bzw. beginnende Verwesung"
+				},
+				{
+					"value": 3,
+					"label": "Mittlere Verwesung"
+				},
+				{
+					"value": 4,
+					"label": "Fortgeschrittene Verwesung"
+				},
+				{
+					"value": 5,
+					"label": "Starke Verwesung"
+				},
+				{
+					"value": 0,
+					"label": "Unbekannt"
+				}
+			],
+			"fallbacks": {
+				"nullish": "Nicht angegeben",
+				"unknown": "Unbekannt"
+			},
+			"groups": null,
+			"labelSets": null
+		},
+		"boatDrive": {
+			"options": [
+				{
+					"value": 1,
+					"label": "Motor"
+				},
+				{
+					"value": 2,
+					"label": "Segel"
+				},
+				{
+					"value": 3,
+					"label": "Treibend"
+				},
+				{
+					"value": 4,
+					"label": "Vor Anker"
+				},
+				{
+					"value": 6,
+					"label": "Motor aus"
+				},
+				{
+					"value": 0,
+					"label": "Sonstiger Bootsantrieb"
+				}
+			],
+			"fallbacks": {
+				"nullish": "Nicht angegeben",
+				"unknown": "Unbekannt"
+			},
+			"groups": null,
+			"labelSets": null
+		},
+		"boatType": {
+			"options": [
+				{
+					"value": 1,
+					"label": "Segelboot"
+				},
+				{
+					"value": 2,
+					"label": "Motorboot"
+				},
+				{
+					"value": 3,
+					"label": "Fähre"
+				},
+				{
+					"value": 4,
+					"label": "Fischereifahrzeug"
+				},
+				{
+					"value": 5,
+					"label": "Frachtschiff"
+				},
+				{
+					"value": 6,
+					"label": "Kreuzfahrtschiff"
+				},
+				{
+					"value": 7,
+					"label": "Forschungsschiff"
+				},
+				{
+					"value": 8,
+					"label": "Schlauchboot"
+				},
+				{
+					"value": 9,
+					"label": "Segelkatamaran"
+				},
+				{
+					"value": 10,
+					"label": "Motoryacht"
+				},
+				{
+					"value": 0,
+					"label": "Sonstiger Bootstyp"
+				}
+			],
+			"fallbacks": {
+				"nullish": "Nicht angegeben",
+				"unknown": "Unbekannt"
+			},
+			"groups": null,
+			"labelSets": null
+		},
+		"distance": {
+			"options": [
+				{
+					"value": 1,
+					"label": "weniger als 10 Meter"
+				},
+				{
+					"value": 2,
+					"label": "10 bis 50 Meter"
+				},
+				{
+					"value": 3,
+					"label": "51 bis 100 Meter"
+				},
+				{
+					"value": 4,
+					"label": "101 bis 500 Meter"
+				},
+				{
+					"value": 5,
+					"label": "mehr als 500 Meter"
+				}
+			],
+			"fallbacks": {
+				"nullish": "Nicht angegeben",
+				"unknown": "Unbekannt"
+			},
+			"groups": null,
+			"labelSets": null
+		},
+		"distribution": {
+			"options": [
+				{
+					"value": 1,
+					"label": "Einzeln"
+				},
+				{
+					"value": 3,
+					"label": "Deutliche Schulen"
+				},
+				{
+					"value": 2,
+					"label": "Mutter mit Jungtier"
+				},
+				{
+					"value": 0,
+					"label": "Sonstige Verteilung"
+				}
+			],
+			"fallbacks": {
+				"nullish": "Nicht angegeben",
+				"unknown": "Unbekannt"
+			},
+			"groups": null,
+			"labelSets": null
+		},
+		"entryChannel": {
+			"options": [
+				{
+					"value": 0,
+					"label": "Web"
+				},
+				{
+					"value": 1,
+					"label": "E-Mail"
+				},
+				{
+					"value": 2,
+					"label": "Post"
+				},
+				{
+					"value": 3,
+					"label": "Fax"
+				},
+				{
+					"value": 4,
+					"label": "App"
+				},
+				{
+					"value": 5,
+					"label": "Telefon"
+				}
+			],
+			"fallbacks": {
+				"nullish": "Nicht angegeben",
+				"unknown": "Unbekannt"
+			},
+			"groups": null,
+			"labelSets": null
+		},
+		"mediaType": {
+			"options": [
+				{
+					"value": 1,
+					"label": "Foto"
+				},
+				{
+					"value": 2,
+					"label": "Video"
+				},
+				{
+					"value": 3,
+					"label": "Audiodatei"
+				},
+				{
+					"value": 4,
+					"label": "Zeichnung/Skizze"
+				},
+				{
+					"value": 5,
+					"label": "Satellitenaufnahme"
+				},
+				{
+					"value": 6,
+					"label": "Drohnenaufnahme"
+				},
+				{
+					"value": 7,
+					"label": "Unterwasseraufnahme"
+				},
+				{
+					"value": 0,
+					"label": "Sonstiges Medienformat"
+				}
+			],
+			"fallbacks": {
+				"nullish": "Nicht angegeben",
+				"unknown": "Unbekannt"
+			},
+			"groups": null,
+			"labelSets": null
+		},
+		"reactionToBoat": {
+			"options": [
+				{
+					"value": 0,
+					"label": "Keine Reaktion"
+				},
+				{
+					"value": 1,
+					"label": "Annäherung an Boot"
+				},
+				{
+					"value": 2,
+					"label": "Vermeidung/Flucht"
+				},
+				{
+					"value": 3,
+					"label": "Bugwellenreiten"
+				},
+				{
+					"value": 4,
+					"label": "Kursänderung"
+				},
+				{
+					"value": 5,
+					"label": "Längeres Abtauchen"
+				},
+				{
+					"value": 6,
+					"label": "Häufigeres Auftauchen"
+				}
+			],
+			"fallbacks": {
+				"nullish": "Nicht angegeben",
+				"unknown": "Unbekannt"
+			},
+			"groups": null,
+			"labelSets": null
+		},
+		"seaState": {
+			"options": [
+				{
+					"value": 1,
+					"label": "Glatte See, keine Wellen"
+				},
+				{
+					"value": 2,
+					"label": "Ruhige See, gekräuselte, kurze Wellen"
+				},
+				{
+					"value": 3,
+					"label": "Leicht bewegte See, Schaumköpfe"
+				},
+				{
+					"value": 4,
+					"label": "Grobe See, lange, brechende Wellen"
+				},
+				{
+					"value": 5,
+					"label": "Hohe See, Wellenberge und Gischt"
+				}
+			],
+			"fallbacks": {
+				"nullish": "Nicht angegeben",
+				"unknown": "Unbekannt"
+			},
+			"groups": null,
+			"labelSets": null
+		},
+		"sex": {
+			"options": [
+				{
+					"value": 1,
+					"label": "Weiblich"
+				},
+				{
+					"value": 2,
+					"label": "Männlich"
+				}
+			],
+			"fallbacks": {
+				"nullish": "Nicht angegeben",
+				"unknown": "Unbekannt"
+			},
+			"groups": null,
+			"labelSets": null
+		},
+		"sightingFrom": {
+			"options": [
+				{
+					"value": 1,
+					"label": "Segelschiff"
+				},
+				{
+					"value": 3,
+					"label": "Land"
+				},
+				{
+					"value": 2,
+					"label": "Motorboot"
+				},
+				{
+					"value": 4,
+					"label": "Fähre"
+				},
+				{
+					"value": 0,
+					"label": "Sonstiges"
+				}
+			],
+			"fallbacks": {
+				"nullish": "Nicht angegeben",
+				"unknown": "Unbekannt"
+			},
+			"groups": null,
+			"labelSets": null
+		},
+		"species": {
+			"options": [
+				{
+					"value": "0",
+					"label": "Schweinswal"
+				},
+				{
+					"value": "1",
+					"label": "Kegelrobbe"
+				},
+				{
+					"value": "2",
+					"label": "Seehund"
+				},
+				{
+					"value": "3",
+					"label": "Delfin"
+				},
+				{
+					"value": "4",
+					"label": "Beluga"
+				},
+				{
+					"value": "5",
+					"label": "Zwergwal"
+				},
+				{
+					"value": "6",
+					"label": "Finnwal"
+				},
+				{
+					"value": "7",
+					"label": "Buckelwal"
+				},
+				{
+					"value": "8",
+					"label": "Unbekannte Walart"
+				},
+				{
+					"value": "9",
+					"label": "Ringelrobbe"
+				},
+				{
+					"value": "10",
+					"label": "Unbekannte Robbenart"
+				}
+			],
+			"fallbacks": {
+				"nullish": "Nicht angegeben",
+				"unknown": "Unbekannt"
+			},
+			"groups": [
+				"Kleinwale",
+				"Großwale",
+				"Robben"
+			],
+			"labelSets": null
+		},
+		"speciesIdentification": {
+			"options": [],
+			"fallbacks": null,
+			"groups": null,
+			"labelSets": [
+				{
+					"name": "observability",
+					"options": [
+						{
+							"value": "distance",
+							"label": "Auf Distanz erkennbar"
+						},
+						{
+							"value": "closeup",
+							"label": "Nur bei Nahsicht oder auf dem Foto"
+						},
+						{
+							"value": "background",
+							"label": "Hintergrundwissen, kein Feldmerkmal"
+						}
+					]
+				},
+				{
+					"name": "frequency",
+					"options": [
+						{
+							"value": "resident",
+							"label": "Heimisch"
+						},
+						{
+							"value": "regular",
+							"label": "Regelmäßig"
+						},
+						{
+							"value": "rare",
+							"label": "Selten, aber wiederkehrend"
+						},
+						{
+							"value": "vagrant",
+							"label": "Irrgast"
+						}
+					]
+				}
+			]
+		},
+		"visibility": {
+			"options": [
+				{
+					"value": 1,
+					"label": "Außergewöhnlich klar (mehr als 20km)"
+				},
+				{
+					"value": 2,
+					"label": "Klar (bis 20km)"
+				},
+				{
+					"value": 3,
+					"label": "Diesig (bis 4km)"
+				},
+				{
+					"value": 4,
+					"label": "Nebel (bis 1km)"
+				}
+			],
+			"fallbacks": {
+				"nullish": "Nicht angegeben",
+				"unknown": "Unbekannt"
+			},
+			"groups": null,
+			"labelSets": null
+		},
+		"windDirection": {
+			"options": [
+				{
+					"value": "N",
+					"label": "Nord"
+				},
+				{
+					"value": "NO",
+					"label": "Nordost"
+				},
+				{
+					"value": "O",
+					"label": "Ost"
+				},
+				{
+					"value": "SO",
+					"label": "Südost"
+				},
+				{
+					"value": "S",
+					"label": "Süd"
+				},
+				{
+					"value": "SW",
+					"label": "Südwest"
+				},
+				{
+					"value": "W",
+					"label": "West"
+				},
+				{
+					"value": "NW",
+					"label": "Nordwest"
+				}
+			],
+			"fallbacks": {
+				"nullish": "Nicht angegeben",
+				"unknown": "Unbekannt"
+			},
+			"groups": null,
+			"labelSets": null
+		},
+		"windStrength": {
+			"options": [
+				{
+					"value": 0,
+					"label": "0 - Windstille (< 1 km/h)"
+				},
+				{
+					"value": 1,
+					"label": "1 - Leiser Zug (1-5 km/h)"
+				},
+				{
+					"value": 2,
+					"label": "2 - Leichte Brise (6-11 km/h)"
+				},
+				{
+					"value": 3,
+					"label": "3 - Schwache Brise (12-19 km/h)"
+				},
+				{
+					"value": 4,
+					"label": "4 - Mäßige Brise (20-28 km/h)"
+				},
+				{
+					"value": 5,
+					"label": "5 - Frische Brise (29-38 km/h)"
+				},
+				{
+					"value": 6,
+					"label": "6 - Starker Wind (39-49 km/h)"
+				},
+				{
+					"value": 7,
+					"label": "7 - Steifer Wind (50-61 km/h)"
+				},
+				{
+					"value": 8,
+					"label": "8 - Stürmischer Wind (62-74 km/h)"
+				},
+				{
+					"value": 9,
+					"label": "9 - Sturm (75-88 km/h)"
+				},
+				{
+					"value": 10,
+					"label": "10 - Schwerer Sturm (89-102 km/h)"
+				},
+				{
+					"value": 11,
+					"label": "11 - Orkanartiger Sturm (103-117 km/h)"
+				},
+				{
+					"value": 12,
+					"label": "12 - Orkan (> 117 km/h)"
+				}
+			],
+			"fallbacks": {
+				"nullish": "Nicht angegeben",
+				"unknown": "Unbekannt"
+			},
+			"groups": null,
+			"labelSets": null
+		}
+	},
+	"messages": [
+		"Bei mehr als 15 bitte 15 eintragen",
+		"Bei mehr als 15 Tieren bitte 15 eintragen",
+		"Bitte beschreiben Sie den Ort oder wählen Sie eine GPS-Position",
+		"Bitte eine plausible Anzahl eintragen",
+		"Bitte geben Sie an, von wo die Sichtung erfolgte.",
+		"Bitte geben Sie den Zustand des toten Tieres an.",
+		"Bitte geben Sie eine Entfernung an.",
+		"Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+		"Bitte geben Sie eine gültige Sichtweiten-Kategorie an.",
+		"Bitte geben Sie eine gültige Verhaltenskategorie an.",
+		"Bitte geben Sie eine gültige Verteilung an.",
+		"Bitte geben Sie eine gültige Windrichtung an.",
+		"Bitte geben Sie eine gültige Windstärke zwischen 0 und 12 an.",
+		"Bitte geben Sie einen gültigen Seegang an.",
+		"Bitte geben Sie mindestens 1 Tier an",
+		"Bitte wählen Sie den Bootsantrieb aus.",
+		"Bitte wählen Sie ein gültiges Geschlecht.",
+		"Bitte wählen Sie eine gültige Entfernungskategorie.",
+		"Bitte wählen Sie eine gültige Option.",
+		"Bitte wählen Sie eine Tierart aus",
+		"Bitte wählen Sie einen Eingangskanal aus.",
+		"Bitte wählen Sie einen gültigen Bootsantrieb aus.",
+		"Bitte wählen Sie einen gültigen Eingangskanal aus.",
+		"Bitte wählen Sie einen gültigen Zustand.",
+		"Das Datum ist erforderlich",
+		"Das Datum liegt in der Zukunft - bitte korrigieren Sie es",
+		"Der Bootstyp darf nicht länger als 64 Zeichen sein.",
+		"Der Breitengrad muss zwischen -90° und 90° liegen",
+		"Der Heimathafen darf nicht länger als 64 Zeichen sein.",
+		"Der Längengrad muss zwischen -180° und 180° liegen",
+		"Der Name darf nicht länger als 64 Zeichen sein.",
+		"Der Name des Seezeichens ist zu lang (maximal 255 Zeichen)",
+		"Der Ort darf nicht länger als 64 Zeichen sein.",
+		"Der Pfad/Name darf nicht länger als 255 Zeichen sein.",
+		"Der Schiffsname darf nicht länger als 64 Zeichen sein.",
+		"Der Vorname darf nicht länger als 64 Zeichen sein.",
+		"Die Angabe darf nicht länger als 255 Zeichen sein.",
+		"Die Anzahl darf nicht negativ sein",
+		"Die Anzahl der Schiffe darf 15 nicht überschreiten.",
+		"Die Anzahl der Schiffe muss positiv sein.",
+		"Die Anzahl muss 0 oder höher sein",
+		"Die Bemerkungen dürfen nicht länger als 1000 Zeichen sein.",
+		"Die Beschreibung darf nicht länger als 255 Zeichen sein.",
+		"Die E-Mail-Adresse darf nicht länger als 64 Zeichen sein.",
+		"Die E-Mail-Adresse ist erforderlich.",
+		"Die Faxnummer darf nicht länger als 64 Zeichen sein.",
+		"Die Größe darf 300 nicht überschreiten.",
+		"Die Größe muss positiv sein.",
+		"Die interne Kommentare dürfen nicht länger als 1000 Zeichen sein.",
+		"Die Ortsbeschreibung ist zu lang (maximal 255 Zeichen)",
+		"Die Postleitzahl darf nicht länger als 5 Zeichen sein.",
+		"Die Reaktion darf nicht länger als 1000 Zeichen sein.",
+		"Die sonstigen Auffälligkeiten dürfen nicht länger als 1000 Zeichen sein.",
+		"Die Straße darf nicht länger als 64 Zeichen sein.",
+		"Die Telefonnummer darf nicht länger als 64 Zeichen sein.",
+		"Diese Tierart ist nicht verfügbar",
+		"Es können nicht mehr Jungtiere als Tiere insgesamt sein",
+		"GPS-Position: Breitengrad ist erforderlich",
+		"GPS-Position: Längengrad ist erforderlich",
+		"Nachname erforderlich",
+		"Referenz-ID is a required field",
+		"Sie müssen den Datenschutzbedingungen zustimmen, um Ihre Sichtung zu melden",
+		"Ungültige Uhrzeit - bitte Format 14:30 verwenden",
+		"Vorname erforderlich",
+		"Wie viele Tiere haben Sie gesehen?"
+	]
+}

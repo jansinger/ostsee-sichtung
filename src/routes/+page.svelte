@@ -3,6 +3,7 @@
   Meldeformular für Meerestier-Sichtungen in der Ostsee
 -->
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import { browser } from '$app/environment';
 	import { page } from '$app/state';
 	import { pushState, replaceState } from '$app/navigation';
@@ -332,7 +333,7 @@
 </script>
 
 <svelte:head>
-	<title>Ostsee-Tiere - Meerestiere melden</title>
+	<title>{m.routes_page_text_ostsee_tiere_meerestiere_melden()}</title>
 	<meta
 		name="description"
 		content="Ostsee-Tiere - Melden Sie Ihre Meerestier-Sichtung in der Ostsee. Unterstützen Sie die Meeresforschung mit Ihren Beobachtungen."

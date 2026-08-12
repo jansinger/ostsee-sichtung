@@ -20,6 +20,7 @@ import { getSeaStateLabel } from '$lib/report/formOptions/seaState';
 import { getSightingFromLabel } from '$lib/report/formOptions/sightingFrom';
 import { getSpeciesLabel } from '$lib/report/formOptions/species';
 import { getVisibilityLabel } from '$lib/report/formOptions/visibility';
+import { baseLocale } from '$lib/paraglide/runtime';
 import type { FrontendSighting } from '$lib/types/index';
 import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 import {
@@ -106,8 +107,17 @@ export function generateCsvData(sightings: FrontendSighting[]): string {
 		const time = formatLocalDateTime(sighting.sightingDate, 'time');
 
 		// Enum-Werte in lesbare Labels konvertieren
-		const speciesName = getSpeciesLabel(sighting.species);
-		const behaviorText = getAnimalBehaviorLabel(sighting.behavior);
+		// Tierart bewusst auf baseLocale ('de') gepinnt: laut
+		// docs/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md Abschnitt 6 bleiben
+		// Exportformate (CSV/XML/KML/JSON) deutsch — sie gehen an die
+		// Wissenschaft, stabile deutsche Kopfzeilen/Werte sind dort ein
+		// Merkmal. `getSpeciesLabel()` würde ohne diesen Parameter sonst die
+		// aktive Anfrage-Locale übernehmen, sobald echte englische Artnamen
+		// eingepflegt sind (heute maskiert das messages/en.json == de.json).
+		const speciesName = getSpeciesLabel(sighting.species, baseLocale);
+		// Verhalten bewusst auf baseLocale gepinnt — dieselbe Begründung wie bei
+		// `speciesName` oben (Exportformate bleiben deutsch).
+		const behaviorText = getAnimalBehaviorLabel(sighting.behavior, baseLocale);
 
 		// Datenschutz: Namen nur bei expliziter Einwilligung anzeigen
 		const name =
@@ -123,27 +133,35 @@ export function generateCsvData(sightings: FrontendSighting[]): string {
 			speciesName,
 			sighting.totalCount,
 			sighting.juvenileCount || '',
-			getDistributionLabel(sighting.distribution),
+			// Verteilung/Entfernung bewusst auf baseLocale gepinnt — dieselbe
+			// Begründung wie bei `speciesName` oben (Exportformate bleiben deutsch).
+			getDistributionLabel(sighting.distribution, baseLocale),
 			sighting.latitude,
 			sighting.longitude,
 			behaviorText,
 			sighting.reaction || '',
-			getDistanceLabel(sighting.distance),
-			getSightingFromLabel(sighting.sightingFrom),
+			getDistanceLabel(sighting.distance, baseLocale),
+			// Sichtung von bewusst auf baseLocale gepinnt — dieselbe Begründung wie
+			// bei `speciesName` oben (Exportformate bleiben deutsch).
+			getSightingFromLabel(sighting.sightingFrom, baseLocale),
 			sighting.isDead ? 'Ja' : 'Nein',
 			sighting.deadCondition || '',
 			sighting.deadSex || '',
 			sighting.deadSize || '',
 			sighting.waterway || '',
 			sighting.seaMark || '',
-			getSeaStateLabel(sighting.seaState),
-			getVisibilityLabel(sighting.visibility),
+			// Seegang/Sicht bewusst auf baseLocale gepinnt — dieselbe Begründung
+			// wie bei `speciesName` oben (Exportformate bleiben deutsch).
+			getSeaStateLabel(sighting.seaState, baseLocale),
+			getVisibilityLabel(sighting.visibility, baseLocale),
 			sighting.windDirection || '',
 			sighting.windForce || '',
 			sighting.shipNameConsent ? sighting.shipName || '' : '',
 			sighting.homePort || '',
 			sighting.boatType || '',
-			getBoatDriveLabel(sighting.boatDrive),
+			// Bootsantrieb bewusst auf baseLocale gepinnt — dieselbe Begründung wie
+			// bei `speciesName` oben (Exportformate bleiben deutsch).
+			getBoatDriveLabel(sighting.boatDrive, baseLocale),
 			sighting.shipCount || '',
 			sighting.mediaUpload ? 'Ja' : 'Nein',
 			name,

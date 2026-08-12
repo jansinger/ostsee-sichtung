@@ -3,6 +3,7 @@
   Used by both WeatherDataFetcher and WeatherDataDisplay for consistent presentation
 -->
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import Icon from '$lib/components/Icon.svelte';
 	import { getSeaStateLabel } from '$lib/report/formOptions/seaState';
 	import { getVisibilityLabel } from '$lib/report/formOptions/visibility';
@@ -213,16 +214,18 @@
 					type="button"
 					onclick={onApplyData}
 					class="btn btn-sm btn-primary"
-					aria-label="Wetterdaten ins Formular übernehmen"
+					aria-label={m.components_weather_weatherdisplay_aria_label_wetterdaten_ins_formular_uebernehmen()}
 				>
-					Daten übernehmen
+					{m.components_weather_weatherdisplay_text_daten_uebernehmen()}
 				</button>
 			</div>
 		{/if}
 	</div>
 {:else}
 	<div class="weather-display">
-		<p class="text-base-content/60 text-sm">Keine Wetterdaten verfügbar</p>
+		<p class="text-base-content/60 text-sm">
+			{m.components_weather_weatherdisplay_text_keine_wetterdaten_verfuegbar()}
+		</p>
 	</div>
 {/if}
 

@@ -715,19 +715,20 @@ describe('dateTime - Zentrale Zeitzonenverwaltung', () => {
 			(Object.keys(erwartet) as Array<keyof typeof erwartet>).forEach((format) => {
 				expect(formatLocalDateTime(spaet, format, 'de-DE'), format).toBe(erwartet[format].de);
 				expect(formatLocalDateTime(spaet, format, 'en-GB'), format).toBe(erwartet[format].en);
-				// `de` (kurzer Tag) formatiert identisch zu `de-DE`.
+				// `de`/`en` sind die kurzen Paraglide-Locales aus
+				// `project.inlang/settings.json` — genau die, die Etappe 2 an
+				// `formatLocalDateTime` durchreichen wird. Die benannte Zuordnung in
+				// `dateTime.ts` muss sie auf dieselbe Anzeigesprache wie die langen
+				// BCP-47-Tags auflösen: `de` → `de-DE`, `en` → `en-GB`.
 				expect(formatLocalDateTime(spaet, format, 'de'), format).toBe(erwartet[format].de);
+				// Bis Etappe 2 lieferte `en` (kurzer Tag) ungemappt US-Englisch
+				// (MM/DD/YYYY, 12-Stunden mit AM/PM) — ein komplett anderes Layout als
+				// `en-GB`. Das war der dokumentierte Bestandsstand aus Etappe 0, kein
+				// Zielzustand: Für ein Ostsee-Publikum ist en-GB (DD/MM/YYYY,
+				// 24-Stunden) naheliegender. Diese Zeile ist der
+				// Charakterisierungstest, der genau diesen Wechsel festhält.
+				expect(formatLocalDateTime(spaet, format, 'en'), format).toBe(erwartet[format].en);
 			});
-
-			// `en` (kurzer Tag) formatiert US-Englisch (MM/DD/YYYY, 12-Stunden mit
-			// AM/PM) — ein komplett anderes Layout als `en-GB`. Nur der Kalendertag
-			// ist hier die zugesagte Invariante, deshalb wird ausschließlich das
-			// `date`-Format exakt festgenagelt. Die drei Uhrzeit-Formate tragen
-			// "AM"/"PM"; seit ICU 72 steht davor ein schmales geschütztes Leerzeichen
-			// (U+202F) statt eines normalen — ein `toBe` darauf wäre allein an einem
-			// ICU-Sprung zerbrechlich, ohne dass die Zeitzonen-Invariante betroffen
-			// wäre.
-			expect(formatLocalDateTime(spaet, 'date', 'en')).toBe('07/16/2026');
 		});
 	});
 });

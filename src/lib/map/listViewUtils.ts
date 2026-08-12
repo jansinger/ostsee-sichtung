@@ -11,6 +11,8 @@
  * Zeitstempel herausgefiltert ist.
  */
 
+import { getLocale } from '$lib/paraglide/runtime';
+import { resolveDisplayLocale } from '$lib/utils/format/dateTime';
 import { getFeatureColorGroup, isBetween } from './styleUtils';
 
 /**
@@ -101,9 +103,12 @@ export function toListEntries(
 }
 
 /**
- * Formatiert Unix-Sekunden als deutsches Datum.
+ * Formatiert Unix-Sekunden als lokalisiertes Datum.
  * timeZone explizit setzen, sonst bestimmt die Browser-Zone das Datum (M5).
+ * Locale über resolveDisplayLocale, damit /en britisch statt deutsch formatiert.
  */
 export function formatEntryDate(ts: number): string {
-	return new Date(ts * 1000).toLocaleDateString('de-DE', { timeZone: 'Europe/Berlin' });
+	return new Date(ts * 1000).toLocaleDateString(resolveDisplayLocale(getLocale()), {
+		timeZone: 'Europe/Berlin'
+	});
 }

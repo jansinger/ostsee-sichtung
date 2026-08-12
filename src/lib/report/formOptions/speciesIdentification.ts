@@ -5,6 +5,9 @@
  * (Trägerinstitution des Portals). Änderungen an Zahlen oder Merkmalen bitte
  * dort gegenprüfen: https://www.deutsches-meeresmuseum.de/wissenschaft/infothek/artensteckbriefe
  */
+import { memoizePerLocale } from '$lib/i18n/localeMemo';
+import * as m from '$lib/paraglide/messages';
+import { getLocale, type Locale } from '$lib/paraglide/runtime';
 import { SpeciesEnum } from './species';
 
 /**
@@ -14,21 +17,76 @@ import { SpeciesEnum } from './species';
  */
 export type Observability = 'distance' | 'closeup' | 'background';
 
-export const observabilityLabels: Record<Observability, string> = {
-	distance: 'Auf Distanz erkennbar',
-	closeup: 'Nur bei Nahsicht oder auf dem Foto',
-	background: 'Hintergrundwissen, kein Feldmerkmal'
+/**
+ * Baut je Locale die Bezeichnungen der Beobachtbarkeits-Stufen aus dem
+ * Botschaftskatalog.
+ *
+ * Modul-intern (kein Export): Kein Verbraucher außerhalb von `formOptions/`
+ * indiziert das Record direkt — geprüft vor diesem Umbau (auch über
+ * mehrzeilige Importe, `germanBaseline.testutil.ts` ausgenommen). Der externe
+ * Verbraucher `SpeciesIdentificationHelp.svelte` ruft seither
+ * `getObservabilityLabels()`.
+ *
+ * NUR diese beiden schmalen Label-Records (Observability/FrequencyLevel)
+ * gehören zu Aufgabe 3.3 — die elf Artdatensätze (`speciesIdentification`
+ * unten) bleiben unberührt, siehe Docblock der Konstante dort.
+ *
+ * Bewusst ein Record von BUILDERN, nicht von aufgelösten Strings — siehe
+ * Begründung in `species.ts`.
+ */
+const observabilityLabelBuilders: Record<Observability, (locale: Locale) => string> = {
+	distance: (locale) => m.formoptions_speciesidentification_distance({}, { locale }),
+	closeup: (locale) => m.formoptions_speciesidentification_closeup({}, { locale }),
+	background: (locale) => m.formoptions_speciesidentification_background({}, { locale })
 };
+
+/** Baut die Beobachtbarkeits-Bezeichnungen für eine Locale genau einmal und hält sie danach vor. */
+const observabilityLabelsFor = memoizePerLocale(
+	(locale) =>
+		Object.fromEntries(
+			Object.entries(observabilityLabelBuilders).map(([value, build]) => [value, build(locale)])
+		) as Record<Observability, string>
+);
+
+/**
+ * Gibt die Beobachtbarkeits-Bezeichnungen für eine Locale zurück.
+ * @param locale - Locale für die Anzeigetexte; Default die aktuelle Locale
+ */
+export function getObservabilityLabels(
+	locale: Locale = getLocale()
+): Record<Observability, string> {
+	return observabilityLabelsFor(locale);
+}
 
 /** Wie realistisch eine Sichtung in der deutschen Ostsee ist. */
 export type FrequencyLevel = 'resident' | 'regular' | 'rare' | 'vagrant';
 
-export const frequencyLabels: Record<FrequencyLevel, string> = {
-	resident: 'Heimisch',
-	regular: 'Regelmäßig',
-	rare: 'Selten, aber wiederkehrend',
-	vagrant: 'Irrgast'
+/**
+ * Baut je Locale die Bezeichnungen der Häufigkeits-Stufen aus dem
+ * Botschaftskatalog. Siehe Begründung an `observabilityLabelBuilders` oben.
+ */
+const frequencyLabelBuilders: Record<FrequencyLevel, (locale: Locale) => string> = {
+	resident: (locale) => m.formoptions_speciesidentification_resident({}, { locale }),
+	regular: (locale) => m.formoptions_speciesidentification_regular({}, { locale }),
+	rare: (locale) => m.formoptions_speciesidentification_rare({}, { locale }),
+	vagrant: (locale) => m.formoptions_speciesidentification_vagrant({}, { locale })
 };
+
+/** Baut die Häufigkeits-Bezeichnungen für eine Locale genau einmal und hält sie danach vor. */
+const frequencyLabelsFor = memoizePerLocale(
+	(locale) =>
+		Object.fromEntries(
+			Object.entries(frequencyLabelBuilders).map(([value, build]) => [value, build(locale)])
+		) as Record<FrequencyLevel, string>
+);
+
+/**
+ * Gibt die Häufigkeits-Bezeichnungen für eine Locale zurück.
+ * @param locale - Locale für die Anzeigetexte; Default die aktuelle Locale
+ */
+export function getFrequencyLabels(locale: Locale = getLocale()): Record<FrequencyLevel, string> {
+	return frequencyLabelsFor(locale);
+}
 
 export interface IdentificationFeature {
 	text: string;

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import { formatDayOfYearLong, isoDateFromDayOfYear } from '$lib/map/dateUtils';
 	import { dayOfYearFromIsoDate } from '$lib/map/urlFilterState';
 
@@ -107,7 +108,11 @@
 	}
 </script>
 
-<div class="space-y-2" role="group" aria-label="Zeitraum wählen">
+<div
+	class="space-y-2"
+	role="group"
+	aria-label={m.components_map_panel_dualrangeslider_aria_label_zeitraum_waehlen()}
+>
 	<div
 		class="dual-range"
 		data-testid="dual-range"
@@ -125,7 +130,7 @@
 			{min}
 			{max}
 			value={startValue}
-			aria-label="Zeitraum Start"
+			aria-label={m.components_map_panel_dualrangeslider_aria_label_zeitraum_start()}
 			aria-valuetext={formatDayOfYearLong(year, startValue)}
 			oninput={onStartInput}
 		/>
@@ -138,7 +143,7 @@
 			{min}
 			{max}
 			value={endValue}
-			aria-label="Zeitraum Ende"
+			aria-label={m.components_map_panel_dualrangeslider_aria_label_zeitraum_ende()}
 			aria-valuetext={formatDayOfYearLong(year, endValue)}
 			oninput={onEndInput}
 		/>
@@ -153,7 +158,7 @@
 	<div class="grid grid-cols-2 gap-2">
 		<div>
 			<label class="label py-0" for="time-date-start">
-				<span class="text-xs">Start</span>
+				<span class="text-xs">{m.components_map_panel_dualrangeslider_text_start()}</span>
 			</label>
 			<input
 				type="date"
@@ -167,7 +172,7 @@
 		</div>
 		<div>
 			<label class="label py-0" for="time-date-end">
-				<span class="text-xs">Ende</span>
+				<span class="text-xs">{m.components_map_panel_dualrangeslider_text_ende()}</span>
 			</label>
 			<input
 				type="date"

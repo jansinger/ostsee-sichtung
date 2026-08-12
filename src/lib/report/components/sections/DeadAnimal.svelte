@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import Icon from '$lib/components/Icon.svelte';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
 
@@ -13,16 +14,30 @@
 			width="16"
 			class="text-warning-strong shrink-0"
 		/>
-		<span>Zusätzliche Informationen für Totfund</span>
+		<span
+			>{m.report_components_sections_deadanimal_text_zusaetzliche_informationen_fuer_totfund()}</span
+		>
 	</h4>
 	<div class="text-base-content/80 mb-4 text-sm">
-		<p class="mb-2 font-medium">Totfunde sind besonders wertvoll für die Wissenschaft!</p>
+		<p class="mb-2 font-medium">
+			{m.report_components_sections_deadanimal_text_totfunde_sind_besonders_wertvoll_fuer()}
+		</p>
 		<ul class="list-inside list-disc space-y-1 text-xs">
-			<li><strong>Todesursachen:</strong> Helfen bei der Identifikation von Bedrohungen</li>
-			<li><strong>Gesundheitszustand:</strong> Wichtig für Populationsanalysen</li>
-			<li><strong>Nicht berühren:</strong> Sicherheitsrisiko und Störung der Untersuchung</li>
 			<li>
-				<strong>Behörden informieren:</strong> Meeresmuseum, Wasserschutzpolizei, Nationalparkamt kontaktieren
+				<strong>{m.report_components_sections_deadanimal_term_todesursachen()}</strong>
+				{m.report_components_sections_deadanimal_gloss_todesursachen()}
+			</li>
+			<li>
+				<strong>{m.report_components_sections_deadanimal_term_gesundheitszustand()}</strong>
+				{m.report_components_sections_deadanimal_gloss_gesundheitszustand()}
+			</li>
+			<li>
+				<strong>{m.report_components_sections_deadanimal_term_nicht_beruehren()}</strong>
+				{m.report_components_sections_deadanimal_gloss_nicht_beruehren()}
+			</li>
+			<li>
+				<strong>{m.report_components_sections_deadanimal_text_behoerden_informieren()}</strong>
+				{m.report_components_sections_deadanimal_text_meeresmuseum_wasserschutzpolizei_nationa()}
 			</li>
 		</ul>
 	</div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import Icon from '$lib/components/Icon.svelte';
 	import DataUsageNotice from '$lib/components/info/DataUsageNotice.svelte';
 	import DeadFindingNotice from '$lib/components/info/DeadFindingNotice.svelte';
@@ -32,16 +33,13 @@
 <div class="mx-auto max-w-5xl p-6">
 	<div class="mb-10">
 		<h1 class="text-primary mb-4 text-4xl font-bold tracking-tight">
-			Bestimmungshilfe für Meerestiere
+			{m.routes_bestimmungshilfe_page_text_bestimmungshilfe_fuer_meerestiere()}
 		</h1>
 		<p class="text-base-content/80 mb-4 text-xl leading-relaxed">
-			Welches Tier war das? Diese Seite hilft bei der Artbestimmung von Walen und Robben in der
-			Ostsee — mit Fotos, Erkennungsmerkmalen und den Verwechslungen, die am häufigsten vorkommen.
+			{m.routes_bestimmungshilfe_page_text_welches_tier_war_das_diese()}
 		</p>
 		<p class="text-base-content/70 leading-relaxed">
-			Klicken Sie auf eine Tierart, um ihre Merkmale zu sehen. Die Merkmale sind danach
-			gekennzeichnet, ob sie bei einer echten Sichtung überhaupt zu erkennen sind — auf Entfernung,
-			erst aus der Nähe oder nur mit Hintergrundwissen.
+			{m.routes_bestimmungshilfe_page_text_klicken_sie_auf_eine_tierart()}
 		</p>
 	</div>
 
@@ -57,11 +55,11 @@
 	<div class="border-base-300 mt-12 flex flex-wrap justify-center gap-4 border-t pt-10">
 		<a href={localizeHref('/')} class="btn btn-primary btn-lg">
 			<Icon icon="custom:porpoise" width="20" height="20" aria-hidden="true" />
-			Sichtung melden
+			{m.routes_bestimmungshilfe_page_text_sichtung_melden()}
 		</a>
 		<a href={localizeHref('/map')} class="btn btn-outline btn-lg">
 			<Icon icon="lucide:map" width="20" height="20" aria-hidden="true" />
-			Sichtungskarte ansehen
+			{m.routes_bestimmungshilfe_page_text_sichtungskarte_ansehen()}
 		</a>
 	</div>
 </div>

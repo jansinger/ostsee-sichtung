@@ -2,6 +2,10 @@
  * Enum für Medientypen
  * Die numerischen Werte werden in der Datenbank gespeichert.
  */
+import { memoizePerLocale } from '$lib/i18n/localeMemo';
+import * as m from '$lib/paraglide/messages';
+import { getLocale, type Locale } from '$lib/paraglide/runtime';
+
 export enum MediaTypeEnum {
 	OTHER = 0,
 	PHOTO = 1,
@@ -14,18 +18,36 @@ export enum MediaTypeEnum {
 }
 
 /**
- * Deutsche Bezeichnungen für die Medientypen
+ * Baut je Locale die Bezeichnungen der Medientypen aus dem Botschaftskatalog.
+ *
+ * Modul-intern (kein Export): Kein Verbraucher außerhalb von `formOptions/`
+ * indiziert das Record direkt oder ruft `getMediaTypeLabel` aus der
+ * Legacy-API oder einem Export-Pfad auf — geprüft vor diesem Umbau (auch über
+ * mehrzeilige Importe, `germanBaseline.testutil.ts` ausgenommen). Anders als
+ * bei den übrigen sieben Dateien dieser Gruppe war hier keine
+ * Locale-Pinnung an einem Verbraucher nötig.
+ *
+ * Bewusst ein Record von BUILDERN, nicht von aufgelösten Strings — siehe
+ * Begründung in `species.ts`.
  */
-export const mediaTypeLabels: Record<MediaTypeEnum, string> = {
-	[MediaTypeEnum.OTHER]: 'Sonstiges Medienformat',
-	[MediaTypeEnum.PHOTO]: 'Foto',
-	[MediaTypeEnum.VIDEO]: 'Video',
-	[MediaTypeEnum.AUDIO]: 'Audiodatei',
-	[MediaTypeEnum.DRAWING]: 'Zeichnung/Skizze',
-	[MediaTypeEnum.SATELLITE]: 'Satellitenaufnahme',
-	[MediaTypeEnum.DRONE]: 'Drohnenaufnahme',
-	[MediaTypeEnum.UNDERWATER]: 'Unterwasseraufnahme'
+const mediaTypeLabelBuilders: Record<MediaTypeEnum, (locale: Locale) => string> = {
+	[MediaTypeEnum.OTHER]: (locale) => m.formoptions_mediatype_other({}, { locale }),
+	[MediaTypeEnum.PHOTO]: (locale) => m.formoptions_mediatype_photo({}, { locale }),
+	[MediaTypeEnum.VIDEO]: (locale) => m.formoptions_mediatype_video({}, { locale }),
+	[MediaTypeEnum.AUDIO]: (locale) => m.formoptions_mediatype_audio({}, { locale }),
+	[MediaTypeEnum.DRAWING]: (locale) => m.formoptions_mediatype_drawing({}, { locale }),
+	[MediaTypeEnum.SATELLITE]: (locale) => m.formoptions_mediatype_satellite({}, { locale }),
+	[MediaTypeEnum.DRONE]: (locale) => m.formoptions_mediatype_drone({}, { locale }),
+	[MediaTypeEnum.UNDERWATER]: (locale) => m.formoptions_mediatype_underwater({}, { locale })
 };
+
+/** Baut die Medientyp-Bezeichnungen für eine Locale genau einmal und hält sie danach vor. */
+const mediaTypeLabelsFor = memoizePerLocale(
+	(locale) =>
+		Object.fromEntries(
+			Object.entries(mediaTypeLabelBuilders).map(([value, build]) => [value, build(locale)])
+		) as Record<MediaTypeEnum, string>
+);
 
 export type MediaType = MediaTypeEnum;
 
@@ -43,23 +65,32 @@ const SELECTABLE_MEDIA_TYPES: readonly MediaTypeEnum[] = [
 
 /**
  * Generiert eine Array-Struktur für Select-Komponenten
+ * @param locale - Locale für die Anzeigetexte; Default die aktuelle Locale
  * @returns Array von Objekten mit value und label
  */
-const mediaTypeOptions: Array<{ value: number; label: string }> = SELECTABLE_MEDIA_TYPES.map(
-	(value) => ({ value, label: mediaTypeLabels[value] })
-);
-export const getMediaTypeOptions = (): Array<{ value: number; label: string }> => mediaTypeOptions;
+export function getMediaTypeOptions(
+	locale: Locale = getLocale()
+): Array<{ value: number; label: string }> {
+	const labels = mediaTypeLabelsFor(locale);
+	return SELECTABLE_MEDIA_TYPES.map((value) => ({ value, label: labels[value] }));
+}
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert
  * @param value - Der Enum-Wert (z.B. aus der Datenbank)
+ * @param locale - Locale für den Anzeigetext; Default die aktuelle Locale
  * @returns Das zugehörige Label oder einen Fallback-Text
  */
-export function getMediaTypeLabel(value: MediaTypeEnum | number | null | undefined): string {
-	if (value === null || value === undefined) return 'Nicht angegeben';
+export function getMediaTypeLabel(
+	value: MediaTypeEnum | number | null | undefined,
+	locale: Locale = getLocale()
+): string {
+	if (value === null || value === undefined)
+		return m.formoptions_mediatype_not_specified({}, { locale });
 
 	const numericValue = typeof value === 'string' ? parseInt(value, 10) : value;
-	return mediaTypeLabels[numericValue as MediaTypeEnum] || 'Unbekannt';
+	const labels = mediaTypeLabelsFor(locale);
+	return labels[numericValue as MediaTypeEnum] || m.formoptions_mediatype_unknown({}, { locale });
 }
 
 /**

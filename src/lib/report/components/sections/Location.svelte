@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import { getFormContext } from '$lib/report/formContext';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
 	import LocationInput from '$lib/report/components/form/LocationInput.svelte';
@@ -20,7 +21,10 @@
 </script>
 
 <!-- Location Section -->
-<SectionCard title="Standort der Sichtung" icon="lucide:map-pin">
+<SectionCard
+	title={m.report_components_sections_location_title_standort_der_sichtung()}
+	icon="lucide:map-pin"
+>
 	<!-- Position Type Selection -->
 	<FormField name="hasPosition" />
 

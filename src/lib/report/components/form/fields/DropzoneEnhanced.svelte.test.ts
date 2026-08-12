@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { get } from 'svelte/store';
 
 /**
@@ -289,6 +289,139 @@ describe('DropzoneEnhanced — Karte in der Foto-Karte', () => {
 			.poll(() => document.querySelectorAll('[data-testid="photo-position-summary"]').length)
 			.toBe(1);
 		expect(document.querySelectorAll('.ol-viewport').length).toBe(0);
+	});
+});
+
+/**
+ * Verhaltenstest für die Aufnahmezeit-Anzeige (M10-Befund): `aufnahmeLocale`
+ * läuft seit der Umstellung auf `resolveDisplayLocale(getLocale())` statt
+ * hartcodiertem `'de-DE'` — bewiesen wird das über den tatsächlich gerenderten
+ * Wert (Datumstrenner `.` gegen `/`), nicht nur über die Existenz einer Zeit.
+ *
+ * Deckt die Aufrufstelle in der Medien-Listenkarte ab (Zeile ~717,
+ * `!isPositionStep`-Zweig — Multi-Datei-Modus, `enableGPSExtraction: false`).
+ * Die beiden Geschwisterstellen in der Foto-Karte des Positions-Schritts
+ * (Zeile ~799, ~932) lesen dieselbe `aufnahmeLocale`-Variable — eine gemeinsam
+ * verdrahtete `$derived` kann nicht an einer Stelle deutsch und an einer
+ * anderen englisch sein, ein Test für die Variable genügt. Der
+ * Positions-Zweig wird hier bewusst NICHT belegt: Ein dort gesetzter
+ * `mediaFile.timestamp` löst den `$effect`, der EXIF-Zeiten ins Formular
+ * übernimmt (`applyExifDateTime`, Zeile ~306), in dieser Test-Umgebung in
+ * eine Endlosschleife aus (`effect_update_depth_exceeded`) — ein
+ * vorbestehendes Verhalten dieses Effekts, unabhängig von der Locale-Frage
+ * hier, das eigene Untersuchung verdient und nicht nebenbei „mitgefixt" wird.
+ */
+describe('DropzoneEnhanced — Aufnahmezeit folgt der Locale', () => {
+	// 2025-06-15T14:26:40Z → Europe/Berlin (Sommerzeit) 15.6./15/06 17:06:40
+	const AUFNAHMEZEIT = new Date(1_750_000_000_000);
+
+	function mediaFileWithTimestamp(uid: string): MediaFile {
+		const info = {
+			...uploadedFile(uid),
+			exifData: { dateTimeOriginal: AUFNAHMEZEIT }
+		} as UploadedFileInfo;
+		return MediaFile.fromUploadedFile(info, 'ref-1', false);
+	}
+
+	afterEach(async () => {
+		// overwriteGetLocale() überschreibt die Modul-Funktion dauerhaft ohne
+		// eingebauten Reset — auf den echten Default zurückschalten, damit
+		// andere Tests im selben Prozess nicht die englische Locale erben.
+		const { overwriteGetLocale, baseLocale } = await import('$lib/paraglide/runtime');
+		overwriteGetLocale(() => baseLocale);
+	});
+
+	it('zeigt die Aufnahmezeit deutsch formatiert, wenn die aktive Locale de ist', async () => {
+		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
+		overwriteGetLocale(() => 'de');
+
+		renderDropzone([uploadedFile('media-uid')], { maxFiles: 10, enableGPSExtraction: false }, [
+			mediaFileWithTimestamp('media-uid')
+		]);
+
+		await expect.poll(() => document.body.textContent).toContain('15.6.2025, 17:06:40');
+	});
+
+	it('zeigt die Aufnahmezeit britisch formatiert, wenn die aktive Locale en ist', async () => {
+		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
+		overwriteGetLocale(() => 'en');
+
+		renderDropzone([uploadedFile('media-uid')], { maxFiles: 10, enableGPSExtraction: false }, [
+			mediaFileWithTimestamp('media-uid')
+		]);
+
+		await expect.poll(() => document.body.textContent).toContain('15/06/2025, 17:06:40');
+	});
+});
+
+/**
+ * Muster B (i18n Etappe 2, Aufgabe 2.4): Der Datei-Zähler der Medien-Listenkarte
+ * (Zeile ~579, `!isPositionStep`-Zweig) baute den Plural vorher aus deutscher
+ * Grammatik ({mediaFiles.length !== 1 ? 'en' : ''}) — bei 1 Datei zufällig
+ * richtig, in jeder anderen Sprache falsch. Ersetzt durch eine
+ * ICU-Plural-Botschaft. Diese Suite belegt 1 und 2 Dateien in beiden Sprachen
+ * positiv, nach demselben Muster wie „Aufnahmezeit folgt der Locale" oben.
+ */
+describe('DropzoneEnhanced — Datei-Zähler folgt der Locale (Muster B)', () => {
+	afterEach(async () => {
+		const { overwriteGetLocale, baseLocale } = await import('$lib/paraglide/runtime');
+		overwriteGetLocale(() => baseLocale);
+	});
+
+	it('zeigt den deutschen Singular bei 1 Datei', async () => {
+		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
+		overwriteGetLocale(() => 'de');
+
+		renderDropzone([uploadedFile('a')], { maxFiles: 10, enableGPSExtraction: false }, [
+			MediaFile.fromUploadedFile(uploadedFile('a'), 'ref-1', false)
+		]);
+
+		await expect.poll(() => document.body.textContent).toContain('1 Datei');
+		expect(document.body.textContent).not.toContain('1 Dateien');
+	});
+
+	it('zeigt den deutschen Plural bei 2 Dateien', async () => {
+		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
+		overwriteGetLocale(() => 'de');
+
+		renderDropzone(
+			[uploadedFile('a'), uploadedFile('b')],
+			{ maxFiles: 10, enableGPSExtraction: false },
+			[
+				MediaFile.fromUploadedFile(uploadedFile('a'), 'ref-1', false),
+				MediaFile.fromUploadedFile(uploadedFile('b'), 'ref-1', false)
+			]
+		);
+
+		await expect.poll(() => document.body.textContent).toContain('2 Dateien');
+	});
+
+	it('zeigt den englischen Singular bei 1 Datei', async () => {
+		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
+		overwriteGetLocale(() => 'en');
+
+		renderDropzone([uploadedFile('a')], { maxFiles: 10, enableGPSExtraction: false }, [
+			MediaFile.fromUploadedFile(uploadedFile('a'), 'ref-1', false)
+		]);
+
+		await expect.poll(() => document.body.textContent).toContain('1 file');
+		expect(document.body.textContent).not.toContain('1 files');
+	});
+
+	it('zeigt den englischen Plural bei 2 Dateien', async () => {
+		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
+		overwriteGetLocale(() => 'en');
+
+		renderDropzone(
+			[uploadedFile('a'), uploadedFile('b')],
+			{ maxFiles: 10, enableGPSExtraction: false },
+			[
+				MediaFile.fromUploadedFile(uploadedFile('a'), 'ref-1', false),
+				MediaFile.fromUploadedFile(uploadedFile('b'), 'ref-1', false)
+			]
+		);
+
+		await expect.poll(() => document.body.textContent).toContain('2 files');
 	});
 });
 

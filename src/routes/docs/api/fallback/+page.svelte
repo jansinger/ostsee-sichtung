@@ -91,7 +91,9 @@
 				<div class="card-body">
 					<h2 class="card-title text-lg">🔍 Sichtungen</h2>
 					<div class="space-y-1 text-sm">
-						<div><code class="text-success-strong">GET</code> /sightings - Öffentliche Sichtungen</div>
+						<div>
+							<code class="text-success-strong">GET</code> /sightings - Öffentliche Sichtungen
+						</div>
 						<div><code class="text-info-strong">POST</code> /sightings - Neue Sichtung</div>
 						<div>
 							<code class="text-success-strong">GET</code> /sightings/{'{id}'} - Einzelne Sichtung
@@ -131,10 +133,18 @@
 				<div class="card-body">
 					<h2 class="card-title text-lg">📊 Export</h2>
 					<div class="space-y-1 text-sm">
-						<div><code class="text-success-strong">GET</code> /sightings/export/json - JSON Export</div>
-						<div><code class="text-success-strong">GET</code> /sightings/export/csv - CSV Export</div>
-						<div><code class="text-success-strong">GET</code> /sightings/export/xml - XML Export</div>
-						<div><code class="text-success-strong">GET</code> /sightings/export/kml - KML Export</div>
+						<div>
+							<code class="text-success-strong">GET</code> /sightings/export/json - JSON Export
+						</div>
+						<div>
+							<code class="text-success-strong">GET</code> /sightings/export/csv - CSV Export
+						</div>
+						<div>
+							<code class="text-success-strong">GET</code> /sightings/export/xml - XML Export
+						</div>
+						<div>
+							<code class="text-success-strong">GET</code> /sightings/export/kml - KML Export
+						</div>
 					</div>
 				</div>
 			</div>
@@ -144,7 +154,8 @@
 					<h2 class="card-title text-lg">⚙️ Admin</h2>
 					<div class="space-y-1 text-sm">
 						<div>
-							<code class="text-info-strong">PATCH</code> /sightings/{'{id}'}/verify - Prüfen und freigeben
+							<code class="text-info-strong">PATCH</code> /sightings/{'{id}'}/verify - Prüfen und
+							freigeben
 						</div>
 					</div>
 				</div>

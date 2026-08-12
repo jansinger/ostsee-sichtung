@@ -8,7 +8,11 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { sightingSchema } from './sightingSchema';
+import { getSightingSchema } from './sightingSchema';
+
+// Testet weiterhin den deutschen Ist-Zustand (Default-Locale) — unveraendert
+// gegenueber der frueheren Modulkonstante.
+const sightingSchema = getSightingSchema();
 import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
 import { DistributionEnum } from '$lib/report/formOptions/distribution';
 import { AnimalBehaviorEnum } from '$lib/report/formOptions/animalBehavior';

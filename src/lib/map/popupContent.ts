@@ -6,7 +6,9 @@
  * die Darstellung kommt aus CSS-Klassen in mapStyles.css — keine
  * Inline-Styles am Theme vorbei.
  */
+import { getLocale } from '$lib/paraglide/runtime';
 import { sanitizeText } from '$lib/utils/sanitize';
+import { resolveDisplayLocale } from '$lib/utils/format/dateTime';
 import type { MapTranslations } from './mapUtils';
 
 /** Feature-Properties einer Sichtung, wie sie im GeoJSON ankommen. */
@@ -26,7 +28,7 @@ export interface SightingPopupProperties {
 // (bis zu ±1 Tag Abweichung von der Berlin-Anzeige).
 function formatSightingDate(ts: number | undefined, fallback: string): string {
 	return ts
-		? new Date(ts * 1000).toLocaleDateString('de-DE', {
+		? new Date(ts * 1000).toLocaleDateString(resolveDisplayLocale(getLocale()), {
 				day: '2-digit',
 				month: '2-digit',
 				year: 'numeric',

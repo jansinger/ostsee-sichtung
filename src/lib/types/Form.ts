@@ -3,7 +3,7 @@
  */
 
 import type { FormApi } from '$lib/form/createForm';
-import { sightingSchema } from '$lib/form/validation/sightingSchema';
+import { getSightingSchema } from '$lib/form/validation/sightingSchema';
 import type { MediaStore } from '$lib/utils/media/MediaFile.svelte';
 import * as yup from 'yup';
 
@@ -22,7 +22,7 @@ export interface FormProgress {
 	isStepValid: (stepIndex: number) => boolean;
 }
 
-export type SightingFormData = yup.InferType<typeof sightingSchema>;
+export type SightingFormData = yup.InferType<ReturnType<typeof getSightingSchema>>;
 
 export type SightingFormValues = Omit<SightingFormData, 'uploadedFiles'> & {
 	/**

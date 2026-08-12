@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import { layoutBars, type BarDatum } from './barChartScale';
 
 	interface Props {
@@ -139,7 +140,7 @@
 	<figcaption class="mt-2">
 		<details>
 			<summary class="text-support text-base-content/70 cursor-pointer">
-				Werte als Tabelle
+				{m.components_charts_barchart_text_werte_als_tabelle()}
 			</summary>
 			<div class="mt-2 overflow-x-auto">
 				<table class="table-sm table">

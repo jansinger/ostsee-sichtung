@@ -11,23 +11,24 @@
  */
 
 import { createLogger } from '$lib/logger.server';
-import { AnimalBehaviorEnum, animalBehaviorLabels } from '$lib/report/formOptions/animalBehavior';
+import { AnimalBehaviorEnum, getAnimalBehaviorLabel } from '$lib/report/formOptions/animalBehavior';
 import {
 	AnimalConditionEnum,
-	animalConditionLabels
+	getAnimalConditionLabel
 } from '$lib/report/formOptions/animalCondition';
-import { BoatDriveEnum, boatDriveLabels } from '$lib/report/formOptions/boatDrive';
-import { DistanceEnum, distanceLabels } from '$lib/report/formOptions/distance';
-import { DistributionEnum, distributionLabels } from '$lib/report/formOptions/distribution';
-import { EntryChannelEnum, entryChannelLabels } from '$lib/report/formOptions/entryChannel';
-import { SeaStateEnum, seaStateLabels } from '$lib/report/formOptions/seaState';
-import { SexEnum, sexLabels } from '$lib/report/formOptions/sex';
-import { SightingFromEnum, sightingFromLabels } from '$lib/report/formOptions/sightingFrom';
-import { SpeciesEnum, speciesLabels } from '$lib/report/formOptions/species';
-import { VisibilityEnum, visibilityLabels } from '$lib/report/formOptions/visibility';
-import { WindDirectionEnum, windDirectionLabels } from '$lib/report/formOptions/windDirection';
-import { WindStrengthEnum, windStrengthLabels } from '$lib/report/formOptions/windStrength';
+import { BoatDriveEnum, getBoatDriveLabel } from '$lib/report/formOptions/boatDrive';
+import { DistanceEnum, getDistanceLabel } from '$lib/report/formOptions/distance';
+import { DistributionEnum, getDistributionLabel } from '$lib/report/formOptions/distribution';
+import { EntryChannelEnum, getEntryChannelLabel } from '$lib/report/formOptions/entryChannel';
+import { getSeaStateLabel, SeaStateEnum } from '$lib/report/formOptions/seaState';
+import { getSexLabel, SexEnum } from '$lib/report/formOptions/sex';
+import { getSightingFromLabel, SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
+import { getSpeciesLabel, SpeciesEnum } from '$lib/report/formOptions/species';
+import { getVisibilityLabel, VisibilityEnum } from '$lib/report/formOptions/visibility';
+import { getWindDirectionLabel, WindDirectionEnum } from '$lib/report/formOptions/windDirection';
+import { getWindStrengthLabel, WindStrengthEnum } from '$lib/report/formOptions/windStrength';
 import { getClientIp } from '$lib/server/utils/getClientIp';
+import { baseLocale } from '$lib/paraglide/runtime';
 import { json, type RequestEvent } from '@sveltejs/kit';
 
 const logger = createLogger('api:legacy:antworten:pdf-compliant');
@@ -47,79 +48,102 @@ export async function GET(event: RequestEvent): Promise<Response> {
 		// Build response options in EXACT PDF format (value-label object format)
 		const responseOptions = {
 			// Species mapping (tierart) - Note: PDF shows 0-10 range
+			//
+			// Locale bewusst auf baseLocale ('de') gepinnt statt getSpeciesLabel()
+			// die aktive Anfrage-Locale wählen zu lassen: Dieser Endpunkt ist Teil
+			// der Legacy-API (CLAUDE.md, "Legacy REST API — 100 % Kompatibilität"),
+			// an die ein iOS-Client (OstSeeTiere/8) fest gebunden ist. Der
+			// Wertevertrag ist deutsch, unabhängig vom /de/- oder /en/-Präfix, mit
+			// dem dieser Pfad laut .claude/rules/legacy-api.md erreichbar ist —
+			// das Präfix ist Routenkosmetik, keine Übersetzung. messages/en.json
+			// trägt heute noch denselben deutschen Wortlaut wie de.json; sobald
+			// echte englische Artnamen eingepflegt werden, würde ein ungepinnter
+			// Aufruf hier sonst unbemerkt von der deutschen Antwort abweichen.
 			tierart: Object.entries(SpeciesEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.reduce(
 					(acc, [_key, value]) => {
-						acc[value.toString()] = speciesLabels[value as SpeciesEnum];
+						acc[value.toString()] = getSpeciesLabel(value as SpeciesEnum, baseLocale);
 						return acc;
 					},
 					{} as Record<string, string>
 				),
 
 			// Observation location mapping (vonwo) - Note: PDF uses "vonwo" not "beobachtungsort"
+			// Locale bewusst auf baseLocale gepinnt — dieselbe Begründung wie bei
+			// `tierart` oben (Legacy-API-Vertrag, iOS-Client OstSeeTiere/8).
 			vonwo: Object.entries(SightingFromEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.reduce(
 					(acc, [_key, value]) => {
-						acc[value.toString()] = sightingFromLabels[value as SightingFromEnum];
+						acc[value.toString()] = getSightingFromLabel(value as SightingFromEnum, baseLocale);
 						return acc;
 					},
 					{} as Record<string, string>
 				),
 
 			// Distance mapping (entfernung) - Note: PDF shows 1-5 range
+			// Locale bewusst auf baseLocale gepinnt — dieselbe Begründung wie bei
+			// `tierart` oben (Legacy-API-Vertrag, iOS-Client OstSeeTiere/8).
 			entfernung: Object.entries(DistanceEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.reduce(
 					(acc, [_key, value]) => {
-						acc[value.toString()] = distanceLabels[value as DistanceEnum];
+						acc[value.toString()] = getDistanceLabel(value as DistanceEnum, baseLocale);
 						return acc;
 					},
 					{} as Record<string, string>
 				),
 
 			// Distribution mapping (verteilung) - Note: PDF shows 0-3 range
+			// Locale bewusst auf baseLocale gepinnt — dieselbe Begründung wie bei
+			// `tierart` oben (Legacy-API-Vertrag, iOS-Client OstSeeTiere/8).
 			verteilung: Object.entries(DistributionEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.reduce(
 					(acc, [_key, value]) => {
-						acc[value.toString()] = distributionLabels[value as DistributionEnum];
+						acc[value.toString()] = getDistributionLabel(value as DistributionEnum, baseLocale);
 						return acc;
 					},
 					{} as Record<string, string>
 				),
 
 			// Animal behavior mapping (verhalten) - Note: PDF shows 0-3 range
+			// Locale bewusst auf baseLocale gepinnt — dieselbe Begründung wie bei
+			// `tierart` oben (Legacy-API-Vertrag, iOS-Client OstSeeTiere/8).
 			verhalten: Object.entries(AnimalBehaviorEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.reduce(
 					(acc, [_key, value]) => {
-						acc[value.toString()] = animalBehaviorLabels[value as AnimalBehaviorEnum];
+						acc[value.toString()] = getAnimalBehaviorLabel(value as AnimalBehaviorEnum, baseLocale);
 						return acc;
 					},
 					{} as Record<string, string>
 				),
 
 			// Sea state mapping (seegang) - Note: PDF shows 0-5 range
+			// Locale bewusst auf baseLocale gepinnt — dieselbe Begründung wie bei
+			// `tierart` oben (Legacy-API-Vertrag, iOS-Client OstSeeTiere/8).
 			seegang: Object.entries(SeaStateEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.reduce(
 					(acc, [_key, value]) => {
-						acc[value.toString()] = seaStateLabels[value as SeaStateEnum];
+						acc[value.toString()] = getSeaStateLabel(value as SeaStateEnum, baseLocale);
 						return acc;
 					},
 					{} as Record<string, string>
 				),
 
 			// Wind direction mapping (windrichtung) - Note: PDF specifies exact values including 'SO'
+			// Locale bewusst auf baseLocale gepinnt — dieselbe Begründung wie bei
+			// `tierart` oben (Legacy-API-Vertrag, iOS-Client OstSeeTiere/8).
 			windrichtung: (() => {
 				const validDirections = ['', 'N', 'NW', 'W', 'SW', 'S', 'SO', 'O', 'NO'];
 				const result: Record<string, string> = {};
 
 				validDirections.forEach((dir) => {
 					if (Object.values(WindDirectionEnum).includes(dir as WindDirectionEnum)) {
-						result[dir] = windDirectionLabels[dir as WindDirectionEnum];
+						result[dir] = getWindDirectionLabel(dir as WindDirectionEnum, baseLocale);
 					}
 				});
 
@@ -127,66 +151,81 @@ export async function GET(event: RequestEvent): Promise<Response> {
 			})(),
 
 			// Wind strength mapping (windstaerke) - Note: PDF shows 1-12 range as strings
+			// Locale bewusst auf baseLocale gepinnt — dieselbe Begründung wie bei
+			// `tierart` oben (Legacy-API-Vertrag, iOS-Client OstSeeTiere/8).
 			windstaerke: Object.entries(WindStrengthEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.reduce(
 					(acc, [_key, value]) => {
-						acc[value.toString()] = windStrengthLabels[value as WindStrengthEnum];
+						acc[value.toString()] = getWindStrengthLabel(value as WindStrengthEnum, baseLocale);
 						return acc;
 					},
 					{} as Record<string, string>
 				),
 
 			// Visibility mapping (sichtweite) - Note: PDF shows 1-4 range
+			// Locale bewusst auf baseLocale gepinnt — dieselbe Begründung wie bei
+			// `tierart` oben (Legacy-API-Vertrag, iOS-Client OstSeeTiere/8).
 			sichtweite: Object.entries(VisibilityEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.reduce(
 					(acc, [_key, value]) => {
-						acc[value.toString()] = visibilityLabels[value as VisibilityEnum];
+						acc[value.toString()] = getVisibilityLabel(value as VisibilityEnum, baseLocale);
 						return acc;
 					},
 					{} as Record<string, string>
 				),
 
 			// Boat drive mapping (bootsantrieb) - Note: PDF shows 0-4 range
+			// Locale bewusst auf baseLocale gepinnt — dieselbe Begründung wie bei
+			// `tierart` oben (Legacy-API-Vertrag, iOS-Client OstSeeTiere/8).
 			bootsantrieb: Object.entries(BoatDriveEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.reduce(
 					(acc, [_key, value]) => {
-						acc[value.toString()] = boatDriveLabels[value as BoatDriveEnum];
+						acc[value.toString()] = getBoatDriveLabel(value as BoatDriveEnum, baseLocale);
 						return acc;
 					},
 					{} as Record<string, string>
 				),
 
 			// Entry channel mapping (eingangskanal) - Note: PDF shows 0-5 range
+			// Locale bewusst auf baseLocale gepinnt — dieselbe Begründung wie bei
+			// `tierart` oben (Legacy-API-Vertrag, iOS-Client OstSeeTiere/8).
 			eingangskanal: Object.entries(EntryChannelEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.reduce(
 					(acc, [_key, value]) => {
-						acc[value.toString()] = entryChannelLabels[value as EntryChannelEnum];
+						acc[value.toString()] = getEntryChannelLabel(value as EntryChannelEnum, baseLocale);
 						return acc;
 					},
 					{} as Record<string, string>
 				),
 
 			// Dead animal condition mapping (totfund_zustand) - Note: PDF shows 0-5 range
+			// Locale bewusst auf baseLocale gepinnt — dieselbe Begründung wie bei
+			// `tierart` oben (Legacy-API-Vertrag, iOS-Client OstSeeTiere/8).
 			totfund_zustand: Object.entries(AnimalConditionEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.reduce(
 					(acc, [_key, value]) => {
-						acc[value.toString()] = animalConditionLabels[value as AnimalConditionEnum];
+						acc[value.toString()] = getAnimalConditionLabel(
+							value as AnimalConditionEnum,
+							baseLocale
+						);
 						return acc;
 					},
 					{} as Record<string, string>
 				),
 
 			// Dead animal sex mapping (totfund_geschlecht) - Note: PDF shows 0-2 range
+			// Locale bewusst auf baseLocale gepinnt — dieselbe Begründung wie bei
+			// `tierart` oben (Legacy-API-Vertrag, iOS-Client OstSeeTiere/8).
 			totfund_geschlecht: Object.entries(SexEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.reduce(
 					(acc, [_key, value]) => {
-						acc[value.toString()] = sexLabels[value as SexEnum];
+						acc[value.toString()] = getSexLabel(value as SexEnum, baseLocale);
 						return acc;
 					},
 					{} as Record<string, string>

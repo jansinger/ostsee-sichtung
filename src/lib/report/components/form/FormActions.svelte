@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import { getFormContext } from '$lib/report/formContext';
 	import ReportKindFeedback from '$lib/report/components/ReportKindFeedback.svelte';
 
@@ -61,6 +62,6 @@
 		onclick={handleReset}
 		disabled={$isSubmitting}
 	>
-		Formular zurücksetzen
+		{m.report_components_form_formactions_text_formular_zuruecksetzen()}
 	</button>
 </div>

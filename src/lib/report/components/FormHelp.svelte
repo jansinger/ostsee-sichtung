@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import { browser } from '$app/environment';
 	import { createLogger } from '$lib/logger';
 	import type { SightingStatistics } from '$lib/server/db/sightingRepository';
@@ -8,6 +9,12 @@
 	import StatusBlock from '$lib/components/StatusBlock.svelte';
 	import DataUsageNotice from '$lib/components/info/DataUsageNotice.svelte';
 	import DeadFindingNotice from '$lib/components/info/DeadFindingNotice.svelte';
+	import { getLocale } from '$lib/paraglide/runtime';
+	import { resolveDisplayLocale } from '$lib/utils/format/dateTime';
+
+	// Zahlenformat folgt der Anzeigesprache, nicht hartcodiert 'de-DE', sonst
+	// bleiben die Statistik-Zahlen unter /en deutsch formatiert.
+	const zahlenLocale = $derived(resolveDisplayLocale(getLocale()));
 
 	// Keine Platzhalter-Zahlen: Statistiken werden erst angezeigt, wenn sie
 	// tatsächlich geladen wurden. Erfundene Fallback-Werte würden Bürgern sonst
@@ -52,7 +59,7 @@
 		<details class="collapse">
 			<summary class="collapse-title flex cursor-pointer items-center gap-2 text-sm font-medium">
 				<Icon icon="lucide:circle-help" width="16" class="text-info-strong" />
-				Hilfe & Tipps für eine wertvolle Meldung
+				{m.report_components_formhelp_text_hilfe_tipps_fuer_eine()}
 			</summary>
 			<div class="collapse-content text-base-content/80 text-sm">
 				<div class="space-y-4 pt-4">
@@ -60,12 +67,10 @@
 						<div>
 							<h4 class="flex items-center gap-2 font-semibold">
 								<Icon icon="lucide:zap" width="16" class="text-primary" />
-								Warum ist Ihre Meldung wichtig?
+								{m.report_components_formhelp_text_warum_ist_ihre_meldung_wichtig()}
 							</h4>
 							<p class="mt-1">
-								Jede Meldung hilft Wissenschaftlern dabei, Wanderrouten zu verstehen, Populationen
-								zu überwachen und Schutzmaßnahmen zu entwickeln. Ihre Beobachtung trägt direkt zum
-								Artenschutz bei!
+								{m.report_components_formhelp_text_jede_meldung_hilft_wissenschaftlern_dabe()}
 							</p>
 							<div class="bg-base-100 mt-3 rounded-lg p-3">
 								{#if !loading && fetchFailed}
@@ -85,7 +90,7 @@
 									<StatusBlock
 										variant="failed"
 										announce="status"
-										title="Statistiken konnten nicht geladen werden"
+										title={m.report_components_formhelp_title_statistiken_konnten_nicht_geladen_werden()}
 										description="Das Formular funktioniert vollständig — nur die Zahlen in diesem Hilfetext fehlen."
 									/>
 								{:else}
@@ -95,10 +100,12 @@
 												{#if loading}
 													<span class="loading loading-dots loading-sm"></span>
 												{:else}
-													{statistics?.totalSightings.toLocaleString('de-DE') ?? '–'}
+													{statistics?.totalSightings.toLocaleString(zahlenLocale) ?? '–'}
 												{/if}
 											</div>
-											<div class="text-xs">freigegebene Sichtungen</div>
+											<div class="text-xs">
+												{m.report_components_formhelp_text_freigegebene_sichtungen()}
+											</div>
 										</div>
 										<div>
 											<div class="text-primary font-bold">
@@ -110,7 +117,9 @@
 													–
 												{/if}
 											</div>
-											<div class="text-xs">Beobachter füllen Zusatzfelder aus</div>
+											<div class="text-xs">
+												{m.report_components_formhelp_text_beobachter_fuellen_zusatzfelder_aus()}
+											</div>
 										</div>
 									</div>
 								{/if}
@@ -125,11 +134,21 @@
 								Schritt 1: Position & Zeitpunkt
 							</h4>
 							<ul class="space-y-1 text-xs">
-								<li><strong>GPS-Koordinaten:</strong> Am wertvollsten für die Forschung</li>
-								<li><strong>Gewässername:</strong> Falls keine GPS-Daten verfügbar</li>
-								<li><strong>Genaue Zeit:</strong> Hilft bei Verhaltensanalysen</li>
 								<li>
-									<strong>Tipp:</strong> Screenshots von Navigations-Apps sind hilfreich
+									<strong>{m.report_components_formhelp_term_gps_koordinaten()}</strong>
+									{m.report_components_formhelp_gloss_gps_koordinaten()}
+								</li>
+								<li>
+									<strong>{m.report_components_formhelp_term_gewaessername()}</strong>
+									{m.report_components_formhelp_gloss_gewaessername()}
+								</li>
+								<li>
+									<strong>{m.report_components_formhelp_text_genaue_zeit()}</strong>
+									{m.report_components_formhelp_text_hilft_bei_verhaltensanalysen()}
+								</li>
+								<li>
+									<strong>{m.report_components_formhelp_text_tipp()}</strong>
+									{m.report_components_formhelp_text_screenshots_von_navigations_apps_sind_hi()}
 								</li>
 							</ul>
 						</div>
@@ -150,10 +169,17 @@
 									<strong>Tierart:</strong> Bei Unsicherheit „Unbekannte Walart" oder „Unbekannte
 									Robbenart" wählen <SpeciesIdentificationHelp />
 								</li>
-								<li><strong>Anzahl:</strong> Auch Schätzungen sind wertvoll</li>
-								<li><strong>Jungtiere:</strong> Wichtig für Populationsstudien</li>
 								<li>
-									<strong>Entfernung:</strong> Hilft bei der Einschätzung der Beobachtung
+									<strong>{m.report_components_formhelp_term_anzahl()}</strong>
+									{m.report_components_formhelp_gloss_anzahl()}
+								</li>
+								<li>
+									<strong>{m.report_components_formhelp_text_jungtiere()}</strong>
+									{m.report_components_formhelp_text_wichtig_fuer_populationsstudien()}
+								</li>
+								<li>
+									<strong>{m.report_components_formhelp_text_entfernung()}</strong>
+									{m.report_components_formhelp_text_hilft_bei_der_einschaetzung_der()}
 								</li>
 							</ul>
 						</div>
@@ -164,12 +190,22 @@
 								Schritt 3: Weitere Informationen
 							</h4>
 							<ul class="space-y-1 text-xs">
-								<li><strong>Verhalten:</strong> Fütterung, Ruhen, Springen, etc.</li>
 								<li>
-									<strong>Umwelt:</strong> Seegang und Sichtweite beeinflussen Sichtungen
+									<strong>{m.report_components_formhelp_text_verhalten()}</strong>
+									{m.report_components_formhelp_text_fuetterung_ruhen_springen_etc()}
 								</li>
-								<li><strong>Fotos/Videos:</strong> Extrem hilfreich für Artbestimmung</li>
-								<li><strong>Tipp:</strong> Auch unscharfe Bilder können nützlich sein</li>
+								<li>
+									<strong>{m.report_components_formhelp_text_umwelt()}</strong>
+									{m.report_components_formhelp_text_seegang_und_sichtweite_beeinflussen_sich()}
+								</li>
+								<li>
+									<strong>{m.report_components_formhelp_text_fotos_videos()}</strong>
+									{m.report_components_formhelp_text_extrem_hilfreich_fuer_artbestimmung()}
+								</li>
+								<li>
+									<strong>{m.report_components_formhelp_text_tipp_2()}</strong>
+									{m.report_components_formhelp_text_auch_unscharfe_bilder_koennen_nuetzlich()}
+								</li>
 							</ul>
 							<div class="bg-success/10 mt-2 rounded p-2">
 								<div class="text-base-content/70 text-xs">
@@ -192,10 +228,22 @@
 								Schritt 4: Kontaktdaten
 							</h4>
 							<ul class="space-y-1 text-xs">
-								<li><strong>E-Mail:</strong> Für Bestätigung und Rückfragen</li>
-								<li><strong>Boot-Info:</strong> Hilft bei Störungsanalysen</li>
-								<li><strong>Datenschutz:</strong> Nur Sichtungsdaten werden öffentlich</li>
-								<li><strong>Optional:</strong> Name nur mit Ihrer Zustimmung sichtbar</li>
+								<li>
+									<strong>{m.report_components_formhelp_text_e_mail()}</strong>
+									{m.report_components_formhelp_text_fuer_bestaetigung_und_rueckfragen()}
+								</li>
+								<li>
+									<strong>{m.report_components_formhelp_text_boot_info()}</strong>
+									{m.report_components_formhelp_text_hilft_bei_stoerungsanalysen()}
+								</li>
+								<li>
+									<strong>{m.report_components_formhelp_text_datenschutz()}</strong>
+									{m.report_components_formhelp_text_nur_sichtungsdaten_werden_oeffentlich()}
+								</li>
+								<li>
+									<strong>{m.report_components_formhelp_text_optional()}</strong>
+									{m.report_components_formhelp_text_name_nur_mit_ihrer_zustimmung()}
+								</li>
 							</ul>
 						</div>
 					</div>
@@ -206,7 +254,7 @@
 						<div>
 							<h4 class="mb-4 flex items-center justify-center gap-2 text-center font-semibold">
 								<Icon icon="lucide:chart-pie" width="16" class="text-success-strong" />
-								Ihre Daten machen den Unterschied
+								{m.report_components_formhelp_text_ihre_daten_machen_den_unterschied()}
 							</h4>
 							<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 								<div class="bg-success/10 border-success/20 rounded-lg border p-4 text-center">
@@ -221,13 +269,13 @@
 									     stützte sich auf 7 Datensätze von 2002, die nie freigegeben wurden. Die
 									     freigegebene Reihe beginnt 2009. -->
 									<div class="text-base-content text-sm font-medium">
-										Jahre mit freigegebenen Sichtungen
+										{m.report_components_formhelp_text_jahre_mit_freigegebenen_sichtungen()}
 									</div>
 									<div class="text-base-content/70 mt-1 text-xs">
 										{#if !loading && statistics && statistics.uniqueUsers > 0}
-											{statistics.uniqueUsers.toLocaleString('de-DE')} Personen haben bereits gemeldet
+											{statistics.uniqueUsers.toLocaleString(zahlenLocale)} Personen haben bereits gemeldet
 										{:else}
-											viele Beobachtende melden bereits regelmäßig
+											{m.report_components_formhelp_text_viele_beobachtende_melden_bereits_regelm()}
 										{/if}
 									</div>
 								</div>
@@ -243,13 +291,15 @@
 											–
 										{/if}
 									</div>
-									<div class="text-base-content text-sm font-medium">mit Fotos/Videos</div>
+									<div class="text-base-content text-sm font-medium">
+										{m.report_components_formhelp_text_mit_fotos_videos()}
+									</div>
 									<div class="text-base-content/70 mt-1 text-xs">
 										{#if !loading && statistics}
-											{statistics.sightingsWithMedia.toLocaleString('de-DE')} freigegebene Sichtungen
+											{statistics.sightingsWithMedia.toLocaleString(zahlenLocale)} freigegebene Sichtungen
 											mit Medien dokumentiert
 										{:else}
-											durch Ihre Fotos wissenschaftlich dokumentiert
+											{m.report_components_formhelp_text_durch_ihre_fotos_wissenschaftlich_dokume()}
 										{/if}
 									</div>
 								</div>
@@ -269,11 +319,11 @@
 									{#if loading}
 										<span class="loading loading-dots loading-sm"></span>
 									{:else}
-										{statistics?.deadAnimalsFound.toLocaleString('de-DE') ?? '–'}
+										{statistics?.deadAnimalsFound.toLocaleString(zahlenLocale) ?? '–'}
 									{/if}
 								</div>
 								<div class="text-base-content text-xs">
-									freigegebene Totfunde bereits für die Wissenschaft dokumentiert
+									{m.report_components_formhelp_text_freigegebene_totfunde_bereits_fuer_die()}
 								</div>
 							</div>
 						</div>

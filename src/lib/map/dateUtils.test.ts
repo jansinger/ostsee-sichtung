@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import {
 	dateFromDayOfYear,
 	formatDayOfYearLong,
@@ -75,6 +75,30 @@ describe('formatDayOfYearLong', () => {
 
 	it('formatiert den Schalttag als „29. Februar"', () => {
 		expect(formatDayOfYearLong(2024, 59)).toBe('29. Februar');
+	});
+
+	describe('Locale-Umschaltung (resolveDisplayLocale)', () => {
+		afterEach(async () => {
+			// overwriteGetLocale() überschreibt die Modul-Funktion dauerhaft ohne
+			// eingebauten Reset — auf den echten Default zurückschalten, damit
+			// andere Tests im selben Prozess nicht die englische Locale erben.
+			const { overwriteGetLocale, baseLocale } = await import('$lib/paraglide/runtime');
+			overwriteGetLocale(() => baseLocale);
+		});
+
+		it('formatiert deutsch, wenn die aktive Locale de ist', async () => {
+			const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
+			overwriteGetLocale(() => 'de');
+
+			expect(formatDayOfYearLong(2025, 186)).toBe('6. Juli');
+		});
+
+		it('formatiert britisch, wenn die aktive Locale en ist', async () => {
+			const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
+			overwriteGetLocale(() => 'en');
+
+			expect(formatDayOfYearLong(2025, 186)).toBe('6 July');
+		});
 	});
 });
 

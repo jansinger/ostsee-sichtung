@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import { browser } from '$app/environment';
 	import Icon from '$lib/components/Icon.svelte';
 	import { outsideBalticNotice, outsideBalticSeverity } from '$lib/report/wording';
@@ -151,7 +152,7 @@
 			<!-- Loading state -->
 			<div class="alert mt-0 mb-4" transition:slide>
 				<span class="loading loading-spinner loading-sm"></span>
-				<span>Prüfe Position in der Ostsee...</span>
+				<span>{m.report_components_form_verifylocation_text_pruefe_position_in_der_ostsee()}</span>
 			</div>
 		{:else if error}
 			<!-- Error state -->
@@ -170,7 +171,9 @@
 					<!-- In Baltic Sea -->
 					<div class="alert alert-success mt-0 mb-4" data-testid="verify-location-inside">
 						<Icon icon="lucide:circle-check" class="h-6 w-6 shrink-0" />
-						<span>Die Koordinaten liegen innerhalb der Ostsee.</span>
+						<span
+							>{m.report_components_form_verifylocation_text_die_koordinaten_liegen_innerhalb_der()}</span
+						>
 					</div>
 				{:else if currentResult.inChartArea}
 					<!-- Outside Baltic Sea (only show in browser). Klasse und Text kommen aus
@@ -198,8 +201,7 @@
 					<div class="alert alert-error mt-0 mb-4" data-testid="verify-location-invalid">
 						<Icon icon="lucide:circle-alert" class="h-6 w-6 shrink-0" />
 						<span
-							>Die Koordinaten liegen außerhalb des gültigen Bereichs oder sind ungültig. Bitte
-							überprüfen Sie die Eingabe.</span
+							>{m.report_components_form_verifylocation_text_die_koordinaten_liegen_ausserhalb_des()}</span
 						>
 					</div>
 				{/if}

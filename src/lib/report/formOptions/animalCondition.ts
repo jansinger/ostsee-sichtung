@@ -2,6 +2,10 @@
  * Enum für den Zustand des Tieres (bei Totfunden)
  * Die numerischen Werte werden in der Datenbank gespeichert.
  */
+import { memoizePerLocale } from '$lib/i18n/localeMemo';
+import * as m from '$lib/paraglide/messages';
+import { getLocale, type Locale } from '$lib/paraglide/runtime';
+
 export enum AnimalConditionEnum {
 	UNKNOWN = 0,
 	EXTREMELY_FRESH = 1,
@@ -12,16 +16,36 @@ export enum AnimalConditionEnum {
 }
 
 /**
- * Deutsche Bezeichnungen für die Tierzustände
+ * Baut je Locale die Bezeichnungen der Tierzustände aus dem Botschaftskatalog.
+ *
+ * Modul-intern (kein Export): Der einzige externe Zugriff auf das rohe Record
+ * lag in `antworten.json/+server.ts` und ist auf `getAnimalConditionLabel(…,
+ * baseLocale)` umgestellt (siehe Kommentar dort).
+ *
+ * Bewusst ein Record von BUILDERN, nicht von aufgelösten Strings — siehe
+ * Begründung in `species.ts`.
  */
-export const animalConditionLabels: Record<AnimalConditionEnum, string> = {
-	[AnimalConditionEnum.UNKNOWN]: 'Unbekannt',
-	[AnimalConditionEnum.EXTREMELY_FRESH]: 'Extrem frisch',
-	[AnimalConditionEnum.FRESH_BEGINNING_DECOMPOSITION]: 'Frisch, bzw. beginnende Verwesung',
-	[AnimalConditionEnum.MEDIUM_DECOMPOSITION]: 'Mittlere Verwesung',
-	[AnimalConditionEnum.ADVANCED_DECOMPOSITION]: 'Fortgeschrittene Verwesung',
-	[AnimalConditionEnum.SEVERE_DECOMPOSITION]: 'Starke Verwesung'
+const animalConditionLabelBuilders: Record<AnimalConditionEnum, (locale: Locale) => string> = {
+	[AnimalConditionEnum.UNKNOWN]: (locale) => m.formoptions_animalcondition_unknown({}, { locale }),
+	[AnimalConditionEnum.EXTREMELY_FRESH]: (locale) =>
+		m.formoptions_animalcondition_extremely_fresh({}, { locale }),
+	[AnimalConditionEnum.FRESH_BEGINNING_DECOMPOSITION]: (locale) =>
+		m.formoptions_animalcondition_fresh_beginning_decomposition({}, { locale }),
+	[AnimalConditionEnum.MEDIUM_DECOMPOSITION]: (locale) =>
+		m.formoptions_animalcondition_medium_decomposition({}, { locale }),
+	[AnimalConditionEnum.ADVANCED_DECOMPOSITION]: (locale) =>
+		m.formoptions_animalcondition_advanced_decomposition({}, { locale }),
+	[AnimalConditionEnum.SEVERE_DECOMPOSITION]: (locale) =>
+		m.formoptions_animalcondition_severe_decomposition({}, { locale })
 };
+
+/** Baut die Zustands-Bezeichnungen für eine Locale genau einmal und hält sie danach vor. */
+const animalConditionLabelsFor = memoizePerLocale(
+	(locale) =>
+		Object.fromEntries(
+			Object.entries(animalConditionLabelBuilders).map(([value, build]) => [value, build(locale)])
+		) as Record<AnimalConditionEnum, string>
+);
 
 export type AnimalCondition = AnimalConditionEnum;
 
@@ -49,25 +73,35 @@ const SELECTABLE_ANIMAL_CONDITIONS: readonly AnimalConditionEnum[] = [
 
 /**
  * Generiert eine Array-Struktur für Select-Komponenten
+ * @param locale - Locale für die Anzeigetexte; Default die aktuelle Locale
  * @returns Array von Objekten mit value und label
  */
-const animalConditionOptions: Array<{ value: number; label: string }> =
-	SELECTABLE_ANIMAL_CONDITIONS.map((value) => ({ value, label: animalConditionLabels[value] }));
-export const getAnimalConditionOptions = (): Array<{ value: number; label: string }> =>
-	animalConditionOptions;
+export function getAnimalConditionOptions(
+	locale: Locale = getLocale()
+): Array<{ value: number; label: string }> {
+	const labels = animalConditionLabelsFor(locale);
+	return SELECTABLE_ANIMAL_CONDITIONS.map((value) => ({ value, label: labels[value] }));
+}
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert
  * @param value - Der Enum-Wert (z.B. aus der Datenbank)
+ * @param locale - Locale für den Anzeigetext; Default die aktuelle Locale
  * @returns Das zugehörige Label oder einen Fallback-Text
  */
 export function getAnimalConditionLabel(
-	value: AnimalConditionEnum | number | null | undefined
+	value: AnimalConditionEnum | number | null | undefined,
+	locale: Locale = getLocale()
 ): string {
-	if (value === null || value === undefined) return 'Nicht angegeben';
+	if (value === null || value === undefined)
+		return m.formoptions_animalcondition_not_specified({}, { locale });
 
 	const numericValue = typeof value === 'string' ? parseInt(value, 10) : value;
-	return animalConditionLabels[numericValue as AnimalConditionEnum] || 'Unbekannt';
+	const labels = animalConditionLabelsFor(locale);
+	return (
+		labels[numericValue as AnimalConditionEnum] ||
+		m.formoptions_animalcondition_invalid({}, { locale })
+	);
 }
 
 /**

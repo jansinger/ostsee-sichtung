@@ -1,4 +1,4 @@
-import { adminSightingSchema } from '$lib/form/validation/sightingSchema';
+import { getAdminSightingSchema } from '$lib/form/validation/sightingSchema';
 import { createLogger } from '$lib/logger.server';
 import type { SightingFormData } from '$lib/report/types';
 import { logAuditEvent } from '$lib/server/audit/auditService';
@@ -104,7 +104,7 @@ export const PUT: RequestHandler = async ({ params, request, locals, url, getCli
 		// Lockerung im Browser wirkungslos: Der Server warf die Meldung als 500
 		// zurück, und der Admin las „Interner Serverfehler". Neue Meldungen laufen
 		// unverändert über `POST /api/sightings` und das strenge Schema.
-		await adminSightingSchema.validate(formData, { abortEarly: false });
+		await getAdminSightingSchema().validate(formData, { abortEarly: false });
 
 		// Load current state for changedFields diff
 		const currentRecords = await db

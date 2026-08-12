@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import Icon from '$lib/components/Icon.svelte';
 	import FormField from './fields/FormField.svelte';
 	import { getFormSteps } from '$lib/report/formConfig';
@@ -37,7 +38,7 @@
 		<div class="mb-4">
 			<h4 class="text-primary mb-2 flex items-center gap-2 text-lg font-bold">
 				<Icon icon="lucide:shield-alert" class="text-primary h-5 w-5" />
-				Erforderliche Zustimmung zur Datenverwendung
+				{m.report_components_form_requiredconsent_text_erforderliche_zustimmung_zur_datenverwen()}
 			</h4>
 			<p class="text-base-content/80 text-sm">
 				<strong>Diese Zustimmung ist erforderlich</strong>, um Ihre Meldung zu speichern und für die
@@ -56,18 +57,22 @@
 						class="text-success-strong mt-0.5"
 					/>
 					<div>
-						<p class="font-medium">Öffentliche Wissenschaftsdaten</p>
+						<p class="font-medium">
+							{m.report_components_form_requiredconsent_text_oeffentliche_wissenschaftsdaten()}
+						</p>
 						<p class="text-base-content/70 text-xs">
-							Datum, Position, Tierart werden für Forschung öffentlich gezeigt
+							{m.report_components_form_requiredconsent_text_datum_position_tierart_werden_fuer()}
 						</p>
 					</div>
 				</div>
 				<div class="flex items-start gap-3">
 					<Icon icon="lucide:lock" width="20" height="20" class="text-info-strong mt-0.5" />
 					<div>
-						<p class="font-medium">Private Kontaktdaten</p>
+						<p class="font-medium">
+							{m.report_components_form_requiredconsent_text_private_kontaktdaten()}
+						</p>
 						<p class="text-base-content/70 text-xs">
-							Ihre persönlichen Daten bleiben vertraulich, nur für Rückfragen
+							{m.report_components_form_requiredconsent_text_ihre_persoenlichen_daten_bleiben_vertrau()}
 						</p>
 					</div>
 				</div>

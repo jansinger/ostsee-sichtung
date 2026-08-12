@@ -2,7 +2,7 @@ import { render } from 'vitest-browser-svelte';
 import { describe, it, expect } from 'vitest';
 import { page } from 'vitest/browser';
 import BaseRadio from './BaseRadio.svelte';
-import { PUBLIC_BOAT_DRIVE_OPTIONS } from '$lib/report/formOptions/boatDrive';
+import { getPublicBoatDriveOptions } from '$lib/report/formOptions/boatDrive';
 
 /**
  * `BaseRadio` war bis zur Motorfrage (PR 4, 2026-08-04) ein nie ausgeführter
@@ -10,7 +10,7 @@ import { PUBLIC_BOAT_DRIVE_OPTIONS } from '$lib/report/formOptions/boatDrive';
  * Diese Datei sichert das Verhalten ab, auf das sich `FieldRenderer` verlässt.
  */
 describe('BaseRadio', () => {
-	const options = PUBLIC_BOAT_DRIVE_OPTIONS;
+	const options = getPublicBoatDriveOptions();
 
 	function radiosOf(container: HTMLElement): HTMLInputElement[] {
 		return Array.from(container.querySelectorAll<HTMLInputElement>('input[type="radio"]'));

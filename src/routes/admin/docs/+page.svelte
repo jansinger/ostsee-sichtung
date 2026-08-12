@@ -50,42 +50,42 @@
 		<div class="grid gap-6 md:grid-cols-2">
 			<div>
 				<h3 class="mb-2 text-lg font-medium">Erweiterte Funktionen</h3>
-				<p class="mb-3 text-sm text-base-content/70">
+				<p class="text-base-content/70 mb-3 text-sm">
 					Als angemeldeter Administrator haben Sie Zugriff auf zusätzliche Endpunkte:
 				</p>
 				<ul class="space-y-1 text-sm">
 					<li>
-						• <code class="rounded bg-base-200 px-1">GET /api/sightings</code> - Alle Sichtungen abrufen
+						• <code class="bg-base-200 rounded px-1">GET /api/sightings</code> - Alle Sichtungen abrufen
 						(mit Filtern)
 					</li>
 					<li>
-						• <code class="rounded bg-base-200 px-1">PUT /api/sightings/{'{id}'}</code> - Sichtung bearbeiten
+						• <code class="bg-base-200 rounded px-1">PUT /api/sightings/{'{id}'}</code> - Sichtung bearbeiten
 					</li>
 					<li>
-						• <code class="rounded bg-base-200 px-1">DELETE /api/sightings/{'{id}'}</code> - Sichtung
+						• <code class="bg-base-200 rounded px-1">DELETE /api/sightings/{'{id}'}</code> - Sichtung
 						löschen
 					</li>
 					<li>
-						• <code class="rounded bg-base-200 px-1">PATCH /api/sightings/{'{id}'}/verify</code> - Sichtung
+						• <code class="bg-base-200 rounded px-1">PATCH /api/sightings/{'{id}'}/verify</code> - Sichtung
 						prüfen und freigeben
 					</li>
 					<li>
-						• <code class="rounded bg-base-200 px-1">GET /api/sightings/export</code> - Datenexport (JSON)
+						• <code class="bg-base-200 rounded px-1">GET /api/sightings/export</code> - Datenexport (JSON)
 					</li>
 					<li>
-						• <code class="rounded bg-base-200 px-1">GET /api/sightings/export/csv</code> - Datenexport
+						• <code class="bg-base-200 rounded px-1">GET /api/sightings/export/csv</code> - Datenexport
 						(CSV)
 					</li>
 					<li>
-						• <code class="rounded bg-base-200 px-1">GET /api/sightings/export/kml</code> - Datenexport
+						• <code class="bg-base-200 rounded px-1">GET /api/sightings/export/kml</code> - Datenexport
 						(KML)
 					</li>
 					<li>
-						• <code class="rounded bg-base-200 px-1">GET /api/sightings/export/xml</code> - Datenexport
+						• <code class="bg-base-200 rounded px-1">GET /api/sightings/export/xml</code> - Datenexport
 						(XML)
 					</li>
 					<li>
-						• <code class="rounded bg-base-200 px-1">GET /api/statistics</code> - Detaillierte Statistiken
+						• <code class="bg-base-200 rounded px-1">GET /api/statistics</code> - Detaillierte Statistiken
 					</li>
 				</ul>
 			</div>
@@ -124,21 +124,21 @@
 					📊<br />
 					<span class="text-sm">Dashboard</span>
 				</a>
-				<p class="mt-2 text-xs text-base-content/60">Übersicht und Statistiken</p>
+				<p class="text-base-content/60 mt-2 text-xs">Übersicht und Statistiken</p>
 			</div>
 			<div class="text-center">
 				<a href="/map" class="btn btn-secondary btn-wide">
 					🗺️<br />
 					<span class="text-sm">Sichtungs-Karte</span>
 				</a>
-				<p class="mt-2 text-xs text-base-content/60">Alle Sichtungen auf der Karte</p>
+				<p class="text-base-content/60 mt-2 text-xs">Alle Sichtungen auf der Karte</p>
 			</div>
 			<div class="text-center">
 				<a href="/docs/api" class="btn btn-outline btn-wide">
 					📖<br />
 					<span class="text-sm">Öffentliche Docs</span>
 				</a>
-				<p class="mt-2 text-xs text-base-content/60">Für Entwickler</p>
+				<p class="text-base-content/60 mt-2 text-xs">Für Entwickler</p>
 			</div>
 		</div>
 	</div>

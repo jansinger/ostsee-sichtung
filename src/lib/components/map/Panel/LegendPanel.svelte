@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import type { CountData } from '$lib/map/countManager';
 	import { getMapCountManager } from '$lib/map/mapContext';
 	import type { MapTranslations } from '$lib/map/mapUtils';
@@ -83,6 +84,32 @@
 		countManager.setColorVisibility(colorGroup, visible);
 	}
 
+	// `Object.entries(translations.speciesMap)` (Aufrufstelle unten) liefert
+	// `speciesName` als `unknown`, nicht als `string` — eine bereits bestehende
+	// Typlücke, bisher folgenlos, weil `String(value)` und die reine
+	// Textknoten-Interpolation `{value}` jeden Typ klaglos annehmen.
+	//
+	// Ein generierter Paraglide-Botschaftsaufruf (`m.<key>({...})`) nimmt ein
+	// `unknown`-Argument dagegen NICHT klaglos an: Sein Typ ist eine
+	// Schnittmenge aus Aufruf-Signatur und `MessageMetadata<Inputs, Options,
+	// {}>`, und TypeScript löst den Aufruf bei einem `unknown`-Argument
+	// fälschlich gegen die `{}`-Seite der Schnittmenge auf
+	// („Type 'unknown' is not assignable to type '{}'", reproduziert isoliert
+	// gegen die kompilierten `.d.ts` außerhalb von Svelte — kein
+	// Komponenten-spezifischer Bug). `String(...)` am Argument macht daraus
+	// wieder ein konkretes `string` und behebt die Fehlmeldung.
+	function speciesVisibilityAriaLabel(
+		speciesName: unknown,
+		visible: number,
+		total: number
+	): string {
+		return m.components_map_panel_legendpanel_aria_label_sichtbarkeit_fuer_value_umschalten_aktue({
+			value: String(speciesName),
+			visible,
+			total
+		});
+	}
+
 	// M3: Sichtbarkeit der Seezeichen-Ebene — Default an (wie bisher)
 	let seamarkVisible = $state(true);
 	function handleSeamarkToggle(visible: boolean) {
@@ -94,7 +121,7 @@
 <MapPanel
 	panelId="legend-panel"
 	titleId="legend-title"
-	title="Legende"
+	title={m.components_map_panel_legendpanel_title_legende()}
 	toggleText="LEGENDE"
 	icon="lucide:list"
 	togglePositionClass="top-52"
@@ -105,12 +132,14 @@
 	<!-- Info-Box: wie die Marker codiert sind -->
 	<div class="bg-base-300/50 mb-4 rounded-lg p-3 text-sm">
 		<div class="flex items-start gap-2">
-			<Icon icon="lucide:info" class="text-info-strong mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+			<Icon
+				icon="lucide:info"
+				class="text-info-strong mt-0.5 h-4 w-4 shrink-0"
+				aria-hidden="true"
+			/>
 			<div>
-				<strong>So lesen Sie die Karte:</strong> Die Ringfarbe zeigt die Tiergruppe, das Symbol die Gruppe
-				als zweites Merkmal. Ab zwei Tieren steht die Anzahl unter dem Marker. Ein schwarzer Ring bedeutet
-				Totfund. Deaktivieren Sie Checkboxen, um Arten oder Gruppengrößen auszublenden — die Zahlen zeigen
-				sichtbare/gesamt Sichtungen.
+				<strong>{m.components_map_panel_legendpanel_text_so_lesen_sie_die_karte()}</strong>
+				{m.components_map_panel_legendpanel_text_die_ringfarbe_zeigt_die_tiergruppe()}
 			</div>
 		</div>
 	</div>
@@ -135,6 +164,7 @@
 		{#each Object.entries(translations.speciesMap) as [key, value] (key)}
 			{@const symbol = speciesSymbols[key]}
 			{@const total = counts.speciesCounts[key]?.total || 0}
+			{@const visibleCount = counts.speciesCounts[key]?.visible || 0}
 			<div
 				class="hover:bg-base-200 flex items-center gap-3 rounded-lg p-2 transition-colors"
 				data-species-row={key}
@@ -142,7 +172,7 @@
 				<!-- 0/0-Arten ausgrauen: visuelle Teile abschwächen, Checkbox bleibt bedienbar -->
 				<div class="flex flex-1 items-center gap-3 {total === 0 ? 'opacity-60 grayscale' : ''}">
 					<div
-						class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full shadow-raised"
+						class="shadow-raised flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
 						style="background-color: {MARKER_BACKGROUND_COLOR}; border: 3px solid {symbol
 							? symbol.baseColor
 							: speciesGroupStyles.unbekannt.color};"
@@ -169,7 +199,7 @@
 
 				<div class="flex items-center gap-2">
 					<span class="text-base-content/70 font-mono text-xs">
-						{counts.speciesCounts[key]?.visible || 0}/{total}
+						{visibleCount}/{total}
 					</span>
 					<input
 						type="checkbox"
@@ -177,8 +207,7 @@
 						value={key}
 						checked={speciesVisibility[key] ?? true}
 						onchange={(e) => handleSpeciesToggle(key, (e.target as HTMLInputElement).checked)}
-						aria-label="Sichtbarkeit für {value} umschalten. Aktuell {counts.speciesCounts[key]
-							?.visible || 0} von {total} Sichtungen sichtbar."
+						aria-label={speciesVisibilityAriaLabel(value, visibleCount, total)}
 					/>
 				</div>
 			</div>
@@ -192,7 +221,7 @@
 			<div class="hover:bg-base-200 flex items-center gap-3 rounded-lg p-2 transition-colors">
 				{#if group.key === 'ct0'}
 					<span
-						class="h-5 w-5 shrink-0 rounded-full shadow-raised"
+						class="shadow-raised h-5 w-5 shrink-0 rounded-full"
 						style="background-color: {MARKER_BACKGROUND_COLOR}; border: 3px solid {TOTFUND_RING_COLOR};"
 						aria-hidden="true"
 					></span>
@@ -212,29 +241,33 @@
 					value={group.key}
 					checked={colorVisibility[group.key] ?? true}
 					onchange={(e) => handleColorToggle(group.key, (e.target as HTMLInputElement).checked)}
-					aria-label="Sichtungen der Gruppe {group.label} anzeigen/ausblenden"
+					aria-label={m.components_map_panel_legendpanel_aria_label_sichtungen_der_gruppe_label_anzeigen_aus(
+						{ label: group.label }
+					)}
 				/>
 			</div>
 		{/each}
 	</div>
 
-	<div class="divider">Kartenebenen</div>
+	<div class="divider">{m.components_map_panel_legendpanel_text_kartenebenen()}</div>
 
 	<!-- M3: Seezeichen-Ebene (OpenSeaMap) umschaltbar — sie dominiert ab
 	     mittleren Zoomstufen und ist für die Kernaufgabe sekundär -->
 	<div class="hover:bg-base-200 flex items-center gap-3 rounded-lg p-2 transition-colors">
 		<Icon icon="lucide:anchor" class="text-base-content/70 h-4 w-4 shrink-0" aria-hidden="true" />
-		<span class="flex-1 text-sm">Seezeichen &amp; Tonnen (OpenSeaMap)</span>
+		<span class="flex-1 text-sm"
+			>{m.components_map_panel_legendpanel_text_seezeichen_tonnen_openseamap()}</span
+		>
 		<input
 			type="checkbox"
 			class="seamark-checkbox checkbox checkbox-sm"
 			checked={seamarkVisible}
 			onchange={(e) => handleSeamarkToggle((e.target as HTMLInputElement).checked)}
-			aria-label="Seezeichen-Ebene (OpenSeaMap) anzeigen/ausblenden"
+			aria-label={m.components_map_panel_legendpanel_aria_label_seezeichen_ebene_openseamap_anzeigen_aus()}
 		/>
 	</div>
 
-	<div class="divider">Cluster</div>
+	<div class="divider">{m.components_map_panel_legendpanel_text_cluster()}</div>
 
 	<!-- Cluster-Farbskala erklären (M1) — aus derselben Konstante wie die Karte -->
 	<div class="mb-8">
@@ -247,9 +280,7 @@
 			{/each}
 		</div>
 		<p class="text-base-content/80 text-sm">
-			Blaue Kreise fassen mehrere Sichtungen an nahe beieinanderliegenden Orten zusammen. Die Zahl
-			nennt die Anzahl der Sichtungen; je dunkler und größer der Kreis, desto mehr sind es. Beim
-			Hineinzoomen teilt sich ein Cluster in einzelne Marker auf.
+			{m.components_map_panel_legendpanel_text_blaue_kreise_fassen_mehrere_sichtungen()}
 		</p>
 	</div>
 </MapPanel>

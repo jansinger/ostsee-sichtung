@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import Icon from '$lib/components/Icon.svelte';
 	import { infoStyles, type InfoVariant } from '$lib/components/info/variant';
 	import type { Snippet } from 'svelte';
@@ -34,7 +35,7 @@
 	/>
 	<div>
 		<svelte:element this={styles.headingTag} class={styles.headingClass}>
-			Totfunde – Besonders wichtig!
+			{m.components_info_deadfindingnotice_text_totfunde_besonders_wichtig()}
 		</svelte:element>
 		<p class={styles.bodyClass}>
 			Tote Tiere liefern wichtige Erkenntnisse über Todesursachen und Gesundheit der Population.

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import DeadAnimal from './DeadAnimal.svelte';
 
 	import { getFormContext } from '$lib/report/formContext';
@@ -19,7 +20,10 @@
 </script>
 
 <!-- Animal Information Section -->
-<SectionCard title="Tierinformationen" icon="lucide:eye">
+<SectionCard
+	title={m.report_components_sections_animalinfo_title_tierinformationen()}
+	icon="lucide:eye"
+>
 	{#if adminMode}
 		<!-- Die Totfund-Frage steht ganz oben, weil das Museum sie am Kartenende für
 		     übersehbar hielt. Sie entscheidet außerdem, ob der Detailblock darunter

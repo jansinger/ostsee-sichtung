@@ -2,6 +2,10 @@
  * Enum für Seegangzustände
  * Die numerischen Werte werden in der Datenbank gespeichert.
  */
+import { memoizePerLocale } from '$lib/i18n/localeMemo';
+import * as m from '$lib/paraglide/messages';
+import { getLocale, type Locale } from '$lib/paraglide/runtime';
+
 export enum SeaStateEnum {
 	NONE = 0,
 	SMOOTH = 1,
@@ -12,16 +16,35 @@ export enum SeaStateEnum {
 }
 
 /**
- * Deutsche Bezeichnungen für die Seegangzustände
+ * Baut je Locale die Bezeichnungen der Seegangzustände aus dem
+ * Botschaftskatalog.
+ *
+ * Modul-intern (kein Export): Kein Verbraucher außerhalb von `formOptions/`
+ * indiziert das Record direkt — geprüft vor diesem Umbau (auch über
+ * mehrzeilige Importe). Der einzige externe Zugriff auf das rohe Record lag
+ * in `antworten.json/+server.ts` und ist auf `getSeaStateLabel(…,
+ * baseLocale)` umgestellt (siehe Kommentar dort). `csvExport.ts` ruft
+ * `getSeaStateLabel` ebenfalls jetzt mit `baseLocale`.
+ *
+ * Bewusst ein Record von BUILDERN, nicht von aufgelösten Strings — siehe
+ * Begründung in `species.ts`.
  */
-export const seaStateLabels: Record<SeaStateEnum, string> = {
-	[SeaStateEnum.NONE]: 'Keine Angabe',
-	[SeaStateEnum.SMOOTH]: 'Glatte See, keine Wellen',
-	[SeaStateEnum.CALM]: 'Ruhige See, gekräuselte, kurze Wellen',
-	[SeaStateEnum.SLIGHT]: 'Leicht bewegte See, Schaumköpfe',
-	[SeaStateEnum.ROUGH]: 'Grobe See, lange, brechende Wellen',
-	[SeaStateEnum.HIGH]: 'Hohe See, Wellenberge und Gischt'
+const seaStateLabelBuilders: Record<SeaStateEnum, (locale: Locale) => string> = {
+	[SeaStateEnum.NONE]: (locale) => m.formoptions_seastate_none({}, { locale }),
+	[SeaStateEnum.SMOOTH]: (locale) => m.formoptions_seastate_smooth({}, { locale }),
+	[SeaStateEnum.CALM]: (locale) => m.formoptions_seastate_calm({}, { locale }),
+	[SeaStateEnum.SLIGHT]: (locale) => m.formoptions_seastate_slight({}, { locale }),
+	[SeaStateEnum.ROUGH]: (locale) => m.formoptions_seastate_rough({}, { locale }),
+	[SeaStateEnum.HIGH]: (locale) => m.formoptions_seastate_high({}, { locale })
 };
+
+/** Baut die Seegang-Bezeichnungen für eine Locale genau einmal und hält sie danach vor. */
+const seaStateLabelsFor = memoizePerLocale(
+	(locale) =>
+		Object.fromEntries(
+			Object.entries(seaStateLabelBuilders).map(([value, build]) => [value, build(locale)])
+		) as Record<SeaStateEnum, string>
+);
 
 export type SeaState = SeaStateEnum;
 
@@ -47,23 +70,32 @@ const SELECTABLE_SEA_STATES: readonly SeaStateEnum[] = Object.values(SeaStateEnu
 
 /**
  * Generiert eine Array-Struktur für Select-Komponenten
+ * @param locale - Locale für die Anzeigetexte; Default die aktuelle Locale
  * @returns Array von Objekten mit value und label
  */
-const seaStateOptions: Array<{ value: number; label: string }> = SELECTABLE_SEA_STATES.map(
-	(value) => ({ value, label: seaStateLabels[value] })
-);
-export const getSeaStateOptions = (): Array<{ value: number; label: string }> => seaStateOptions;
+export function getSeaStateOptions(
+	locale: Locale = getLocale()
+): Array<{ value: number; label: string }> {
+	const labels = seaStateLabelsFor(locale);
+	return SELECTABLE_SEA_STATES.map((value) => ({ value, label: labels[value] }));
+}
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert
  * @param value - Der Enum-Wert (z.B. aus der Datenbank)
+ * @param locale - Locale für den Anzeigetext; Default die aktuelle Locale
  * @returns Das zugehörige Label oder einen Fallback-Text
  */
-export function getSeaStateLabel(value: SeaStateEnum | number | null | undefined): string {
-	if (value === null || value === undefined) return 'Nicht angegeben';
+export function getSeaStateLabel(
+	value: SeaStateEnum | number | null | undefined,
+	locale: Locale = getLocale()
+): string {
+	if (value === null || value === undefined)
+		return m.formoptions_seastate_not_specified({}, { locale });
 
 	const numericValue = typeof value === 'string' ? parseInt(value, 10) : value;
-	return seaStateLabels[numericValue as SeaStateEnum] || 'Unbekannt';
+	const labels = seaStateLabelsFor(locale);
+	return labels[numericValue as SeaStateEnum] || m.formoptions_seastate_unknown({}, { locale });
 }
 
 /**

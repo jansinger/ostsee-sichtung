@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import type { Component } from 'svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import LoadingOverlay from './LoadingOverlay.svelte';
@@ -68,9 +69,9 @@
 				type="button"
 				class="btn btn-primary"
 				onclick={loadMapComponent}
-				aria-label="Karte neu laden"
+				aria-label={m.components_map_lazymapwrapper_aria_label_karte_neu_laden()}
 			>
-				Neu laden
+				{m.components_map_lazymapwrapper_text_neu_laden()}
 			</button>
 		</div>
 	</div>

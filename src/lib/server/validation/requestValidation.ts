@@ -2,25 +2,30 @@
  * Request validation utilities for API endpoints
  */
 
-import { sightingSchemaBase } from '$lib/form/validation/sightingSchema';
+import { getSightingSchemaBase } from '$lib/form/validation/sightingSchema';
+import { baseLocale } from '$lib/paraglide/runtime';
 import * as yup from 'yup';
 
 /**
  * Type representing the allowed fields from sightingSchemaBase plus entryChannel (without admin fields)
  */
-export type AllowedSightingFormData = yup.InferType<typeof sightingSchemaBase> & {
+export type AllowedSightingFormData = yup.InferType<ReturnType<typeof getSightingSchemaBase>> & {
 	entryChannel?: number;
 };
 
 /**
  * Set of allowed field names for sighting POST requests
  * These are the fields from sightingSchemaBase plus entryChannel, excluding administrative fields
+ *
+ * Feldnamen sind locale-unabhängig — `baseLocale` fest gewählt, damit die
+ * Allowlist beim Modulladen genau einmal aus einer konkreten Schema-Instanz
+ * gebaut wird, statt (ungenutzt) an die aktive Request-Locale zu hängen.
  */
 // `sightingDatetime` steht bewusst NICHT auf der Liste: Der Zeitpunkt wird
 // serverseitig aus sightingDate/sightingTime gebildet — ein vom Browser
 // berechneter Instant trüge dessen Zeitzone.
 const ALLOWED_SIGHTING_FIELDS = new Set([
-	...Object.keys(sightingSchemaBase.fields),
+	...Object.keys(getSightingSchemaBase(baseLocale).fields),
 	'entryChannel' // This field is in sightingSchema but not in sightingSchemaBase
 ]);
 

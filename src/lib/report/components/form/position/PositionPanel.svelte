@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import { get } from 'svelte/store';
 	import { getFormContext } from '$lib/report/formContext';
 	import { getUploadConfig } from '$lib/stores/configStore';
@@ -204,7 +205,11 @@
 	}
 </script>
 
-<SectionCard title="Positionsangabe" icon="lucide:map-pin" variant="inset">
+<SectionCard
+	title={m.report_components_form_position_positionpanel_title_positionsangabe()}
+	icon="lucide:map-pin"
+	variant="inset"
+>
 	<!-- Nur noch die Frage: „Ein Foto mit GPS-Daten ist der schnellste Weg" stand
 	     zwei Zeilen später in der Hero-Karte fast wörtlich noch einmal. -->
 	<p class="text-base-content/70 mb-4 text-sm">{positionLabel}</p>
@@ -241,7 +246,7 @@
 		{locating ? 'Standort wird ermittelt …' : 'Mein aktueller Standort'}
 	</button>
 	<p class="text-base-content/70 text-support mt-2 mb-3">
-		Übernimmt den Standort Ihres Geräts — sinnvoll, wenn Sie die Sichtung direkt vor Ort melden.
+		{m.report_components_form_position_positionpanel_text_uebernimmt_den_standort_ihres_geraets()}
 	</p>
 
 	{#if locationError}
@@ -262,7 +267,9 @@
 	     was hinter der zugeklappten Disclosure lag. Die Karte steht jetzt offen
 	     darunter und kündigt sich selbst an; übrig bleiben muss nur noch das
 	     „oder". -->
-	<div class="divider text-base-content/70 text-support mt-6 mb-3">oder</div>
+	<div class="divider text-base-content/70 text-support mt-6 mb-3">
+		{m.report_components_form_position_positionpanel_text_oder()}
+	</div>
 
 	<!--
 		Karte und Koordinatenfelder stehen dauerhaft offen — auf Wunsch des
@@ -323,7 +330,7 @@
 	<details class="bg-base-100 collapse-arrow collapse mt-6" data-testid="photo-position-disclosure">
 		<!-- `<summary>` ist nativ fokussierbar — kein `tabindex` nötig. -->
 		<summary class="collapse-title min-h-11 py-3 text-sm font-medium">
-			GPS-Position und Zeit aus einem Bild übernehmen
+			{m.report_components_form_position_positionpanel_text_gps_position_und_zeit_aus_einem()}
 		</summary>
 		<div class="collapse-content">
 			<!-- `data-testid="photo-position-card"` bleibt: `form-position-photo.spec.ts`
@@ -381,16 +388,14 @@
 						<Icon aria-hidden="true" icon="lucide:circle-alert" width="20" class="shrink-0" />
 						<div>
 							<p class="text-sm">
-								In diesem Foto sind keine GPS-Daten gespeichert. Das ist häufig — viele Kameras und
-								weitergeleitete Bilder enthalten keine Position. Das Foto ist trotzdem wertvoll und
-								bleibt erhalten.
+								{m.report_components_form_position_positionpanel_text_in_diesem_foto_sind_keine()}
 							</p>
 							<!-- Nur wenn es wirklich passiert ist: `exifDateTimeApplied` kommt aus
 							     DropzoneEnhanced. Ein Gate auf `$form.sightingDate` wäre immer wahr
 							     (Schema-Default `berlinToday()`). -->
 							{#if exifDateTimeApplied}
 								<p class="mt-2 text-sm" data-testid="photo-datetime-applied">
-									Datum und Uhrzeit konnten übernommen werden.
+									{m.report_components_form_position_positionpanel_text_datum_und_uhrzeit_konnten_uebernommen()}
 								</p>
 							{/if}
 							<!-- Nur noch ein Ausweg: „Auf Karte wählen" führte in eine Disclosure,
@@ -403,7 +408,7 @@
 									onclick={focusDescription}
 									data-testid="exit-to-description"
 								>
-									Seegebiet beschreiben
+									{m.report_components_form_position_positionpanel_text_seegebiet_beschreiben()}
 								</button>
 							</div>
 						</div>

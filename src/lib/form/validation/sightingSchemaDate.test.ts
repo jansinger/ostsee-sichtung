@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TEST_TIME_ZONES, withTimeZone } from '$lib/server/datetime/withTimeZone.testutil';
-import { sightingSchema } from './sightingSchema';
+import { getSightingSchema } from './sightingSchema';
+
+// Testet weiterhin den deutschen Ist-Zustand (Default-Locale) — unveraendert
+// gegenueber der frueheren Modulkonstante.
+const sightingSchema = getSightingSchema();
 
 /**
  * Der Kalendertag ist fachlich immer Berlin-Ortszeit. Zwischen 22:00 und 24:00 UTC

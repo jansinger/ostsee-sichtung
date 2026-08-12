@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { page } from 'vitest/browser';
 import { get } from 'svelte/store';
 import { renderWithFormContext } from '$lib/report/components/testing/renderWithFormContext.testutil';
-import { sightingSchema } from '$lib/form/validation/sightingSchema';
-import { PUBLIC_BOAT_DRIVE_OPTIONS } from '$lib/report/formOptions/boatDrive';
+import { getSightingSchema } from '$lib/form/validation/sightingSchema';
+
+// Testet weiterhin den deutschen Ist-Zustand (Default-Locale) — unveraendert
+// gegenueber der frueheren Modulkonstante.
+const sightingSchema = getSightingSchema();
+import { getPublicBoatDriveOptions } from '$lib/report/formOptions/boatDrive';
 import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
 import type { SightingFormData } from '$lib/types';
 import SightingDetails from './SightingDetails.svelte';
@@ -131,7 +135,7 @@ describe('sections/SightingDetails — der gewählte Antrieb übersteht den Weg 
 	// hier Beiwerk.
 	const antriebsSchema = sightingSchema.pick(['sightingFrom', 'boatDrive']);
 
-	it.each(PUBLIC_BOAT_DRIVE_OPTIONS.map((option) => [option.label, option.value] as const))(
+	it.each(getPublicBoatDriveOptions().map((option) => [option.label, option.value] as const))(
 		'„%s" landet als validierbare Zahl im Formular-Store',
 		async (label, erwartet) => {
 			const { form } = renderWithFormContext(SightingDetails, {

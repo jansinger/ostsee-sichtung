@@ -29,6 +29,7 @@
   Die sichtbare Fläche wird daneben ganz normal bedingt gerendert.
 -->
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import Icon from '$lib/components/Icon.svelte';
 	import { connection, watchConnection } from '$lib/stores/connectionState.svelte';
 
@@ -85,17 +86,19 @@
 	<div class="{SURFACE} {className}" data-testid="connection-badge-offline" aria-hidden="true">
 		<span class="text-warning-strong flex items-center gap-2 text-sm font-medium">
 			<Icon icon="lucide:wifi-off" width="16" class="shrink-0" aria-hidden="true" />
-			Offline
+			{m.components_connectionbadge_text_offline()}
 		</span>
 		{#if !compact}
-			<span class="text-base-content/70 text-support">Eingaben werden gespeichert</span>
+			<span class="text-base-content/70 text-support"
+				>{m.components_connectionbadge_text_eingaben_werden_gespeichert()}</span
+			>
 		{/if}
 	</div>
 {:else if connection.justReconnected}
 	<div class="{SURFACE} {className}" data-testid="connection-badge-reconnected" aria-hidden="true">
 		<span class="text-success-strong flex items-center gap-2 text-sm font-medium">
 			<Icon icon="lucide:wifi" width="16" class="shrink-0" aria-hidden="true" />
-			Wieder online
+			{m.components_connectionbadge_text_wieder_online()}
 		</span>
 	</div>
 {/if}

@@ -3,8 +3,7 @@ import {
 	SightingFromEnum,
 	getSightingFromLabel,
 	getSightingFromOptions,
-	isValidSightingFrom,
-	sightingFromLabels
+	isValidSightingFrom
 } from './sightingFrom';
 
 /**
@@ -30,7 +29,7 @@ describe('SightingFromEnum.UNKNOWN', () => {
 	});
 
 	it('hat ein eigenes Label, das sich vom Fallback abhebt', () => {
-		expect(sightingFromLabels[SightingFromEnum.UNKNOWN]).toBe('Keine Angabe');
+		expect(getSightingFromLabel(SightingFromEnum.UNKNOWN)).toBe('Keine Angabe');
 		// Der Fallback für wirklich unbekannte Zahlen bleibt "Unbekannt" —
 		// die beiden dürfen sich nicht überlagern.
 		expect(getSightingFromLabel(99)).toBe('Unbekannt');

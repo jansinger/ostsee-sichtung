@@ -1,14 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
 	AnimalBehaviorEnum,
-	animalBehaviorLabels,
 	getAnimalBehaviorLabel,
 	getAnimalBehaviorOptions,
 	isValidAnimalBehavior
 } from './animalBehavior';
 import {
 	DistributionEnum,
-	distributionLabels,
 	getDistributionLabel,
 	getDistributionOptions,
 	isValidDistribution
@@ -39,7 +37,7 @@ describe('DistributionEnum.UNKNOWN', () => {
 	});
 
 	it('hat das Label "Keine Angabe"', () => {
-		expect(distributionLabels[DistributionEnum.UNKNOWN]).toBe('Keine Angabe');
+		expect(getDistributionLabel(DistributionEnum.UNKNOWN)).toBe('Keine Angabe');
 		expect(getDistributionLabel(4)).toBe('Keine Angabe');
 	});
 
@@ -77,7 +75,7 @@ describe('AnimalBehaviorEnum.UNKNOWN', () => {
 	});
 
 	it('hat das Label "Keine Angabe"', () => {
-		expect(animalBehaviorLabels[AnimalBehaviorEnum.UNKNOWN]).toBe('Keine Angabe');
+		expect(getAnimalBehaviorLabel(AnimalBehaviorEnum.UNKNOWN)).toBe('Keine Angabe');
 		expect(getAnimalBehaviorLabel(4)).toBe('Keine Angabe');
 	});
 

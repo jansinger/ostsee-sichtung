@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import StepNavigation from './form/StepNavigation.svelte';
 
 	import FormActions from './form/FormActions.svelte';
@@ -10,7 +11,7 @@
 	import { page } from '$app/state';
 	import { connection, watchConnection } from '$lib/stores/connectionState.svelte';
 	import { describeSubmitFailure, submitSightingForm } from '$lib/form/submitSightingForm';
-	import { sightingSchema } from '$lib/form/validation/sightingSchema';
+	import { getSightingSchema } from '$lib/form/validation/sightingSchema';
 	import { createLogger } from '$lib/logger';
 	import {
 		fieldsOutsideReportKind,
@@ -291,7 +292,7 @@
 	 * wer dort auf `stripUnknown`/`noUnknown` umstellt, bricht das hier.
 	 */
 	function reachableSchema(values: SightingFormData) {
-		return sightingSchema.omit(hiddenFormFields(values));
+		return getSightingSchema().omit(hiddenFormFields(values));
 	}
 
 	// Formular initialisieren
@@ -690,10 +691,10 @@
 		     wird an Deck und bei Sonnenlicht ausgefüllt (design-system.md). -->
 		<div class="mb-3 text-center md:mb-8">
 			<h1 class="text-base-content mb-1 text-2xl font-bold md:mb-2 md:text-3xl lg:text-4xl">
-				Sichtung von Meeressäugetieren melden
+				{m.report_components_modernreportform_text_sichtung_von_meeressaeugetieren_melden()}
 			</h1>
 			<p class="text-base-content/70 px-2 text-sm md:text-lg">
-				für die Forschung des Deutschen Meeresmuseums
+				{m.report_components_modernreportform_text_fuer_die_forschung_des_deutschen()}
 			</p>
 		</div>
 	{/if}

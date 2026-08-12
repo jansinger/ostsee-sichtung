@@ -2,6 +2,10 @@
  * Enum für Tierverhalten
  * Die numerischen Werte werden in der Datenbank gespeichert.
  */
+import { memoizePerLocale } from '$lib/i18n/localeMemo';
+import * as m from '$lib/paraglide/messages';
+import { getLocale, type Locale } from '$lib/paraglide/runtime';
+
 /**
  * **Achtung bei `OTHER = 0`:** Die Spalte `verhalten` ist
  * `integer default(0) notNull` — `0` ist gleichzeitig Default und die Bedeutung
@@ -24,17 +28,34 @@ export enum AnimalBehaviorEnum {
 }
 
 /**
- * Deutsche Bezeichnungen für das Tierverhalten
+ * Baut je Locale die Bezeichnungen des Tierverhaltens aus dem Botschaftskatalog.
+ *
+ * Modul-intern (kein Export): Der einzige externe Zugriff auf das rohe Record
+ * lag in `antworten.json/+server.ts` und ist auf `getAnimalBehaviorLabel(…,
+ * baseLocale)` umgestellt (siehe Kommentar dort). `csvExport.ts` ruft
+ * `getAnimalBehaviorLabel` ebenfalls jetzt mit `baseLocale`.
+ *
+ * Bewusst ein Record von BUILDERN, nicht von aufgelösten Strings — siehe
+ * Begründung in `species.ts`.
  */
-export const animalBehaviorLabels: Record<AnimalBehaviorEnum, string> = {
-	[AnimalBehaviorEnum.OTHER]: 'Sonstiges Verhalten',
-	[AnimalBehaviorEnum.CONSTANT_COURSE]: 'Konstanter Kurs, regelmäßiges Tauchen (schwimmen, ziehen)',
-	[AnimalBehaviorEnum.VARYING_COURSE]:
-		'Unterschiedlicher Kurs, kreisend, unregelmäßiges Tauchen (futtersuchend)',
-	[AnimalBehaviorEnum.SLOW_SWIMMING]:
-		'Langsames Schwimmen, längere Zeit an der Wasseroberfläche (ruhend)',
-	[AnimalBehaviorEnum.UNKNOWN]: 'Keine Angabe'
+const animalBehaviorLabelBuilders: Record<AnimalBehaviorEnum, (locale: Locale) => string> = {
+	[AnimalBehaviorEnum.OTHER]: (locale) => m.formoptions_animalbehavior_other({}, { locale }),
+	[AnimalBehaviorEnum.CONSTANT_COURSE]: (locale) =>
+		m.formoptions_animalbehavior_constant_course({}, { locale }),
+	[AnimalBehaviorEnum.VARYING_COURSE]: (locale) =>
+		m.formoptions_animalbehavior_varying_course({}, { locale }),
+	[AnimalBehaviorEnum.SLOW_SWIMMING]: (locale) =>
+		m.formoptions_animalbehavior_slow_swimming({}, { locale }),
+	[AnimalBehaviorEnum.UNKNOWN]: (locale) => m.formoptions_animalbehavior_unknown({}, { locale })
 };
+
+/** Baut die Verhaltens-Bezeichnungen für eine Locale genau einmal und hält sie danach vor. */
+const animalBehaviorLabelsFor = memoizePerLocale(
+	(locale) =>
+		Object.fromEntries(
+			Object.entries(animalBehaviorLabelBuilders).map(([value, build]) => [value, build(locale)])
+		) as Record<AnimalBehaviorEnum, string>
+);
 
 /**
  * Verhaltensweisen, die im Formular auswählbar sind.
@@ -62,26 +83,35 @@ export type AnimalBehavior = AnimalBehaviorEnum;
 
 /**
  * Generiert eine Array-Struktur für Select-Komponenten
+ * @param locale - Locale für die Anzeigetexte; Default die aktuelle Locale
  * @returns Array von Objekten mit value und label
  */
-const animalBehaviorOptions: Array<{ value: number; label: string }> = SELECTABLE_BEHAVIORS.map(
-	(value) => ({ value, label: animalBehaviorLabels[value] })
-);
-export const getAnimalBehaviorOptions = (): Array<{ value: number; label: string }> =>
-	animalBehaviorOptions;
+export function getAnimalBehaviorOptions(
+	locale: Locale = getLocale()
+): Array<{ value: number; label: string }> {
+	const labels = animalBehaviorLabelsFor(locale);
+	return SELECTABLE_BEHAVIORS.map((value) => ({ value, label: labels[value] }));
+}
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert
  * @param value - Der Enum-Wert (z.B. aus der Datenbank)
+ * @param locale - Locale für den Anzeigetext; Default die aktuelle Locale
  * @returns Das zugehörige Label oder einen Fallback-Text
  */
 export function getAnimalBehaviorLabel(
-	value: AnimalBehaviorEnum | number | null | undefined
+	value: AnimalBehaviorEnum | number | null | undefined,
+	locale: Locale = getLocale()
 ): string {
-	if (value === null || value === undefined) return 'Nicht angegeben';
+	if (value === null || value === undefined)
+		return m.formoptions_animalbehavior_not_specified({}, { locale });
 
 	const numericValue = typeof value === 'string' ? parseInt(value, 10) : value;
-	return animalBehaviorLabels[numericValue as AnimalBehaviorEnum] || 'Unbekannt';
+	const labels = animalBehaviorLabelsFor(locale);
+	return (
+		labels[numericValue as AnimalBehaviorEnum] ||
+		m.formoptions_animalbehavior_invalid({}, { locale })
+	);
 }
 
 /**

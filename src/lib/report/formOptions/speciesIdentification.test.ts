@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { SpeciesEnum, speciesGroups, speciesLabels } from './species';
+import { SpeciesEnum, getSpeciesLabel, speciesGroups } from './species';
 import {
-	frequencyLabels,
-	observabilityLabels,
+	getFrequencyLabels,
+	getObservabilityLabels,
 	speciesIdentification,
 	type Observability
 } from './speciesIdentification';
@@ -14,7 +14,7 @@ const allSpecies = Object.values(SpeciesEnum).filter(
 describe('speciesIdentification', () => {
 	it('deckt jede Tierart des Formulars ab', () => {
 		for (const species of allSpecies) {
-			expect(speciesIdentification[species], `fehlt für ${speciesLabels[species]}`).toBeDefined();
+			expect(speciesIdentification[species], `fehlt für ${getSpeciesLabel(species)}`).toBeDefined();
 		}
 	});
 
@@ -26,7 +26,7 @@ describe('speciesIdentification', () => {
 
 	it('verwendet dieselben Namen wie die Auswahlliste', () => {
 		for (const species of allSpecies) {
-			expect(speciesIdentification[species].name).toBe(speciesLabels[species]);
+			expect(speciesIdentification[species].name).toBe(getSpeciesLabel(species));
 		}
 	});
 
@@ -53,7 +53,7 @@ describe('Merkmale', () => {
 			const onDistance = speciesIdentification[species].distinguishing.filter(
 				(f) => f.observability === 'distance'
 			);
-			expect(onDistance.length, `${speciesLabels[species]} hat kein Fernmerkmal`).toBeGreaterThan(
+			expect(onDistance.length, `${getSpeciesLabel(species)} hat kein Fernmerkmal`).toBeGreaterThan(
 				0
 			);
 		}
@@ -68,13 +68,13 @@ describe('Merkmale', () => {
 	it('ordnet jede Art nach Häufigkeit ein', () => {
 		for (const species of allSpecies) {
 			const { level, text } = speciesIdentification[species].frequency;
-			expect(Object.keys(frequencyLabels)).toContain(level);
+			expect(Object.keys(getFrequencyLabels())).toContain(level);
 			expect(text.trim().length).toBeGreaterThan(0);
 		}
 	});
 
 	it('hat für jede Beobachtbarkeitsstufe ein Label', () => {
-		expect(Object.keys(observabilityLabels).sort()).toEqual(
+		expect(Object.keys(getObservabilityLabels()).sort()).toEqual(
 			['background', 'closeup', 'distance'].sort()
 		);
 	});
@@ -114,7 +114,7 @@ describe('Bilder', () => {
 		for (const species of allSpecies) {
 			expect(
 				speciesIdentification[species].images.length,
-				`kein Bild für ${speciesLabels[species]}`
+				`kein Bild für ${getSpeciesLabel(species)}`
 			).toBeGreaterThan(0);
 		}
 	});

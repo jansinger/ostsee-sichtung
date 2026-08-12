@@ -2,6 +2,10 @@
  * Enum für Entfernungen
  * Die numerischen Werte werden in der Datenbank gespeichert.
  */
+import { memoizePerLocale } from '$lib/i18n/localeMemo';
+import * as m from '$lib/paraglide/messages';
+import { getLocale, type Locale } from '$lib/paraglide/runtime';
+
 export enum DistanceEnum {
 	LESS_THAN_10M = 1,
 	FROM_10_TO_50M = 2,
@@ -26,37 +30,66 @@ export enum DistanceEnum {
 export const DISTANCE_UNSPECIFIED = 0;
 
 /**
- * Deutsche Bezeichnungen für die Entfernungen
+ * Baut je Locale die Bezeichnungen der Entfernungen aus dem Botschaftskatalog.
+ *
+ * Modul-intern (kein Export): Kein Verbraucher außerhalb von `formOptions/`
+ * indiziert das Record direkt — geprüft vor diesem Umbau (auch über
+ * mehrzeilige Importe). Der einzige externe Zugriff auf das rohe Record lag
+ * in `antworten.json/+server.ts` und ist auf `getDistanceLabel(…,
+ * baseLocale)` umgestellt (siehe Kommentar dort). `csvExport.ts` ruft
+ * `getDistanceLabel` ebenfalls jetzt mit `baseLocale`.
+ *
+ * Bewusst ein Record von BUILDERN, nicht von aufgelösten Strings — siehe
+ * Begründung in `species.ts`.
  */
-export const distanceLabels: Record<DistanceEnum, string> = {
-	[DistanceEnum.LESS_THAN_10M]: 'weniger als 10 Meter',
-	[DistanceEnum.FROM_10_TO_50M]: '10 bis 50 Meter',
-	[DistanceEnum.FROM_51_TO_100M]: '51 bis 100 Meter',
-	[DistanceEnum.FROM_101_TO_500M]: '101 bis 500 Meter',
-	[DistanceEnum.MORE_THAN_500M]: 'mehr als 500 Meter'
+const distanceLabelBuilders: Record<DistanceEnum, (locale: Locale) => string> = {
+	[DistanceEnum.LESS_THAN_10M]: (locale) => m.formoptions_distance_less_than_10m({}, { locale }),
+	[DistanceEnum.FROM_10_TO_50M]: (locale) => m.formoptions_distance_from_10_to_50m({}, { locale }),
+	[DistanceEnum.FROM_51_TO_100M]: (locale) =>
+		m.formoptions_distance_from_51_to_100m({}, { locale }),
+	[DistanceEnum.FROM_101_TO_500M]: (locale) =>
+		m.formoptions_distance_from_101_to_500m({}, { locale }),
+	[DistanceEnum.MORE_THAN_500M]: (locale) => m.formoptions_distance_more_than_500m({}, { locale })
 };
+
+/** Baut die Entfernungs-Bezeichnungen für eine Locale genau einmal und hält sie danach vor. */
+const distanceLabelsFor = memoizePerLocale(
+	(locale) =>
+		Object.fromEntries(
+			Object.entries(distanceLabelBuilders).map(([value, build]) => [value, build(locale)])
+		) as Record<DistanceEnum, string>
+);
 
 export type Distance = DistanceEnum;
 
 /**
  * Generiert eine Array-Struktur für Select-Komponenten
+ * @param locale - Locale für die Anzeigetexte; Default die aktuelle Locale
  * @returns Array von Objekten mit value und label
  */
-const distanceOptions: Array<{ value: number; label: string }> = Object.entries(distanceLabels).map(
-	([value, label]) => ({ value: Number(value), label })
-);
-export const getDistanceOptions = (): Array<{ value: number; label: string }> => distanceOptions;
+export function getDistanceOptions(
+	locale: Locale = getLocale()
+): Array<{ value: number; label: string }> {
+	const labels = distanceLabelsFor(locale);
+	return Object.entries(labels).map(([value, label]) => ({ value: Number(value), label }));
+}
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert
  * @param value - Der Enum-Wert (z.B. aus der Datenbank)
+ * @param locale - Locale für den Anzeigetext; Default die aktuelle Locale
  * @returns Das zugehörige Label oder einen Fallback-Text
  */
-export function getDistanceLabel(value: DistanceEnum | number | null | undefined): string {
-	if (value === null || value === undefined) return 'Nicht angegeben';
+export function getDistanceLabel(
+	value: DistanceEnum | number | null | undefined,
+	locale: Locale = getLocale()
+): string {
+	if (value === null || value === undefined)
+		return m.formoptions_distance_not_specified({}, { locale });
 
 	const numericValue = typeof value === 'string' ? parseInt(value, 10) : value;
-	return distanceLabels[numericValue as DistanceEnum] || 'Unbekannt';
+	const labels = distanceLabelsFor(locale);
+	return labels[numericValue as DistanceEnum] || m.formoptions_distance_unknown({}, { locale });
 }
 /**
  * Prüft, ob ein Wert ein gültiger Distance-Wert ist

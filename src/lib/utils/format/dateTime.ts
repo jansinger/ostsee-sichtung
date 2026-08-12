@@ -19,9 +19,47 @@
 const APP_TIMEZONE = 'Europe/Berlin';
 
 /**
+ * Benannte Zuordnung von den kurzen Paraglide-Locales
+ * (`project.inlang/settings.json`: `de`, `en`) auf die BCP-47-Anzeigesprache,
+ * mit der `Intl`/`toLocaleString` formatiert wird.
+ *
+ * Diese eine Stelle entscheidet über das Zahlen-/Datumslayout — **nicht** über
+ * die Zeitzone. `en` steht deshalb auf `en-GB` (DD/MM/YYYY, 24-Stunden) statt
+ * auf `en-US` (MM/DD/YYYY, 12-Stunden mit AM/PM), weil `de`/`en` sonst nicht nur
+ * in der Feldreihenfolge, sondern auch im Stundenformat auseinanderfallen —
+ * für ein Ostsee-Publikum ist die britische Konvention näher am gewohnten Bild.
+ * Ohne diese Zuordnung würde `formatLocalDateTime('en', …)` das bare `en` direkt
+ * an `Intl` durchreichen, und Node löst ein bares `en` als `en-US` auf.
+ *
+ * Ausdrücklich KEINE Zeitzone: Die Zone bleibt für jede Locale fest auf
+ * `Europe/Berlin`, siehe die Erklärung an `formatLocalDateTime` unten.
+ */
+const DISPLAY_LOCALE_BY_LOCALE = {
+	de: 'de-DE',
+	en: 'en-GB'
+} as const satisfies Record<'de' | 'en', string>;
+
+/**
  * Standard-Locale für deutsche Formatierung
  */
-const APP_LOCALE = 'de-DE';
+const APP_LOCALE = DISPLAY_LOCALE_BY_LOCALE.de;
+
+/**
+ * Löst eine kurze Paraglide-Locale (`de`, `en`) auf ihre BCP-47-Anzeigesprache
+ * auf. Ein bereits qualifizierter Tag (`de-DE`, `en-GB`, `en-US`, …) oder eine
+ * unbekannte Locale wird unverändert durchgereicht — die Zuordnung ergänzt nur
+ * die beiden kurzen Tags, die die Anwendung tatsächlich durchreicht.
+ *
+ * Exportiert, weil dieselbe Zuordnung auch für andere öffentlich sichtbare
+ * `Intl`-Formatierer (z. B. `Intl.NumberFormat` auf `/about`) gilt — die
+ * Zuordnung soll an einer Stelle stehen, nicht an jeder Aufrufstelle.
+ */
+export function resolveDisplayLocale(locale: string): string {
+	if (locale === 'de' || locale === 'en') {
+		return DISPLAY_LOCALE_BY_LOCALE[locale];
+	}
+	return locale;
+}
 
 /**
  * Formatiert eine UTC-Datenbank-Zeit für die lokale Anzeige in Deutschland.
@@ -111,7 +149,7 @@ export function formatLocalDateTime(
 		}
 	};
 
-	return date.toLocaleString(locale, formatOptions[format]);
+	return date.toLocaleString(resolveDisplayLocale(locale), formatOptions[format]);
 }
 
 /**

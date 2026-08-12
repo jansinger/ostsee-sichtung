@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getFormContext } from '$lib/report/formContext';
-	import { BoatDriveEnum, PUBLIC_BOAT_DRIVE_OPTIONS } from '$lib/report/formOptions/boatDrive';
+	import { BoatDriveEnum, getPublicBoatDriveOptions } from '$lib/report/formOptions/boatDrive';
 	import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
 	import { slide } from 'svelte/transition';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
@@ -142,7 +142,7 @@
 					name="boatDrive"
 					label="Lief während der Sichtung ein Motor?"
 					type="radio"
-					options={PUBLIC_BOAT_DRIVE_OPTIONS}
+					options={getPublicBoatDriveOptions()}
 					helpText={null}
 					required={true}
 				/>

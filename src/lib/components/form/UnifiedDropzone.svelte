@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import { createToast } from '$lib/stores/toastState.svelte';
 	import type { ValidationPreset } from '$lib/types';
 	import { validateFiles } from '$lib/utils';
@@ -253,7 +254,7 @@
 		<div class="bg-base-200 rounded-lg p-4">
 			<div class="mb-4 flex items-center justify-between">
 				<h3 class="text-sm font-semibold">
-					{files.length} Datei{files.length !== 1 ? 'en' : ''} hochgeladen
+					{m.components_form_unifieddropzone_text_datei_hochgeladen_plural({ count: files.length })}
 				</h3>
 				{#if multiple}
 					<button
@@ -261,7 +262,7 @@
 						class="btn btn-ghost btn-sm text-error hover:bg-error hover:text-error-content min-h-11"
 						onclick={clearAll}
 					>
-						Alle löschen
+						{m.components_form_unifieddropzone_text_alle_loeschen()}
 					</button>
 				{/if}
 			</div>
@@ -299,7 +300,7 @@
 									type="button"
 									class="btn btn-ghost btn-sm text-error hover:bg-error hover:text-error-content min-h-11 min-w-11"
 									onclick={() => removeFile(file)}
-									aria-label="Datei entfernen"
+									aria-label={m.components_form_unifieddropzone_aria_label_datei_entfernen()}
 								>
 									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path
@@ -325,7 +326,7 @@
 	     der Fläche — und damit das Ziel unter dem Zeiger, der es gerade erst
 	     getroffen hatte. Rahmen und Tint melden die Bereitschaft genauso. -->
 	<div
-		class="rounded-lg border-2 border-dashed transition-all duration-quick
+		class="duration-quick rounded-lg border-2 border-dashed transition-all
 			{compact ? 'p-4' : 'p-6'}
 			{actionLabel ? '' : 'cursor-pointer'}
 			{isDragOver

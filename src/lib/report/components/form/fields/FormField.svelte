@@ -4,7 +4,7 @@
 -->
 <script lang="ts">
 	import { createLogger } from '$lib/logger';
-	import { sightingSchemaFields } from '$lib/report/formConfig';
+	import { getSightingSchemaFields } from '$lib/report/formConfig';
 	import { getFormContext } from '$lib/report/formContext';
 	import type { FieldOption } from '$lib/types';
 	import type { SightingFormData } from '$lib/types/Form';
@@ -77,12 +77,10 @@
 	const { form, errors, touched, handleChange } = context;
 
 	let fieldConfig = $derived.by(() => {
-		const config = sightingSchemaFields[name] as yup.SchemaDescription | undefined;
+		const schemaFields = getSightingSchemaFields();
+		const config = schemaFields[name] as yup.SchemaDescription | undefined;
 		if (!config || !config.meta) {
-			logger.error(
-				{ schema: sightingSchemaFields },
-				`Field "${name}" not found in schema configuration.`
-			);
+			logger.error({ schema: schemaFields }, `Field "${name}" not found in schema configuration.`);
 			throw new Error(
 				`Field "${name}" not found in schema configuration (${config ? 'meta configuration missing' : 'schema element missing'}).`
 			);

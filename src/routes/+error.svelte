@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
@@ -133,7 +134,9 @@
 				{#if error?.message && status !== 404}
 					<div class="collapse-arrow bg-base-200 collapse mb-4">
 						<input type="checkbox" />
-						<div class="collapse-title text-sm font-medium">Technische Details</div>
+						<div class="collapse-title text-sm font-medium">
+							{m.routes_error_text_technische_details()}
+						</div>
 						<div class="collapse-content">
 							<div class="mockup-code text-xs">
 								<pre class="text-error"><code>{error.message}</code></pre>
@@ -145,24 +148,32 @@
 				<!-- Aktions-Buttons -->
 				<div class="card-actions w-full justify-center">
 					<div class="join join-vertical sm:join-horizontal">
-						<button class="btn btn-primary join-item" onclick={goHome} aria-label="Zur Startseite">
+						<button
+							class="btn btn-primary join-item"
+							onclick={goHome}
+							aria-label={m.routes_error_aria_label_zur_startseite()}
+						>
 							<Icon icon="lucide:home" class="mr-2 h-4 w-4" />
-							Startseite
+							{m.routes_error_text_startseite()}
 						</button>
 
-						<button class="btn btn-ghost join-item" onclick={goBack} aria-label="Zurück">
+						<button
+							class="btn btn-ghost join-item"
+							onclick={goBack}
+							aria-label={m.routes_error_aria_label_zurueck()}
+						>
 							<Icon icon="lucide:arrow-left" class="mr-2 h-4 w-4" />
-							Zurück
+							{m.routes_error_text_zurueck()}
 						</button>
 
 						{#if status >= 500}
 							<button
 								class="btn btn-outline join-item"
 								onclick={reloadPage}
-								aria-label="Seite neu laden"
+								aria-label={m.routes_error_aria_label_seite_neu_laden()}
 							>
 								<Icon icon="lucide:refresh-cw" class="mr-2 h-4 w-4" />
-								Neu laden
+								{m.routes_error_text_neu_laden()}
 							</button>
 						{/if}
 					</div>
@@ -171,28 +182,32 @@
 		</div>
 
 		<!-- Zusätzliche Hilfe-Karte -->
-		<div class="card bg-base-100 mt-4 shadow-raised">
+		<div class="card bg-base-100 shadow-raised mt-4">
 			<div class="card-body">
 				<h2 class="card-title text-lg">
 					<Icon icon="lucide:info" class="mr-2 h-5 w-5" />
-					Hilfe & Kontakt
+					{m.routes_error_text_hilfe_kontakt()}
 				</h2>
 
 				<div class="text-base-content/70 space-y-2 text-sm">
-					<p>Falls das Problem weiterhin besteht:</p>
+					<p>{m.routes_error_text_falls_das_problem_weiterhin_besteht()}</p>
 					<ul class="ml-4 list-inside list-disc space-y-1">
-						<li>Überprüfen Sie Ihre Internetverbindung</li>
-						<li>Versuchen Sie es in ein paar Minuten erneut</li>
-						<li>Leeren Sie den Browser-Cache</li>
+						<li>{m.routes_error_text_ueberpruefen_sie_ihre_internetverbindung()}</li>
+						<li>{m.routes_error_text_versuchen_sie_es_in_ein()}</li>
+						<li>{m.routes_error_text_leeren_sie_den_browser_cache()}</li>
 					</ul>
-					<p>Andernfalls versuchen Sie es später erneut oder kehren Sie zur Startseite zurück.</p>
+					<p>{m.routes_error_text_andernfalls_versuchen_sie_es_spaeter()}</p>
 				</div>
 
 				<!-- Zur Startseite -->
 				<div class="card-actions mt-4 justify-end">
-					<button class="btn btn-sm btn-ghost" onclick={goHome} aria-label="Zur Startseite">
+					<button
+						class="btn btn-sm btn-ghost"
+						onclick={goHome}
+						aria-label={m.routes_error_aria_label_zur_startseite_2()}
+					>
 						<Icon icon="lucide:home" class="mr-1 h-4 w-4" />
-						Zur Startseite
+						{m.routes_error_text_zur_startseite()}
 					</button>
 				</div>
 			</div>

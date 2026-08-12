@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import AnimalInfo from '$lib/report/components/sections/AnimalInfo.svelte';
 	import Media from '$lib/report/components/sections/Media.svelte';
 	import SightingDetails from '$lib/report/components/sections/SightingDetails.svelte';
@@ -22,7 +23,9 @@
 				<Icon icon="lucide:binoculars" width="20" class="text-primary md:h-6 md:w-6" />
 			</div>
 		</div>
-		<h2 class="text-base-content text-xl font-bold md:text-2xl">Angaben zum Tier</h2>
+		<h2 class="text-base-content text-xl font-bold md:text-2xl">
+			{m.report_components_steps_step2sightingdetails_text_angaben_zum_tier()}
+		</h2>
 		<!-- Beim Totfund fragt der Kopf nach einem Fund statt nach einer Beobachtung
 		     (Wunsch des Museums). Der Rest des Satzes gilt für beide Fälle — er
 		     nennt Tierart und Anzahl, nicht den Vorgang. Die Zuordnung steht in

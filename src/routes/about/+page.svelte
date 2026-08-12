@@ -1,13 +1,20 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import Icon from '$lib/components/Icon.svelte';
 	import OstseeTiereLogo from '$lib/components/OstseeTiereLogo.svelte';
-	import { localizeHref } from '$lib/paraglide/runtime';
+	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
+	import { resolveDisplayLocale } from '$lib/utils/format/dateTime';
 
 	let { data } = $props();
+
+	// Anzeigesprache der beiden Zahlenkacheln unten — folgt der Sprachwahl,
+	// nicht fest auf `de-DE`. Dieselbe Zuordnung wie bei Datum/Zeit
+	// (`resolveDisplayLocale`), damit `en` überall als `en-GB` formatiert.
+	const zahlenLocale = $derived(resolveDisplayLocale(getLocale()));
 </script>
 
 <svelte:head>
-	<title>Über uns - Ostsee-Tiere</title>
+	<title>{m.routes_about_page_text_ueber_uns_ostsee_tiere()}</title>
 	<meta
 		name="description"
 		content="Erfahren Sie mehr über die Ostsee-Tiere Plattform. Unterstützen Sie die Meeresforschung durch das Melden von Walsichtungen und anderen Meerestier-Beobachtungen in der Ostsee."
@@ -53,7 +60,9 @@
 		     `section`. Vorher standen hier text-6xl/5xl/4xl/3xl/2xl/xl — dass das
 		     nie auffiel, lag an der globalen h1-Regel aus mapStyles.css, die den
 		     Titel auf Mobil auf 20px zwang und die Staffelung damit verdeckte. -->
-		<h1 class="text-primary text-display mb-8 font-bold tracking-tight">Über Ostsee-Tiere</h1>
+		<h1 class="text-primary text-display mb-8 font-bold tracking-tight">
+			{m.routes_about_page_text_ueber_ostsee_tiere()}
+		</h1>
 		<div class="mx-auto max-w-4xl">
 			<p class="text-base-content/80 mb-6 text-2xl leading-relaxed">
 				Die Ostsee-Tiere Plattform ermöglicht es <strong class="text-primary"
@@ -72,7 +81,7 @@
 			<div>
 				<h2 class="text-primary text-title mb-6 flex items-center gap-3 font-bold">
 					<Icon icon="lucide:compass" width="36" class="text-primary" aria-hidden="true" />
-					Unsere Mission
+					{m.routes_about_page_text_unsere_mission()}
 				</h2>
 				<div class="space-y-4">
 					<p class="text-base-content/80 text-lg leading-relaxed">
@@ -103,7 +112,9 @@
 					<div class="mb-6 flex justify-center">
 						<Icon icon="lucide:activity" width="60" class="text-primary opacity-80" />
 					</div>
-					<h3 class="text-primary text-section mb-4 font-bold">Citizen Science</h3>
+					<h3 class="text-primary text-section mb-4 font-bold">
+						{m.routes_about_page_text_citizen_science()}
+					</h3>
 					<p class="text-base-content/70 text-lg leading-relaxed">
 						Bürgerwissenschaft macht <strong>jeden zum Forscher</strong> und trägt zu wichtigen wissenschaftlichen
 						Erkenntnissen bei.
@@ -113,14 +124,16 @@
 					{#if data.earliestSightingYear != null}
 						<div class="stats stats-vertical shadow-raised mt-6">
 							<div class="stat">
-								<div class="stat-title text-xs">Sichtungen seit</div>
+								<div class="stat-title text-xs">{m.routes_about_page_text_sichtungen_seit()}</div>
 								<div class="stat-value text-primary text-2xl">{data.earliestSightingYear}</div>
 								<!-- Umbrechbar aus demselben Grund wie die Kacheln im
 								     Handlungsaufforderungs-Block weiter unten. Diese hier bestimmt die
 								     Untergrenze der Seite derzeit nicht — aber sie steht unter
 								     derselben DaisyUI-Regel, und die nächste Textänderung würde den
 								     Überlauf sonst erneut aufmachen. -->
-								<div class="stat-desc whitespace-normal">in unserer Datenbank</div>
+								<div class="stat-desc whitespace-normal">
+									{m.routes_about_page_text_in_unserer_datenbank()}
+								</div>
 							</div>
 						</div>
 					{/if}
@@ -134,10 +147,10 @@
 		<div class="mb-12 text-center">
 			<h2 class="text-primary text-title mb-4 flex items-center justify-center gap-3 font-bold">
 				<Icon icon="lucide:layout-grid" width="36" class="text-primary" aria-hidden="true" />
-				Unsere Plattform
+				{m.routes_about_page_text_unsere_plattform()}
 			</h2>
 			<p class="text-base-content/70 mx-auto max-w-2xl text-lg">
-				Modernste Technologie für einfache Bedienung und maximale wissenschaftliche Relevanz
+				{m.routes_about_page_text_modernste_technologie_fuer_einfache_bedi()}
 			</p>
 		</div>
 
@@ -151,13 +164,17 @@
 					>
 						<Icon icon="lucide:pen-line" width="48" class="text-primary" />
 					</div>
-					<h3 class="card-title text-primary text-section mb-4 justify-center">Einfaches Melden</h3>
+					<h3 class="card-title text-primary text-section mb-4 justify-center">
+						{m.routes_about_page_text_einfaches_melden()}
+					</h3>
 					<p class="text-base-content/80 text-base leading-relaxed">
 						<strong>Intuitive Formulare</strong> führen Sie Schritt für Schritt durch die Erfassung
 						Ihrer Sichtung mit <em>GPS-genauer Lokalisierung</em>.
 					</p>
 					<div class="mt-4">
-						<div class="badge badge-primary badge-outline">GPS-Integration</div>
+						<div class="badge badge-primary badge-outline">
+							{m.routes_about_page_text_gps_integration()}
+						</div>
 					</div>
 				</div>
 			</div>
@@ -172,7 +189,7 @@
 						<Icon icon="lucide:map" width="48" class="text-secondary-strong" />
 					</div>
 					<h3 class="card-title text-secondary-strong text-section mb-4 justify-center">
-						Interaktive Karte
+						{m.routes_about_page_text_interaktive_karte()}
 					</h3>
 					<!-- „alle Sichtungen" traf nicht zu: die Karte zeigt ausschließlich
 					     freigegebene Meldungen und filtert dabei auf ein Jahr. -->
@@ -181,7 +198,9 @@
 						detaillierten Karte der Ostsee und entdecken Sie <em>Muster und Hotspots</em>.
 					</p>
 					<div class="mt-4">
-						<div class="badge badge-secondary badge-outline">OpenLayers</div>
+						<div class="badge badge-secondary badge-outline">
+							{m.routes_about_page_text_openlayers()}
+						</div>
 					</div>
 				</div>
 			</div>
@@ -196,7 +215,7 @@
 						<Icon icon="lucide:chart-pie" width="48" class="text-accent-strong" />
 					</div>
 					<h3 class="card-title text-accent-strong text-section mb-4 justify-center">
-						Offene Daten
+						{m.routes_about_page_text_offene_daten()}
 					</h3>
 					<!-- Vorher: „Alle Daten sind für Forschungszwecke verfügbar und können in
 					     verschiedenen Formaten exportiert werden." Der Export in mehrere
@@ -209,7 +228,9 @@
 						damit für <em>Forschung und Lehre</em> nutzbar.
 					</p>
 					<div class="mt-4">
-						<div class="badge badge-accent badge-outline">Open Data</div>
+						<div class="badge badge-accent badge-outline">
+							{m.routes_about_page_text_open_data()}
+						</div>
 					</div>
 				</div>
 			</div>
@@ -221,7 +242,7 @@
 		<div class="bg-primary text-primary-content rounded-lg p-8 text-center">
 			<img
 				src="/logo_dmm_negativ.svg"
-				alt="Deutsches Meeresmuseum Logo"
+				alt={m.routes_about_page_alt_deutsches_meeresmuseum_logo()}
 				class="mx-auto mb-4 w-64 p-4"
 			/>
 			<p class="text-primary-content mx-auto mb-4 max-w-2xl leading-relaxed">
@@ -245,7 +266,7 @@
 					class="btn btn-outline btn-sm"
 				>
 					<Icon icon="lucide:globe" width="16" class="mr-1" />
-					Meeresmuseum.de
+					{m.routes_about_page_text_meeresmuseum_de()}
 				</a>
 				<a
 					href="https://www.deutsches-meeresmuseum.de/wissenschaft/sichtungen"
@@ -254,7 +275,7 @@
 					class="btn btn-outline btn-sm"
 				>
 					<Icon icon="lucide:file-text" width="16" class="mr-1" />
-					Mehr über Sichtungen
+					{m.routes_about_page_text_mehr_ueber_sichtungen()}
 				</a>
 			</div>
 		</div>
@@ -318,14 +339,13 @@
 	<div class="mb-16">
 		<h2 class="text-title mb-8 flex items-center justify-center gap-3 text-center font-bold">
 			<Icon icon="lucide:shield-check" width="30" class="text-success-strong" />
-			Datenschutz & Sicherheit
+			{m.routes_about_page_text_datenschutz_sicherheit()}
 		</h2>
 
 		<div class="card bg-base-100 border-success/20 shadow-raised border">
 			<div class="card-body">
 				<p class="text-base-content/80 mb-4">
-					Ihre Meldung verarbeiten wir nach der EU-Datenschutz-Grundverordnung (DSGVO) und dem
-					Bundesdatenschutzgesetz. Vier Punkte, die Sie unmittelbar betreffen:
+					{m.routes_about_page_text_ihre_meldung_verarbeiten_wir_nach()}
 				</p>
 				<ul class="space-y-2">
 					<li class="flex items-start gap-2">
@@ -362,7 +382,7 @@
 							class="text-success-strong mt-1 shrink-0"
 							aria-hidden="true"
 						/>
-						<span>Alle Verbindungen sind verschlüsselt (HTTPS).</span>
+						<span>{m.routes_about_page_text_alle_verbindungen_sind_verschluesselt_ht()}</span>
 					</li>
 					<li class="flex items-start gap-2">
 						<Icon
@@ -378,9 +398,7 @@
 					</li>
 				</ul>
 				<p class="text-base-content/80 mt-4 text-sm">
-					Welche Rechte Sie haben und an wen Sie sich damit wenden, steht in der
-					Datenschutzerklärung des Deutschen Meeresmuseums. Wozu wir die einzelnen Angaben Ihrer
-					Meldung verwenden, steht bei den Einwilligungen im Formular.
+					{m.routes_about_page_text_welche_rechte_sie_haben_und()}
 				</p>
 				<div class="card-actions mt-4">
 					<a
@@ -389,7 +407,7 @@
 						rel="noopener noreferrer"
 						class="btn btn-outline btn-sm"
 					>
-						Datenschutzerklärung →
+						{m.routes_about_page_text_datenschutzerklaerung()}
 					</a>
 				</div>
 			</div>
@@ -418,7 +436,7 @@
 		<div class="mb-6 flex flex-col items-center justify-center gap-2">
 			<h2 class="text-title flex items-center gap-3 text-center font-bold">
 				<Icon icon="lucide:cpu" width="30" class="text-primary" aria-hidden="true" />
-				Technik
+				{m.routes_about_page_text_technik()}
 			</h2>
 			<div class="badge badge-neutral badge-lg font-mono">
 				Version {data.version}
@@ -438,7 +456,7 @@
 				class="btn btn-outline btn-sm"
 			>
 				<Icon icon="lucide:code" width="16" class="mr-1" aria-hidden="true" />
-				Quellcode auf GitHub
+				{m.routes_about_page_text_quellcode_auf_github()}
 			</a>
 			<a
 				href="https://github.com/jansinger/ostsee-tiere/blob/main/LICENSE"
@@ -447,7 +465,7 @@
 				class="btn btn-outline btn-sm"
 			>
 				<Icon icon="lucide:scale" width="16" class="mr-1" aria-hidden="true" />
-				Lizenztext (MIT)
+				{m.routes_about_page_text_lizenztext_mit()}
 			</a>
 			<a
 				href="https://github.com/jansinger/ostsee-tiere/issues/new"
@@ -456,7 +474,7 @@
 				class="btn btn-ghost btn-sm"
 			>
 				<Icon icon="lucide:circle-alert" width="16" class="mr-1" aria-hidden="true" />
-				Fehler melden
+				{m.routes_about_page_text_fehler_melden()}
 			</a>
 		</div>
 	</div>
@@ -481,7 +499,7 @@
 						</div>
 					</div>
 					<h2 class="text-primary text-title mb-6 font-bold tracking-tight">
-						Werden Sie Teil der Bewegung
+						{m.routes_about_page_text_werden_sie_teil_der_bewegung()}
 					</h2>
 					<p class="text-base-content/80 mb-8 text-xl leading-relaxed">
 						<strong>Jede Sichtung zählt!</strong> Helfen Sie uns dabei, die Geheimnisse der Ostsee
@@ -512,9 +530,9 @@
 				>
 					{#if data.totalSightings != null}
 						<div class="stat">
-							<div class="stat-title">Veröffentlicht</div>
+							<div class="stat-title">{m.routes_about_page_text_veroeffentlicht()}</div>
 							<div class="stat-value text-primary">
-								{new Intl.NumberFormat('de-DE').format(data.totalSightings)}
+								{new Intl.NumberFormat(zahlenLocale).format(data.totalSightings)}
 							</div>
 							<!-- `whitespace-normal` hebt DaisyUIs `white-space: nowrap` auf den
 							     Kachel-Zeilen auf. Das ist für kurze Labels gedacht; „Melder-Adressen
@@ -522,16 +540,20 @@
 							     dem `padding-inline` der `.stat` (48px) die Untergrenze der ganzen
 							     Seite bei 320px. Wo Platz ist, ändert sich nichts — umbrechbarer Text
 							     bricht erst, wenn er muss. -->
-							<div class="stat-desc whitespace-normal">freigegebene Sichtungen</div>
+							<div class="stat-desc whitespace-normal">
+								{m.routes_about_page_text_freigegebene_sichtungen()}
+							</div>
 						</div>
 					{/if}
 					{#if data.totalObservers != null}
 						<div class="stat">
-							<div class="stat-title">Beteiligt</div>
+							<div class="stat-title">{m.routes_about_page_text_beteiligt()}</div>
 							<div class="stat-value text-secondary-strong">
-								{new Intl.NumberFormat('de-DE').format(data.totalObservers)}
+								{new Intl.NumberFormat(zahlenLocale).format(data.totalObservers)}
 							</div>
-							<div class="stat-desc whitespace-normal">Melder-Adressen insgesamt</div>
+							<div class="stat-desc whitespace-normal">
+								{m.routes_about_page_text_melder_adressen_insgesamt()}
+							</div>
 						</div>
 					{/if}
 					<!-- Die dritte Kachel („Für die / Wissenschaft / verfügbar") ist
@@ -546,14 +568,14 @@
 						class="btn btn-primary btn-lg shadow-raised duration-instant hover:shadow-floating px-8 py-4 text-lg transition-all"
 					>
 						<Icon icon="custom:porpoise" width="20" height="20" class="mr-2" aria-hidden="true" />
-						Sichtung melden
+						{m.routes_about_page_text_sichtung_melden()}
 					</a>
 					<a
 						href={localizeHref('/map')}
 						class="btn btn-secondary btn-outline btn-lg shadow-raised duration-instant hover:shadow-floating px-8 py-4 text-lg transition-all"
 					>
 						<Icon icon="lucide:map" width="20" height="20" class="mr-2" />
-						Karte erkunden
+						{m.routes_about_page_text_karte_erkunden()}
 					</a>
 					<!-- Der dritte Knopf hieß „Mehr erfahren" und zeigte auf /docs — die
 					     OpenAPI-Dokumentation („Testen Sie alle Endpunkte direkt im
@@ -568,7 +590,7 @@
 						class="btn btn-accent btn-outline btn-lg shadow-raised duration-instant hover:shadow-floating px-8 py-4 text-lg transition-all"
 					>
 						<Icon icon="lucide:book-open" width="20" height="20" class="mr-2" />
-						Tiere bestimmen
+						{m.routes_about_page_text_tiere_bestimmen()}
 					</a>
 				</div>
 			</div>

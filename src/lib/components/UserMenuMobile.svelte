@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import type { PublicUser } from '$lib/types/User';
 	import Icon from '$lib/components/Icon.svelte';
 
@@ -15,7 +16,7 @@
 			{#if user.picture}
 				<div class="avatar">
 					<div class="h-8 w-8 rounded-full">
-						<img src={user.picture} alt="Profilbild" />
+						<img src={user.picture} alt={m.components_usermenumobile_alt_profilbild()} />
 					</div>
 				</div>
 			{:else}
@@ -40,7 +41,7 @@
 	<li>
 		<a href="/api/auth/logout" class="text-error hover:bg-error/10 flex items-center gap-2">
 			<Icon icon="lucide:log-out" width="16" class="h-4 w-4" />
-			Abmelden
+			{m.components_usermenumobile_text_abmelden()}
 		</a>
 	</li>
 {/if}

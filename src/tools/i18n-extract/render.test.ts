@@ -1,0 +1,292 @@
+import { describe, expect, it } from 'vitest';
+import type { ExtractionSite, SkippedSite } from './collect';
+import { renderDryRunReport, renderUnifiedDiff, type ExtractionPlan } from './render';
+
+describe('renderUnifiedDiff', () => {
+	it('zeigt geänderte Zeilen mit - und + und nennt die Datei', () => {
+		const diff = renderUnifiedDiff('a/b.ts', `eins\nzwei\n`, `eins\nZWEI\n`);
+		expect(diff).toContain('--- a/b.ts');
+		expect(diff).toContain('+++ a/b.ts');
+		expect(diff).toContain('-zwei');
+		expect(diff).toContain('+ZWEI');
+	});
+
+	it('liefert Leertext, wenn nichts geändert wurde', () => {
+		expect(renderUnifiedDiff('a/b.ts', `eins\n`, `eins\n`)).toBe('');
+	});
+});
+
+describe('renderDryRunReport', () => {
+	function buildSite(overrides: Partial<ExtractionSite> = {}): ExtractionSite {
+		return {
+			file: 'src/lib/form/validation/sightingSchema.ts',
+			line: 12,
+			start: 40,
+			end: 48,
+			text: 'Titel',
+			key: 'sighting_a_label',
+			aspect: 'label',
+			field: 'a',
+			...overrides
+		};
+	}
+
+	function buildSkipped(overrides: Partial<SkippedSite> = {}): SkippedSite {
+		return {
+			file: 'src/lib/form/validation/sightingSchema.ts',
+			line: 21,
+			text: 'sichtung',
+			aspect: 'meta.icon',
+			reason: 'meta-key-denied',
+			explanation: 'nicht-sprachlicher meta-Schlüssel',
+			...overrides
+		};
+	}
+
+	function buildPlan(overrides: Partial<ExtractionPlan> = {}): ExtractionPlan {
+		const site = buildSite();
+		return {
+			files: [
+				{
+					file: site.file,
+					before: `const s = yup.string().label('Titel');`,
+					after: `const s = yup.string().label(m.sighting_a_label({}, { locale }));`,
+					sites: [site]
+				}
+			],
+			skipped: [],
+			...overrides
+		};
+	}
+
+	it('führt jeden übersprungenen Eintrag mit Datei, Zeile, Aspekt, Text und Erklärung auf', () => {
+		const skippedMetaKey = buildSkipped({
+			file: 'a.ts',
+			line: 21,
+			text: 'sichtung',
+			aspect: 'meta.icon',
+			reason: 'meta-key-denied',
+			explanation: 'nicht-sprachlicher meta-Schlüssel'
+		});
+		const skippedTestName = buildSkipped({
+			file: 'b.ts',
+			line: 55,
+			text: 'wal-1',
+			aspect: 'test',
+			reason: 'test-name-argument',
+			explanation: 'erstes Argument von yup.test() ist ein interner Name, keine Botschaft'
+		});
+		const plan = buildPlan({ skipped: [skippedMetaKey, skippedTestName] });
+
+		const report = renderDryRunReport(plan);
+
+		expect(report).toContain('## Übersprungen — bitte durchsehen');
+		expect(report).toContain(
+			'- a.ts:21 (meta.icon) `sichtung` — nicht-sprachlicher meta-Schlüssel'
+		);
+		expect(report).toContain(
+			'- b.ts:55 (test) `wal-1` — erstes Argument von yup.test() ist ein interner Name, keine Botschaft'
+		);
+	});
+
+	it('nennt die Gesamtzahlen für Botschaften und Übersprungene', () => {
+		const plan = buildPlan({ skipped: [buildSkipped(), buildSkipped({ file: 'c.ts', line: 3 })] });
+
+		const report = renderDryRunReport(plan);
+
+		expect(report).toContain('Botschaften: 1 — übersprungen: 2');
+	});
+
+	it('listet die Botschaften je Datei auf', () => {
+		const plan = buildPlan();
+
+		const report = renderDryRunReport(plan);
+
+		expect(report).toContain('## Botschaften je Datei');
+		expect(report).toContain('- src/lib/form/validation/sightingSchema.ts: 1');
+	});
+
+	it('enthält im JSON-Block Schlüssel und deutschen Text der geplanten Botschaften', () => {
+		const plan = buildPlan();
+
+		const report = renderDryRunReport(plan);
+
+		expect(report).toContain('```json');
+		expect(report).toContain('"sighting_a_label": "Titel"');
+	});
+
+	// Befund B.2: Der Abschnitt „Geplante Diffs" war unbehauptet — eine Mutation,
+	// die die ```diff-Umrandung kaputtmacht (z.B. das schließende ``` weglässt
+	// oder aus ```diff ein ``` macht), ließ alle Tests grün. Dieser Test
+	// verlangt die Umrandung als zusammenhängenden Block, nicht nur, dass Titel
+	// und Inhalt irgendwo im Bericht vorkommen.
+	it('bettet den Diff im Abschnitt „Geplante Diffs" in einen ```diff-Codeblock ein', () => {
+		const plan = buildPlan();
+
+		const report = renderDryRunReport(plan);
+		const diff = renderUnifiedDiff(
+			plan.files[0]!.file,
+			plan.files[0]!.before,
+			plan.files[0]!.after
+		);
+
+		expect(report).toContain('## Geplante Diffs');
+		expect(report).toContain(['```diff', diff, '```', ''].join('\n'));
+	});
+
+	// Defekt 2: eine gescannte Datei ohne jeden Fund muss trotzdem sichtbar sein.
+	it('nennt am Kopf, wie viele Dateien gescannt wurden', () => {
+		const plan = buildPlan();
+
+		const report = renderDryRunReport(plan);
+
+		expect(report).toContain('Gescannte Dateien: 1');
+	});
+
+	// Defekt 3: der Vorschlag für formOptions-Dateien zeigt eine Ersetzung
+	// INNERHALB der Modulkonstante — das friert die Sprache beim Modulladen ein
+	// (Entwurf 2.3/4.1). Fundstellen und Schlüssel sind richtig, nur die gezeigte
+	// Ersetzung ist nicht die Zielform. Der Bericht muss die beiden Schichten
+	// trennen und vor der formOptions-Zielform warnen.
+	it('trennt Schema- und formOptions-Diffs und warnt bei formOptions vor der falschen Zielform', () => {
+		const schemaSite = buildSite();
+		const formOptionsSite = buildSite({
+			file: 'src/lib/report/formOptions/sex.ts',
+			key: 'formoptions_sex_female',
+			text: 'Weiblich',
+			aspect: 'sexLabels[SexEnum.FEMALE]',
+			field: 'sexLabels'
+		});
+		const plan = buildPlan({
+			files: [
+				{
+					file: schemaSite.file,
+					before: `const s = yup.string().label('Titel');`,
+					after: `const s = yup.string().label(m.sighting_a_label({}, { locale }));`,
+					sites: [schemaSite]
+				},
+				{
+					file: formOptionsSite.file,
+					before: `export const sexLabels: Record<SexEnum, string> = {\n\t[SexEnum.FEMALE]: 'Weiblich'\n};`,
+					after: `export const sexLabels: Record<SexEnum, string> = {\n\t[SexEnum.FEMALE]: m.formoptions_sex_female({}, { locale })\n};`,
+					sites: [formOptionsSite]
+				}
+			]
+		});
+
+		const report = renderDryRunReport(plan);
+
+		expect(report).toContain('### Schema (Schicht A)');
+		expect(report).toContain('### formOptions (Schicht B)');
+		expect(report).toContain('nicht die Zielform');
+		expect(report).toContain('Modulladen einfrieren');
+		expect(report).toContain('Entwurf Abschnitt 2.3 und 4.1');
+
+		// Die Warnung muss im formOptions-Abschnitt stehen, nicht im Schema-Abschnitt.
+		const schemaIndex = report.indexOf('### Schema (Schicht A)');
+		const formOptionsIndex = report.indexOf('### formOptions (Schicht B)');
+		const warningIndex = report.indexOf('nicht die Zielform');
+		expect(warningIndex).toBeGreaterThan(formOptionsIndex);
+		expect(formOptionsIndex).toBeGreaterThan(schemaIndex);
+	});
+
+	// Der eigentliche Befund dieser Aufgabe: Nach dem Umbau von sightingSchema.ts
+	// besteht der Übersprungen-Abschnitt zu 70 % aus 'already-translated'-Fällen
+	// (erledigte Arbeit). Sie zählen weiter mit, erscheinen aber nur noch als
+	// eine Summenzeile — nicht mehr einzeln mit Datei, Zeile und Text.
+	it('führt bereits übersetzte Stellen nur als Summenzeile, nicht mehr einzeln auf', () => {
+		const alreadyTranslated = buildSkipped({
+			file: 'a.ts',
+			line: 10,
+			text: 'm.sighting_a_meta_helptext({}, { locale })',
+			aspect: 'meta.helpText',
+			reason: 'already-translated',
+			explanation:
+				'meta.helpText ruft bereits eine Paraglide-Botschaftsfunktion auf — schon übersetzt'
+		});
+		const openCase = buildSkipped({
+			file: 'b.ts',
+			line: 20,
+			text: 'Sonstiger Ort',
+			aspect: 'label',
+			reason: 'non-literal-argument',
+			explanation: 'Argument ist ein Ausdruck, nicht ein Literal — von Hand zu entscheiden'
+		});
+		const plan = buildPlan({
+			skipped: [alreadyTranslated, alreadyTranslated, openCase]
+		});
+
+		const report = renderDryRunReport(plan);
+
+		expect(report).toContain('- bereits übersetzt: 2 Stellen (nicht aufgeführt)');
+		expect(report).not.toContain('m.sighting_a_meta_helptext');
+		expect(report).not.toContain('a.ts:10');
+		expect(report).toContain('- b.ts:20 (label) `Sonstiger Ort` — Argument ist ein Ausdruck');
+		// Die Gesamtzahl übersprungener Stellen zählt weiterhin alle mit.
+		expect(report).toContain('Botschaften: 1 — übersprungen: 3');
+	});
+
+	it('lässt die Summenzeile für bereits übersetzte Stellen weg, wenn es keine gibt', () => {
+		const plan = buildPlan({ skipped: [buildSkipped()] });
+
+		const report = renderDryRunReport(plan);
+
+		expect(report).not.toContain('bereits übersetzt:');
+	});
+
+	// Nachweis 1 (Auftrag zu Aufgabe 2.2/Befund): die Zahlen für die Planung der
+	// nächsten Aufgabe müssen aus dem Werkzeug kommen, nicht aus einem
+	// Scratchpad-Skript — dafür braucht der Bericht eine Aufschlüsselung je
+	// Übersprungen-Grund, nicht nur die Gesamtsumme.
+	it('schlüsselt die Übersprungenen nach Grund auf, alphabetisch sortiert', () => {
+		const plan = buildPlan({
+			skipped: [
+				buildSkipped({ reason: 'non-literal-argument' }),
+				buildSkipped({ file: 'b.ts', reason: 'meta-key-denied' }),
+				buildSkipped({ file: 'c.ts', reason: 'meta-key-denied' })
+			]
+		});
+
+		const report = renderDryRunReport(plan);
+
+		expect(report).toContain('## Übersprungen je Grund');
+		expect(report).toContain('- meta-key-denied: 2');
+		expect(report).toContain('- non-literal-argument: 1');
+
+		const headingIndex = report.indexOf('## Übersprungen je Grund');
+		const metaIndex = report.indexOf('- meta-key-denied: 2');
+		const nonLiteralIndex = report.indexOf('- non-literal-argument: 1');
+		expect(metaIndex).toBeGreaterThan(headingIndex);
+		expect(nonLiteralIndex).toBeGreaterThan(metaIndex);
+	});
+
+	// Schicht C (Svelte) bekommt einen eigenen Diff-Abschnitt — sonst liefen die
+	// Markup-Diffs unter "Schema (Schicht A)" mit, obwohl `apply.ts` für Svelte
+	// eine andere Ersetzungsform baut (`{m.key()}` statt `m.key({}, { locale })`).
+	it('zeigt Svelte-Diffs in einem eigenen Abschnitt, getrennt von Schema und formOptions', () => {
+		const svelteSite = buildSite({
+			file: 'src/lib/report/components/Gruss.svelte',
+			key: 'report_components_gruss_text_hallo',
+			text: 'Hallo',
+			aspect: 'text',
+			field: 'src/lib/report/components/Gruss.svelte'
+		});
+		const plan = buildPlan({
+			files: [
+				{
+					file: svelteSite.file,
+					before: `<p>Hallo</p>`,
+					after: `<p>{m.report_components_gruss_text_hallo()}</p>`,
+					sites: [svelteSite]
+				}
+			]
+		});
+
+		const report = renderDryRunReport(plan);
+
+		expect(report).toContain('### Svelte-Markup (Schicht C)');
+		const svelteIndex = report.indexOf('### Svelte-Markup (Schicht C)');
+		const diffIndex = report.indexOf('{m.report_components_gruss_text_hallo()}');
+		expect(diffIndex).toBeGreaterThan(svelteIndex);
+	});
+});
