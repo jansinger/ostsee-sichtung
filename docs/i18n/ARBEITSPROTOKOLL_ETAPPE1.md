@@ -713,11 +713,48 @@ Typ.
 Nachweise: `test:quick` grün (4948 + 780), **alle drei E2E-Shards im ersten
 Lauf grün** (229 + 94 + 156 = 479, 0 rot).
 
+### Welle 4: die vier Vierer-Dateien in einem Zug
+
+Commit d3d4f80e, 12 neue Schlüssel. `ReportKindChoice` 4 → 0,
+`VerifyLocation` 4 → 0, `WeatherDataFetcher` 4 → 1, `Media` 4 → 1.
+
+**Befund: `VerifyLocation` zeigte Englisch auf einer öffentlichen Fläche.**
+Antwortet `/api/geo/inBaltic` mit `!ok`, ist die Meldung des geworfenen
+`Error` genau das, was der Melder zu sehen bekommt — und das war
+`'Unknown error'` (wenn das JSON nicht lesbar war) oder ein nacktes
+`HTTP 500`. Die deutsche Servermeldung wird weiterhin durchgereicht;
+geändert wurde nur der Rückfall, auf einen deutschen Satz mit dem
+Statuscode als Parameter. Das war kein Übersetzungsversäumnis dieser
+Etappe, sondern lag seit jeher so — sichtbar geworden ist es erst, weil
+der Zähler die Datei überhaupt in den Blick nahm.
+
+**Zwei Einträge bleiben bewusst stehen**, je mit Begründung an der
+Zähler-Zeile: der Cache-Schlüssel aus Koordinaten und Zeit
+(`WeatherDataFetcher`) und `'JPG, PNG, GIF, WEBP'` (`Media`) —
+Dateiformat-Kürzel, sprachneutral.
+
+`Media` setzte seine Größenhinweise im Code zusammen („Bilder max. X MB,
+Videos max. Y MB"). Jetzt parametrisierte Botschaften: Wer übersetzt,
+bekommt beide Zahlen in einem Satz und kann sie umstellen.
+
+**Reihenfolge geändert, nach der Lehre aus Welle 3:** `npm run check`
+läuft jetzt vor dem Gate, nicht mittendrin. Diesmal 0 Fehler — aber der
+Lauf kostet 40 Sekunden und hätte in Welle 3 zwei Gate-Durchläufe gespart.
+
+**Flakiness, diesmal namentlich.** `form` fiel einmal aus mit
+`admin-queue.spec.ts:147` — der Admin-Bereich, der von der Lokalisierung
+gar nicht berührt wird, und einer der drei Specs, die dieses Vorhaben
+bereits als lastabhängig verzeichnet hat. Isoliert 2/2 grün (je 4
+passed). `smoke` 229 und `map` 156 grün.
+
 ### Stand Befund B
 
-43 Kandidaten in 21 Dateien offen. Die dicksten Posten: je 4
-`ReportKindChoice`, `VerifyLocation`, `WeatherDataFetcher` und `Media`,
-dann je 3 `OLMap`, `StepNavigation` und `SubmitStatus`.
+29 Kandidaten in 19 Dateien offen. Die dicksten Posten: je 3 `OLMap`,
+`StepNavigation` und `SubmitStatus`, dann je 2 `ConnectionBadge`,
+`LanguageSwitcher`, `Step4Contact` und `bestimmungshilfe/+page.svelte`.
+Der Rest sind Einzelstellen, darunter die vier bereits begründeten
+technischen (Element-ID, Cache-Schlüssel, Formatkürzel, geworfener
+Entwicklerfehler).
 Nicht alle sind Übersetzungsarbeit — Cookie-Zeichenketten, erzeugte
 Element-IDs, Cache-Schlüssel und geworfene Entwicklerfehler stecken darin und
 werden je Datei einzeln entschieden.
