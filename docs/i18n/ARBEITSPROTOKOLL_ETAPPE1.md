@@ -966,6 +966,44 @@ Stelle — nachgerechnet, nicht behauptet: Meine erste Commit-Angabe („98 auf
 **Stand A: 87 Kandidaten in 28 Dateien**, davon mindestens 6 selbst erzeugte
 Falsch-Positive.
 
+### Welle C3: `dateTime.ts` — die Pinnung ohne zweiten Parameter
+
+Commit siehe unten, 3 neue Schlüssel. A 87 → 83.
+
+Diese Datei bedient beide Welten aus denselben Funktionen:
+
+| Aufrufer                                    | erwartet                             |
+| ------------------------------------------- | ------------------------------------ |
+| `server/export/csvExport.ts`                | Deutsch — Vertrag mit dem Altbestand |
+| `server/services/emailService.ts`           | Deutsch — Empfänger ist das Museum   |
+| `formatForKmlExport` / `formatForXmlExport` | Deutsch — Exportformate              |
+| Karte, Meldeformular, `about`               | die aktive Sprache                   |
+
+Ein `m.key()` ohne Locale-Argument wäre in den Export-Pfaden an `getLocale()`
+gekoppelt gewesen — derselbe Fehler wie dreimal zuvor, nur über eine
+Hilfsfunktion statt direkt.
+
+**Die Lösung braucht keinen zweiten Parameter.** `formatLocalDateTime` trägt
+bereits ein `locale`-Argument für die Zahl- und Datumsformatierung; der
+Ersatztext folgt jetzt demselben Argument über `messageLocale()`, die
+Umkehrung von `resolveDisplayLocale`. Der Vorgabewert ist `APP_LOCALE`, also
+sind alle Export- und Mailpfade **ohne Änderung** richtig. Die beiden
+Export-Formatierer pinnen `baseLocale` ausdrücklich, mit Begründung an der
+Zeile.
+
+Test zuerst: `dateTimeLocalePinning.test.ts` war vor dem Umbau an **beiden
+Gegenproben** rot, danach grün. Die Pinnungs-Zusicherungen waren schon vorher
+grün — für den falschen Grund, weil die Zeichenketten hartcodiert waren.
+Genau dafür steht die Gegenprobe.
+
+Bewusst nicht angefasst: `formatISOLikeDatetime` und
+`formatObservationTime` setzen `${day}.${month}.${year}` und eine
+Wanduhrzeit zusammen. Das sind Berechnungen und ein Datums-FORMAT, kein
+Anzeigetext; sie zu ändern wäre eine Formatierungsentscheidung, keine
+Übersetzung.
+
+**Stand A: 83 Kandidaten in 28 Dateien.**
+
 ### Was diese Messung NICHT ist
 
 Kein Guard. Sie liegt als Zahl im Protokoll, nicht im Testlauf — der
