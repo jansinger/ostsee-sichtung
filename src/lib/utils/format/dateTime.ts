@@ -1,3 +1,5 @@
+import * as m from '$lib/paraglide/messages';
+import { baseLocale, type Locale } from '$lib/paraglide/runtime';
 /**
  * Zentrale Zeitzonenverwaltung für die Ostsee-Tiere Anwendung
  *
@@ -104,18 +106,39 @@ export function resolveDisplayLocale(locale: string): string {
  *     durchreichen bzw. `sv-SE`-Reihenfolge erzeugen) und gehört aus demselben
  *     Grund nicht an die aktive Locale gekoppelt.
  */
+
+/**
+ * Die Umkehrung von {@link resolveDisplayLocale}: von der Anzeigesprache
+ * (`de-DE`, `en-GB`, auch die kurzen `de`/`en`) zurück auf die
+ * Paraglide-Locale, in der die Ersatztexte dieser Datei stehen.
+ *
+ * **Warum die Ersatztexte am selben Argument hängen wie die Zahlformatierung.**
+ * `formatLocalDateTime` bedient beide Welten: `csvExport.ts` und
+ * `emailService.ts` erwarten Deutsch (Vertrag mit dem Altbestand bzw. das
+ * Museum als Empfänger), Karte und Meldeformular die aktive Sprache. Ein
+ * `m.key()` ohne Locale-Argument wäre in den Export-Pfaden an `getLocale()`
+ * gekoppelt — genau der Fehler, der in Etappe 1 dreimal zuschlug. Da der
+ * Aufrufer die Anzeigesprache ohnehin übergibt (Vorgabe `APP_LOCALE`,
+ * also Deutsch), trägt dieses eine Argument die Entscheidung für beides.
+ * Belegt durch `dateTimeLocalePinning.test.ts`.
+ */
+function messageLocale(displayLocale: string): Locale {
+	return displayLocale.startsWith('en') ? 'en' : 'de';
+}
+
 export function formatLocalDateTime(
 	utcDateTime: string | Date | null | undefined,
 	format: 'full' | 'date' | 'time' | 'datetime' = 'datetime',
 	locale: string = APP_LOCALE
 ): string {
-	if (!utcDateTime) return 'Nicht angegeben';
+	if (!utcDateTime)
+		return m.utils_format_datetime_text_nicht_angegeben({}, { locale: messageLocale(locale) });
 
 	const date = new Date(utcDateTime);
 
 	// Validierung: Prüfe auf ungültige Daten
 	if (isNaN(date.getTime())) {
-		return 'Ungültiges Datum';
+		return m.utils_format_datetime_text_ungueltiges_datum({}, { locale: messageLocale(locale) });
 	}
 
 	const formatOptions: Record<string, Intl.DateTimeFormatOptions> = {
@@ -172,7 +195,9 @@ export function formatForKmlExport(utcDateTime: string | Date): string {
 
 	// Validierung: Prüfe auf ungültige Daten
 	if (isNaN(date.getTime())) {
-		return 'Ungültiges Datum';
+		// `baseLocale` ausdrücklich: Das KML-Format ist ein Exportvertrag und
+		// bleibt deutsch, unabhängig von der aktiven Sprache.
+		return m.utils_format_datetime_text_ungueltiges_datum({}, { locale: baseLocale });
 	}
 
 	// Verwende toLocaleString mit Zeitzone-Option für korrekte Konvertierung
@@ -214,7 +239,11 @@ export function formatForXmlExport(utcDateTime: string | Date): {
 
 	// Validierung: Prüfe auf ungültige Daten
 	if (isNaN(date.getTime())) {
-		return { date: 'Ungültiges Datum', time: 'Ungültige Zeit' };
+		// Wie beim KML-Export: Exportvertrag, deshalb `baseLocale`.
+		return {
+			date: m.utils_format_datetime_text_ungueltiges_datum({}, { locale: baseLocale }),
+			time: m.utils_format_datetime_text_ungueltige_zeit({}, { locale: baseLocale })
+		};
 	}
 
 	// Konvertiere zu deutscher Zeit mit separaten Formatierungen
