@@ -57,8 +57,17 @@
 		const response = await fetch(`/api/geo/inBaltic?longitude=${lon}&latitude=${lat}`);
 
 		if (!response.ok) {
-			const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-			throw new Error(errorData.message || `HTTP ${response.status}`);
+			// Die Servermeldung ist deutsch und wird durchgereicht. Faellt sie aus
+			// (kein JSON, kein `message`), traegt der Ersatz den Statuscode — er
+			// erscheint dem Melder als Fehlertext, war bis 2026-08 aber englisch
+			// (`Unknown error`) bzw. nackt technisch (`HTTP 500`).
+			const errorData = await response.json().catch(() => ({ message: '' }));
+			throw new Error(
+				errorData.message ||
+					m.report_components_form_verifylocation_text_die_pruefung_der_position_ist_fehlgeschl({
+						status: response.status
+					})
+			);
 		}
 
 		return await response.json();
@@ -86,7 +95,9 @@
 				(checkError) => {
 					if (coordinates === cacheKey) {
 						const errorMessage =
-							checkError instanceof Error ? checkError.message : 'Ein Fehler ist aufgetreten.';
+							checkError instanceof Error
+								? checkError.message
+								: m.report_components_form_verifylocation_text_ein_fehler_ist_aufgetreten();
 						error = errorMessage;
 						isLoading = false;
 
@@ -121,7 +132,9 @@
 				// Only update if this is still the current request
 				if (coordinates === cacheKey) {
 					const errorMessage =
-						checkError instanceof Error ? checkError.message : 'Ein Fehler ist aufgetreten.';
+						checkError instanceof Error
+							? checkError.message
+							: m.report_components_form_verifylocation_text_ein_fehler_ist_aufgetreten();
 					error = errorMessage;
 					isLoading = false;
 

@@ -65,7 +65,7 @@ type ExtractionPlan = ReturnType<typeof planExtraction>;
  *    Der Extraktor liest von einer `.svelte`-Datei nur das Markup. Ein
  *    `const hint = 'Karte wird initialisiert…'` ist für die Zusicherungen 1
  *    bis 3 unsichtbar; „0 mechanische Fundstellen" las sich deshalb als
- *    „Schicht C ist fertig". Sie ist es nicht — 43 Stellen in 21 Dateien.
+ *    „Schicht C ist fertig". Sie ist es nicht — 29 Stellen in 19 Dateien.
  *    Auch das ein Bestandszähler, aus demselben Grund wie (2): Er kann heute
  *    nicht null sein, aber er kann nicht mehr wachsen. Die Regel ist dieselbe
  *    wie in Schicht A/B (`multiWordLiterals`), abzüglich zweier benannter
@@ -468,7 +468,7 @@ export function findScriptDisplayText(source: string): SourceHit[] {
  * Hartcodierter Anzeigetext im `<script>`-Block, je Datei — erhoben am
  * 2026-08-12 (Befund B des Schicht-C-Guards).
  *
- * 43 Stellen in 21 Dateien, von 158 mehrwortigen Literalen insgesamt (41
+ * 29 Stellen in 19 Dateien, von 158 mehrwortigen Literalen insgesamt (41
  * Klassenlisten und 39 Logmeldungen sind ausgeschlossen, siehe oben). Nicht
  * alle 78 sind Übersetzungsarbeit: Darunter sind Cookie-Zeichenketten
  * (`LanguageSwitcher`), erzeugte Element-IDs (`BaseInput`, `UnifiedDropzone`),
@@ -486,19 +486,19 @@ const SCRIPT_TEXT_LEDGER: Readonly<Record<string, number>> = {
 	'src/lib/components/map/LazyMapWrapper.svelte': 1,
 	'src/lib/components/map/LoadingOverlay.svelte': 1,
 	'src/lib/components/map/OLMap.svelte': 3,
-	'src/lib/components/weather/WeatherDataFetcher.svelte': 4,
-	'src/lib/report/components/ReportKindChoice.svelte': 4,
+	/** Bleibt: Cache-Schlüssel aus Koordinaten und Zeit, kein Anzeigetext. */
+	'src/lib/components/weather/WeatherDataFetcher.svelte': 1,
 	'src/lib/report/components/form/Form.svelte': 1,
 	'src/lib/report/components/form/FormActions.svelte': 1,
 	'src/lib/report/components/form/StepNavigation.svelte': 3,
 	'src/lib/report/components/form/SubmitStatus.svelte': 3,
-	'src/lib/report/components/form/VerifyLocation.svelte': 4,
 	'src/lib/report/components/form/fields/BaseInput.svelte': 1,
 	'src/lib/report/components/form/fields/BaseSelect.svelte': 1,
 	'src/lib/report/components/form/fields/FieldRenderer.svelte': 1,
 	'src/lib/report/components/form/fields/FormField.svelte': 1,
 	'src/lib/report/components/sections/Behavior.svelte': 1,
-	'src/lib/report/components/sections/Media.svelte': 4,
+	/** Bleibt: 'JPG, PNG, GIF, WEBP' — Dateiformat-Kürzel, sprachneutral. */
+	'src/lib/report/components/sections/Media.svelte': 1,
 	'src/lib/report/components/steps/Step4Contact.svelte': 2,
 	'src/routes/bestimmungshilfe/+page.svelte': 2
 };
