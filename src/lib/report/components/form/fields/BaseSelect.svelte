@@ -3,6 +3,7 @@
   Independent of form context, accepts all props directly
 -->
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import type { FieldOption, FieldSize } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
 	import type { HTMLSelectAttributes } from 'svelte/elements';
@@ -21,7 +22,7 @@
 	let {
 		value = $bindable(),
 		options = [],
-		placeholder = 'Bitte wählen...',
+		placeholder = m.report_components_form_fields_baseselect_text_bitte_waehlen(),
 		size = 'md',
 		hasError = false,
 		isValid = false,

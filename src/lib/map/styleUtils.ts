@@ -1,3 +1,4 @@
+import * as m from '$lib/paraglide/messages';
 import { Stroke, Fill, Style, Circle, Text } from 'ol/style';
 import type { Feature } from 'ol';
 import type { Geometry } from 'ol/geom';
@@ -64,7 +65,7 @@ export const speciesGroupStyles: Record<SpeciesCategory, SpeciesGroupStyle> = {
 	grosswal: { label: 'Großwal', color: '#009E73', symbol: '🐋' }, // Wong-Grün
 	robbe: { label: 'Robbe', color: '#D55E00', symbol: '🦭' }, // Wong-Vermillion
 	// „Unbekannte Walart" (M8): weder Klein- noch Großwal zuordenbar → neutrale Gruppe
-	unbekannt: { label: 'Art unbestimmt', color: '#767676', symbol: '❓' }
+	unbekannt: { label: m.map_styleutils_text_art_unbestimmt(), color: '#767676', symbol: '❓' }
 };
 
 /** Hintergrund des Markerkreises — Bezugsfläche für die 3:1-Kontrastprüfung der Ringe */

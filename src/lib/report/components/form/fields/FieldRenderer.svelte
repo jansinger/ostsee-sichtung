@@ -280,7 +280,9 @@
 		const props = {
 			...commonFieldProps,
 			options: metaValues.options ?? [],
-			placeholder: metaValues.selectPlaceholder || 'Bitte wählen...'
+			placeholder:
+				metaValues.selectPlaceholder ||
+				m.report_components_form_fields_fieldrenderer_text_bitte_waehlen()
 		};
 		return props;
 	});

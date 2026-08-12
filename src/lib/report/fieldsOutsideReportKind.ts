@@ -1,3 +1,4 @@
+import * as m from '$lib/paraglide/messages';
 import { getFormSteps } from '$lib/report/formConfig';
 import type { ReportKind } from '$lib/report/reportKind';
 import type { SightingFormData } from '$lib/types';
@@ -84,6 +85,11 @@ export function reportKindClearedNotice(kind: ReportKind, clearedCount: number):
 	// „Verhalten und Entfernung": Seit dem UX-Review 2026-08-07 entfällt beim
 	// Totfund auch `distance` (HIDDEN_WHEN_DEAD) — der Text muss mitziehen,
 	// sonst verschweigt er einen Teil dessen, was gerade geräumt wurde.
-	const removed = kind === 'alive' ? 'zum Totfund' : 'zum Verhalten und zur Entfernung';
-	return `Ihre Angaben ${removed} wurden entfernt, alles Übrige bleibt erhalten.`;
+	// Der Einschub ist eine NOMINALPHRASE, kein Satzteil mit eigener Stellung —
+	// deshalb hier ausnahmsweise ein Parameter statt zweier ganzer Sätze.
+	const removed =
+		kind === 'alive'
+			? m.report_fieldsoutsidereportkind_text_zum_totfund()
+			: m.report_fieldsoutsidereportkind_text_zum_verhalten_und_zur_entfernung();
+	return m.report_fieldsoutsidereportkind_text_ihre_angaben_removed_wurden_entfernt({ removed });
 }

@@ -1,3 +1,4 @@
+import * as m from '$lib/paraglide/messages';
 import { createLogger } from '$lib/logger';
 import type { UploadedFileInfo } from '$lib/types';
 
@@ -63,14 +64,14 @@ export function uploadFileDirect(
 					resolve(JSON.parse(xhr.responseText) as UploadedFileInfo);
 				} catch (error) {
 					logger.error({ error, fileName: file.name }, 'Upload response was not valid JSON');
-					reject(new Error('Unerwartete Antwort des Servers'));
+					reject(new Error(m.utils_uploadutils_text_unerwartete_antwort_des_servers()));
 				}
 				return;
 			}
 
 			// Die Fehlermeldung des Servers ist die brauchbare — sie nennt die
 			// tatsächliche Größe und den Ausweg (Task 12).
-			let message = 'Upload fehlgeschlagen. Versuchen Sie es erneut.';
+			let message = m.constants_upload_text_upload_fehlgeschlagen_versuchen_sie_es_e();
 			try {
 				const body = JSON.parse(xhr.responseText);
 				message = body.message ?? body.error?.message ?? message;
@@ -82,8 +83,9 @@ export function uploadFileDirect(
 			reject(new Error(message));
 		};
 
-		xhr.onerror = () => reject(new Error('Verbindung zum Server unterbrochen'));
-		xhr.onabort = () => reject(new Error('Upload abgebrochen'));
+		xhr.onerror = () =>
+			reject(new Error(m.utils_uploadutils_text_verbindung_zum_server_unterbrochen()));
+		xhr.onabort = () => reject(new Error(m.utils_uploadutils_text_upload_abgebrochen()));
 
 		xhr.open('POST', '/api/files/upload');
 		xhr.send(formData);

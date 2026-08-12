@@ -98,6 +98,105 @@ export function collectHits(code: string, patterns: readonly RegExp[]): SourceHi
 }
 
 /**
+ * Ein Buchstabe, inklusive der im Formular vorkommenden Umlaute/Akzente
+ * (Latin-1-Supplement-Block ohne `×`/`÷`). Absichtlich keine Umlaut-Heuristik
+ * für die Entscheidung selbst — nur die Definition von „Buchstabe", damit
+ * `wählen` als eine Gruppe zählt und nicht als drei.
+ */
+const LETTER = String.raw`[A-Za-zÀ-ÖØ-öø-ÿ]`;
+
+/** Eine Buchstabengruppe: mindestens zwei Buchstaben am Stück. */
+const GROUP_PATTERN = new RegExp(`${LETTER}{2,}`, 'g');
+
+/**
+ * Baut das Muster, das ein Zeichenketten-Literal **extrahiert** — ohne jede
+ * Aussage darüber, ob es ein Befund ist. Das entscheidet erst
+ * {@link isMultiWordLiteral} in einem zweiten, von Regex unabhängigen Schritt.
+ *
+ * Für `'`/`"` ist ein Zeilenumbruch innerhalb des Literals ausgeschlossen
+ * (`[^quote\\\n]`) — ein echtes `'…'`/`"…"`-Literal kann ihn syntaktisch nicht
+ * enthalten. Template-Literale (`` ` ``) dürfen dagegen echte Zeilenumbrüche
+ * enthalten und bekommen den Ausschluss nicht.
+ *
+ * **Warum das ohne Längengrenze linear bleibt.** Der Vorläufer dieses Musters
+ * bettete die Suche nach den zwei Buchstabengruppen direkt in die
+ * Literal-Erkennung ein: Rand-vor-Gruppe-1, Lücke, Rand-nach-Gruppe-2 — vier
+ * Quantoren, die sich dasselbe Alphabet teilen und deren Aufteilung der Motor
+ * bei einem Literal ohne schließendes Gegenstück kombinatorisch prüfen musste
+ * (gemessen über 8 Sekunden bei 20.000 Zeichen). Diese Fassung hat nur **eine**
+ * quantifizierte Alternation (`(?:${body})*`), und die beiden Alternativen
+ * schließen sich für jedes Zeichen gegenseitig aus — ein Backslash startet
+ * ausschließlich `\\.`, jedes andere Zeichen ausschließlich die erste
+ * Alternative. Damit gibt es für jede Zeichenfolge genau **eine** Art, sie zu
+ * konsumieren, keine Aufteilung zum Ausprobieren.
+ */
+function stringLiteralPattern(quote: "'" | '"' | '`'): RegExp {
+	const excludeNewline = quote === '`' ? '' : '\\n';
+	const body = `[^${quote}\\\\${excludeNewline}]|\\\\.`;
+	return new RegExp(`${quote}(?:${body})*${quote}`, 'g');
+}
+
+const LITERAL_PATTERNS = [
+	stringLiteralPattern("'"),
+	stringLiteralPattern('"'),
+	stringLiteralPattern('`')
+] as const;
+
+/**
+ * Die eigentliche Regel — ohne Längengrenze, weil sie in reinem JavaScript auf
+ * dem bereits extrahierten Literal prüft statt in der Regex-Suche mitzulaufen:
+ * „Enthält Leerzeichen UND mindestens zwei Buchstabengruppen“. `literal` trägt
+ * die umschließenden Anführungszeichen noch — die zählen für beide Bedingungen
+ * nicht mit, stören aber auch nicht (kein Leerzeichen, kein Buchstabe).
+ *
+ * **Bewusst ohne Sprachheuristik.** Eine Umlaut-Regel versagte genau dort, wo
+ * es zählt: Eine versehentlich englisch hartcodierte Zeichenkette hat keine
+ * Umlaute. Diese Regel trifft `'Bitte wählen Sie eine Tierart'` und
+ * `'Please select a species'` gleichermaßen und lässt technische Tokens ohne
+ * Leerzeichen durch (`'select'`, `'given-name'`, `'lucide:map-pin'`, `'sv-SE'`).
+ */
+export function isMultiWordLiteral(literal: string): boolean {
+	if (!/\s/.test(literal)) return false;
+	const groups = literal.match(GROUP_PATTERN);
+	return (groups?.length ?? 0) >= 2;
+}
+
+/**
+ * Sammelt mehrwortige Zeichenketten-Literale in `code`.
+ *
+ * **`stripComments` ist Sache des Aufrufers** — die beiden Nutzer brauchen
+ * unterschiedliche Vorbereitung (`hardcodedStringScan` die ganze Datei,
+ * `hardcodedMarkupScan` nur die `<script>`-Blöcke), und ein hier eingebauter
+ * Aufruf liefe beim zweiten doppelt.
+ *
+ * Eigene, zweistufige Sammelfunktion statt {@link collectHits}: Dort ist jeder
+ * Regex-Treffer ein Befund, hier ist die Extraktion (Regex, Stufe 1) von der
+ * Bewertung (JavaScript, Stufe 2 — {@link isMultiWordLiteral}) getrennt.
+ *
+ * Eine Meldung je Zeile, wie bei {@link collectHits} — derselbe Ausdruck kann
+ * für mehrere Anführungszeichen-Arten in Frage kommen, das darf nicht doppelt
+ * zählen.
+ */
+export function multiWordLiterals(code: string): SourceHit[] {
+	const hits = new Map<number, SourceHit>();
+
+	for (const pattern of LITERAL_PATTERNS) {
+		for (const match of code.matchAll(pattern)) {
+			const literal = match[0];
+			if (!isMultiWordLiteral(literal)) continue;
+
+			const index = match.index ?? 0;
+			const line = code.slice(0, index).split('\n').length;
+			if (!hits.has(line)) {
+				hits.set(line, { line, text: literal.replace(/\s+/g, ' ').trim() });
+			}
+		}
+	}
+
+	return [...hits.values()].sort((a, b) => a.line - b.line);
+}
+
+/**
  * Rekursiv alle Dateien unter `root`, deren Name auf `extensions` passt.
  *
  * Der Extension-Filter ist nicht kosmetisch: Ohne ihn liest der Scan auch

@@ -1,3 +1,4 @@
+import * as m from '$lib/paraglide/messages';
 /**
  * Modern whale sighting form configuration
  * Richtlinien: docs/DESIGN_GUIDE.md, verbindliche Regeln: .claude/rules/design-system.md
@@ -82,11 +83,19 @@ export const USER_CONTACT_FIELDS = [
 	'persistentDataConsent'
 ] as const;
 
+// Getter statt Werte: `formStepsConfig` ist eine MODULKONSTANTE. Ein fertiger
+// String würde beim Modulladen einmal aufgelöst und fröre die Sprache für die
+// Lebensdauer des Prozesses ein — der Defekt, den Entwurf 2.3/4.1 für die
+// Modulkonstanten der Schicht B beschreibt.
 export const formStepsConfig: FormStep[] = [
 	{
 		id: 'location-time',
-		title: 'Position & Zeitpunkt',
-		description: 'Wo und wann haben Sie die Sichtung gemacht?',
+		get title(): string {
+			return m.report_formconfig_text_position_zeitpunkt();
+		},
+		get description(): string {
+			return m.report_formconfig_text_wo_und_wann_haben_sie_die_sichtung_gemac();
+		},
 		fields: [
 			'hasPosition',
 			'latitude',
@@ -102,8 +111,12 @@ export const formStepsConfig: FormStep[] = [
 	},
 	{
 		id: 'sighting-details',
-		title: 'Angaben zum Tier',
-		description: 'Was haben Sie genau beobachtet?',
+		get title(): string {
+			return m.report_formconfig_text_angaben_zum_tier();
+		},
+		get description(): string {
+			return m.report_formconfig_text_was_haben_sie_genau_beobachtet();
+		},
 		fields: [
 			// Die Medien-DATEI-Felder stehen seit dem 2026-08-04 hier und VOR den
 			// Tierangaben (Wunsch des Museums: „Foto hochladen als erste Abfrage noch
@@ -153,8 +166,12 @@ export const formStepsConfig: FormStep[] = [
 	},
 	{
 		id: 'observations',
-		title: 'Weitere Informationen',
-		description: 'Details zu Verhalten und Umweltbedingungen',
+		get title(): string {
+			return m.report_formconfig_text_weitere_informationen();
+		},
+		get description(): string {
+			return m.report_formconfig_text_details_zu_verhalten_und_umweltbedingung();
+		},
 		fields: [
 			// `distribution`/`distributionText` stehen hier bewusst NICHT mehr: Das
 			// Museum hat das Feld am 2026-08-04 aus dem Meldeformular abbestellt —
@@ -186,8 +203,12 @@ export const formStepsConfig: FormStep[] = [
 	},
 	{
 		id: 'contact',
-		title: 'Kontaktdaten',
-		description: 'Ihre Informationen für Rückfragen',
+		get title(): string {
+			return m.report_formconfig_text_kontaktdaten();
+		},
+		get description(): string {
+			return m.report_formconfig_text_ihre_informationen_fuer_rueckfragen();
+		},
 		fields: [
 			'firstName',
 			'lastName',

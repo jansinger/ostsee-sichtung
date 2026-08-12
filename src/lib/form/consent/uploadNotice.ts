@@ -1,3 +1,4 @@
+import * as m from '$lib/paraglide/messages';
 import { ORPHAN_RETENTION_HOURS } from '$lib/constants/uploadRetention';
 
 /**
@@ -16,8 +17,10 @@ import { ORPHAN_RETENTION_HOURS } from '$lib/constants/uploadRetention';
  * juristisch abnehmen lassen. Siehe
  * docs/archive/MEDIENEINWILLIGUNG_ANALYSE_2026-07-28.md, Abschnitt 6.
  */
-export const UPLOAD_NOTICE =
-	`Ihre Aufnahme wird beim Ablegen zu uns übertragen und dient der fachlichen ` +
-	`Prüfung Ihrer Meldung. Senden Sie die Meldung nicht ab, löschen wir sie nach ` +
-	`${ORPHAN_RETENTION_HOURS} Stunden automatisch. Über eine Veröffentlichung ` +
-	`entscheiden Sie später selbst.`;
+// Funktion statt Konstante (Sprache sonst beim Modulladen eingefroren), und
+// EINE Botschaft statt vier verketteter Fragmente: Die Aufteilung war reine
+// Zeilenlänge, kein Satzbau — wer übersetzt, braucht den ganzen Absatz.
+export const uploadNotice = (): string =>
+	m.form_consent_uploadnotice_text_ihre_aufnahme_wird_beim_ablegen_zu_uns({
+		hours: ORPHAN_RETENTION_HOURS
+	});

@@ -1,10 +1,13 @@
+import * as m from '$lib/paraglide/messages';
 /**
  * Pure Zustands- und Fehlerlogik der LocationControl (N2) — vom DOM getrennt,
  * damit sie ohne OpenLayers/Browser testbar ist.
  */
 
-export const LOCATION_LABEL_IDLE = 'GPS-Position anzeigen';
-export const LOCATION_LABEL_TRACKING = 'GPS-Tracking stoppen';
+// Funktionen statt Konstanten: Ein `export const` mit fertigem Text fröre die
+// Sprache beim Modulladen ein (Entwurf 2.3/4.1).
+export const locationLabelIdle = (): string => m.map_controls_text_gps_position_anzeigen();
+export const locationLabelTracking = (): string => m.map_controls_text_gps_tracking_stoppen();
 
 export interface LocationButtonState {
 	/** Wert für aria-pressed — der Button ist ein Toggle. */
@@ -15,8 +18,8 @@ export interface LocationButtonState {
 
 export function locationButtonState(isTracking: boolean): LocationButtonState {
 	return isTracking
-		? { pressed: true, label: LOCATION_LABEL_TRACKING }
-		: { pressed: false, label: LOCATION_LABEL_IDLE };
+		? { pressed: true, label: locationLabelTracking() }
+		: { pressed: false, label: locationLabelIdle() };
 }
 
 /**
@@ -26,12 +29,12 @@ export function locationButtonState(isTracking: boolean): LocationButtonState {
 export function geolocationErrorMessage(code?: number): string {
 	switch (code) {
 		case 1:
-			return 'Die Standortfreigabe wurde verweigert. Bitte erlauben Sie den Standortzugriff in Ihren Browser-Einstellungen.';
+			return m.map_controls_text_die_standortfreigabe_wurde_verweigert_bi();
 		case 2:
-			return 'Ihre Position ist derzeit nicht verfügbar. Bitte versuchen Sie es später erneut.';
+			return m.map_controls_text_ihre_position_ist_derzeit_nicht_verfuegb();
 		case 3:
-			return 'Zeitüberschreitung bei der Standortbestimmung. Bitte versuchen Sie es erneut.';
+			return m.map_controls_text_zeitueberschreitung_bei_der_standortbest();
 		default:
-			return 'Ihre Position konnte nicht ermittelt werden. Bitte versuchen Sie es später erneut.';
+			return m.map_controls_text_ihre_position_konnte_nicht_ermittelt_wer();
 	}
 }

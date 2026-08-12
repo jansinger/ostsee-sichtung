@@ -4,6 +4,8 @@
 -->
 <script lang="ts">
 	import * as m from '$lib/paraglide/messages';
+	import { getWeatherDescription } from '$lib/constants/weather';
+	import { getLocale } from '$lib/paraglide/runtime';
 	import Icon from '$lib/components/Icon.svelte';
 	import { getSeaStateLabel } from '$lib/report/formOptions/seaState';
 	import { getVisibilityLabel } from '$lib/report/formOptions/visibility';
@@ -137,7 +139,17 @@
 						class="wi {getWeatherIconClass(displayData.weatherCode)} text-primary"
 						style="font-size: 18px;"
 					></i>
-					<span>Wetter: <strong>{displayData.weatherDescription}</strong></span>
+					<!-- Aus dem CODE übersetzt, nicht aus `weatherDescription`: Letzteres
+					     ist der gespeicherte deutsche Bestand (JSONB-Spalte `weather_data`,
+					     bewusst auf `baseLocale` gepinnt, siehe `constants/weather.ts`).
+					     Die Anzeige folgt dagegen der aktiven Sprache. Die `{#if}`-Bedingung
+					     bleibt am gespeicherten Feld: Sie fragt, OB Wetterdaten vorliegen —
+					     ein Wettercode 0 („Klar") wäre als Bedingung falsch. -->
+					<span
+						>Wetter: <strong
+							>{getWeatherDescription(displayData.weatherCode ?? 0, getLocale())}</strong
+						></span
+					>
 				</div>
 			{/if}
 

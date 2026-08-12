@@ -233,7 +233,9 @@
 		// Use the validation function that collects errors
 		const { errors: stepErrors } = validateStep(currentStep, $form);
 		const errorCount = getErrorCount(stepErrors);
-		const currentStepName = formSteps[currentStep]?.title || `Schritt ${currentStep + 1}`;
+		const currentStepName =
+			formSteps[currentStep]?.title ||
+			m.report_components_form_stepnavigation_text_schritt_step({ step: currentStep + 1 });
 
 		if (errorCount === 0) {
 			return;
@@ -245,12 +247,13 @@
 			...stepErrors
 		}));
 
-		let errorMessage: string;
-		if (errorCount === 1) {
-			errorMessage = `Bitte beheben Sie den Fehler in "${currentStepName}" bevor Sie fortfahren.`;
-		} else {
-			errorMessage = `Bitte beheben Sie die ${errorCount} Fehler in "${currentStepName}" bevor Sie fortfahren.`;
-		}
+		// ICU-Plural statt if/else: Die Einzahl-/Mehrzahl-Grenze liegt nicht in
+		// jeder Sprache bei eins (Protokoll, Muster B).
+		const errorMessage =
+			m.report_components_form_stepnavigation_text_bitte_beheben_sie_die_fehler_plural({
+				count: errorCount,
+				step: currentStepName
+			});
 
 		// Show toast notification — per key statt zu stapeln: ein erneuter
 		// „Weiter"-Klick auf demselben invaliden Schritt ersetzt den bestehenden

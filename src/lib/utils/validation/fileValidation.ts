@@ -1,3 +1,4 @@
+import * as m from '$lib/paraglide/messages';
 /**
  * Centralized file validation utilities
  * Consolidates validation logic from multiple files
@@ -30,13 +31,15 @@ export function validateFile(file: File, preset: ValidationPreset): ValidationRe
 
 	// Check if file object is valid
 	if (!(file instanceof File)) {
-		errors.push('Ungültiges Dateiformat empfangen.');
+		errors.push(m.utils_validation_filevalidation_text_ungueltiges_dateiformat_empfangen());
 		return { isValid: false, errors };
 	}
 
 	// Check file name
 	if (!file.name || file.name.trim() === '') {
-		errors.push(UPLOAD_ERROR_MESSAGES.INVALID_NAME('Datei ohne Namen'));
+		errors.push(
+			UPLOAD_ERROR_MESSAGES.INVALID_NAME(m.utils_validation_filevalidation_text_datei_ohne_namen())
+		);
 	}
 
 	// Check for dangerous characters in filename
@@ -117,7 +120,11 @@ export function validateGPSPhotos(files: File[]): ValidationResult {
 	for (const file of files) {
 		// Must be image
 		if (!isImageFile(file)) {
-			errors.push(`${file.name}: GPS-Upload erfordert Bilddateien`);
+			errors.push(
+				m.utils_validation_filevalidation_text_filename_gps_upload_erfordert_bilddateie({
+					fileName: file.name
+				})
+			);
 		}
 
 		// Size limit for GPS photos
@@ -135,7 +142,7 @@ export function validateGPSPhotos(files: File[]): ValidationResult {
 
 	// GPS photo upload typically allows only one file
 	if (files.length > 1) {
-		errors.push('GPS-Upload erlaubt nur eine Datei');
+		errors.push(m.utils_validation_filevalidation_text_gps_upload_erlaubt_nur_eine_datei());
 	}
 
 	return {

@@ -63,23 +63,23 @@
 
 	// Übersetzungen für die Karte
 	const translations: MapTranslations = {
-		overview: 'Übersichtskarte',
-		zoom_title: 'Kartenauschnitt auf alle Meldungen zoomen',
-		zoom: 'Alle Meldungen',
+		overview: m.components_map_sightingsmapview_text_uebersichtskarte(),
+		zoom_title: m.components_map_sightingsmapview_text_kartenauschnitt_auf_alle_meldungen_zoome(),
+		zoom: m.components_map_sightingsmapview_text_alle_meldungen(),
 		// M6: kein Trailing-Space — der Builder setzt das Datum mit eigenem Trenner
-		report_date: 'Sichtung vom',
+		report_date: m.components_map_sightingsmapview_text_sichtung_vom(),
 		language: 'de',
-		species: 'Tierart',
-		species_legend: 'Tierart [ sichtbar / gesamt ]',
-		position: 'Position',
-		count: 'Anzahl Tiere',
-		young: 'Davon Jungtiere',
-		ship: 'Schiffsname',
-		name: 'Name',
-		area: 'Fahrwasser',
-		latitude: 'Breite',
-		longitude: 'Länge',
-		found_dead: 'Totfund',
+		species: m.components_map_sightingsmapview_text_tierart(),
+		species_legend: m.components_map_sightingsmapview_text_tierart_sichtbar_gesamt(),
+		position: m.components_map_sightingsmapview_text_position(),
+		count: m.components_map_sightingsmapview_text_anzahl_tiere(),
+		young: m.components_map_sightingsmapview_text_davon_jungtiere(),
+		ship: m.components_map_sightingsmapview_text_schiffsname(),
+		name: m.components_map_sightingsmapview_text_name(),
+		area: m.components_map_sightingsmapview_text_fahrwasser(),
+		latitude: m.components_map_sightingsmapview_text_breite(),
+		longitude: m.components_map_sightingsmapview_text_laenge(),
+		found_dead: m.components_map_sightingsmapview_text_totfund(),
 		// Importierte Tierartendaten für die Karte verwenden
 		speciesMap: speciesLabels
 	};
@@ -424,13 +424,15 @@
 	/** Chip-Beschriftung einer Art — speciesLabels ist über SpeciesEnum indiziert. */
 	function speciesLabel(speciesId: string): string {
 		const labels: Record<string, string> = speciesLabels;
-		return labels[speciesId] ?? `Art ${speciesId}`;
+		return labels[speciesId] ?? m.components_map_sightingsmapview_text_art_id({ id: speciesId });
 	}
 
 	/** Chip-Beschriftung einer Anzahl-Gruppe (analog zum LegendPanel). */
 	function colorGroupLabel(colorGroup: string): string {
 		if (colorGroup === 'ct0') return String(translations.found_dead);
-		return `Anzahl ${legendGroups[colorGroup]?.name ?? colorGroup}`;
+		return m.components_map_sightingsmapview_text_anzahl_name({
+			name: legendGroups[colorGroup]?.name ?? colorGroup
+		});
 	}
 
 	/** ISO-Datum (YYYY-MM-DD) → kompakte deutsche Anzeige „TT.MM." */
@@ -497,7 +499,8 @@
 				},
 				onError: (err) => {
 					console.error('Map data load failed:', err);
-					errorMessage = 'Fehler beim Laden der Kartendaten. Bitte versuchen Sie es erneut.';
+					errorMessage =
+						m.components_map_sightingsmapview_text_fehler_beim_laden_der_kartendaten_bitte();
 					isLoadingData = false;
 					isInitialLoading = false;
 				},

@@ -66,30 +66,28 @@
 		switch (statusCode) {
 			case 404:
 				return {
-					title: 'Seite nicht gefunden',
-					description: 'Die angeforderte Seite existiert nicht oder wurde verschoben.'
+					title: m.routes_error_text_seite_nicht_gefunden(),
+					description: m.routes_error_text_die_angeforderte_seite_existiert_nicht_o()
 				};
 			case 403:
 				return {
-					title: 'Zugriff verweigert',
-					description: 'Sie haben keine Berechtigung, auf diese Ressource zuzugreifen.'
+					title: m.routes_error_text_zugriff_verweigert(),
+					description: m.routes_error_text_sie_haben_keine_berechtigung_auf_diese_r()
 				};
 			case 500:
 				return {
-					title: 'Serverfehler',
-					description:
-						'Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.'
+					title: m.routes_error_text_serverfehler(),
+					description: m.routes_error_text_ein_unerwarteter_fehler_ist_aufgetreten()
 				};
 			case 503:
 				return {
-					title: 'Dienst nicht verfügbar',
-					description:
-						'Die Datenbank ist derzeit nicht erreichbar. Bitte versuchen Sie es in einigen Minuten erneut.'
+					title: m.routes_error_text_dienst_nicht_verfuegbar(),
+					description: m.routes_error_text_die_datenbank_ist_derzeit_nicht_erreichb()
 				};
 			default:
 				return {
-					title: 'Ein Fehler ist aufgetreten',
-					description: 'Entschuldigung, etwas ist schiefgelaufen.'
+					title: m.routes_error_text_ein_fehler_ist_aufgetreten(),
+					description: m.routes_error_text_entschuldigung_etwas_ist_schiefgelaufen()
 				};
 		}
 	};

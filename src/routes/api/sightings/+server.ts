@@ -1,3 +1,4 @@
+import * as m from '$lib/paraglide/messages';
 import { env } from '$env/dynamic/private';
 import { getSightingSchema } from '$lib/form/validation/sightingSchema';
 import { createLogger } from '$lib/logger.server';
@@ -148,7 +149,7 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress }
 				},
 				'Honeypot field detected - likely spam'
 			);
-			throw new ValidationError('Invalid form submission');
+			throw new ValidationError(m.api_sightings_text_ungueltige_formularuebermittlung());
 		}
 
 		// Zeit-Token VOR der Feld-Validierung herausnehmen: Es ist kein
@@ -339,7 +340,7 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress }
 				validationErrors.allgemein =
 					'message' in error && typeof error.message === 'string'
 						? error.message
-						: 'Unbekannter Validierungsfehler';
+						: m.api_sightings_text_unbekannter_validierungsfehler();
 			}
 
 			logger.warn({ validationErrors }, 'Validierungsfehler bei Sichtung');
@@ -348,7 +349,7 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress }
 				{
 					success: false,
 					code: 'VALIDATION_ERROR',
-					message: 'Validierungsfehler bei der Eingabe',
+					message: m.api_sightings_text_validierungsfehler_bei_der_eingabe(),
 					errors: validationErrors
 				},
 				{ status: 400 }
@@ -369,7 +370,7 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress }
 				{
 					success: false,
 					code: 'DATABASE_ERROR',
-					message: 'Die Daten konnten nicht in der Datenbank gespeichert werden',
+					message: m.api_sightings_text_die_daten_konnten_nicht_in_der_datenbank(),
 					detail:
 						NODE_ENV === 'development'
 							? 'detail' in error
@@ -388,7 +389,7 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress }
 			{
 				success: false,
 				code: 'SERVER_ERROR',
-				message: 'Ein unbekannter Fehler ist aufgetreten',
+				message: m.api_sightings_text_ein_unbekannter_fehler_ist_aufgetreten(),
 				detail:
 					NODE_ENV === 'development'
 						? error instanceof Error

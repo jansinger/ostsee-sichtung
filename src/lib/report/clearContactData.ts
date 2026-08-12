@@ -1,3 +1,4 @@
+import * as m from '$lib/paraglide/messages';
 /**
  * Konsolidierte "Kontaktdaten löschen"-Logik.
  *
@@ -20,10 +21,12 @@ import type { SightingFormData } from '$lib/types/Form';
  */
 type UpdateContactField = (field: keyof SightingFormData, value: unknown) => void;
 
-export const CLEAR_CONTACT_DATA_CONFIRM_MESSAGE =
-	'Möchten Sie wirklich alle gespeicherten Kontaktdaten löschen? Diese müssen dann bei der nächsten Sichtung erneut eingegeben werden.';
+// Funktionen statt Konstanten: siehe formConfig.ts.
+export const clearContactDataConfirmMessage = (): string =>
+	m.report_clearcontactdata_text_moechten_sie_wirklich_alle_gespeicherten();
 
-export const CLEAR_CONTACT_DATA_SUCCESS_MESSAGE = 'Gespeicherte Kontaktdaten wurden gelöscht';
+export const clearContactDataSuccessMessage = (): string =>
+	m.report_clearcontactdata_text_gespeicherte_kontaktdaten_wurden_geloesc();
 
 /**
  * Setzt die Kontaktfelder im Formular-State auf ihren jeweiligen Default zurück
@@ -59,12 +62,12 @@ export function confirmAndClearContactData(
 	formValues: Record<string, unknown>,
 	updateField: UpdateContactField
 ): boolean {
-	if (!confirm(CLEAR_CONTACT_DATA_CONFIRM_MESSAGE)) {
+	if (!confirm(clearContactDataConfirmMessage())) {
 		return false;
 	}
 
 	resetSavedContactData(formValues, updateField);
-	createToast('success', CLEAR_CONTACT_DATA_SUCCESS_MESSAGE);
+	createToast('success', clearContactDataSuccessMessage());
 
 	return true;
 }

@@ -1,3 +1,4 @@
+import * as m from '$lib/paraglide/messages';
 /**
  * HTML-Inhalte für Popups und Hover-Infos der Sichtungskarte (M6).
  *
@@ -51,7 +52,7 @@ export function createSightingPopupContent(
 	props: SightingPopupProperties,
 	translations: MapTranslations
 ): string {
-	const date = formatSightingDate(props.ts, 'Unbekannt');
+	const date = formatSightingDate(props.ts, m.map_popupcontent_text_unbekannt());
 
 	let content = `
 		<div class="sighting-popup">
@@ -127,10 +128,13 @@ export function createClusterListContent(
 
 	let items = '';
 	propsList.forEach((props, index) => {
-		const name = speciesName(props, translations, `Art ${props.ta}`);
-		const date = formatSightingDate(props.ts, 'Unbekannt');
+		const name = speciesName(props, translations, m.map_popupcontent_text_art_id({ id: props.ta }));
+		const date = formatSightingDate(props.ts, m.map_popupcontent_text_unbekannt());
 		const deadBadge = props.tf ? '<span class="cluster-item-dead">&#x2020;</span>' : '';
-		const tierWord = props.ct > 1 ? 'Tiere' : 'Tier';
+		// ICU-Plural statt `> 1 ? 'Tiere' : 'Tier'`: Die Grenze liegt nicht in jeder
+		// Sprache bei eins, und das geschützte Leerzeichen steht als Zeichen IN der
+		// Botschaft statt als HTML-Entität daneben.
+		const tiere = m.map_popupcontent_text_tiere_plural({ count: props.ct });
 
 		items += `
 			<li>
@@ -138,10 +142,10 @@ export function createClusterListContent(
 					type="button"
 					data-cluster-index="${index}"
 					class="cluster-list-item"
-					aria-label="${name}, ${props.ct} ${tierWord}, ${date}"
+					aria-label="${name}, ${tiere}, ${date}"
 				>
 					<span class="cluster-item-species">${name}${deadBadge}</span>
-					<span class="cluster-item-count">${props.ct}&nbsp;${tierWord}</span>
+					<span class="cluster-item-count">${tiere}</span>
 					<span class="cluster-item-date">${date}</span>
 				</button>
 			</li>
@@ -150,8 +154,8 @@ export function createClusterListContent(
 
 	return `
 		<div class="cluster-popup">
-			<h3 class="popup-title">${count} Sichtungen an diesem Ort</h3>
-			<ul class="cluster-list" aria-label="${count} Sichtungen">
+			<h3 class="popup-title">${m.map_popupcontent_text_sichtungen_an_diesem_ort({ sichtungen: m.map_popupcontent_text_sichtungen_plural({ count }) })}</h3>
+			<ul class="cluster-list" aria-label="${m.map_popupcontent_text_sichtungen_plural({ count })}">
 				${items}
 			</ul>
 		</div>
@@ -163,9 +167,9 @@ export function createInfoText(
 	props: SightingPopupProperties,
 	translations: MapTranslations
 ): string {
-	const species = speciesName(props, translations, 'Unbekannte Art');
+	const species = speciesName(props, translations, m.map_popupcontent_text_unbekannte_art());
 	const count = props.ct || 0;
-	const date = formatSightingDate(props.ts, 'Unbekanntes Datum');
+	const date = formatSightingDate(props.ts, m.map_popupcontent_text_unbekanntes_datum());
 	const isDead = props.tf ? ` (${sanitizeText(translations.found_dead)})` : '';
 	// M6: Fahrwasser konsistent auch im Hover anzeigen, nicht nur im Popup
 	const waterway = props.waterway
@@ -197,13 +201,15 @@ export function createClusterInfoText(
 		.sort(([, a], [, b]) => b - a)
 		.slice(0, 3) // Zeige nur die 3 häufigsten Arten
 		.map(([speciesId, speciesTotal]) => {
-			const name = sanitizeText(translations.speciesMap[speciesId] || 'Unbekannte Art');
+			const name = sanitizeText(
+				translations.speciesMap[speciesId] || m.map_popupcontent_text_unbekannte_art()
+			);
 			return `${name}: ${speciesTotal}`;
 		});
 
 	return `
 		<div class="p-2 text-sm">
-			<strong>${count} Sichtungen</strong><br>
+			<strong>${m.map_popupcontent_text_sichtungen_plural({ count })}</strong><br>
 			${sortedSpecies.join('<br>')}
 		</div>
 	`;

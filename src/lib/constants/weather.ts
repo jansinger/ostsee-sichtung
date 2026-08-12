@@ -1,42 +1,51 @@
+import * as m from '$lib/paraglide/messages';
+import { baseLocale, type Locale } from '$lib/paraglide/runtime';
+
+/** Eine parameterlose Paraglide-Botschaft, mit ausdrücklicher Locale. */
+type WeatherMessage = (inputs: Record<string, never>, options: { locale: Locale }) => string;
+
 /**
  * Weather-related constants and utility functions
  * Consolidated from various weather services to avoid duplication
  */
 
 /**
- * Weather descriptions mapping from WMO codes
- * Based on Open-Meteo API weather codes
- * Complete mapping with all supported weather conditions
+ * WMO-Wettercode → Botschaft, aus der die Beschreibung gebaut wird.
+ *
+ * Bewusst die Botschafts-FUNKTION statt ihres Ergebnisses: Ein Record aus
+ * fertigen Zeichenketten würde beim Modulladen einmal aufgelöst und fröre die
+ * Sprache für die Lebensdauer des Prozesses ein — genau der Defekt, den
+ * Entwurf 2.3/4.1 für die Modulkonstanten der Schicht B beschreibt.
  */
-export const WEATHER_DESCRIPTIONS: Record<number, string> = {
-	0: 'Klar',
-	1: 'Größtenteils klar',
-	2: 'Teilweise bewölkt',
-	3: 'Bedeckt',
-	45: 'Nebel',
-	48: 'Reifnebel',
-	51: 'Leichter Nieselregen',
-	53: 'Mäßiger Nieselregen',
-	55: 'Dichter Nieselregen',
-	56: 'Leichter gefrierender Nieselregen',
-	57: 'Dichter gefrierender Nieselregen',
-	61: 'Leichter Regen',
-	63: 'Mäßiger Regen',
-	65: 'Starker Regen',
-	66: 'Leichter gefrierender Regen',
-	67: 'Starker gefrierender Regen',
-	71: 'Leichter Schneefall',
-	73: 'Mäßiger Schneefall',
-	75: 'Starker Schneefall',
-	77: 'Schneekörner',
-	80: 'Leichte Regenschauer',
-	81: 'Mäßige Regenschauer',
-	82: 'Heftige Regenschauer',
-	85: 'Leichte Schneeschauer',
-	86: 'Starke Schneeschauer',
-	95: 'Leichtes bis mäßiges Gewitter',
-	96: 'Gewitter mit leichtem Hagel',
-	99: 'Gewitter mit starkem Hagel'
+const WEATHER_MESSAGES: Record<number, WeatherMessage> = {
+	0: m.constants_weather_text_klar,
+	1: m.constants_weather_text_groesstenteils_klar,
+	2: m.constants_weather_text_teilweise_bewoelkt,
+	3: m.constants_weather_text_bedeckt,
+	45: m.constants_weather_text_nebel,
+	48: m.constants_weather_text_reifnebel,
+	51: m.constants_weather_text_leichter_nieselregen,
+	53: m.constants_weather_text_maessiger_nieselregen,
+	55: m.constants_weather_text_dichter_nieselregen,
+	56: m.constants_weather_text_leichter_gefrierender_nieselregen,
+	57: m.constants_weather_text_dichter_gefrierender_nieselregen,
+	61: m.constants_weather_text_leichter_regen,
+	63: m.constants_weather_text_maessiger_regen,
+	65: m.constants_weather_text_starker_regen,
+	66: m.constants_weather_text_leichter_gefrierender_regen,
+	67: m.constants_weather_text_starker_gefrierender_regen,
+	71: m.constants_weather_text_leichter_schneefall,
+	73: m.constants_weather_text_maessiger_schneefall,
+	75: m.constants_weather_text_starker_schneefall,
+	77: m.constants_weather_text_schneekoerner,
+	80: m.constants_weather_text_leichte_regenschauer,
+	81: m.constants_weather_text_maessige_regenschauer,
+	82: m.constants_weather_text_heftige_regenschauer,
+	85: m.constants_weather_text_leichte_schneeschauer,
+	86: m.constants_weather_text_starke_schneeschauer,
+	95: m.constants_weather_text_leichtes_bis_maessiges_gewitter,
+	96: m.constants_weather_text_gewitter_mit_leichtem_hagel,
+	99: m.constants_weather_text_gewitter_mit_starkem_hagel
 };
 
 /**
@@ -56,12 +65,28 @@ export function degreesToCardinal(degrees: number): string {
 }
 
 /**
- * Get weather description from WMO weather code
- * @param weatherCode WMO weather code from Open-Meteo API
- * @returns German weather description
+ * Wetterbeschreibung zu einem WMO-Wettercode.
+ *
+ * **Der Vorgabewert `baseLocale` ist die eigentliche Aussage dieser Signatur.**
+ * Zwei Aufrufer speichern das Ergebnis: Der Wetter-Auffrischungsdienst und der
+ * `historical`-Endpunkt legen es als Teil von `weatherData` in der
+ * JSONB-Spalte `weather_data` ab. Was dort landet, ist Datenbestand — er darf
+ * nicht davon abhängen, in welcher Sprache der Melder gerade unterwegs war.
+ * Nur die Anzeige (`WeatherDisplay.svelte`) reicht ausdrücklich `getLocale()`
+ * durch.
+ *
+ * Belegt durch `weatherLocalePinning.test.ts`, der die englische Botschaft
+ * künstlich abweichen lässt — er ist also nicht grün, nur weil `de` und `en`
+ * heute denselben Wortlaut tragen.
+ *
+ * @param weatherCode WMO-Wettercode der Open-Meteo-API
+ * @param locale Anzeigesprache; ohne Angabe die Basissprache (Deutsch)
  */
-export function getWeatherDescription(weatherCode: number): string {
-	return WEATHER_DESCRIPTIONS[weatherCode] || `Wetter Code ${weatherCode}`;
+export function getWeatherDescription(weatherCode: number, locale: Locale = baseLocale): string {
+	const message = WEATHER_MESSAGES[weatherCode];
+	return message
+		? message({}, { locale })
+		: m.constants_weather_text_wetter_code_code({ code: weatherCode }, { locale });
 }
 
 /**

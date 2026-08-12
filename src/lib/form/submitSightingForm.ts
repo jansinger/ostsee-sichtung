@@ -1,3 +1,4 @@
+import * as m from '$lib/paraglide/messages';
 /**
  * @fileoverview Formular-Übermittlung für Sichtungsdaten
  *
@@ -47,7 +48,10 @@ export type SubmitResult =
 	| { status: 'ratelimited'; retryAfter?: number };
 
 /** Fehlermeldung, die der Nutzer sieht, wenn der Server keine eigene liefert. */
-const FALLBACK_MESSAGE = 'Die Sichtung konnte nicht gespeichert werden';
+// Funktion statt Konstante: siehe formConfig.ts — ein fertiger String fröre
+// die Sprache beim Modulladen ein.
+const fallbackMessage = (): string =>
+	m.form_submitsightingform_text_die_sichtung_konnte_nicht_gespeichert_we();
 
 /**
  * Meldung für ein Feld aus einer der beiden Namenslisten des Servers —
@@ -58,7 +62,8 @@ const FALLBACK_MESSAGE = 'Die Sichtung konnte nicht gespeichert werden';
  * Listen auf: Ein `FORBIDDEN_…` hier würde beim Lesen so wirken, als gälte die
  * Meldung nur für den 403er-Zweig.
  */
-const DISALLOWED_FIELD_MESSAGE = 'Dieses Feld darf nicht mitgesendet werden';
+const disallowedFieldMessage = (): string =>
+	m.form_submitsightingform_text_dieses_feld_darf_nicht_mitgesendet_werde();
 
 /** Antwortkörper der Sichtungs-API, soweit der Client ihn auswertet. */
 interface SightingApiResponse {
@@ -108,7 +113,7 @@ function readFieldErrors(body: SightingApiResponse | null): Record<string, strin
 
 	for (const field of [...(body?.rejectedFields ?? []), ...(body?.forbiddenFields ?? [])]) {
 		if (typeof field === 'string' && field.length > 0) {
-			fields[field] ??= DISALLOWED_FIELD_MESSAGE;
+			fields[field] ??= disallowedFieldMessage();
 		}
 	}
 
@@ -265,14 +270,16 @@ export async function submitSightingForm(
 export function describeSubmitFailure(result: Exclude<SubmitResult, { status: 'ok' }>): string {
 	switch (result.status) {
 		case 'offline':
-			return 'Keine Internetverbindung. Ihre Eingaben bleiben vollständig gespeichert.';
+			return m.form_submitsightingform_text_keine_internetverbindung_ihre_eingaben_b();
 		case 'ratelimited':
 			return result.retryAfter
-				? `Zu viele Übermittlungen. Bitte versuchen Sie es in ${result.retryAfter} Sekunden erneut.`
-				: 'Zu viele Übermittlungen. Bitte versuchen Sie es später erneut.';
+				? m.form_submitsightingform_text_zu_viele_uebermittlungen_sekunden({
+						seconds: result.retryAfter
+					})
+				: m.form_submitsightingform_text_zu_viele_uebermittlungen_bitte_versuchen();
 		case 'rejected':
 			return result.message;
 		case 'server':
-			return FALLBACK_MESSAGE;
+			return fallbackMessage();
 	}
 }

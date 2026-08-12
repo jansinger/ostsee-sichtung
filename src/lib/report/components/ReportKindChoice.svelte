@@ -74,14 +74,14 @@
 	const OPTIONS: Array<{ value: ReportKind; label: string; hint: string; icon: string }> = [
 		{
 			value: 'alive',
-			label: 'Beobachtung eines lebenden Tieres',
-			hint: 'Sie haben ein Tier im Wasser oder an Land gesehen.',
+			label: m.report_components_reportkindchoice_text_beobachtung_eines_lebenden_tieres(),
+			hint: m.report_components_reportkindchoice_text_sie_haben_ein_tier_im_wasser_oder_an_lan(),
 			icon: 'custom:porpoise'
 		},
 		{
 			value: 'dead',
-			label: 'Fund eines toten Tieres',
-			hint: 'Sie haben ein totes Tier gefunden, meist an einem Strand oder Küstenabschnitt.',
+			label: m.report_components_reportkindchoice_text_fund_eines_toten_tieres(),
+			hint: m.report_components_reportkindchoice_text_sie_haben_ein_totes_tier_gefunden_meist(),
 			icon: 'lucide:triangle-alert'
 		}
 	];

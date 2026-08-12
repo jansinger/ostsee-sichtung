@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-	LOCATION_LABEL_IDLE,
-	LOCATION_LABEL_TRACKING,
+	locationLabelIdle,
+	locationLabelTracking,
 	geolocationErrorMessage,
 	locationButtonState
 } from './locationControlState';
@@ -10,14 +10,14 @@ describe('locationButtonState', () => {
 	it('liefert im Ruhezustand aria-pressed=false und das Start-Label', () => {
 		const state = locationButtonState(false);
 		expect(state.pressed).toBe(false);
-		expect(state.label).toBe(LOCATION_LABEL_IDLE);
+		expect(state.label).toBe(locationLabelIdle());
 		expect(state.label).toBe('GPS-Position anzeigen');
 	});
 
 	it('liefert beim Tracking aria-pressed=true und das Stopp-Label', () => {
 		const state = locationButtonState(true);
 		expect(state.pressed).toBe(true);
-		expect(state.label).toBe(LOCATION_LABEL_TRACKING);
+		expect(state.label).toBe(locationLabelTracking());
 		expect(state.label).toBe('GPS-Tracking stoppen');
 	});
 });

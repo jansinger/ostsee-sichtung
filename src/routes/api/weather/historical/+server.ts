@@ -1,3 +1,4 @@
+import * as m from '$lib/paraglide/messages';
 import {
 	calculateSeaState,
 	degreesToCardinal,
@@ -364,7 +365,10 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		// Validate parameters
 		if (isNaN(latitude) || isNaN(longitude) || !date) {
-			return json({ error: 'Missing or invalid parameters: lat, lng, date' }, { status: 400 });
+			return json(
+				{ error: m.api_weather_historical_text_fehlende_oder_ungueltige_parameter() },
+				{ status: 400 }
+			);
 		}
 
 		// Validate coordinates are in Baltic Sea region (approximate)
@@ -447,7 +451,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		if (!weatherResult) {
 			return json(
-				{ error: 'Could not fetch weather data for the specified location and date' },
+				{ error: m.api_weather_historical_text_fuer_diesen_ort_und_dieses_datum_konnten() },
 				{ status: 404 }
 			);
 		}
@@ -475,6 +479,6 @@ export const GET: RequestHandler = async ({ url }) => {
 		});
 	} catch (error) {
 		logger.error({ error }, 'Failed to process weather request');
-		return json({ error: 'Internal server error' }, { status: 500 });
+		return json({ error: m.api_weather_historical_text_interner_serverfehler() }, { status: 500 });
 	}
 };

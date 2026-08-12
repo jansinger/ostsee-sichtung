@@ -38,9 +38,9 @@
 
 	let uploadedMedia = $derived($form.uploadedFiles ?? []);
 	let uploadedMediaCaption = $derived(
-		uploadedMedia.length === 1
-			? 'Ihre hochgeladene Aufnahme:'
-			: `Ihre ${uploadedMedia.length} hochgeladenen Aufnahmen:`
+		m.report_components_steps_step4contact_text_hochgeladene_aufnahmen_plural({
+			count: uploadedMedia.length
+		})
 	);
 
 	// Check if user has saved contact data

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { sourceFiles, stripComments } from '$lib/testing/sourceScan.testutil';
+import { multiWordLiterals, sourceFiles, stripComments } from '$lib/testing/sourceScan.testutil';
 import type { SourceHit } from '$lib/testing/sourceScan.testutil';
 
 /**
@@ -53,110 +53,12 @@ const REMEDIATION = [
 ].join('\n');
 
 /**
- * Ein Buchstabe, inklusive der im Formular vorkommenden Umlaute/Akzente
- * (Latin-1-Supplement-Block ohne `×`/`÷`). Absichtlich keine Umlaut-Heuristik
- * für die Entscheidung selbst — nur die Definition von „Buchstabe", damit
- * `wählen` als eine Gruppe zählt und nicht als drei.
- */
-const LETTER = String.raw`[A-Za-zÀ-ÖØ-öø-ÿ]`;
-
-/** Eine Buchstabengruppe: mindestens zwei Buchstaben am Stück. */
-const GROUP_PATTERN = new RegExp(`${LETTER}{2,}`, 'g');
-
-/**
- * Baut das Muster, das ein Zeichenketten-Literal **extrahiert** — ohne jede
- * Aussage darüber, ob es ein Befund ist. Das entscheidet erst
- * {@link isMultiWordLiteral} in einem zweiten, von Regex unabhängigen
- * Schritt.
- *
- * Für `'`/`"` ist ein Zeilenumbruch innerhalb des Literals ausgeschlossen
- * (`[^quote\\\n]`) — ein echtes `'…'`/`"…"`-Literal kann ihn syntaktisch nicht
- * enthalten. Template-Literale (`` ` ``) dürfen dagegen echte Zeilenumbrüche
- * enthalten und bekommen den Ausschluss nicht.
- *
- * **Warum das ohne Längengrenze linear bleibt.** Der Vorläufer dieses Musters
- * bettete die Suche nach den zwei Buchstabengruppen direkt in die
- * Literal-Erkennung ein: Rand-vor-Gruppe-1, Lücke, Rand-nach-Gruppe-2 — vier
- * Quantoren, die sich dasselbe Alphabet teilen und deren Aufteilung der
- * Motor bei einem Literal ohne schließendes Gegenstück kombinatorisch prüfen
- * musste (gemessen über 8 Sekunden bei 20.000 Zeichen, siehe Git-Historie
- * dieser Datei). Diese Fassung hat nur **eine** quantifizierte Alternation
- * (`(?:${body})*`; „Nicht-Anführungszeichen“ oder „Escape“, unbegrenzt), und
- * die beiden Alternativen schließen sich für jedes Zeichen
- * gegenseitig aus — ein Backslash startet ausschließlich `\\.`, jedes andere
- * Zeichen ausschließlich die erste Alternative. Damit gibt es für jede
- * Zeichenfolge genau **eine** Art, sie zu konsumieren, keine Aufteilung zum
- * Ausprobieren — der Motor liest linear bis zum nächsten Anführungszeichen
- * oder bis zum Dateiende, ohne zurückzusetzen. Die Länge des Literals spielt
- * dafür keine Rolle mehr, eine `MAX_LITERAL_EDGE`-Grenze entfällt ersatzlos.
- */
-function stringLiteralPattern(quote: "'" | '"' | '`'): RegExp {
-	const excludeNewline = quote === '`' ? '' : '\\n';
-	const body = `[^${quote}\\\\${excludeNewline}]|\\\\.`;
-	return new RegExp(`${quote}(?:${body})*${quote}`, 'g');
-}
-
-const LITERAL_PATTERNS = [
-	stringLiteralPattern("'"),
-	stringLiteralPattern('"'),
-	stringLiteralPattern('`')
-] as const;
-
-/**
- * Die eigentliche Regel — ohne Längengrenze, weil sie in reinem JavaScript
- * auf dem bereits extrahierten Literal prüft statt in der Regex-Suche
- * mitzulaufen: „Enthält Leerzeichen UND mindestens zwei Buchstabengruppen“
- * (siehe Datei-Doc oben, Abschnitt „Die Regel"). `literal` trägt die
- * umschließenden Anführungszeichen noch — die zählen für beide Bedingungen
- * nicht mit, stören aber auch nicht (kein Leerzeichen, kein Buchstabe).
- */
-function isMultiWordLiteral(literal: string): boolean {
-	if (!/\s/.test(literal)) return false;
-	const groups = literal.match(GROUP_PATTERN);
-	return (groups?.length ?? 0) >= 2;
-}
-
-/**
- * Sammelt mehrwortige Zeichenketten-Literale in bereits kommentarfreiem
- * `code`.
- *
- * Eigene, zweistufige Sammelfunktion statt `collectHits` aus
- * `sourceScan.testutil`: `collectHits` meldet jeden Regex-Treffer als
- * Befund, hier ist aber die Extraktion (Regex, Stufe 1) von der Bewertung
- * (Prädikat in JavaScript, Stufe 2 — {@link isMultiWordLiteral}) bewusst
- * getrennt. `stripComments` bleibt Pflicht (siehe Datei-Doc): Ohne sie wäre
- * jede deutsche Begründung im Kommentar selbst ein Fund.
- *
- * Eine Meldung je Zeile, wie bei `collectHits` — derselbe Ausdruck kann für
- * mehrere Anführungszeichen-Arten in Frage kommen, das darf nicht doppelt
- * zählen.
- */
-function collectMultiWordLiterals(code: string): SourceHit[] {
-	const hits = new Map<number, SourceHit>();
-
-	for (const pattern of LITERAL_PATTERNS) {
-		for (const match of code.matchAll(pattern)) {
-			const literal = match[0];
-			if (!isMultiWordLiteral(literal)) continue;
-
-			const index = match.index ?? 0;
-			const line = code.slice(0, index).split('\n').length;
-			if (!hits.has(line)) {
-				hits.set(line, { line, text: literal.replace(/\s+/g, ' ').trim() });
-			}
-		}
-	}
-
-	return [...hits.values()].sort((a, b) => a.line - b.line);
-}
-
-/**
  * Meldet jedes mehrwortige Zeichenketten-Literal in `source`.
  *
  * @returns Fundstellen (leer = konform), aufsteigend nach Zeile.
  */
 export function findHardcodedStrings(source: string): SourceHit[] {
-	return collectMultiWordLiterals(stripComments(source));
+	return multiWordLiterals(stripComments(source));
 }
 
 const SCHEMA_FILE = 'src/lib/form/validation/sightingSchema.ts';

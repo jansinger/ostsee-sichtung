@@ -38,7 +38,8 @@
 						isLoading = false;
 					})
 					.catch(() => {
-						loadError = 'Karte konnte nicht geladen werden. Bitte versuchen Sie es erneut.';
+						loadError =
+							m.components_map_lazymapwrapper_text_karte_konnte_nicht_geladen_werden_bitte();
 						isLoading = false;
 					});
 			} else {

@@ -76,12 +76,15 @@
 			const data = await response.json();
 
 			if (!response.ok) {
-				throw new Error(data.error || 'Fehler beim Abrufen der Wetterdaten');
+				throw new Error(
+					data.error ||
+						m.components_weather_weatherdatafetcher_text_fehler_beim_abrufen_der_wetterdaten()
+				);
 			}
 
 			if (!data.weather) {
 				error =
-					'Für diese Kombination aus Ort und Datum konnten keine Wetterdaten gefunden werden.';
+					m.components_weather_weatherdatafetcher_text_fuer_diese_kombination_aus_ort_und_datum();
 				loading = false;
 				return;
 			}
@@ -100,7 +103,10 @@
 				onWeatherDataFetched(weatherData);
 			}
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Unbekannter Fehler';
+			error =
+				err instanceof Error
+					? err.message
+					: m.components_weather_weatherdatafetcher_text_unbekannter_fehler();
 		} finally {
 			loading = false;
 		}

@@ -40,12 +40,15 @@
 	// Zwei Grenzen, zwei Zahlen: Ein einzelner „max 100MB" wäre für Bilder
 	// falsch, ein einzelner „max 10MB" für Videos.
 	let maxSizeDescription = $derived.by(() => {
-		if (!uploadConfig) return 'Bilder max. 10 MB';
+		if (!uploadConfig) return m.report_components_sections_media_text_bilder_max_10_mb();
 		const imageMB = Math.round(uploadConfig.maxFileSize / (1024 * 1024));
 		const hasVideo = uploadConfig.allowedTypes.some((type) => type.startsWith('video/'));
-		if (!hasVideo) return `max. ${imageMB} MB`;
+		if (!hasVideo) return m.report_components_sections_media_text_max_imagemb_mb({ imageMB });
 		const videoMB = Math.round(uploadConfig.maxVideoFileSize / (1024 * 1024));
-		return `Bilder max. ${imageMB} MB, Videos max. ${videoMB} MB`;
+		return m.report_components_sections_media_text_bilder_max_imagemb_mb_videos_max_videomb({
+			imageMB,
+			videoMB
+		});
 	});
 
 	// Load upload configuration on component mount

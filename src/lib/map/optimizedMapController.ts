@@ -1,3 +1,4 @@
+import * as m from '$lib/paraglide/messages';
 import { createLogger } from '$lib/logger';
 import { getLocale } from '$lib/paraglide/runtime';
 import { resolveDisplayLocale } from '$lib/utils/format/dateTime';
@@ -374,7 +375,7 @@ export class SichtungenMap {
 		this.popupElement.className = 'ol-popup';
 		this.popupElement.innerHTML = `
 			<div class="ol-popup-content">
-				<button class="ol-popup-closer" type="button" aria-label="Popup schließen">×</button>
+				<button class="ol-popup-closer" type="button" aria-label="${m.map_optimizedmapcontroller_text_popup_schliessen()}">×</button>
 				<div class="popup-body"></div>
 			</div>
 		`;
@@ -547,7 +548,7 @@ export class SichtungenMap {
 				contentDiv.innerHTML = `
 					<div>
 						<button type="button" class="cluster-back-btn">
-							&#8592; Alle ${sortedFeatures.length} Sichtungen
+							&#8592; ${m.map_optimizedmapcontroller_text_alle_count_sichtungen({ count: sortedFeatures.length })}
 						</button>
 						${createSightingPopupContent(props, this.translations)}
 					</div>
@@ -670,7 +671,9 @@ export class SichtungenMap {
 			signal: abortController.signal
 		});
 		if (!response.ok) {
-			throw new Error(`HTTP ${response.status}: Fehler beim Laden der Sichtungen`);
+			throw new Error(
+				`HTTP ${response.status}: ${m.map_optimizedmapcontroller_text_fehler_beim_laden_der_sichtungen()}`
+			);
 		}
 		const geoJsonData = await response.json();
 
