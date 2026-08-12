@@ -1049,6 +1049,54 @@ verhindert** statt sie zu formen — und damit ihr eigentlicher Zweck.
 Nachweise: `svelte-check` 0 Fehler, `test:quick` grün (4955 + 780), alle drei
 E2E-Shards im ersten Lauf grün (229 + 94 + 156 = 479).
 
+### Welle C5: der Rest von Bereich A — abgeschlossen
+
+Commit 11bb587a, 21 neue Schlüssel, drei wiederverwendet. **A 56 → 30.**
+
+Zwei weitere Modulkonstanten mussten vor jeder Ersetzung umgebaut werden:
+`UPLOAD_NOTICE` und die beiden `CLEAR_CONTACT_DATA_*`. `UPLOAD_NOTICE` war
+zusätzlich **vier verkettete Template-Fragmente** — die Aufteilung war reine
+Zeilenlänge, kein Satzbau. Daraus wurde EINE Botschaft mit `{hours}`. Wer
+übersetzt, braucht den ganzen Absatz, nicht vier Stücke, die nur auf Deutsch
+zusammenpassen.
+
+Drei Zeichenketten gab es bereits als Schlüssel und werden
+**wiederverwendet**: die beiden GPS-Beschriftungen (aus `map/controls`) und
+`'Nicht angegeben'` (aus `dateTime`).
+
+`fieldsOutsideReportKind` behält bewusst einen Parameter **mitten im Satz** —
+gegen die sonstige Regel, mit Begründung an der Zeile: Der Einschub ist eine
+**Nominalphrase** („zum Totfund"), kein Satzteil mit eigener Stellung, und
+überlebt deshalb eine Umstellung.
+
+#### Die verbleibenden 30 sind kein Rest, sondern Entscheidungen
+
+| Anzahl | Datei(en)                                   | Grund                                                                                           |
+| -----: | ------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+|      5 | `balticSeaStatus.ts`                        | Admin + Museums-Mail, belegt in Welle C4                                                        |
+|      2 | `photoAnnouncement.ts`                      | dasselbe — Server-Filter, `emailService`, Admin-Labels                                          |
+|      8 | `popupContent`, `upload`, `dateTime`        | HTML-/Format-Vorlagen, die nur noch `${m.key(...)}` enthalten — der `already-translated`-Effekt |
+|      6 | `styleUtils`, `weatherIcons`, `dateUtils`   | Schrift- und CSS-Klassen-Zeichenketten                                                          |
+|      5 | `fileAnalysis`, `mapContext`, `uploadUtils` | englische Interna, geworfene Entwicklerfehler, `HTTP ${status}`                                 |
+|      4 | verstreut                                   | Berechnungen und Formatzeichenketten                                                            |
+
+`svelte-check` hat sich erneut bezahlt gemacht: Die Umbenennung von
+`UPLOAD_NOTICE` brach **drei** Verbraucher, die mein Grep nicht gezeigt
+hatte — alle vor dem Gate gefunden. Das ist zum vierten Mal in dieser
+Etappe dieselbe Lehre.
+
+Nachweise: `svelte-check` 0 Fehler, `test:quick` grün (4955 + 780), alle drei
+E2E-Shards im ersten Lauf grün (229 + 94 + 156 = 479).
+
+## STAND BEFUND C
+
+**Bereich A (öffentlicher Client-Code) ist abgearbeitet**: 138 → 30, und die
+30 sind begründet. Offen bleibt **Bereich E** (`/api`, 119 Kandidaten in 30
+Dateien) — und der braucht zuerst eine Entscheidung je Endpunkt, welche
+Antwort ein Mensch liest und welche eine Maschine. Deutsche
+Validierungsmeldungen an den Melder gehören übersetzt, `File not found` und
+`Internal server error` nicht.
+
 ### Was diese Messung NICHT ist
 
 Kein Guard. Sie liegt als Zahl im Protokoll, nicht im Testlauf — der
