@@ -1,3 +1,4 @@
+import * as m from '$lib/paraglide/messages';
 /**
  * Centralized upload constants and configuration
  * Single source of truth for all upload-related settings
@@ -103,25 +104,41 @@ export const UPLOAD_ERROR_MESSAGES = {
 		// Der MIME-Typ kommt von der Aufrufstelle, nicht aus dem Dateinamen:
 		// Ein „.mov" mit HEVC und ein „.mp4" melden sich unterschiedlich, und
 		// eine Endung ist ohnehin frei wählbar.
+		// Der Zusatz ist ein EIGENER, ganzer Satz und wird angehängt — nicht in
+		// den ersten hineingesetzt. Am Satzende lässt sich das ohne
+		// Wortstellungsschaden trennen (Muster C).
 		const hint = isVideoFile(mimeType)
-			? ` Nehmen Sie das Video in geringerer Auflösung auf oder kürzen Sie es — oder senden Sie es an ${MEDIA_FALLBACK_EMAIL}.`
+			? ` ${m.constants_upload_text_nehmen_sie_das_video_in_geringerer_auflo({ email: MEDIA_FALLBACK_EMAIL })}`
 			: '';
-		return `${fileName}: zu groß mit ${actualMB} MB (erlaubt sind ${maxMB} MB).${hint}`;
+		return `${m.constants_upload_text_filename_zu_gross_mit_actualmb_mb({ fileName, actualMB, maxMB })}${hint}`;
 	},
 
 	INVALID_TYPE: (fileName: string, allowedTypes: readonly string[]) =>
-		`${fileName}: Dieses Format können wir nicht annehmen. Möglich sind ${describeFileFormats(allowedTypes)}.`,
+		m.constants_upload_text_filename_dieses_format_koennen_wir_nicht({
+			fileName,
+			formats: describeFileFormats(allowedTypes)
+		}),
 
-	TOO_MANY_FILES: (maxFiles: number) => `Zu viele Dateien. Maximum: ${maxFiles}`,
+	TOO_MANY_FILES: (maxFiles: number) =>
+		m.constants_upload_text_zu_viele_dateien_maximum({ maxFiles }),
 
 	TOTAL_SIZE_EXCEEDED: (maxSize: number) =>
-		`Gesamtgröße überschritten. Maximum: ${Math.round(maxSize / 1024 / 1024)}MB`,
+		m.constants_upload_text_gesamtgroesse_ueberschritten_maximum({
+			maxMB: Math.round(maxSize / 1024 / 1024)
+		}),
 
-	EMPTY_FILE: (fileName: string) => `${fileName}: Datei ist leer`,
+	EMPTY_FILE: (fileName: string) => m.constants_upload_text_filename_datei_ist_leer({ fileName }),
 
-	INVALID_NAME: (fileName: string) => `${fileName}: Unsicherer Dateiname`,
+	INVALID_NAME: (fileName: string) =>
+		m.constants_upload_text_filename_unsicherer_dateiname({ fileName }),
 
-	NO_FILE: 'Keine Datei ausgewählt',
+	get NO_FILE(): string {
+		return m.constants_upload_text_keine_datei_ausgewaehlt();
+	},
 
-	UPLOAD_FAILED: 'Upload fehlgeschlagen. Versuchen Sie es erneut.'
+	// Getter statt Wert: Ein Feld würde beim Modulladen einmal aufgelöst und
+	// fröre die Sprache ein (Entwurf 2.3/4.1).
+	get UPLOAD_FAILED(): string {
+		return m.constants_upload_text_upload_fehlgeschlagen_versuchen_sie_es_e();
+	}
 } as const;

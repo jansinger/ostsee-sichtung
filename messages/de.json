@@ -201,6 +201,15 @@
 	"components_weather_weatherdisplay_aria_label_wetterdaten_ins_formular_uebernehmen": "Wetterdaten ins Formular übernehmen",
 	"components_weather_weatherdisplay_text_daten_uebernehmen": "Daten übernehmen",
 	"components_weather_weatherdisplay_text_keine_wetterdaten_verfuegbar": "Keine Wetterdaten verfügbar",
+	"constants_upload_text_filename_datei_ist_leer": "{fileName}: Datei ist leer",
+	"constants_upload_text_filename_dieses_format_koennen_wir_nicht": "{fileName}: Dieses Format können wir nicht annehmen. Möglich sind {formats}.",
+	"constants_upload_text_filename_unsicherer_dateiname": "{fileName}: Unsicherer Dateiname",
+	"constants_upload_text_filename_zu_gross_mit_actualmb_mb": "{fileName}: zu groß mit {actualMB} MB (erlaubt sind {maxMB} MB).",
+	"constants_upload_text_gesamtgroesse_ueberschritten_maximum": "Gesamtgröße überschritten. Maximum: {maxMB}MB",
+	"constants_upload_text_keine_datei_ausgewaehlt": "Keine Datei ausgewählt",
+	"constants_upload_text_nehmen_sie_das_video_in_geringerer_auflo": "Nehmen Sie das Video in geringerer Auflösung auf oder kürzen Sie es — oder senden Sie es an {email}.",
+	"constants_upload_text_upload_fehlgeschlagen_versuchen_sie_es_e": "Upload fehlgeschlagen. Versuchen Sie es erneut.",
+	"constants_upload_text_zu_viele_dateien_maximum": "Zu viele Dateien. Maximum: {maxFiles}",
 	"constants_weather_text_bedeckt": "Bedeckt",
 	"constants_weather_text_dichter_gefrierender_nieselregen": "Dichter gefrierender Nieselregen",
 	"constants_weather_text_dichter_nieselregen": "Dichter Nieselregen",
@@ -388,6 +397,31 @@
 	"formoptions_windstrength_unknown": "Unbekannt",
 	"formoptions_windstrength_windstill": "0 - Windstille (< 1 km/h)",
 	"i18n_selbsttest": "Sprachumschaltung aktiv",
+	"map_popupcontent_text_art_id": "Art {id}",
+	"map_popupcontent_text_sichtungen_an_diesem_ort": "{sichtungen} an diesem Ort",
+	"map_popupcontent_text_sichtungen_plural": [
+		{
+			"declarations": ["input count", "local countPlural = count: plural"],
+			"selectors": ["countPlural"],
+			"match": {
+				"countPlural=one": "{count} Sichtung",
+				"countPlural=other": "{count} Sichtungen"
+			}
+		}
+	],
+	"map_popupcontent_text_tiere_plural": [
+		{
+			"declarations": ["input count", "local countPlural = count: plural"],
+			"selectors": ["countPlural"],
+			"match": {
+				"countPlural=one": "{count} Tier",
+				"countPlural=other": "{count} Tiere"
+			}
+		}
+	],
+	"map_popupcontent_text_unbekannt": "Unbekannt",
+	"map_popupcontent_text_unbekannte_art": "Unbekannte Art",
+	"map_popupcontent_text_unbekanntes_datum": "Unbekanntes Datum",
 	"report_components_form_fields_basecheckbox_aria_label_hinweis_valuetext": "Hinweis: {valueText}",
 	"report_components_form_fields_basecheckbox_aria_label_pflichtfeld": "Pflichtfeld",
 	"report_components_form_fields_baseselect_text_bitte_waehlen": "Bitte wählen...",
