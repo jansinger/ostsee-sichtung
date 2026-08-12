@@ -1,3 +1,4 @@
+import * as m from '$lib/paraglide/messages';
 /**
  * Standortbestimmung für den Button „Mein aktueller Standort".
  *
@@ -37,13 +38,13 @@ export const GEOLOCATION_WATCHDOG_MS = 30_000;
 export function describeGeolocationError(error: { code: number }): string {
 	switch (error.code) {
 		case 1:
-			return 'Der Standort wurde nicht freigegeben. Sie können die Position stattdessen auf der Karte wählen.';
+			return m.report_form_position_geolocation_text_der_standort_wurde_nicht_freigegeben_sie();
 		case 2:
-			return 'Der Standort konnte nicht ermittelt werden. Bitte wählen Sie die Position auf der Karte.';
+			return m.report_form_position_geolocation_text_der_standort_konnte_nicht_ermittelt_werd();
 		case 3:
-			return 'Die Standortbestimmung hat zu lange gedauert. Bitte versuchen Sie es erneut oder wählen Sie die Position auf der Karte.';
+			return m.report_form_position_geolocation_text_die_standortbestimmung_hat_zu_lange_geda();
 		default:
-			return 'Der Standort ließ sich nicht abrufen. Bitte wählen Sie die Position auf der Karte.';
+			return m.report_form_position_geolocation_text_der_standort_liess_sich_nicht_abrufen_bi();
 	}
 }
 
@@ -63,7 +64,7 @@ export function requestCurrentPosition(
 	if (!geolocation) {
 		return Promise.resolve({
 			ok: false,
-			message: 'Dieser Browser unterstützt keine Standortbestimmung.'
+			message: m.report_form_position_geolocation_text_dieser_browser_unterstuetzt_keine_stando()
 		});
 	}
 
