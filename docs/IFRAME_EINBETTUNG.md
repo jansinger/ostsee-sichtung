@@ -91,6 +91,66 @@ an den beiden Formular-Aufrufstellen, die hierher verweisen.
 
 ---
 
+## Größe der Einbettung (Breite & Höhe)
+
+Empfehlung ans Museum, live verifiziert am 2026-08-12 (Testaufbau:
+[docs/test-iframe.html](test-iframe.html), echte Cross-Origin-Einbettung über zwei
+verschiedene Ports, `isNotIFrame` per Debug-Ausgabe direkt im Quellcode gemessen).
+
+### Breite: max. 650–700px, nicht 100 % der Spaltenbreite
+
+Das Formular begrenzt sich im iframe-Modus selbst auf `max-width: 600px`
+([+page.svelte:363-366](../src/routes/+page.svelte#L363-L366)), mit `p-6`-Innenabstand
+also 648px Gesamtbreite — das greift bei echter Cross-Origin-Einbettung nachweislich
+zuverlässig (`isNotIFrame=false`, Wrapper misst exakt `width: 600`).
+
+**Wichtig:** Der App-Seitenhintergrund (`bg-base-100`, helles Blaugrau) füllt dabei
+immer die **komplette** iframe-Breite, unabhängig von der 600px-Begrenzung des
+Formulars selbst. Ist das iframe deutlich breiter als 648px, entsteht dadurch sichtbar
+eine „Box in der Box“ — heller App-Hintergrund, darin zentriert ein schmaleres
+Formular. Das ist kein Fehler, sieht auf einer breiten Museumsseite aber wie ein
+Darstellungsproblem aus und war in einer früheren Testrunde selbst schon Anlass für
+einen Fehlalarm. Deshalb: iframe-Breite fest auf ca. 650–700px begrenzen. Fluid nach
+unten (bis `min-width: 320px`) ist unkritisch, die App skaliert dort mobil-tauglich.
+
+### Höhe: keine automatische Anpassung — feste 3350px
+
+Die App sendet **kein** `resize`-`postMessage` an die Elternseite — das ist im
+Quellcode nirgends implementiert (auch nicht als Rest eines früheren Anlaufs; das
+frühere, inzwischen gelöschte `docs/test-iframe.html` wartete auf ein Signal, das nie
+gesendet wurde). Eine mit dem Formularinhalt mitwachsende Höhe ist damit aktuell
+**nicht** möglich, ohne das Feature erst zu bauen.
+
+Gemessen wurde deshalb am 2026-08-12 durch Klicken durch alle vier Formularschritte
+(inkl. Validierungsfehler-Zuständen), bei 648px Breite:
+
+| Zustand                                             | Höhe       |
+| --------------------------------------------------- | ---------- |
+| Einstiegsseite („Was möchten Sie melden?“)          | 436px      |
+| Schritt 1 · Position & Zeitpunkt (mit Karte)        | 2266px     |
+| Schritt 1 · mit Validierungsfehlern                 | 2358px     |
+| Schritt 2 · Angaben zum Tier                        | 2167px     |
+| Schritt 2 · mit Validierungsfehlern                 | 2360px     |
+| Schritt 2 · mit Bootsantrieb-Zusatzfeld (bedingt)   | 2237px     |
+| Schritt 3 · Weitere Informationen                   | 2484px     |
+| Schritt 4 · Kontaktdaten                            | 2981px     |
+| **Schritt 4 · mit allen Validierungsfehlern (Max)** | **3264px** |
+| Erfolgsseite („Vielen Dank!“)                       | 2296px     |
+
+Die Höhe schwankt zwischen 436px und 3264px — Faktor 7,5. Eine einzelne feste Höhe ist
+deshalb immer ein Kompromiss zwischen „oben abgeschnitten“ (zu niedrig) und „viel
+Leerraum“ (zu hoch, sichtbar z. B. auf der kurzen Einstiegsseite). Entschieden für die
+erste Museums-Abstimmung: **feste Höhe von 3350px** (Maximum aus Schritt 4 mit Fehlern
+plus Puffer), mit iframe-internem Scrollen als Fallback für alles Unvorhergesehene
+(z. B. sehr lange Freitexte im Notizfeld).
+
+**Sauberer, aber noch nicht umgesetzt:** Ein `resize`-`postMessage` von der App an die
+Elternseite (Vorbild: das damals gelöschte `docs/test-iframe.html` erwartete genau so
+ein Signal, ohne dass die App es je gesendet hätte). Bis das gebaut ist, gilt die feste
+Höhe oben.
+
+---
+
 ## Fallstrick: `export const csr = false` kippt die Erkennung
 
 `isNotIFrame` ist eine **Modulkonstante**, kein reaktiver Wert. Ohne Client-JS

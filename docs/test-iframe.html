@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="de">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Test: iframe-Einbettung wie auf deutsches-meeresmuseum.de</title>
+		<style>
+			/* Grobe Annäherung an eine umgebende Seite, NICHT das echte Museums-CSS.
+			   Zweck: sichtbar machen, ob unsere Navbar/Footer im iframe-Mode
+			   wirklich verschwinden und kein doppeltes Chrome entsteht. */
+			body {
+				margin: 0;
+				font-family: sans-serif;
+				background: #f0ece2;
+			}
+			header,
+			footer {
+				background: #1b3a4b;
+				color: #fff;
+				padding: 1rem 2rem;
+			}
+			main {
+				max-width: 960px;
+				margin: 0 auto;
+				padding: 1rem;
+			}
+			.hinweis {
+				font-size: 0.9rem;
+				background: #fff8e1;
+				border: 1px solid #e0c46c;
+				border-radius: 4px;
+				padding: 0.75rem 1rem;
+			}
+			.befund {
+				font-size: 0.9rem;
+				background: #e6f4ea;
+				border: 1px solid #8fc9a3;
+				border-radius: 4px;
+				padding: 0.75rem 1rem;
+			}
+			table.hoehen {
+				width: 100%;
+				border-collapse: collapse;
+				font-size: 0.9rem;
+				background: #fff;
+			}
+			table.hoehen th,
+			table.hoehen td {
+				border: 1px solid #ccc;
+				padding: 0.4rem 0.6rem;
+				text-align: left;
+			}
+			table.hoehen th {
+				background: #f0ece2;
+			}
+
+			/* Empfohlene Einbettungsmaße fürs Meeresmuseum, live verifiziert
+			   (2026-08-12, per Debug-Ausgabe direkt im Quellcode gemessen,
+			   danach wieder entfernt):
+
+			   - isNotIFrame wird bei echter Cross-Origin-Einbettung korrekt als
+			     `false` erkannt, der Formular-Wrapper misst dabei exakt
+			     `width: 600` (src/routes/+page.svelte:363-366, `.max-w-[600px]`
+			     mit `p-6` = 24px Innenabstand → 648px Gesamtbreite).
+			   - WICHTIG für die Größenwahl: Der App-Seitenhintergrund
+			     (`bg-base-100`, ein sehr helles Blaugrau) füllt IMMER die
+			     komplette iframe-Breite, unabhängig von der 600px-Begrenzung des
+			     Formulars selbst. Ist das iframe deutlich breiter als 648px,
+			     entsteht dadurch sichtbar eine „Box in der Box“ — heller
+			     App-Hintergrund, darin zentriert ein schmaleres Formular. Das ist
+			     kein Fehler, sieht auf einer breiten Museumsseite aber leicht wie
+			     ein Darstellungsproblem aus.
+			   - Empfehlung ans Museum: iframe-Breite auf ca. 650–700px begrenzen
+			     (nicht 100% der Spaltenbreite), damit kein unnötiger Rand aus
+			     App-Hintergrundfarbe entsteht. Fluid nach unten (min-width:
+			     320px) ist unkritisch, die App skaliert dort selbst mobil-
+			     tauglich.
+			   - Höhe: Die App sendet KEIN resize-postMessage — im Quellcode
+			     nirgends implementiert. Eine mit dem Formularinhalt mitwachsende
+			     Höhe ist damit NICHT möglich, ohne das erst zu bauen. Die
+			     tatsächlichen Höhen wurden am 2026-08-12 durch Klicken durch alle
+			     vier Schritte gemessen (Chromium, 648px Breite, echte
+			     Cross-Origin-Einbettung, DB-Testeintrag danach wieder gelöscht) —
+			     siehe Tabelle im Markup. Gewählt ist unten der höchste gemessene
+			     Wert (Schritt 4 mit allen Validierungsfehlern, 3264px) plus
+			     Puffer, mit iframe-internem Scrollen als Fallback für alles
+			     Unvorhergesehene (z. B. sehr lange Freitexte in "Notizen"). */
+			iframe#sichtungen-frame {
+				display: block;
+				width: 100%;
+				max-width: 700px;
+				min-width: 320px;
+				height: 3350px;
+				border: 0;
+			}
+		</style>
+	</head>
+	<body>
+		<header>Deutsches Meeresmuseum (Attrappe der Elternseite)</header>
+
+		<main>
+			<h1>Sichtung melden</h1>
+			<p>
+				Nachbau von
+				<a href="https://www.deutsches-meeresmuseum.de/wissenschaft/sichtungen/sichtung-melden"
+					>deutsches-meeresmuseum.de/wissenschaft/sichtungen/sichtung-melden</a
+				>
+				zum lokalen Testen der iframe-Einbettung. Erwartung laut
+				<code>docs/IFRAME_EINBETTUNG.md</code>: Navigation, Footer und der Formular-Titel der
+				Anwendung bleiben ausgeblendet (<code>isNotIFrame</code>
+				= false).
+			</p>
+
+			<p class="befund">
+				<strong>Live verifiziert (2026-08-12):</strong> Die Cross-Origin-Erkennung funktioniert
+				korrekt (<code>isNotIFrame=false</code>), und das Formular wird zuverlässig auf 600px
+				begrenzt. Die App-Hintergrundfarbe füllt dabei immer die volle iframe-Breite — deshalb unten
+				<code>max-width: 700px</code> am iframe, damit kein unnötiger Rand entsteht.
+			</p>
+
+			<p class="hinweis">
+				<strong>Zur Höhe (echte Messwerte, 2026-08-12):</strong> Die App sendet kein
+				<code>postMessage</code>, eine mitwachsende Höhe ist also nicht möglich. Gemessen bei 648px
+				Breite, jeweils Unterkante des Formularinhalts ohne Navbar/Footer (die sind im iframe-Modus
+				ausgeblendet):
+			</p>
+
+			<table class="hoehen">
+				<thead>
+					<tr>
+						<th>Zustand</th>
+						<th>Höhe</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>Einstiegsseite („Was möchten Sie melden?“)</td>
+						<td>436px</td>
+					</tr>
+					<tr>
+						<td>Schritt 1 · Position &amp; Zeitpunkt (mit Karte)</td>
+						<td>2266px</td>
+					</tr>
+					<tr>
+						<td>Schritt 1 · mit Validierungsfehlern</td>
+						<td>2358px</td>
+					</tr>
+					<tr>
+						<td>Schritt 2 · Angaben zum Tier</td>
+						<td>2167px</td>
+					</tr>
+					<tr>
+						<td>Schritt 2 · mit Validierungsfehlern</td>
+						<td>2360px</td>
+					</tr>
+					<tr>
+						<td>Schritt 2 · mit Bootsantrieb-Zusatzfeld (bedingt sichtbar)</td>
+						<td>2237px</td>
+					</tr>
+					<tr>
+						<td>Schritt 3 · Weitere Informationen (keine Pflichtfelder)</td>
+						<td>2484px</td>
+					</tr>
+					<tr>
+						<td>Schritt 4 · Kontaktdaten</td>
+						<td>2981px</td>
+					</tr>
+					<tr>
+						<td><strong>Schritt 4 · mit allen Validierungsfehlern (Maximum)</strong></td>
+						<td><strong>3264px</strong></td>
+					</tr>
+					<tr>
+						<td>Erfolgsseite („Vielen Dank!“)</td>
+						<td>2296px</td>
+					</tr>
+				</tbody>
+			</table>
+			<p class="hinweis">
+				<strong>Konsequenz:</strong> Die Höhe schwankt zwischen 436px und 3264px — mehr als das
+				Siebenfache. Eine einzelne feste Höhe ist deshalb immer ein Kompromiss: Die gewählten 3350px
+				unten decken den ungünstigsten Fall ab (Schritt 4 mit Fehlern), lassen aber auf der
+				Einstiegsseite ca. 2900px ungenutzten weißen Raum stehen. Ohne Nachrüsten eines
+				<code>resize</code>-<code>postMessage</code> in der App (aktuell nicht vorhanden) ist diese
+				Wahl zwischen „oben abgeschnitten“ und „unten viel Leerraum“ — sauberer wäre das Nachrüsten
+				des Resize-Signals.
+			</p>
+
+			<iframe src="https://localhost:4000" id="sichtungen-frame" title="Sichtung melden"></iframe>
+		</main>
+
+		<footer>Footer der Elternseite (Attrappe)</footer>
+	</body>
+</html>
