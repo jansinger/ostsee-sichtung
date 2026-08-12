@@ -50,11 +50,11 @@ export function createOptionsFactory<T extends Record<string, number>>(
 		/**
 		 * Get display label for a value
 		 * @param value - The numeric value
-		 * @returns Display label or 'Unbekannt' if not found
+		 * @returns Anzeigebeschriftung, sonst die Ersatzbeschriftung „Unbekannt"
 		 */
 		getLabel(value: number): string {
 			const option = options.find((opt) => opt.value === value);
-			return option?.label || 'Unbekannt';
+			return option?.label || m.utils_form_optionsfactory_text_unbekannt();
 		},
 
 		/**
@@ -105,7 +105,7 @@ export function createConsentOptionsFactory(
 		{ NO_CONSENT: 0, CONSENT: 1 },
 		{
 			NO_CONSENT: m.utils_form_optionsfactory_text_nicht_einverstanden(),
-			CONSENT: 'Einverstanden'
+			CONSENT: m.utils_form_optionsfactory_text_einverstanden()
 		},
 		name,
 		0

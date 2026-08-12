@@ -370,7 +370,11 @@ describe('Attribute außerhalb der Extraktor-Liste', () => {
 function scriptBlocksOnly(source: string): string {
 	const blank = source.replace(/[^\n]/g, ' ').split('');
 
-	for (const match of source.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)) {
+	// `i`-Flag: HTML-Tags sind gross-/kleinschreibungsunabhaengig. Ein
+	// `<SCRIPT>` waere ohne das Flag fuer diesen Zaehler unsichtbar — und ein
+	// Guard, der eine Schreibweise nicht sieht, ist genau das Versagen, gegen
+	// das er gebaut ist (CodeQL js/bad-tag-filter, PR #864).
+	for (const match of source.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)) {
 		const body = match[1];
 		if (body === undefined) continue;
 		const start = (match.index ?? 0) + (match[0]?.indexOf(body) ?? 0);
@@ -560,6 +564,22 @@ describe('Anzeigetext im <script>-Block', () => {
 
 		expect(findScriptDisplayText(source)).toEqual([
 			{ line: 3, text: "'Bitte wählen Sie eine Tierart'" }
+		]);
+	});
+
+	it('findet den Text auch in einem gross geschriebenen <SCRIPT>-Block', () => {
+		// CodeQL js/bad-tag-filter (PR #864): Das Muster hatte kein `i`-Flag und
+		// war damit fuer `<SCRIPT>` blind. HTML-Tags sind
+		// gross-/kleinschreibungsunabhaengig; ein Zaehler, der eine gueltige
+		// Schreibweise nicht sieht, meldet Null und beweist nichts.
+		const source = [
+			'<SCRIPT LANG="ts">',
+			"\tconst hint = 'Karte wird initialisiert';",
+			'</SCRIPT>'
+		].join('\n');
+
+		expect(findScriptDisplayText(source)).toEqual([
+			{ line: 2, text: "'Karte wird initialisiert'" }
 		]);
 	});
 
