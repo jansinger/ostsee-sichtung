@@ -1157,6 +1157,52 @@ Melder-Texte. `'Sie haben in der letzten Stunde bereits … MB'` und
 `'Die Meldung enthält bereits … MB'` dagegen richten sich unmittelbar an den
 Menschen. Diese Trennung geht nur von Hand, Zeile für Zeile.
 
+### Welle E1: die Antworten, die der Melder wirklich sieht
+
+Commit cf7276ef, 26 neue Schlüssel über die fünf Endpunkte aus der
+Klassifikation — nicht über die 119 der Rohmessung.
+
+#### Zwei vorbestehende Fehler mitbehoben
+
+Beides englischer Text, der heute schon einem deutschen Melder angezeigt
+wurde:
+
+- `/api/weather/historical`: `'Could not fetch weather data for the
+specified location and date'` und `'Internal server error'` —
+  `WeatherDataFetcher` zeigt `data.error` unverändert an.
+- `/api/sightings:151`: `'Invalid form submission'` — `submitSightingForm`
+  zeigt `result.message` an.
+
+Dieselbe Klasse wie `'Unknown error'` in `VerifyLocation` (Welle C4). **Eine
+schnelle Suchen-und-Ersetzen-Welle hätte alle drei übersprungen**: Sie sehen
+erledigt aus, weil sie schon englisch sind. Das ist der konkrete Ertrag der
+Klassifikation.
+
+#### Nicht übersetzt, Zeile für Zeile entschieden
+
+Meldungen, die einen falsch gebauten **Client** beantworten, nicht einen
+Menschen: `'Content-Type muss multipart/form-data sein'`, `'Reference ID ist
+erforderlich'`, `'File path ist erforderlich'`, die `FORBIDDEN_FIELDS`-Liste.
+Der admin-geschützte `GET`-Zweig von `/api/sightings` bleibt ebenfalls
+deutsch.
+
+#### Der Fallstrick: derselbe Satz in Logzeile UND Antwort
+
+Zweimal stand derselbe deutsche Text sowohl in einem `logger.info(...)` als
+auch im Antwortkörper (`files/delete`, `geo/inBaltic`). Nur die **Antwort**
+ist eine Botschaft; die Logzeile bleibt deutsch, weil sie Entwicklertext ist.
+Die Ersetzung zielt deshalb auf `message:`/`error:` statt auf das nackte
+Literal — so kann eine Logmeldung nicht versehentlich übersetzt werden.
+Gefunden hat das die Zähl-Zusicherung der Ersetzung (`count == 1`), nicht
+die Aufmerksamkeit.
+
+Serverseitig sind das Request-Handler: Paraglide löst die Locale aus der
+Anfrage auf, ein englischer Melder bekommt eine englische Fehlermeldung ohne
+ausdrückliches Locale-Argument — und gespeichert wird davon nichts.
+
+Nachweise: `svelte-check` 0 Fehler, `test:quick` grün (4955 + 780), alle drei
+E2E-Shards im ersten Lauf grün (229 + 94 + 156 = 479).
+
 ### Was diese Messung NICHT ist
 
 Kein Guard. Sie liegt als Zahl im Protokoll, nicht im Testlauf — der
