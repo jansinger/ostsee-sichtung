@@ -60,15 +60,63 @@ function svelteReplacement(site: ExtractionSite): string {
 	return `${site.aspect}={${svelteMessageCall(site.key)}}`;
 }
 
+const PARAGLIDE_IMPORT = `import * as m from '$lib/paraglide/messages';`;
+
+/**
+ * Öffnendes `<script>`-Tag des INSTANZ-Blocks — bewusst nicht `<script
+ * module …>`. Ein `<script module>`-Block kann in Svelte 5 keine
+ * Laufzeitwerte für die Vorlage exportieren (nur Typen, siehe
+ * `SubmitStatus.svelte`), der Import gehört deshalb in den ersten
+ * Skript-Block OHNE `module`-Attribut.
+ *
+ * `[^>]*?` non-greedy, damit ein `module`-Attribut irgendwo im Tag (nicht nur
+ * direkt nach `script`) den Block trotzdem ausschließt — negative Lookahead
+ * auf das ganze Tag statt nur auf den ersten Attributnamen.
+ */
+const INSTANCE_SCRIPT_TAG = /<script(?![^>]*\bmodule\b)[^>]*>/;
+
+/**
+ * Stellt sicher, dass `$lib/paraglide/messages` als `m` importiert ist —
+ * direkt nach dem öffnenden Instanz-`<script>`-Tag, sofern noch nicht
+ * vorhanden.
+ *
+ * Ohne diesen Schritt referenziert jede Ersetzung eine Bezeichnung, die es in
+ * der Datei nicht gibt: Anders als bei Schicht A/B (Schema, formOptions), wo
+ * `import * as m from '$lib/paraglide/messages'` schon vor der Extraktion
+ * vorhanden war, hatten die meisten Markup-Dateien `m` bisher nie importiert.
+ * svelte-check meldet das erst beim Typ-Check ("Cannot find name 'm'") — ein
+ * reines Neu-Parsen (Aufgabe 2.2) findet das nicht, weil `m.foo()` ohne
+ * Import syntaktisch gültiges JS bleibt.
+ */
+function ensureParaglideImport(source: string): string {
+	if (source.includes(PARAGLIDE_IMPORT)) {
+		return source;
+	}
+	const match = INSTANCE_SCRIPT_TAG.exec(source);
+	if (!match) {
+		// Kein Instanz-Skript-Block — kommt im Umfang dieses Werkzeugs nicht
+		// vor (jede Zieldatei ist eine Komponente mit `<script lang="ts">`),
+		// aber unverändert lassen ist die sichere Richtung, keine kaputte Datei.
+		return source;
+	}
+	const insertAt = match.index + match[0].length;
+	return `${source.slice(0, insertAt)}\n\t${PARAGLIDE_IMPORT}${source.slice(insertAt)}`;
+}
+
 /**
  * Ersetzt alle Svelte-Fundstellen einer Datei — von hinten nach vorn, aus
- * demselben Grund wie `applySitesToSource`.
+ * demselben Grund wie `applySitesToSource` — und ergänzt danach bei Bedarf
+ * den `m`-Import (siehe `ensureParaglideImport`). Ohne Fundstellen bleibt die
+ * Quelle unverändert, auch ohne Import — es gibt dann nichts, das ihn braucht.
  */
 export function applySvelteSitesToSource(source: string, sites: ExtractionSite[]): string {
+	if (sites.length === 0) {
+		return source;
+	}
 	const ordered = [...sites].sort((a, b) => b.start - a.start);
 	let result = source;
 	for (const site of ordered) {
 		result = result.slice(0, site.start) + svelteReplacement(site) + result.slice(site.end);
 	}
-	return result;
+	return ensureParaglideImport(result);
 }

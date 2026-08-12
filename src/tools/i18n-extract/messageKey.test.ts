@@ -4,7 +4,8 @@ import {
 	createKeyRegistry,
 	formOptionsMessageKey,
 	resolveFieldName,
-	schemaMessageKey
+	schemaMessageKey,
+	svelteMessageKey
 } from './messageKey';
 
 /** Findet den ersten String-Literal-Knoten mit dem gegebenen Text. */
@@ -106,5 +107,42 @@ describe('formOptionsMessageKey', () => {
 		expect(formOptionsMessageKey('windDirection', 'WindDirectionEnum.NONE', taken)).toBe(
 			'formoptions_winddirection_none'
 		);
+	});
+});
+
+describe('svelteMessageKey', () => {
+	it('baut <pfadpräfix>_<aspekt>_<slug der ersten wörter>', () => {
+		const taken = createKeyRegistry();
+		expect(
+			svelteMessageKey(
+				'src/lib/report/components/SubmissionSuccess.svelte',
+				'text',
+				'Meldung',
+				taken
+			)
+		).toBe('report_components_submissionsuccess_text_meldung');
+	});
+
+	// Gefunden bei der ersten echten Ausführung von --write-sources (Welle 1):
+	// `aria-label` ist eines der vier Ziel-Attribute (`SVELTE_TARGET_ATTRIBUTES`
+	// in collect.ts) und enthält einen Bindestrich. Ohne Slugifizierung landete
+	// er unverändert im Schlüssel — `m.<präfix>_aria-label_<slug>()` ist KEIN
+	// gültiger Methodenaufruf, sondern parst als Subtraktion
+	// (`m.<präfix>_aria - label_<slug>()`). svelte-check meldete das erst beim
+	// Typ-Check ("Cannot find name 'label_…'"), nicht beim reinen Neu-Parsen
+	// aus Aufgabe 2.2 — ein Bindestrich ist syntaktisch gültiges JS, nur
+	// semantisch falsch. `schemaMessageKey` und `formOptionsMessageKey`
+	// slugifizieren ihren Aspekt bereits (siehe oben); `svelteMessageKey` tat
+	// es nicht.
+	it('slugifiziert einen bindestrich-haltigen Aspekt (aria-label)', () => {
+		const taken = createKeyRegistry();
+		const key = svelteMessageKey(
+			'src/lib/components/PublicNavbar.svelte',
+			'aria-label',
+			'Menü',
+			taken
+		);
+		expect(key).not.toContain('-');
+		expect(key).toBe('components_publicnavbar_aria_label_menue');
 	});
 });

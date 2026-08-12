@@ -102,7 +102,13 @@ export function svelteMessageKey(
 ): string {
 	const prefix = sveltePathPrefix(relativeFilePath);
 	const words = text.trim().split(/\s+/).slice(0, 5).join(' ');
-	const base = [prefix, aspect, slugify(words)].filter(Boolean).join('_');
+	// `aspect` ist entweder `'text'` oder ein Attributname aus
+	// `SVELTE_TARGET_ATTRIBUTES` (collect.ts) — `aria-label` enthält einen
+	// Bindestrich. Ungeslugifiziert wäre der Schlüssel `m.<präfix>_aria-label_…()`
+	// syntaktisch gültiges, aber semantisch falsches JS (Subtraktion statt
+	// Methodenaufruf) — derselbe Grund, aus dem `schemaMessageKey` und
+	// `formOptionsMessageKey` ihren Aspekt bereits slugifizieren.
+	const base = [prefix, slugify(aspect, 24), slugify(words)].filter(Boolean).join('_');
 	return register(base, taken);
 }
 

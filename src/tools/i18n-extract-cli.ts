@@ -26,10 +26,12 @@
  * Ausführung: `npm run i18n:extract` (Trockenlauf) oder
  * `npm run i18n:extract -- --write-messages`.
  */
+import { execSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { collectMessages, mergeMessageCatalogue, planExtraction } from './i18n-extract/plan';
+import type { ExtractionPlan } from './i18n-extract/render';
 import { renderDryRunReport } from './i18n-extract/render';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -38,6 +40,51 @@ const DEFAULT_ROOT = resolve(HERE, '..', '..');
 /** Die einzigen zwei Pfade, die `--write-messages` je anfasst. */
 const DE_MESSAGES_PATH = 'messages/de.json';
 const EN_MESSAGES_PATH = 'messages/en.json';
+
+/**
+ * Aufgabe 2.3a, Welle 1 — der Umfang, den `--write-sources` anfassen darf.
+ *
+ * Acht bis zehn Dateien mit hoher Nutzersichtbarkeit und guter E2E-Deckung
+ * (Auftrag): das Meldeformular (Einstiegsseite, Schrittnavigation,
+ * Absende-Status, Erfolgsseite) und die öffentliche Navigation/Fußzeile.
+ * Bewusst NICHT `routes/about/+page.svelte` — die größte Datei (67 Funde),
+ * gehört laut Plan in eine spätere Welle.
+ *
+ * Jeder Eintrag ist ein Pfad ab Repo-Wurzel mit `/` als Trenner — genau die
+ * Form, die `planExtraction()` in `ExtractionPlan.files[].file` liefert.
+ */
+export const WRITE_SOURCES_SCOPE: readonly string[] = [
+	'src/lib/report/components/ReportKindChoice.svelte',
+	'src/lib/report/components/form/StepNavigation.svelte',
+	'src/lib/report/components/form/FormActions.svelte',
+	'src/lib/report/components/form/StepProgressCompact.svelte',
+	'src/lib/report/components/form/FormSteps.svelte',
+	'src/lib/report/components/form/SubmitStatus.svelte',
+	'src/lib/report/components/SubmissionSuccess.svelte',
+	'src/lib/components/PublicNavbar.svelte',
+	'src/lib/components/PublicFooter.svelte'
+];
+
+/**
+ * Ist `root` ein sauberer git-Arbeitsbaum?
+ *
+ * `--write-sources` bricht sonst ab (Auftrag, Teil 1): Der erzeugte Diff muss
+ * nachträglich prüfbar bleiben — ein Lauf über bereits geänderte Dateien
+ * macht das unmöglich, weil sich der Umbau-Diff nicht mehr von vorherigen
+ * Änderungen trennen lässt.
+ *
+ * Kein `git`-Repository (oder `git` schlägt aus einem anderen Grund fehl)
+ * gilt defensiv als UNSAUBER — ein Abbruch ist hier die sichere Richtung,
+ * ein stilles Durchwinken nicht.
+ */
+export function isGitWorkingTreeClean(root: string): boolean {
+	try {
+		const output = execSync('git status --porcelain', { cwd: root, encoding: 'utf-8' });
+		return output.trim().length === 0;
+	} catch {
+		return false;
+	}
+}
 
 function readCatalogue(root: string, relativePath: string): Record<string, string> {
 	const raw = readFileSync(resolve(root, relativePath), 'utf-8');
@@ -90,6 +137,60 @@ export function writeMessageCatalogue(
 	return { written: true, conflicts: [] };
 }
 
+export interface WriteSourceFilesResult {
+	/** Die tatsächlich geschriebenen Dateien, ab Repo-Wurzel, `/`-getrennt. */
+	written: string[];
+	/** Gesetzt statt zu schreiben, wenn der Arbeitsbaum unsauber war. */
+	aborted?: string;
+}
+
+export interface WriteSourceFilesOptions {
+	/** Nur diese Dateien dürfen angefasst werden. Default: `WRITE_SOURCES_SCOPE`. */
+	scope?: readonly string[];
+	/** Austauschbar für Tests — Default ruft echtes `git status --porcelain`. */
+	isWorkingTreeClean?: (root: string) => boolean;
+}
+
+/**
+ * Schreibt `plan.files[].after` für jede Datei, die BEIDES ist: im `scope`
+ * gelistet UND mit mindestens einer Fundstelle. Eine Scope-Datei ohne
+ * Fundstelle bleibt unangetastet — ein No-op-Schreibvorgang träte sonst in
+ * jedem Diff auf, ohne etwas zu ändern.
+ *
+ * Bricht VOR jedem Schreibvorgang ab, wenn der Arbeitsbaum unsauber ist
+ * (siehe `isGitWorkingTreeClean`) — dieselbe Auflage wie in Teil 1 des
+ * Auftrags.
+ */
+export function writeSourceFiles(
+	root: string,
+	plan: ExtractionPlan,
+	options: WriteSourceFilesOptions = {}
+): WriteSourceFilesResult {
+	const scope = options.scope ?? WRITE_SOURCES_SCOPE;
+	const isClean = options.isWorkingTreeClean ?? isGitWorkingTreeClean;
+
+	if (!isClean(root)) {
+		return {
+			written: [],
+			aborted:
+				'Abgebrochen — unsauberer Arbeitsbaum. Der erzeugte Diff muss nachträglich prüfbar bleiben; committe oder verwirf zuerst die vorhandenen Änderungen.'
+		};
+	}
+
+	const written: string[] = [];
+	for (const entry of plan.files) {
+		if (!scope.includes(entry.file)) {
+			continue;
+		}
+		if (entry.sites.length === 0) {
+			continue;
+		}
+		writeFileSync(resolve(root, entry.file), entry.after);
+		written.push(entry.file);
+	}
+	return { written };
+}
+
 export function main(argv: string[]): void {
 	const rootArg = argv.find((arg) => arg.startsWith('--root='));
 	const root = rootArg ? resolve(rootArg.slice('--root='.length)) : DEFAULT_ROOT;
@@ -107,6 +208,26 @@ export function main(argv: string[]): void {
 			return;
 		}
 		console.log(`Geschrieben: ${DE_MESSAGES_PATH}, ${EN_MESSAGES_PATH}`);
+	}
+
+	// Reihenfolge (Auftrag, Teil 1): erst `--write-messages`, dann
+	// `npm run i18n:compile`, dann `--write-sources` — sonst referenziert der
+	// Quelltext Botschaften, die es im kompilierten `$lib/paraglide/messages`
+	// noch nicht gibt, und der Typ-Check bricht. Diese Reihenfolge ist ein
+	// Ablaufschritt zwischen drei separaten npm-Läufen und wird hier bewusst
+	// NICHT programmatisch erzwungen — die Datei kennt den Compile-Schritt
+	// nicht. Sie steht dokumentiert im Auftrag und in `docs/i18n/PLAN_ETAPPE2.md`.
+	if (argv.includes('--write-sources')) {
+		const result = writeSourceFiles(root, plan);
+		if (result.aborted) {
+			console.error(result.aborted);
+			process.exitCode = 1;
+			return;
+		}
+		console.log(`Geschrieben (--write-sources): ${result.written.length} Datei(en)`);
+		for (const file of result.written) {
+			console.log(`  - ${file}`);
+		}
 	}
 }
 
