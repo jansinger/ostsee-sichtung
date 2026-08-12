@@ -373,11 +373,12 @@ function scriptBlocksOnly(source: string): string {
 	// Zwei Schreibweisen, die HTML erlaubt und die dieses Muster zunächst beide
 	// übersehen hat (CodeQL js/bad-tag-filter, PR #864):
 	//   `i`-Flag  — Tags sind groß-/kleinschreibungsunabhängig, `<SCRIPT>` zählt.
-	//   `\s*` vor `>` — `</script >` ist ein gültiges Schluss-Tag.
+	//   `\b[^>]*>`  — HTML schließt auch bei `</script >` und sogar
+	//                 `</script foo>`; alles bis zur Klammer gehört zum Tag.
 	// Beides ist derselbe Fehler: Ein Zähler, der eine gültige Schreibweise
 	// nicht liest, meldet Null und beweist nichts — genau das Versagen, gegen
 	// das er gebaut ist.
-	for (const match of source.matchAll(/<script[^>]*>([\s\S]*?)<\/script\s*>/gi)) {
+	for (const match of source.matchAll(/<script[^>]*>([\s\S]*?)<\/script\b[^>]*>/gi)) {
 		const body = match[1];
 		if (body === undefined) continue;
 		const start = (match.index ?? 0) + (match[0]?.indexOf(body) ?? 0);
@@ -579,6 +580,20 @@ describe('Anzeigetext im <script>-Block', () => {
 			'<SCRIPT LANG="ts">',
 			"\tconst hint = 'Karte wird initialisiert';",
 			'</SCRIPT>'
+		].join('\n');
+
+		expect(findScriptDisplayText(source)).toEqual([
+			{ line: 2, text: "'Karte wird initialisiert'" }
+		]);
+	});
+
+	it('findet den Text auch bei einem Schluss-Tag mit Beiwerk', () => {
+		// HTML behandelt `</script foo>` als Schluss-Tag mit (ignorierten)
+		// Attributen. CodeQL modelliert das; das Muster tut es jetzt auch.
+		const source = [
+			'<script lang="ts">',
+			"\tconst hint = 'Karte wird initialisiert';",
+			'</script foo>'
 		].join('\n');
 
 		expect(findScriptDisplayText(source)).toEqual([
