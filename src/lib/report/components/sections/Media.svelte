@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import { getUploadConfig } from '$lib/stores/configStore';
 	import { getFormContext } from '$lib/report/formContext';
 	import Icon from '$lib/components/Icon.svelte';
@@ -65,7 +66,7 @@
      Konfiguration sie zulässt: Er ist eine Überschrift, kein Versprechen — was
      tatsächlich angenommen wird, sagt `formatDescription` eine Zeile tiefer und
      passt sich an. Der Fließtext daneben ist bewusst formatneutral gehalten. -->
-<SectionCard title="Fotos/Videos hochladen (optional)" icon="lucide:camera">
+<SectionCard title={m.report_components_sections_media_title_fotos_videos_hochladen_optional()} icon="lucide:camera">
 	<!-- Der Einwilligungssatz der Vorlage („Mit dem Hochladen … stimmen Sie deren
 	     Speicherung zu") steht hier bewusst NICHT: Denselben Vorgang beschreibt
 	     `UPLOAD_NOTICE` an der Dropzone darunter genauer — sofortige Übertragung,
@@ -96,14 +97,13 @@
 	     Wort ist zugleich das, was der Abschnitt sonst durchgehend verwendet. -->
 	{#if !adminMode}
 		<p class="text-base-content/70 mb-4 text-sm">
-			Sie können Aufnahmen zu Ihrer Meldung hochladen. Ob wir sie zusätzlich für Veröffentlichungen
-			nutzen dürfen, fragen wir Sie im Schritt Kontaktdaten.
+			{m.report_components_sections_media_text_sie_koennen_aufnahmen_zu_ihrer()}
 		</p>
 	{/if}
 	<div class="text-base-content/70 mb-4 text-sm">
 		<p class="mb-2 flex items-center gap-2 font-medium">
 			<Icon icon="lucide:camera" width="16" class="text-primary" aria-hidden="true" />
-			Aufnahmen sind extrem wertvoll für die Forschung!
+			{m.report_components_sections_media_text_aufnahmen_sind_extrem_wertvoll_fuer()}
 		</p>
 		<ul class="list-inside list-disc space-y-1 text-xs">
 			<li><strong>Artbestimmung:</strong> Auch unscharfe Aufnahmen können helfen</li>
@@ -123,7 +123,7 @@
 				— Ihre Angaben aus Schritt 1 bleiben davon unberührt
 			</li>
 			<li>
-				<strong>Formate:</strong>
+				<strong>{m.report_components_sections_media_text_formate()}</strong>
 				{formatDescription} ({maxSizeDescription})
 			</li>
 			{#if allowsVideo}
@@ -161,7 +161,7 @@
 			Hook für eine zusätzliche Beschreibung.
 		-->
 		<p class="text-support text-base-content/70 mt-1">
-			Diese Einwilligung kann nur die meldende Person selbst erteilen oder zurückziehen.
+			{m.report_components_sections_media_text_diese_einwilligung_kann_nur_die()}
 		</p>
 	{/if}
 	{#if uploadConfig}

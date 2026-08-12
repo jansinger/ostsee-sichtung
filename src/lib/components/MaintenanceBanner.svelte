@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import Icon from '$lib/components/Icon.svelte';
 
 	let { isAdmin = false, maintenanceMessage = '' } = $props();
@@ -14,20 +15,20 @@
 		<div class="flex-1">
 			<h3 class="font-bold flex items-center gap-2">
 				<Icon icon="lucide:triangle-alert" width="20" height="20" class="text-warning-strong" />
-				Wartungsmodus ist aktiv
+				{m.components_maintenancebanner_text_wartungsmodus_ist_aktiv()}
 			</h3>
 			<div class="text-sm">
-				Normale Benutzer sehen die Wartungsseite. Als Admin haben Sie weiterhin Zugriff.
+				{m.components_maintenancebanner_text_normale_benutzer_sehen_die_wartungsseite()}
 			</div>
 			{#if maintenanceMessage}
 				<div class="mt-2 text-sm opacity-80">
-					<strong>Aktuelle Nachricht:</strong> {maintenanceMessage}
+					<strong>{m.components_maintenancebanner_text_aktuelle_nachricht()}</strong> {maintenanceMessage}
 				</div>
 			{/if}
 		</div>
 		<div>
 			<a href="/admin/settings" class="btn btn-warning btn-sm">
-				Einstellungen
+				{m.components_maintenancebanner_text_einstellungen()}
 			</a>
 		</div>
 	</div>

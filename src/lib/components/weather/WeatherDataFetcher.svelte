@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import type { WeatherData, WeatherFormFields } from '$lib/services/weatherService';
 	import type { WeatherDataWithMetadata } from '$lib/types';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
@@ -127,14 +128,14 @@
 	{#if loading}
 		<div class="mt-2 flex items-center gap-2" aria-live="polite">
 			<span class="loading loading-spinner loading-sm"></span>
-			<span>Lade Wetterdaten...</span>
+			<span>{m.components_weather_weatherdatafetcher_text_lade_wetterdaten()}</span>
 		</div>
 	{/if}
 
 	{#if showSuggestions && weatherData}
 		<div class={showInCard ? 'card bg-base-200 mt-3 p-4' : 'mt-3'}>
 			<h4 class="mb-2 text-base font-semibold">
-				Vorgeschlagene Wetterdaten für die angegebene Position
+				{m.components_weather_weatherdatafetcher_text_vorgeschlagene_wetterdaten_fuer_die_ange()}
 			</h4>
 
 			<WeatherDisplay
@@ -164,7 +165,7 @@
 			{#if weatherData._metadata?.dataType === 'forecast'}
 				<StatusBlock
 					variant="partial"
-					title="Prognosedaten für die heutige Sichtung"
+					title={m.components_weather_weatherdatafetcher_title_prognosedaten_fuer_die_heutige_sichtung()}
 					description="Für heute liegen noch keine gemessenen Werte vor. Die Vorhersage aktualisiert sich mehrmals täglich."
 				/>
 			{/if}

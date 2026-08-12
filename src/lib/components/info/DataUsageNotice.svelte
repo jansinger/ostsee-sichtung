@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import Icon from '$lib/components/Icon.svelte';
 	import { infoStyles, type InfoVariant } from '$lib/components/info/variant';
 
@@ -16,7 +17,7 @@
 	<Icon icon="lucide:info" width={styles.iconWidth} class="shrink-0" aria-hidden="true" />
 	<div>
 		<svelte:element this={styles.headingTag} class={styles.headingClass}>
-			Wofür die Daten gebraucht werden
+			{m.components_info_datausagenotice_text_wofuer_die_daten_gebraucht_werden()}
 		</svelte:element>
 		<p class={styles.bodyClass}>
 			Ihre Meldung wird vom Deutschen Meeresmuseum wissenschaftlich ausgewertet und direkt an die

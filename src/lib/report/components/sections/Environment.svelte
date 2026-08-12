@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import WeatherDataFetcher from '$lib/components/weather/WeatherDataFetcher.svelte';
 	import { getFormContext } from '$lib/report/formContext';
 	import type {
@@ -56,14 +57,14 @@
 </script>
 
 <!-- Environmental Conditions Section -->
-<SectionCard title="Umweltbedingungen" icon="lucide:waves">
+<SectionCard title={m.report_components_sections_environment_title_umweltbedingungen()} icon="lucide:waves">
 	<p class="text-base-content/70 mb-4 text-sm">
-		Wetter- und Seebedingungen beeinflussen sowohl die Sichtbarkeit als auch das Tierverhalten
+		{m.report_components_sections_environment_text_wetter_und_seebedingungen_beeinflussen_s()}
 	</p>
 
 	<!-- Optionaler Hinweis für User Experience -->
 	<p class="text-base-content/60 mb-2 text-xs">
-		Sobald Position und Datum gesetzt sind, werden Wetterdaten automatisch vorgeschlagen.
+		{m.report_components_sections_environment_text_sobald_position_und_datum_gesetzt()}
 	</p>
 
 	<div class="grid grid-cols-1 gap-4 md:grid-cols-2">

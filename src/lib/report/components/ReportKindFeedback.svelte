@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import { getFormContext } from '$lib/report/formContext';
 	import { isDeadFinding } from '$lib/report/formConfig';
 
@@ -40,7 +41,7 @@
 		type="button"
 		class="btn btn-outline btn-sm"
 		onclick={onchangekind}
-		aria-label="Art der Meldung ändern"
+		aria-label={m.report_components_reportkindfeedback_aria_label_art_der_meldung_aendern()}
 		data-testid="report-kind-change"
 	>
 		Ändern

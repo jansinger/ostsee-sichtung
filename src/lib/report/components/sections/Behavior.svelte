@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import { getFormContext } from '$lib/report/formContext';
 	import { isFromLand } from '$lib/report/formConfig';
 	import { AnimalBehaviorEnum } from '$lib/report/formOptions/animalBehavior';
@@ -39,10 +40,9 @@
 </script>
 
 <!-- Animal Behavior Section -->
-<SectionCard title="Verhalten der Tiere" icon="lucide:waves">
+<SectionCard title={m.report_components_sections_behavior_title_verhalten_der_tiere()} icon="lucide:waves">
 	<p class="text-base-content/70 mb-4 text-sm">
-		Verhaltensinformationen helfen Wissenschaftlern, die Ökologie und das Wohlbefinden der Tiere zu
-		verstehen
+		{m.report_components_sections_behavior_text_verhaltensinformationen_helfen_wissensch()}
 	</p>
 
 	<!-- Behavior with select -->

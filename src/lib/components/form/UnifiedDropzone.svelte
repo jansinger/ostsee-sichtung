@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import { createToast } from '$lib/stores/toastState.svelte';
 	import type { ValidationPreset } from '$lib/types';
 	import { validateFiles } from '$lib/utils';
@@ -261,7 +262,7 @@
 						class="btn btn-ghost btn-sm text-error hover:bg-error hover:text-error-content min-h-11"
 						onclick={clearAll}
 					>
-						Alle löschen
+						{m.components_form_unifieddropzone_text_alle_loeschen()}
 					</button>
 				{/if}
 			</div>
@@ -299,7 +300,7 @@
 									type="button"
 									class="btn btn-ghost btn-sm text-error hover:bg-error hover:text-error-content min-h-11 min-w-11"
 									onclick={() => removeFile(file)}
-									aria-label="Datei entfernen"
+									aria-label={m.components_form_unifieddropzone_aria_label_datei_entfernen()}
 								>
 									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path

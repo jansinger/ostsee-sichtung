@@ -1,9 +1,10 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import LazyMapWrapper from '$lib/components/map/LazyMapWrapper.svelte';
 </script>
 
 <svelte:head>
-	<title>Sichtungskarte - Ostsee-Tiere</title>
+	<title>{m.routes_map_page_text_sichtungskarte_ostsee_tiere()}</title>
 	<meta
 		name="description"
 		content="Interaktive Karte der freigegebenen Wal- und Robbensichtungen in der Ostsee — jahrweise filterbar, mit Verbreitung und Hotspots."
@@ -36,7 +37,7 @@
 
 <LazyMapWrapper
 	mapContainerId="map"
-	title="Sichtungskarte"
+	title={m.routes_map_page_title_sichtungskarte()}
 	showTitle={true}
 	showLogo={true}
 	containerClass="relative min-h-0 w-full flex-1 overflow-hidden"

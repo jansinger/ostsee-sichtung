@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import { get } from 'svelte/store';
 	import { getFormContext } from '$lib/report/formContext';
 	import Icon from '$lib/components/Icon.svelte';
@@ -58,9 +59,7 @@
 	</summary>
 	<div class="collapse-content">
 		<p class="text-base-content/70 text-support mb-3">
-			Nicht jede Sichtung lässt sich exakt verorten. Auch eine Beschreibung des Seegebiets, ein
-			markanter Punkt in der Nähe oder eine ungefähre Positionsangabe sind für die Forschung
-			wertvoll.
+			{m.report_components_form_position_locationdescription_text_nicht_jede_sichtung_laesst_sich()}
 		</p>
 
 		<!--

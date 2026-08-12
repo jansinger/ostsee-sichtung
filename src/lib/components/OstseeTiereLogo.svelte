@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import { localizeHref } from '$lib/paraglide/runtime';
 
 	let { 
@@ -40,11 +41,11 @@
 	<a
 		href={localizeHref('/')}
 		class="inline-flex items-center gap-2 hover:opacity-90 transition-opacity {className}"
-		aria-label="Ostsee-Tiere Startseite"
+		aria-label={m.components_ostseetierelogo_aria_label_ostsee_tiere_startseite()}
 	>
 		<img 
 			src={imageSrc}
-			alt="Ostsee-Tiere Logo - Springender Delfin über Wellen"
+			alt={m.components_ostseetierelogo_alt_ostsee_tiere_logo_springender_delfin()}
 			width={currentSize.logo}
 			height={currentSize.logo}
 			class="object-contain"
@@ -52,7 +53,7 @@
 		{#if showText}
 			<div class="flex flex-col">
 				<span class="font-bold {currentSize.text} text-primary leading-tight">
-					OSTSEE-TIERE.DE
+					{m.components_ostseetierelogo_text_ostsee_tiere_de()}
 				</span>
 			</div>
 		{/if}
@@ -61,7 +62,7 @@
 	<div class="inline-flex items-center gap-2 {className}">
 		<img 
 			src={imageSrc}
-			alt="Ostsee-Tiere Logo - Springender Delfin über Wellen"
+			alt={m.components_ostseetierelogo_alt_ostsee_tiere_logo_springender_delfin_2()}
 			width={currentSize.logo}
 			height={currentSize.logo}
 			class="object-contain"
@@ -69,7 +70,7 @@
 		{#if showText}
 			<div class="flex flex-col">
 				<span class="font-bold {currentSize.text} text-primary leading-tight">
-					OSTSEE-TIERE.DE
+					{m.components_ostseetierelogo_text_ostsee_tiere_de_2()}
 				</span>
 			</div>
 		{/if}

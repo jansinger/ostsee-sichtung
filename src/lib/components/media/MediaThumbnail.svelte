@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import type { UploadedFileInfo } from '$lib/types';
 	import { formatFileSize } from '$lib/utils/file/fileSize';
 	import { isImageFile, isVideoFile } from '$lib/utils/file/fileType';
@@ -205,11 +206,11 @@
 				{formatFileSize(file.size)}
 			</p>
 			{#if isVideo(file.mimeType)}
-				<div class="badge badge-primary badge-xs">Video</div>
+				<div class="badge badge-primary badge-xs">{m.components_media_mediathumbnail_text_video()}</div>
 			{:else if isImage(file.mimeType)}
-				<div class="badge badge-secondary badge-xs">Bild</div>
+				<div class="badge badge-secondary badge-xs">{m.components_media_mediathumbnail_text_bild()}</div>
 			{:else}
-				<div class="badge badge-neutral badge-xs">Datei</div>
+				<div class="badge badge-neutral badge-xs">{m.components_media_mediathumbnail_text_datei()}</div>
 			{/if}
 		</div>
 	</div>

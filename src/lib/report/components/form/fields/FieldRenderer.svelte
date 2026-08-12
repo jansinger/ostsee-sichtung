@@ -3,6 +3,7 @@
   Independent of form context, accepts fieldConfig and value props
 -->
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import Icon from '$lib/components/Icon.svelte';
 	import type { FieldOption, FieldSize, FieldVariant } from '$lib/types';
 	import * as yup from 'yup';
@@ -352,7 +353,7 @@
 		{/if}
 		{label}
 		{#if required}
-			<span class="text-error ml-1 text-sm" aria-label="Pflichtfeld">*</span>
+			<span class="text-error ml-1 text-sm" aria-label={m.report_components_form_fields_fieldrenderer_aria_label_pflichtfeld()}>*</span>
 		{/if}
 
 		<!-- Status Indicator (Häkchen nur bei berührten, gültigen Feldern) -->

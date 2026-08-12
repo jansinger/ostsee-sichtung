@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import Icon from '$lib/components/Icon.svelte';
 	import OstseeTiereLogo from '$lib/components/OstseeTiereLogo.svelte';
 
@@ -10,7 +11,7 @@
 </script>
 
 <svelte:head>
-	<title>Wartungsmodus - Ostsee-Tiere</title>
+	<title>{m.routes_maintenance_page_text_wartungsmodus_ostsee_tiere()}</title>
 	<meta name="robots" content="noindex, nofollow" />
 </svelte:head>
 
@@ -32,7 +33,7 @@
 			<!-- Title -->
 			<h1 class="text-base-content flex items-center justify-center gap-2 text-2xl font-bold">
 				<Icon icon="lucide:settings" width="24" />
-				Wartungsmodus
+				{m.routes_maintenance_page_text_wartungsmodus()}
 			</h1>
 
 			<!-- Message -->
@@ -47,14 +48,14 @@
 			<div class="mt-8">
 				<button onclick={refreshPage} class="btn btn-primary gap-2">
 					<Icon icon="lucide:refresh-cw" class="size-5" />
-					Seite aktualisieren
+					{m.routes_maintenance_page_text_seite_aktualisieren()}
 				</button>
 			</div>
 
 			<!-- Info -->
 			<div class="text-base-content/60 mt-6 text-sm">
-				<p>Wir arbeiten daran, die Anwendung zu verbessern.</p>
-				<p class="mt-1">Vielen Dank für Ihr Verständnis!</p>
+				<p>{m.routes_maintenance_page_text_wir_arbeiten_daran_die_anwendung()}</p>
+				<p class="mt-1">{m.routes_maintenance_page_text_vielen_dank_fuer_ihr_verstaendnis()}</p>
 			</div>
 		</div>
 	</div>

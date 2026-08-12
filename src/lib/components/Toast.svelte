@@ -4,6 +4,7 @@
   Modernized with Svelte 5 $effect rune
 -->
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import Icon from '$lib/components/Icon.svelte';
 
 	let {
@@ -95,7 +96,7 @@
 				type="button"
 				onclick={dismiss}
 				class="btn btn-ghost btn-xs"
-				aria-label="Toast schließen"
+				aria-label={m.components_toast_aria_label_toast_schliessen()}
 			>
 				<Icon icon="lucide:x" width="16" />
 			</button>
