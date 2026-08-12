@@ -610,7 +610,11 @@
 													class="h-full w-full object-contain"
 												/>
 											{:else}
-												<span class="text-xl" role="img" aria-label={m.report_components_form_fields_dropzoneenhanced_aria_label_file_type_icon()}>
+												<span
+													class="text-xl"
+													role="img"
+													aria-label={m.report_components_form_fields_dropzoneenhanced_aria_label_file_type_icon()}
+												>
 													{getFileIcon(fileMetadata.mimeType)}
 												</span>
 											{/if}
@@ -699,11 +703,17 @@
 										<div class="bg-success/10 mt-1 rounded p-1.5">
 											<div class="flex items-center gap-1">
 												<Icon icon="lucide:map-pin" width="12" class="text-success-strong" />
-												<span class="text-success-strong text-xs font-medium">{m.report_components_form_fields_dropzoneenhanced_text_gps()}</span>
+												<span class="text-success-strong text-xs font-medium"
+													>{m.report_components_form_fields_dropzoneenhanced_text_gps()}</span
+												>
 												{#if isInBalticArea(fileMetadata.exifData.longitude, fileMetadata.exifData.latitude)}
-													<span class="badge badge-success badge-xs">{m.report_components_form_fields_dropzoneenhanced_text_ostsee()}</span>
+													<span class="badge badge-success badge-xs"
+														>{m.report_components_form_fields_dropzoneenhanced_text_ostsee()}</span
+													>
 												{:else}
-													<span class="badge badge-warning badge-xs">{m.report_components_form_fields_dropzoneenhanced_text_ausserhalb()}</span>
+													<span class="badge badge-warning badge-xs"
+														>{m.report_components_form_fields_dropzoneenhanced_text_ausserhalb()}</span
+													>
 												{/if}
 											</div>
 											<!-- Koordinaten sind Fließtext auf einem Tint, also base-content:
@@ -757,7 +767,9 @@
 					aria-label={m.report_components_form_fields_dropzoneenhanced_aria_label_analysiere_bilddaten()}
 				>
 					<div class="loading loading-spinner loading-md text-primary"></div>
-					<span class="text-base-content/60 text-sm">{m.report_components_form_fields_dropzoneenhanced_text_analysiere_bilddaten()}</span>
+					<span class="text-base-content/60 text-sm"
+						>{m.report_components_form_fields_dropzoneenhanced_text_analysiere_bilddaten()}</span
+					>
 				</div>
 			</div>
 		{:then positionMediafileMetadata}
@@ -772,7 +784,9 @@
 						<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
 							<div class="flex items-center gap-2">
 								<Icon icon="lucide:map-pin" class="text-success-strong h-[18px] w-[18px]" />
-								<h4 class="text-sm font-semibold">{m.report_components_form_fields_dropzoneenhanced_text_gps_position()}</h4>
+								<h4 class="text-sm font-semibold">
+									{m.report_components_form_fields_dropzoneenhanced_text_gps_position()}
+								</h4>
 							</div>
 							<div class="badge badge-success badge-sm text-nowrap">
 								{formatLocation(
@@ -828,7 +842,9 @@
 								aria-label={m.report_components_form_fields_dropzoneenhanced_aria_label_upload_laeuft()}
 							>
 								<div class="loading loading-spinner loading-sm"></div>
-								<span class="text-base-content/60 text-sm">{m.report_components_form_fields_dropzoneenhanced_text_upload_laeuft_im_hintergrund_2()}</span>
+								<span class="text-base-content/60 text-sm"
+									>{m.report_components_form_fields_dropzoneenhanced_text_upload_laeuft_im_hintergrund_2()}</span
+								>
 							</div>
 						{/await}
 					</div>
@@ -898,7 +914,9 @@
 					<div class="mb-3 flex items-center justify-between gap-2">
 						<div class="flex items-center gap-2">
 							<Icon icon="lucide:image" class="text-primary h-[18px] w-[18px]" />
-							<h4 class="text-sm font-semibold">{m.report_components_form_fields_dropzoneenhanced_text_foto_hochgeladen()}</h4>
+							<h4 class="text-sm font-semibold">
+								{m.report_components_form_fields_dropzoneenhanced_text_foto_hochgeladen()}
+							</h4>
 						</div>
 						{#await positionMediaFile.uploadedFile}
 							<div class="loading loading-spinner loading-sm text-primary"></div>
@@ -933,7 +951,9 @@
 						<div class="alert alert-warning mt-3">
 							<Icon icon="lucide:map-pin-off" width="20" />
 							<div>
-								<h4 class="font-medium">{m.report_components_form_fields_dropzoneenhanced_text_keine_gps_daten_im_foto()}</h4>
+								<h4 class="font-medium">
+									{m.report_components_form_fields_dropzoneenhanced_text_keine_gps_daten_im_foto()}
+								</h4>
 								<p class="text-sm">
 									{m.report_components_form_fields_dropzoneenhanced_text_bitte_waehlen_sie_die_position()}
 								</p>
@@ -960,7 +980,9 @@
 							aria-label={m.report_components_form_fields_dropzoneenhanced_aria_label_upload_laeuft_3()}
 						>
 							<div class="loading loading-spinner loading-sm"></div>
-							<span class="text-base-content/60 text-sm">{m.report_components_form_fields_dropzoneenhanced_text_upload_laeuft_im_hintergrund_3()}</span>
+							<span class="text-base-content/60 text-sm"
+								>{m.report_components_form_fields_dropzoneenhanced_text_upload_laeuft_im_hintergrund_3()}</span
+							>
 						</div>
 					{/await}
 				</div>

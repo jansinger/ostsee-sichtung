@@ -44,13 +44,17 @@
 			     dieses Formular wird auch ein Totfund gemeldet, und „Sichtung"
 			     schloss diesen Fall sprachlich aus. „Übermittelt" statt
 			     „gemeldet", weil „Ihre Meldung wurde gemeldet" doppelt sagt. -->
-			<p class="text-base-content/80 text-xl">{m.report_components_submissionsuccess_text_ihre_meldung_wurde_erfolgreich_uebermitt()}</p>
+			<p class="text-base-content/80 text-xl">
+				{m.report_components_submissionsuccess_text_ihre_meldung_wurde_erfolgreich_uebermitt()}
+			</p>
 		</div>
 
 		<!-- Success Details -->
 		<div class="card bg-base-200 shadow-raised mb-8">
 			<div class="card-body">
-				<h2 class="card-title text-success-strong mb-4">{m.report_components_submissionsuccess_text_was_passiert_als_naechstes()}</h2>
+				<h2 class="card-title text-success-strong mb-4">
+					{m.report_components_submissionsuccess_text_was_passiert_als_naechstes()}
+				</h2>
 
 				<div class="space-y-4">
 					<!-- Kein automatischer Mailversand an die meldende Person — weder beim
@@ -69,7 +73,9 @@
 							aria-hidden="true"
 						/>
 						<div>
-							<h3 class="font-semibold">{m.report_components_submissionsuccess_text_rueckfragen_zu_ihrer_meldung()}</h3>
+							<h3 class="font-semibold">
+								{m.report_components_submissionsuccess_text_rueckfragen_zu_ihrer_meldung()}
+							</h3>
 							<p class="text-base-content/70 text-sm">
 								Eine automatische Bestätigungsmail versenden wir nicht. Falls zu Ihrer Meldung etwas
 								offen bleibt, melden wir uns bei Ihnen — per E-Mail an <strong
@@ -89,7 +95,9 @@
 							aria-hidden="true"
 						/>
 						<div>
-							<h3 class="font-semibold">{m.report_components_submissionsuccess_text_wissenschaftliche_auswertung()}</h3>
+							<h3 class="font-semibold">
+								{m.report_components_submissionsuccess_text_wissenschaftliche_auswertung()}
+							</h3>
 							<p class="text-base-content/70 text-sm">
 								{m.report_components_submissionsuccess_text_ihre_daten_fliessen_in_die()}
 							</p>
@@ -105,7 +113,9 @@
 							aria-hidden="true"
 						/>
 						<div>
-							<h3 class="font-semibold">{m.report_components_submissionsuccess_text_fotos_und_videos()}</h3>
+							<h3 class="font-semibold">
+								{m.report_components_submissionsuccess_text_fotos_und_videos()}
+							</h3>
 							<p class="text-base-content/70 text-sm">
 								{#if submittedData?.mediaUpload}
 									Ihre Aufnahmen wurden übermittelt und werden gemeinsam mit Ihrer Meldung geprüft.
@@ -127,7 +137,9 @@
 								aria-hidden="true"
 							/>
 							<div>
-								<h3 class="font-semibold">{m.report_components_submissionsuccess_text_totfund_gemeldet()}</h3>
+								<h3 class="font-semibold">
+									{m.report_components_submissionsuccess_text_totfund_gemeldet()}
+								</h3>
 								<p class="text-base-content/70 text-sm">
 									{m.report_components_submissionsuccess_text_totfunde_werden_prioritaer_behandelt_bei()}
 								</p>
@@ -144,7 +156,9 @@
 							aria-hidden="true"
 						/>
 						<div>
-							<h3 class="font-semibold">{m.report_components_submissionsuccess_text_daten_einsehen()}</h3>
+							<h3 class="font-semibold">
+								{m.report_components_submissionsuccess_text_daten_einsehen()}
+							</h3>
 							<p class="text-base-content/70 text-sm">
 								Ihre Meldung erscheint nach Prüfung auf der
 								<a href={localizeHref('/map')} class="link link-primary">interaktiven Karte</a>
@@ -159,10 +173,14 @@
 		{#if submittedData}
 			<div class="card bg-base-100 shadow-raised mb-8">
 				<div class="card-body">
-					<h2 class="card-title mb-4">{m.report_components_submissionsuccess_text_ihre_meldung()}</h2>
+					<h2 class="card-title mb-4">
+						{m.report_components_submissionsuccess_text_ihre_meldung()}
+					</h2>
 					<div class="mb-4 grid grid-cols-1 gap-1 text-sm">
 						<div>
-							<span class="font-medium">{m.report_components_submissionsuccess_text_referenz_id()}</span>
+							<span class="font-medium"
+								>{m.report_components_submissionsuccess_text_referenz_id()}</span
+							>
 							{submittedData.referenceId}
 						</div>
 						<span class="text-base-content/70 text-xs">
@@ -171,7 +189,8 @@
 					</div>
 					<div class="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
 						<div>
-							<span class="font-medium">{m.report_components_submissionsuccess_text_tierart()}</span>
+							<span class="font-medium">{m.report_components_submissionsuccess_text_tierart()}</span
+							>
 							{getSpeciesLabel(submittedData.species)}
 						</div>
 						<div>
@@ -183,7 +202,9 @@
 							{formatWallClockDateTime(submittedData.sightingDate, submittedData.sightingTime)}
 						</div>
 						<div>
-							<span class="font-medium">{m.report_components_submissionsuccess_text_position()}</span>
+							<span class="font-medium"
+								>{m.report_components_submissionsuccess_text_position()}</span
+							>
 							{submittedData.hasPosition
 								? formatLocation(submittedData.longitude, submittedData.latitude)
 								: submittedData.waterway || 'Nicht angegeben'}
@@ -208,7 +229,9 @@
 		<div class="mt-12">
 			<div class="card bg-base-200">
 				<div class="card-body text-center">
-					<h3 class="mb-4 text-lg font-semibold">{m.report_components_submissionsuccess_text_interessiert_an_mehr()}</h3>
+					<h3 class="mb-4 text-lg font-semibold">
+						{m.report_components_submissionsuccess_text_interessiert_an_mehr()}
+					</h3>
 
 					<div class="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
 						<a href={localizeHref('/map')} class="btn btn-outline btn-sm flex items-center gap-2">

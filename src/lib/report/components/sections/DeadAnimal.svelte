@@ -14,10 +14,14 @@
 			width="16"
 			class="text-warning-strong shrink-0"
 		/>
-		<span>{m.report_components_sections_deadanimal_text_zusaetzliche_informationen_fuer_totfund()}</span>
+		<span
+			>{m.report_components_sections_deadanimal_text_zusaetzliche_informationen_fuer_totfund()}</span
+		>
 	</h4>
 	<div class="text-base-content/80 mb-4 text-sm">
-		<p class="mb-2 font-medium">{m.report_components_sections_deadanimal_text_totfunde_sind_besonders_wertvoll_fuer()}</p>
+		<p class="mb-2 font-medium">
+			{m.report_components_sections_deadanimal_text_totfunde_sind_besonders_wertvoll_fuer()}
+		</p>
 		<ul class="list-inside list-disc space-y-1 text-xs">
 			<li><strong>Todesursachen:</strong> Helfen bei der Identifikation von Bedrohungen</li>
 			<li><strong>Gesundheitszustand:</strong> Wichtig für Populationsanalysen</li>

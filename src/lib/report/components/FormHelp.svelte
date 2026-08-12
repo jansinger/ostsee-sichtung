@@ -103,7 +103,9 @@
 													{statistics?.totalSightings.toLocaleString(zahlenLocale) ?? '–'}
 												{/if}
 											</div>
-											<div class="text-xs">{m.report_components_formhelp_text_freigegebene_sichtungen()}</div>
+											<div class="text-xs">
+												{m.report_components_formhelp_text_freigegebene_sichtungen()}
+											</div>
 										</div>
 										<div>
 											<div class="text-primary font-bold">
@@ -115,7 +117,9 @@
 													–
 												{/if}
 											</div>
-											<div class="text-xs">{m.report_components_formhelp_text_beobachter_fuellen_zusatzfelder_aus()}</div>
+											<div class="text-xs">
+												{m.report_components_formhelp_text_beobachter_fuellen_zusatzfelder_aus()}
+											</div>
 										</div>
 									</div>
 								{/if}
@@ -248,7 +252,9 @@
 											–
 										{/if}
 									</div>
-									<div class="text-base-content text-sm font-medium">{m.report_components_formhelp_text_mit_fotos_videos()}</div>
+									<div class="text-base-content text-sm font-medium">
+										{m.report_components_formhelp_text_mit_fotos_videos()}
+									</div>
 									<div class="text-base-content/70 mt-1 text-xs">
 										{#if !loading && statistics}
 											{statistics.sightingsWithMedia.toLocaleString(zahlenLocale)} freigegebene Sichtungen

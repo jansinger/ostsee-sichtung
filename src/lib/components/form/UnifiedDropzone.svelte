@@ -326,7 +326,7 @@
 	     der Fläche — und damit das Ziel unter dem Zeiger, der es gerade erst
 	     getroffen hatte. Rahmen und Tint melden die Bereitschaft genauso. -->
 	<div
-		class="rounded-lg border-2 border-dashed transition-all duration-quick
+		class="duration-quick rounded-lg border-2 border-dashed transition-all
 			{compact ? 'p-4' : 'p-6'}
 			{actionLabel ? '' : 'cursor-pointer'}
 			{isDragOver

@@ -41,14 +41,14 @@
 		<!-- Backdrop (rein visuell). Schleier über der Kartenkachel, kein Theme-Ton:
 		     bg-scrim/<n> (--scrim-surface in tokens.css). -->
 		<div
-			class="animate-fade-in bg-scrim/30 fixed inset-0 z-overlay backdrop-blur-sm transition-all duration-panel"
+			class="animate-fade-in bg-scrim/30 z-overlay duration-panel fixed inset-0 backdrop-blur-sm transition-all"
 		></div>
 
 		<!-- Loading Content -->
-		<div class="fixed inset-0 z-overlay flex items-center justify-center p-4">
+		<div class="z-overlay fixed inset-0 flex items-center justify-center p-4">
 			<div
 				data-testid="map-loading-content"
-				class="animate-bounce-in bg-base-100 mx-auto w-full max-w-sm scale-100 transform rounded-2xl p-8 shadow-floating transition-all duration-panel"
+				class="animate-bounce-in bg-base-100 shadow-floating duration-panel mx-auto w-full max-w-sm scale-100 transform rounded-2xl p-8 transition-all"
 			>
 				<!-- Header -->
 				<div class="mb-6 text-center">
