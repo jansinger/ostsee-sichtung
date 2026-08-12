@@ -65,7 +65,7 @@ type ExtractionPlan = ReturnType<typeof planExtraction>;
  *    Der Extraktor liest von einer `.svelte`-Datei nur das Markup. Ein
  *    `const hint = 'Karte wird initialisiert…'` ist für die Zusicherungen 1
  *    bis 3 unsichtbar; „0 mechanische Fundstellen" las sich deshalb als
- *    „Schicht C ist fertig". Sie ist es nicht — 52 Stellen in 22 Dateien.
+ *    „Schicht C ist fertig". Sie ist es nicht — 43 Stellen in 21 Dateien.
  *    Auch das ein Bestandszähler, aus demselben Grund wie (2): Er kann heute
  *    nicht null sein, aber er kann nicht mehr wachsen. Die Regel ist dieselbe
  *    wie in Schicht A/B (`multiWordLiterals`), abzüglich zweier benannter
@@ -468,7 +468,7 @@ export function findScriptDisplayText(source: string): SourceHit[] {
  * Hartcodierter Anzeigetext im `<script>`-Block, je Datei — erhoben am
  * 2026-08-12 (Befund B des Schicht-C-Guards).
  *
- * 52 Stellen in 22 Dateien, von 158 mehrwortigen Literalen insgesamt (41
+ * 43 Stellen in 21 Dateien, von 158 mehrwortigen Literalen insgesamt (41
  * Klassenlisten und 39 Logmeldungen sind ausgeschlossen, siehe oben). Nicht
  * alle 78 sind Übersetzungsarbeit: Darunter sind Cookie-Zeichenketten
  * (`LanguageSwitcher`), erzeugte Element-IDs (`BaseInput`, `UnifiedDropzone`),
@@ -481,12 +481,12 @@ export function findScriptDisplayText(source: string): SourceHit[] {
 const SCRIPT_TEXT_LEDGER: Readonly<Record<string, number>> = {
 	'src/lib/components/ConnectionBadge.svelte': 2,
 	'src/lib/components/LanguageSwitcher.svelte': 2,
-	'src/lib/components/form/UnifiedDropzone.svelte': 6,
+	/** Bleibt: erzeugte Element-ID (`dropzone-${Math.random()…}`), kein Anzeigetext. */
+	'src/lib/components/form/UnifiedDropzone.svelte': 1,
 	'src/lib/components/map/LazyMapWrapper.svelte': 1,
 	'src/lib/components/map/LoadingOverlay.svelte': 1,
 	'src/lib/components/map/OLMap.svelte': 3,
 	'src/lib/components/weather/WeatherDataFetcher.svelte': 4,
-	'src/lib/report/components/ModernReportForm.svelte': 4,
 	'src/lib/report/components/ReportKindChoice.svelte': 4,
 	'src/lib/report/components/form/Form.svelte': 1,
 	'src/lib/report/components/form/FormActions.svelte': 1,

@@ -181,7 +181,10 @@
 	if (hadSavedFormData && hasMeaningfulSavedData(savedFormDataAtLoad, initialFormData)) {
 		// Defer toast to after Svelte hydration
 		queueMicrotask(() => {
-			toast.info('Ihre vorherigen Eingaben wurden wiederhergestellt.', { duration: 4000 });
+			toast.info(
+				m.report_components_modernreportform_text_ihre_vorherigen_eingaben_wurden_wiederhe(),
+				{ duration: 4000 }
+			);
 		});
 	}
 
@@ -211,8 +214,18 @@
 	 * ist und was der Nutzer jetzt tun kann.
 	 */
 	let submitState = $state<SubmitState>('idle');
-	/** Überschrift im Zustand `failed` — je nach Fehlerart eine andere. */
-	let submitTitle = $state('Der Server hat nicht geantwortet');
+	/**
+	 * Überschrift im Zustand `failed` — je nach Fehlerart eine andere.
+	 *
+	 * `$state<string>` statt des abgeleiteten Typs: Eine Paraglide-Botschaft
+	 * liefert die Marke `LocalizedString`, und die späteren Zuweisungen
+	 * (Servermeldung, Fehlertext aus dem Catch) sind gewöhnliche
+	 * Zeichenketten. Ohne die Annotation erbt die Variable die Marke aus
+	 * ihrem Startwert und weist jede davon zurück.
+	 */
+	let submitTitle = $state<string>(
+		m.report_components_modernreportform_text_der_server_hat_nicht_geantwortet()
+	);
 	/** Zählt die Absende-Versuche, damit „Wiederholen" sichtbar etwas bewirkt. */
 	let submitAttempt = $state(0);
 
@@ -424,7 +437,9 @@
 				saveToStorage(STORAGE_KEYS.CURRENT_STEP, 0);
 				return submitResult;
 			} catch (error: unknown) {
-				const message = (error as Error)?.message || 'Unbekannter Fehler bei der Übermittlung';
+				const message =
+					(error as Error)?.message ||
+					m.report_components_modernreportform_text_unbekannter_fehler_bei_der_uebermittlung();
 				// Scheitert erst der `onSubmit`-Callback (nicht die Übermittlung),
 				// steht `submitState` noch auf `submitting` — auch dieser Fall ist ein
 				// Fehlschlag und braucht die Wiederholen-Fläche.
@@ -596,9 +611,12 @@
 				currentStep = targetStep;
 			}
 
-			throw new Error('Formularvalidierung fehlgeschlagen. Bitte prüfen Sie Ihre Eingaben.', {
-				cause: yupError
-			});
+			throw new Error(
+				m.report_components_modernreportform_text_formularvalidierung_fehlgeschlagen_bitte(),
+				{
+					cause: yupError
+				}
+			);
 		}
 
 		return formContext.handleSubmit(e);

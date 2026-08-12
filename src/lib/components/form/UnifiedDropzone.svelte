@@ -14,13 +14,13 @@
 		onFileRemoved = (_index: number) => {},
 		onClear = () => {},
 		multiple = true,
-		title = 'Dateien hochladen',
+		title = m.components_form_unifieddropzone_text_dateien_hochladen(),
 		subtitle = getFileTypeDescription(config.allowedTypes),
-		emptyText = 'Klicken oder Drag & Drop',
+		emptyText = m.components_form_unifieddropzone_text_klicken_oder_drag_drop(),
 		additionalText = '',
 		class: className = '',
 		isAnalyzing = false,
-		loadingText = 'Analysiere Dateien...',
+		loadingText = m.components_form_unifieddropzone_text_analysiere_dateien(),
 		showPreview = true,
 		/**
 		 * Beschriftung eines echten Vollton-Buttons INNERHALB der Dropzone.
@@ -99,7 +99,11 @@
 	 */
 	let dragDepth = 0;
 
-	const dropPrompt = $derived(`${multiple ? 'Dateien' : 'Datei'} hier ablegen!`);
+	const dropPrompt = $derived(
+		multiple
+			? m.components_form_unifieddropzone_text_dateien_hier_ablegen()
+			: m.components_form_unifieddropzone_text_datei_hier_ablegen()
+	);
 
 	// Bleibender Fehlerbereich statt nur Toast: Ein Toast verschwindet nach
 	// Sekunden, und ein Validierungsfehler ohne Verknüpfung zum Bedienelement
@@ -228,7 +232,9 @@
 					tabindex: 0,
 					onclick: openFileDialog,
 					onkeydown: handleKeydown,
-					'aria-label': `${title} per Drag & Drop oder Klick`
+					'aria-label': m.components_form_unifieddropzone_aria_label_title_per_drag_drop_oder_klick(
+						{ title }
+					)
 				}
 	);
 

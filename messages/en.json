@@ -5,7 +5,10 @@
 	"components_connectionbadge_text_offline": "Offline",
 	"components_connectionbadge_text_wieder_online": "Wieder online",
 	"components_form_unifieddropzone_aria_label_datei_entfernen": "Datei entfernen",
+	"components_form_unifieddropzone_aria_label_title_per_drag_drop_oder_klick": "{title} per Drag & Drop oder Klick",
 	"components_form_unifieddropzone_text_alle_loeschen": "Alle löschen",
+	"components_form_unifieddropzone_text_analysiere_dateien": "Analysiere Dateien...",
+	"components_form_unifieddropzone_text_datei_hier_ablegen": "Datei hier ablegen!",
 	"components_form_unifieddropzone_text_datei_hochgeladen_plural": [
 		{
 			"declarations": ["input count", "local countPlural = count: plural"],
@@ -16,6 +19,9 @@
 			}
 		}
 	],
+	"components_form_unifieddropzone_text_dateien_hier_ablegen": "Dateien hier ablegen!",
+	"components_form_unifieddropzone_text_dateien_hochladen": "Dateien hochladen",
+	"components_form_unifieddropzone_text_klicken_oder_drag_drop": "Klicken oder Drag & Drop",
 	"components_info_datausagenotice_text_wofuer_die_daten_gebraucht_werden": "Wofür die Daten gebraucht werden",
 	"components_info_deadfindingnotice_text_totfunde_besonders_wichtig": "Totfunde – Besonders wichtig!",
 	"components_maintenancebanner_text_aktuelle_nachricht": "Aktuelle Nachricht:",
@@ -530,8 +536,12 @@
 	"report_components_formhelp_text_warum_ist_ihre_meldung_wichtig": "Warum ist Ihre Meldung wichtig?",
 	"report_components_formhelp_text_wichtig_fuer_populationsstudien": "Wichtig für Populationsstudien",
 	"report_components_formhelp_title_statistiken_konnten_nicht_geladen_werden": "Statistiken konnten nicht geladen werden",
+	"report_components_modernreportform_text_der_server_hat_nicht_geantwortet": "Der Server hat nicht geantwortet",
+	"report_components_modernreportform_text_formularvalidierung_fehlgeschlagen_bitte": "Formularvalidierung fehlgeschlagen. Bitte prüfen Sie Ihre Eingaben.",
 	"report_components_modernreportform_text_fuer_die_forschung_des_deutschen": "für die Forschung des Deutschen Meeresmuseums",
+	"report_components_modernreportform_text_ihre_vorherigen_eingaben_wurden_wiederhe": "Ihre vorherigen Eingaben wurden wiederhergestellt.",
 	"report_components_modernreportform_text_sichtung_von_meeressaeugetieren_melden": "Sichtung von Meeressäugetieren melden",
+	"report_components_modernreportform_text_unbekannter_fehler_bei_der_uebermittlung": "Unbekannter Fehler bei der Übermittlung",
 	"report_components_reportkindchoice_text_damit_wir_ihnen_die_passenden": "Damit wir Ihnen die passenden Fragen stellen können.",
 	"report_components_reportkindchoice_text_meerestier_melden": "Meerestier melden",
 	"report_components_reportkindchoice_text_was_moechten_sie_melden": "Was möchten Sie melden?",
