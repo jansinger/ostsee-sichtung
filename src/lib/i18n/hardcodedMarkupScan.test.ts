@@ -1,5 +1,6 @@
 import { parse } from 'svelte/compiler';
 import { describe, expect, it } from 'vitest';
+import { multiWordLiterals, stripComments } from '$lib/testing/sourceScan.testutil';
 import type { SourceHit } from '$lib/testing/sourceScan.testutil';
 import { planExtraction } from '../../tools/i18n-extract/plan';
 
@@ -31,7 +32,7 @@ type ExtractionPlan = ReturnType<typeof planExtraction>;
  * (`docs/i18n/ARBEITSPROTOKOLL_ETAPPE1.md`). Ein Guard, der ab Tag eins rot
  * ist, wird abgeschaltet und schützt danach nichts (Entwurf Abschnitt 7).
  *
- * Deshalb drei Zusicherungen statt einer:
+ * Deshalb vier Zusicherungen statt einer:
  *
  * 1. **Kein mechanisch extrahierbarer Text mehr** (`Mechanisch`). Der
  *    Extraktor meldet für Schicht C seit Aufgabe 2.3a null Fundstellen. Ein
@@ -66,18 +67,16 @@ type ExtractionPlan = ReturnType<typeof planExtraction>;
  * hier bewusst **nicht** kopiert: Zwei Listen für denselben Umfang altern
  * getrennt.
  *
- * **Was dieser Guard nicht deckt, und das ist ein offener Befund.** Der
- * Extraktor liest von einer `.svelte`-Datei nur das Markup, nie den
- * `<script>`-Block. Deutscher Anzeigetext, der dort in einer Konstante steht
- * und von dort ins Markup fließt (`const hint = 'Karte wird initialisiert…'`),
- * ist für alle drei Zusicherungen unsichtbar. Gemessen am 2026-08-12: 158
- * mehrwortige Literale in 35 der 84 Dateien, darunter neben Tailwind-Klassen
- * und englischen Logmeldungen auch echter Anzeigetext (die vier Titel und
- * Meldungen in `routes/+error.svelte`, `'Bitte wählen…'` in `BaseSelect.svelte`
- * und `FieldRenderer.svelte`, die Toasts in `DropzoneEnhanced.svelte`). Das ist
- * unerledigte Übersetzungsarbeit, kein Lücke dieses Guards — die Regel „zwei
- * Buchstabengruppen" kann dort nicht greifen, weil Tailwind-Klassenlisten sie
- * genauso erfüllen. Siehe `docs/i18n/ARBEITSPROTOKOLL_ETAPPE1.md`.
+ * 4. **Anzeigetext im `<script>`-Block** (`Anzeigetext im <script>-Block`).
+ *    Der Extraktor liest von einer `.svelte`-Datei nur das Markup. Ein
+ *    `const hint = 'Karte wird initialisiert…'` ist für die Zusicherungen 1
+ *    bis 3 unsichtbar; „0 mechanische Fundstellen" las sich deshalb als
+ *    „Schicht C ist fertig". Sie ist es nicht — 78 Stellen in 25 Dateien.
+ *    Auch das ein Bestandszähler, aus demselben Grund wie (2): Er kann heute
+ *    nicht null sein, aber er kann nicht mehr wachsen. Die Regel ist dieselbe
+ *    wie in Schicht A/B (`multiWordLiterals`), abzüglich zweier benannter
+ *    Klassen, die nie Anzeigetext sind: Tailwind-Klassenlisten (41) und
+ *    Logmeldungen (39).
  *
  * Läuft im Node-Projekt (`npm run test:unit`, damit auch in `test:quick`).
  */
@@ -358,5 +357,227 @@ describe('Attribute außerhalb der Extraktor-Liste', () => {
 		const markup = '<Hinweis description={fehlerText} />';
 
 		expect(findStaticTextAttributes(markup)).toEqual([]);
+	});
+});
+
+/**
+ * Der `<script>`-Block einer `.svelte`-Datei, längentreu freigestellt: alles
+ * außerhalb wird zu Leerzeichen, Zeilenumbrüche bleiben stehen.
+ *
+ * Längentreu, damit die gemeldete Zeilennummer auf die Originaldatei zeigt —
+ * dieselbe Bauart wie `stripComments`.
+ */
+function scriptBlocksOnly(source: string): string {
+	const blank = source.replace(/[^\n]/g, ' ').split('');
+
+	for (const match of source.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)) {
+		const body = match[1];
+		if (body === undefined) continue;
+		const start = (match.index ?? 0) + (match[0]?.indexOf(body) ?? 0);
+		for (let i = 0; i < body.length; i += 1) blank[start + i] = body[i] ?? ' ';
+	}
+
+	return blank.join('');
+}
+
+/**
+ * Ein Literal, das ausschließlich aus dem Alphabet von Tailwind-Klassenlisten
+ * und CSS-Selektoren besteht (Kleinbuchstaben, Ziffern, `-:/[]%._()#`).
+ *
+ * `'alert alert-warning items-start'` und `'bg-base-200/95 rounded-box flex'`
+ * erfüllen „Leerzeichen und zwei Buchstabengruppen" mühelos und machen 41 der
+ * 158 Treffer aus. Ohne diesen Ausschluss wäre der Zähler unten bei jeder
+ * Klassenänderung rot — und ein Guard, der bei fremder Arbeit rot wird, wird
+ * abgeschaltet.
+ *
+ * Der Ausschluss ist eng: Ein Großbuchstabe genügt, damit ein Literal wieder
+ * zählt. `'Alle Meldungen'` und `'Bitte wählen…'` fallen nicht darunter.
+ */
+const STRUCTURAL_LITERAL = /^[`'"][a-z0-9 :/[\]%._()#-]*[`'"]$/;
+
+/**
+ * Die Zeichenbereiche aller `logger.*(…)`/`console.*(…)`-Aufrufe in `code`.
+ *
+ * Logmeldungen sind Entwicklertext und werden nie übersetzt — sie machen 39 der
+ * 158 Treffer aus. Der Ausschluss prüft **nicht** die Zeile, sondern den
+ * Aufruf: `logger.warn('…', { … })` bricht regelmäßig über mehrere Zeilen um,
+ * und eine zeilenweise Prüfung ließ vier Meldungen (darunter
+ * `'User contact data saved with consent-based persistence'`) fälschlich als
+ * Anzeigetext gelten.
+ *
+ * Klammerbilanz mit Überspringen von Zeichenketten — sonst beendete eine
+ * schließende Klammer **innerhalb** eines Literals den Aufruf zu früh.
+ */
+function logCallRanges(code: string): Array<[number, number]> {
+	const ranges: Array<[number, number]> = [];
+
+	for (const match of code.matchAll(/\b(?:logger|console)\s*\.\s*\w+\s*\(/g)) {
+		let index = (match.index ?? 0) + match[0].length;
+		let depth = 1;
+
+		while (index < code.length && depth > 0) {
+			const char = code[index];
+			if (char === '"' || char === "'" || char === '`') {
+				index += 1;
+				while (index < code.length) {
+					if (code[index] === '\\') {
+						index += 2;
+						continue;
+					}
+					if (code[index] === char) break;
+					index += 1;
+				}
+				index += 1;
+				continue;
+			}
+			if (char === '(') depth += 1;
+			else if (char === ')') depth -= 1;
+			index += 1;
+		}
+
+		ranges.push([match.index ?? 0, index]);
+	}
+
+	return ranges;
+}
+
+/**
+ * Mehrwortige Literale im `<script>`-Block, ohne Klassenlisten und ohne
+ * Logmeldungen — also die Kandidaten für hartcodierten Anzeigetext.
+ *
+ * Dieselbe Regel wie in Schicht A/B, geteilt über `multiWordLiterals` in
+ * `sourceScan.testutil` — eine Regel, eine Stelle.
+ *
+ * Exportiert, damit sie an konstruiertem Quelltext prüfbar ist.
+ */
+export function findScriptDisplayText(source: string): SourceHit[] {
+	const code = stripComments(scriptBlocksOnly(source));
+
+	const lineOf = (index: number): number => code.slice(0, index).split('\n').length;
+	const logLines = new Set<number>();
+	for (const [start, end] of logCallRanges(code)) {
+		for (let line = lineOf(start); line <= lineOf(end); line += 1) logLines.add(line);
+	}
+
+	return multiWordLiterals(code).filter(
+		(hit) => !STRUCTURAL_LITERAL.test(hit.text) && !logLines.has(hit.line)
+	);
+}
+
+/**
+ * Hartcodierter Anzeigetext im `<script>`-Block, je Datei — erhoben am
+ * 2026-08-12 (Befund B des Schicht-C-Guards).
+ *
+ * 78 Stellen in 25 Dateien, von 158 mehrwortigen Literalen insgesamt (41
+ * Klassenlisten und 39 Logmeldungen sind ausgeschlossen, siehe oben). Nicht
+ * alle 78 sind Übersetzungsarbeit: Darunter sind Cookie-Zeichenketten
+ * (`LanguageSwitcher`), erzeugte Element-IDs (`BaseInput`, `UnifiedDropzone`),
+ * Cache-Schlüssel (`WeatherDataFetcher`) und geworfene Entwicklerfehler
+ * (`Form.svelte`, `FormField`). Sie werden **nicht** vorab ausgenommen — jede
+ * Welle entscheidet die betroffene Datei einzeln und senkt die Zahl hier um
+ * genau das, was sie gelöst oder als technisch begründet hat. Eine
+ * Ausnahmeliste vorab wäre eine Entscheidung ohne Ansehen der Stelle.
+ */
+const SCRIPT_TEXT_LEDGER: Readonly<Record<string, number>> = {
+	'src/lib/components/ConnectionBadge.svelte': 2,
+	'src/lib/components/LanguageSwitcher.svelte': 2,
+	'src/lib/components/form/UnifiedDropzone.svelte': 6,
+	'src/lib/components/map/LazyMapWrapper.svelte': 1,
+	'src/lib/components/map/LoadingOverlay.svelte': 1,
+	'src/lib/components/map/OLMap.svelte': 3,
+	'src/lib/components/map/SightingsMapView.svelte': 9,
+	'src/lib/components/weather/WeatherDataFetcher.svelte': 4,
+	'src/lib/report/components/ModernReportForm.svelte': 4,
+	'src/lib/report/components/ReportKindChoice.svelte': 4,
+	'src/lib/report/components/form/Form.svelte': 1,
+	'src/lib/report/components/form/FormActions.svelte': 1,
+	'src/lib/report/components/form/StepNavigation.svelte': 3,
+	'src/lib/report/components/form/SubmitStatus.svelte': 3,
+	'src/lib/report/components/form/VerifyLocation.svelte': 4,
+	'src/lib/report/components/form/fields/BaseInput.svelte': 1,
+	'src/lib/report/components/form/fields/BaseSelect.svelte': 1,
+	'src/lib/report/components/form/fields/DropzoneEnhanced.svelte': 8,
+	'src/lib/report/components/form/fields/FieldRenderer.svelte': 1,
+	'src/lib/report/components/form/fields/FormField.svelte': 1,
+	'src/lib/report/components/sections/Behavior.svelte': 1,
+	'src/lib/report/components/sections/Media.svelte': 4,
+	'src/lib/report/components/steps/Step4Contact.svelte': 2,
+	'src/routes/+error.svelte': 9,
+	'src/routes/bestimmungshilfe/+page.svelte': 2
+};
+
+describe('Anzeigetext im <script>-Block', () => {
+	function scriptTextCounts(): Record<string, number> {
+		const counts: Record<string, number> = {};
+		for (const file of svelteFiles()) {
+			const hits = findScriptDisplayText(file.before);
+			if (hits.length > 0) counts[file.file] = hits.length;
+		}
+		return counts;
+	}
+
+	it('findet je Datei genau die verzeichneten Stellen', () => {
+		expect(scriptTextCounts(), REMEDIATION).toEqual(SCRIPT_TEXT_LEDGER);
+	});
+
+	it('meldet einen deutschen Text aus dem Skriptblock', () => {
+		const source = [
+			'<script lang="ts">',
+			"\tconst hint = 'Karte wird initialisiert';",
+			'</script>'
+		].join('\n');
+
+		expect(findScriptDisplayText(source)).toEqual([
+			{ line: 2, text: "'Karte wird initialisiert'" }
+		]);
+	});
+
+	it('lässt eine Tailwind-Klassenliste durch', () => {
+		const source = [
+			'<script lang="ts">',
+			"\tconst surface = 'bg-base-200/95 rounded-box border px-3 py-2';",
+			'</script>'
+		].join('\n');
+
+		expect(findScriptDisplayText(source)).toEqual([]);
+	});
+
+	it('lässt eine über zwei Zeilen umbrechende Logmeldung durch', () => {
+		const source = [
+			'<script lang="ts">',
+			"\tlogger.info('User contact data saved with consent', {",
+			'\t\tconsent: true',
+			'\t});',
+			'</script>'
+		].join('\n');
+
+		expect(findScriptDisplayText(source)).toEqual([]);
+	});
+
+	it('lässt eine Logmeldung mit Klammer im Literal durch — Klammerbilanz, nicht Zeilenende', () => {
+		const source = [
+			'<script lang="ts">',
+			"\tlogger.warn('Feld (unbekannt) fehlt in der Konfiguration');",
+			"\tconst text = 'Bitte wählen Sie eine Tierart';",
+			'</script>'
+		].join('\n');
+
+		expect(findScriptDisplayText(source)).toEqual([
+			{ line: 3, text: "'Bitte wählen Sie eine Tierart'" }
+		]);
+	});
+
+	it('sieht nur den Skriptblock, nicht das Markup', () => {
+		// Sonst zählte jeder deutsche Textknoten hier ein zweites Mal — und die
+		// 78 Satzfragmente machten diesen Zähler ab Tag eins rot.
+		const source = [
+			'<script lang="ts">',
+			'\tconst n = 1;',
+			'</script>',
+			'',
+			'<p>Ein deutscher Satz</p>'
+		].join('\n');
+
+		expect(findScriptDisplayText(source)).toEqual([]);
 	});
 });
