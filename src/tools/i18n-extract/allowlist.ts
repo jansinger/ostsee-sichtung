@@ -75,9 +75,13 @@ export type SkipReason =
 	// ausgezeichnete Wort woanders. Braucht eine Botschaft über das ganze
 	// Element, mit Auszeichnung als Parameter (Aufgabe 2.3, Handarbeit).
 	| 'sentence-fragment'
-	// Ein Textknoten mit einem `ExpressionTag`-Geschwister (`Insgesamt {count}
-	// Tiere`). Braucht eine ICU-Botschaft mit Parameter statt eines reinen
-	// Textbausteins.
+	// Ein Textknoten mit einem dynamischen Geschwister — einem `ExpressionTag`
+	// (`Insgesamt {count} Tiere`) ODER einem Kontrollfluss-Block
+	// (`{#if}`/`{#each}`/`{#await}`/`{#key}`), auch wenn der Ausdruck erst darin
+	// verschachtelt steckt (`Admins: {#each admins as a}{a.name}{/each}`).
+	// Braucht eine ICU-Botschaft mit Parameter statt eines reinen Textbausteins
+	// — dieselbe Abhilfe für beide Formen, deshalb ein gemeinsamer Grund statt
+	// eines eigenen für den verschachtelten Fall.
 	| 'interpolation'
 	// Der Text (Textknoten oder Attributwert) enthält eine Ziffer — möglicher
 	// ICU-Plural. Menschliche Entscheidung (Aufgabe 2.4), nicht mechanisch.

@@ -845,9 +845,13 @@ export function collectSvelteSites(
 	 * eigenen Text hat keine Wortstellung, die eine Übersetzung brechen könnte,
 	 * und macht einen benachbarten Textknoten deshalb NICHT zum Satzfragment.
 	 * `<strong>Meldung</strong>` dagegen enthält Text und bleibt fragmentbildend.
-	 * `ExpressionTag` zählt hier bewusst nicht als Text (kein literaler Inhalt,
-	 * sondern ein dynamischer Ausdruck) — der Interpolationsfall wird an den
-	 * Aufrufstellen separat behandelt.
+	 *
+	 * Reine Text-Erkennung, nichts weiter: Ob ein Geschwister zusätzlich (oder
+	 * stattdessen) DYNAMISCH ist — ein `{ausdruck}` oder ein Kontrollfluss-Block
+	 * (`{#if}`/`{#each}`/`{#await}`/`{#key}`) —, entscheidet die eigenständige
+	 * Funktion `nodeHasDynamicContent`. Die beiden Fragen sind unabhängig
+	 * voneinander zu beantworten: `{#each admins as a}{a.name}{/each}` enthält
+	 * keinen Textknoten (kein Treffer hier), ist aber dynamisch (Treffer dort).
 	 */
 	function nodeContainsLetterText(node: SvelteAstNode): boolean {
 		if (node.type === 'Comment' || node.type === 'ExpressionTag') {
@@ -871,6 +875,58 @@ export function collectSvelteSites(
 		return false;
 	}
 
+	/**
+	 * Die Svelte-AST-Knotentypen der vier Kontrollfluss-Blöcke. Jeder von ihnen
+	 * wählt seinen sichtbaren Inhalt zur Laufzeit aus (Bedingung, Iteration,
+	 * Promise-Zustand) — unabhängig davon, ob ein Zweig selbst wieder ein
+	 * `{ausdruck}` enthält oder nur statischen Text trägt.
+	 */
+	const DYNAMIC_BLOCK_TYPES = new Set(['IfBlock', 'EachBlock', 'AwaitBlock', 'KeyBlock']);
+
+	/**
+	 * Ist `node` selbst ein dynamischer Ausdruck oder enthält er irgendwo in
+	 * seinem Teilbaum einen — ein `ExpressionTag` (`{count}`) oder einen der
+	 * vier Kontrollfluss-Blöcke (`{#if}`/`{#each}`/`{#await}`/`{#key}`)?
+	 *
+	 * **Der Befund, den diese Funktion schließt:** `nodeContainsLetterText` gab
+	 * für `ExpressionTag` bislang `false` zurück, und die Traversierung stieg
+	 * für Kontrollfluss-Blöcke zwar in ihre Fragmente ab (um Buchstabentext
+	 * DARIN zu finden), erkannte den Block selbst aber nirgends als dynamisch.
+	 * Für `<p>Admins: {#each admins as a}{a.name}{/each}</p>` bedeutete das:
+	 * Das `EachBlock`-Geschwister wurde weder über `nodeContainsLetterText`
+	 * (sein Fragment enthält nur ein `ExpressionTag`, keinen Textknoten) noch
+	 * über den ursprünglichen `n.type === 'ExpressionTag'`-Vergleich (der Typ
+	 * ist `EachBlock`, keine direkte Ausdrucks-Geschwisterschaft) erfasst — der
+	 * Textknoten „Admins:" rutschte unbemerkt durch beide Regeln und wurde
+	 * extrahiert, obwohl seine Fortsetzung zur Laufzeit entsteht.
+	 *
+	 * Ein Kontrollfluss-Block gilt HIER bereits durch seinen Typ als dynamisch,
+	 * unabhängig davon, ob ein Zweig ein `ExpressionTag` enthält: Auch
+	 * `{#if online}online{:else}offline{/if}` hat keinen literalen `{ausdruck}`
+	 * in seinen Zweigen, wählt aber zur Laufzeit zwischen zwei Texten — dieselbe
+	 * Abhilfe (eine ICU-Botschaft mit Parameter, hier ein `select`) gilt trotzdem.
+	 */
+	function nodeHasDynamicContent(node: SvelteAstNode): boolean {
+		if (node.type === 'ExpressionTag' || DYNAMIC_BLOCK_TYPES.has(node.type ?? '')) {
+			return true;
+		}
+		if (node.type === 'Comment' || node.type === 'Text') {
+			return false;
+		}
+		for (const [key, value] of Object.entries(node)) {
+			if (key === 'start' || key === 'end' || key === 'loc' || key === 'name_loc') {
+				continue;
+			}
+			if (isSvelteNode(value) && value.type === 'Fragment' && Array.isArray(value.nodes)) {
+				const typed = value.nodes.filter(isSvelteNode);
+				if (typed.some(nodeHasDynamicContent)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 	function handleText(
 		node: SvelteAstNode,
 		siblings: SvelteAstNode[],
@@ -885,20 +941,24 @@ export function collectSvelteSites(
 		const end = typeof node.end === 'number' ? node.end : 0;
 
 		const others = significantSiblings(siblings, node);
-		// Nur Geschwister, die selbst Text mit Buchstaben tragen (oder ein
-		// dynamischer Ausdruck sind), machen diesen Textknoten zum Fragment.
-		// Ein Icon-Geschwister (`<SaveIcon />` neben "Speichern") hat keine
-		// Wortstellung und bleibt deshalb außen vor — siehe `nodeContainsLetterText`.
+		// Nur Geschwister, die selbst Text mit Buchstaben tragen oder dynamisch
+		// sind (ein `{ausdruck}` oder ein Kontrollfluss-Block darunter — siehe
+		// `nodeHasDynamicContent`), machen diesen Textknoten zum Fragment. Ein
+		// Icon-Geschwister (`<SaveIcon />` neben "Speichern") hat weder Text noch
+		// dynamischen Inhalt und bleibt deshalb außen vor.
 		const fragmentCausingSiblings = others.filter(
-			(n) => n.type === 'ExpressionTag' || nodeContainsLetterText(n)
+			(n) => nodeHasDynamicContent(n) || nodeContainsLetterText(n)
 		);
 		if (fragmentCausingSiblings.length > 0) {
 			// Fall 1 (Satzfragment) und Fall 2 (Interpolation) der Tabelle: Der
-			// Textknoten ist nicht das einzige Kind seines Elements. Enthält die
-			// Geschwistergruppe einen Ausdrucksknoten, ist eine ICU-Botschaft mit
-			// Parameter nötig; sonst ist es ausgezeichneter Text (z.B. `<strong>`),
-			// dessen Wortstellung eine Übersetzung pro Teilknoten bricht.
-			const hasExpressionSibling = fragmentCausingSiblings.some((n) => n.type === 'ExpressionTag');
+			// Textknoten ist nicht das einzige Kind seines Elements. Ist die
+			// Geschwistergruppe dynamisch — ein `ExpressionTag` oder ein
+			// Kontrollfluss-Block (`{#if}`/`{#each}`/`{#await}`/`{#key}`), gleich ob
+			// direkt daneben oder eine Ebene darunter —, ist eine ICU-Botschaft mit
+			// Parameter nötig (dieselbe Abhilfe für beide Formen, deshalb derselbe
+			// Grund); sonst ist es rein statisch ausgezeichneter Text (z.B.
+			// `<strong>`), dessen Wortstellung eine Übersetzung pro Teilknoten bricht.
+			const hasExpressionSibling = fragmentCausingSiblings.some((n) => nodeHasDynamicContent(n));
 			skipped.push({
 				file: relativeFilePath,
 				line: lineOf(start),
@@ -906,7 +966,8 @@ export function collectSvelteSites(
 				aspect: 'text',
 				reason: hasExpressionSibling ? 'interpolation' : 'sentence-fragment',
 				explanation: hasExpressionSibling
-					? 'Geschwister-Ausdruck ({…}) im selben Element — braucht eine ICU-Botschaft mit Parameter'
+					? 'Geschwister ist dynamisch ({ausdruck} oder ein {#if}/{#each}/{#await}/{#key}-Block, ' +
+						'auch verschachtelt) — braucht eine ICU-Botschaft mit Parameter'
 					: 'Textknoten hat Geschwister-Elemente — einzeln übersetzt bricht die Wortstellung ' +
 						'in jeder Zielsprache (Handarbeit, Aufgabe 2.3)'
 			});
@@ -974,7 +1035,7 @@ export function collectSvelteSites(
 				}
 				continue;
 			}
-			if (n.type === 'ExpressionTag' || nodeContainsLetterText(n)) {
+			if (nodeHasDynamicContent(n) || nodeContainsLetterText(n)) {
 				hasTranslationRelevantSibling = true;
 			}
 		}

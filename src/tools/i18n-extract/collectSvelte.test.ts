@@ -228,6 +228,62 @@ describe('collectSvelteSites — Fragment nur bei textbehaftetem Geschwister', (
 	});
 });
 
+// Befund aus dem Review: `nodeContainsLetterText` gab für `ExpressionTag`
+// bewusst `false` zurück, aber kein Teil der Erkennung fing einen
+// Kontrollfluss-Block (`{#if}`/`{#each}`/`{#await}`/`{#key}`) als Geschwister
+// auf. Ein dynamischer Ausdruck, der eine Ebene tiefer in einem solchen Block
+// steckt, war deshalb für die Satzfragment- UND die Interpolationsregel
+// unsichtbar — `<p>Admins: {#each admins as a}{a.name}{/each}</p>` extrahierte
+// „Admins:" ohne jede Meldung. `nodeHasDynamicContent` schließt diese Lücke.
+describe('collectSvelteSites — dynamischer Inhalt in einem Kontrollfluss-Block', () => {
+	it('verweigert Text neben einem {#each}-Block mit Ausdruck (Interpolation, keine Ebene zu flach)', () => {
+		const result = collect(`<p>Admins: {#each admins as a}{a.name}{/each}</p>`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => [s.text, s.reason])).toEqual([['Admins:', 'interpolation']]);
+	});
+
+	it('verweigert Text neben einem {#if}-Block, dessen Zweige nur statischen Text tragen', () => {
+		const result = collect(`<p>Status: {#if online}online{:else}offline{/if}</p>`);
+		expect(result.sites).toEqual([]);
+		// "Status:" landet über die Geschwister-Regel bei 'interpolation' — der
+		// {#if}-Block ist dynamisch, auch ohne eigenes {ausdruck}. Die Texte in
+		// seinen beiden Zweigen ("online"/"offline") sind zusätzlich Kinder eines
+		// gemischten Vorfahr-Fragments (das äußere <p> mischt Text und Block) und
+		// werden deshalb ein zweites Mal — über die ancestorMixed-Regel — als
+		// 'sentence-fragment' gemeldet. Dasselbe Muster wie beim <strong>-Fall
+		// oben: mehrere Meldungen zu derselben Ursache sind kein Fehler.
+		expect(result.skipped.map((s) => [s.text, s.reason])).toEqual([
+			['Status:', 'interpolation'],
+			['online', 'sentence-fragment'],
+			['offline', 'sentence-fragment']
+		]);
+	});
+
+	it('verweigert Text neben einem {#await}-Block', () => {
+		const result = collect(`<p>Wert: {#await p}lädt{:then v}{v}{/await}</p>`);
+		expect(result.sites).toEqual([]);
+		// "lädt" (pending-Zweig) ist ebenfalls Kind des gemischten <p>-Fragments —
+		// dieselbe ancestorMixed-Doppelmeldung wie im {#if}-Test oben. Der
+		// then-Zweig ({v}) enthält keinen Textknoten, taucht deshalb nicht auf.
+		expect(result.skipped.map((s) => [s.text, s.reason])).toEqual([
+			['Wert:', 'interpolation'],
+			['lädt', 'sentence-fragment']
+		]);
+	});
+
+	it('extrahiert weiterhin Text neben einem textlosen Icon-Geschwister (Nachschärfung 44698ff1 bleibt intakt)', () => {
+		const result = collect(`<button><SaveIcon /> Speichern</button>`);
+		expect(result.sites.map((s) => [s.text, s.aspect])).toEqual([['Speichern', 'text']]);
+		expect(result.skipped).toEqual([]);
+	});
+
+	it('extrahiert weiterhin Text bei reiner Verschachtelung ohne gemischten Inhalt', () => {
+		const result = collect(`<div><p>Ein reiner Text</p></div>`);
+		expect(result.sites.map((s) => [s.text, s.aspect])).toEqual([['Ein reiner Text', 'text']]);
+		expect(result.skipped).toEqual([]);
+	});
+});
+
 describe('applySvelteSitesToSource — Ersetzungsformen parsen als gültiges Svelte', () => {
 	it('ersetzt einen Textknoten durch {m.key()} — Ergebnis parst erneut', () => {
 		const source = `<p>Ein Text</p>`;
