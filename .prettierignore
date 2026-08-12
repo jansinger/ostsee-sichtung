@@ -16,3 +16,30 @@ THIRD-PARTY-NOTICES.txt
 
 # Erzeugter Paraglide-Code (Task 1) — nicht im Repository, siehe .gitignore
 src/lib/paraglide
+
+# Erzeugte und fremde Datenbestände.
+#
+# `npm run format` ist `prettier --write .` und fasste diese Dateien bisher mit
+# an. Ein versehentlicher Vollauf am 2026-08-12 erzeugte dadurch über 777.000
+# geänderte Zeilen — ein Diff, in dem eine echte Änderung nicht mehr auffindbar
+# ist. Keine dieser Dateien wird von Hand gepflegt, das Umformatieren hält also
+# nur bis zur nächsten Neuerzeugung.
+#
+# Erzeugt von src/tools/create-rbush-index.js:
+src/lib/server/geo/rbush-index.json
+legacy-inbox/src/geo/rbush-index.json
+# Erzeugt von src/tools/build-baltic-geometry.sh / .sql:
+src/tools/baltic-inclusion-mask.geojson
+src/tools/baltic-artifact-mask.geojson
+# Externer Datensatz (MarineRegions IHO Sea Areas v3), Eingabe für dieselbe Pipeline:
+src/tools/iho.json
+# Fremdcode (Weather Icons 2.0.10), unverändert übernommen:
+src/css/weather-icons.css
+src/css/weather-icons-wind.css
+
+# Der eingefrorene deutsche Wortlaut der Mehrsprachigkeit, erzeugt aus dem Code
+# (siehe germanBaseline.testutil.ts). Ein Test vergleicht ihn geparst, ein
+# Umformatieren bräche also nichts — aber der Zweck dieser Datei ist, dass jeder
+# Diff auf ihr etwas bedeutet. Formatierungsrauschen darauf zwingt jeden
+# Reviewer zu prüfen, ob sich ein Wortlaut geändert hat.
+src/lib/form/validation/germanBaseline.json
