@@ -1242,6 +1242,30 @@ Zeile:
 python3 -c "import json;d=json.load(open('messages/de.json'));e=json.load(open('messages/en.json'));print([k for k in d if d[k]!=e[k]])"
 ```
 
+### Zwei Review-Befunde aus PR #864 — beide in der Sache berechtigt
+
+**1. Der Guard war für `<SCRIPT>` blind (CodeQL `js/bad-tag-filter`).**
+`scriptBlocksOnly` suchte mit `/<script[^>]*>…<\/script>/g`, ohne `i`-Flag.
+HTML-Tags sind groß-/kleinschreibungsunabhängig; ein gross geschriebener
+Block wäre für den Zähler nicht vorhanden gewesen — er haette **Null
+gegemeldet und nichts bewiesen**. Genau das Versagen, gegen das ein Guard
+gebaut wird, im Guard selbst.
+
+Behoben mit `i`-Flag plus Testfall; das Entfernen des Flags macht ihn wieder
+rot. Lehre: Ein Guard braucht seine Mutation auch für die _Auswahl_ dessen,
+was er überhaupt liest — nicht nur fuer die Regel, die er darauf anwendet.
+
+**2. `optionsFactory.getLabel()` fiel auf ein hartcodiertes `'Unbekannt'`
+zurück.** Ein Einzelwort, das die Zwei-Buchstabengruppen-Regel nie gezählt
+hat — dieselbe untere Schranke wie `'Serverfehler'` in Welle 1. Beim Beheben
+lag daneben ein zweiter Fall, den der Kommentar nicht nannte:
+`CONSENT: 'Einverstanden'` stand noch hartcodiert neben dem bereits
+umgestellten `NO_CONSENT`. Beide sind jetzt Botschaften.
+
+Beide Befunde bestaetigen dieselbe Aussage von zwei Seiten: **Die Regel ist
+eine untere Schranke für Anzeigetext, keine Definition davon.** Wer eine
+Datei anfasst, liest sie ganz.
+
 ### Was dieser Branch NICHT geleistet hat
 
 - Die **143 Handarbeitsfälle** der Schicht C (78 Satzfragmente, 58
