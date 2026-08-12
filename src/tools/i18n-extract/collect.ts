@@ -934,14 +934,89 @@ export function collectSvelteSites(
 		}
 	}
 
-	/** Geschwister eines Textknotens, ohne reine Formatierung (Whitespace/Kommentar). */
-	function significantSiblings(siblings: SvelteAstNode[], self: SvelteAstNode): SvelteAstNode[] {
-		return siblings.filter(
+	/** Knoten einer Geschwistergruppe, ohne reine Formatierung (Whitespace/Kommentar). */
+	function significantNodes(nodes: SvelteAstNode[]): SvelteAstNode[] {
+		return nodes.filter(
 			(n) =>
-				n !== self &&
 				n.type !== 'Comment' &&
 				!(n.type === 'Text' && typeof n.data === 'string' && n.data.trim() === '')
 		);
+	}
+
+	/** Geschwister eines Textknotens, ohne reine Formatierung (Whitespace/Kommentar). */
+	function significantSiblings(siblings: SvelteAstNode[], self: SvelteAstNode): SvelteAstNode[] {
+		return significantNodes(siblings).filter((n) => n !== self);
+	}
+
+	/**
+	 * Enthält `el` genau ein bedeutsames Kind, und ist das ein Textknoten? Liefert
+	 * dessen getrimmten Text, sonst `null`. Grundlage für `findGlossPair` unten:
+	 * ein Begriffs-Element (`<strong>GPS-Koordinaten:</strong>`) hat keinen
+	 * gemischten Inhalt und keine Auszeichnung darunter — nur einen Text.
+	 */
+	function soleChildText(el: SvelteAstNode): string | null {
+		if (typeof el.name !== 'string') {
+			return null; // kein Element (Text/ExpressionTag/Block) — kein Begriffs-Kandidat
+		}
+		const fragment = el.fragment;
+		if (!isSvelteNode(fragment) || fragment.type !== 'Fragment' || !Array.isArray(fragment.nodes)) {
+			return null;
+		}
+		const inner = significantNodes(fragment.nodes.filter(isSvelteNode));
+		if (inner.length !== 1 || inner[0]!.type !== 'Text') {
+			return null;
+		}
+		return typeof inner[0]!.data === 'string' ? inner[0]!.data.trim() : null;
+	}
+
+	/**
+	 * Muster A — „Begriff und Erläuterung", z.B.
+	 * `<li><strong>GPS-Koordinaten:</strong> Am wertvollsten für die Forschung</li>`.
+	 * Kein Satz, sondern ein Begriff mit Glosse: Die Wortstellung zwischen beiden
+	 * wandert in KEINER Sprache — beide Textknoten sind eigenständige Botschaften,
+	 * anders als bei einem echten Satz mit Auszeichnung (`Vielen Dank für Ihre
+	 * <strong>Meldung</strong>!`).
+	 *
+	 * DER UNTERSCHEIDER, eng gefasst — alle drei Bedingungen zusammen, keine
+	 * einzeln lockerbar (siehe Mutationstests in collectSvelte.test.ts):
+	 * (a) das textbehaftete Geschwister-Element ist das ERSTE Kind seines
+	 *     Elternelements — deshalb wird ausschließlich `sig[0]` als Begriffs-
+	 *     Kandidat geprüft, nicht irgendein Element in der Geschwistergruppe;
+	 * (b) sein Text endet mit einem Doppelpunkt;
+	 * (c) der Textknoten (die Glosse) folgt UNMITTELBAR darauf, und danach ist
+	 *     im Fragment nichts weiter — deshalb `sig.length === 2`.
+	 * Eine Interpolation in der Glosse (`<strong>Achtung:</strong> Der Wert {n}
+	 * ist zu hoch`) erfüllt (c) nicht (mehr als zwei bedeutsame Kinder: Element,
+	 * Text, Ausdruck, Text) und bleibt deshalb verweigert — Muster A und
+	 * Interpolation schließen sich nicht aus, die Interpolationsregel hat ohnehin
+	 * Vorrang, weil sie in `handleText` zuerst geprüft wird.
+	 */
+	function findGlossPair(
+		parentChildren: SvelteAstNode[]
+	): { term: SvelteAstNode; glosse: SvelteAstNode } | null {
+		const sig = significantNodes(parentChildren);
+
+		// (a) erstes Kind des Elternelements
+		const term = sig[0];
+		if (term === undefined) {
+			return null;
+		}
+		const termText = soleChildText(term);
+		if (termText === null) {
+			return null;
+		}
+
+		// (b) Text endet mit Doppelpunkt
+		if (!termText.endsWith(':')) {
+			return null;
+		}
+
+		// (c) unmittelbar gefolgt von genau einem Textknoten, sonst nichts
+		if (sig.length !== 2 || sig[1]!.type !== 'Text') {
+			return null;
+		}
+
+		return { term, glosse: sig[1]! };
 	}
 
 	/**
@@ -1037,7 +1112,8 @@ export function collectSvelteSites(
 		node: SvelteAstNode,
 		siblings: SvelteAstNode[],
 		elementName: string,
-		ancestorMixed: boolean
+		ancestorMixed: boolean,
+		termGlossOverride: boolean
 	): void {
 		const data = typeof node.data === 'string' ? node.data : '';
 		if (data.trim().length === 0) {
@@ -1085,6 +1161,19 @@ export function collectSvelteSites(
 			// Grund); sonst ist es rein statisch ausgezeichneter Text (z.B.
 			// `<strong>`), dessen Wortstellung eine Übersetzung pro Teilknoten bricht.
 			const hasExpressionSibling = fragmentCausingSiblings.some((n) => nodeHasDynamicContent(n));
+			if (!hasExpressionSibling) {
+				// Muster A prüfen, bevor als Satzfragment verworfen wird — siehe
+				// `findGlossPair`. Interpolation hat ohnehin Vorrang (dieser Zweig
+				// wird nur bei `!hasExpressionSibling` erreicht), Muster A und
+				// Interpolation können deshalb nie gleichzeitig zuschlagen.
+				const pair = findGlossPair(siblings);
+				if (pair !== null && pair.glosse === node) {
+					const leadingWs = data.length - data.trimStart().length;
+					const trailingWs = data.length - data.trimEnd().length;
+					addSite(start + leadingWs, end - trailingWs, data.trim(), 'text', elementName);
+					return;
+				}
+			}
 			skipped.push({
 				file: relativeFilePath,
 				line: lineOf(start),
@@ -1101,6 +1190,17 @@ export function collectSvelteSites(
 		}
 
 		if (ancestorMixed) {
+			if (termGlossOverride) {
+				// Muster A, Begriffs-Teil: Dieser Textknoten ist das einzige Kind
+				// eines Elements, das `findGlossPair` beim Besuch des Elternelements
+				// als Begriff (Bedingungen a/b/c) erkannt hat — siehe
+				// `visitFragmentNodes`. Trotz gemischtem Vorfahren eine eigenständige
+				// Botschaft, keine Ausnahme von der Vorfahren-Regel im Allgemeinen.
+				const leadingWs = data.length - data.trimStart().length;
+				const trailingWs = data.length - data.trimEnd().length;
+				addSite(start + leadingWs, end - trailingWs, data.trim(), 'text', elementName);
+				return;
+			}
 			// Der Textknoten ist zwar selbst einziges Kind seines direkten
 			// Elements (z.B. innerhalb von `<strong>`), aber ein VORFAHR hat
 			// gemischten Inhalt — Textknoten mit Buchstaben UND Element-Kinder
@@ -1168,14 +1268,25 @@ export function collectSvelteSites(
 		return hasLetterText && hasTranslationRelevantSibling;
 	}
 
-	function visitFragmentNodes(nodes: unknown, elementName: string, ancestorMixed: boolean): void {
+	function visitFragmentNodes(
+		nodes: unknown,
+		elementName: string,
+		ancestorMixed: boolean,
+		termGlossOverride = false
+	): void {
 		if (!Array.isArray(nodes)) {
 			return;
 		}
 		const typed = nodes.filter(isSvelteNode);
 		const disqualified = ancestorMixed || fragmentHasMixedContent(typed);
+		// Muster A, Begriffs-Teil: nur relevant, wenn dieses Fragment sonst als
+		// gemischt verworfen würde — `findGlossPair` läuft trotzdem immer, ist
+		// aber billig (max. zwei Kandidaten) und hält die Bedingung an einer
+		// Stelle statt dupliziert.
+		const glossPair = disqualified ? findGlossPair(typed) : null;
 		for (const node of typed) {
-			visitNode(node, typed, elementName, disqualified);
+			const isGlossTerm = glossPair !== null && node === glossPair.term;
+			visitNode(node, typed, elementName, disqualified, termGlossOverride || isGlossTerm);
 		}
 	}
 
@@ -1183,13 +1294,14 @@ export function collectSvelteSites(
 		node: SvelteAstNode,
 		siblings: SvelteAstNode[],
 		parentElementName: string,
-		ancestorMixed: boolean
+		ancestorMixed: boolean,
+		termGlossOverride: boolean
 	): void {
 		if (node.type === 'Comment') {
 			return; // bewusst kein Abstieg — die Kommentar-Gegenprobe im Test belegt das
 		}
 		if (node.type === 'Text') {
-			handleText(node, siblings, parentElementName, ancestorMixed);
+			handleText(node, siblings, parentElementName, ancestorMixed, termGlossOverride);
 			return;
 		}
 		if (node.type === 'ExpressionTag') {
@@ -1215,7 +1327,7 @@ export function collectSvelteSites(
 				continue; // reine Positions-Metadaten, keine Kindknoten
 			}
 			if (isSvelteNode(value) && value.type === 'Fragment') {
-				visitFragmentNodes(value.nodes, elementName, ancestorMixed);
+				visitFragmentNodes(value.nodes, elementName, ancestorMixed, termGlossOverride);
 			}
 		}
 	}

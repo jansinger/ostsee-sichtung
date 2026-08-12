@@ -364,6 +364,74 @@ describe('collectSvelteSites — dynamischer Inhalt in einem Kontrollfluss-Block
 	});
 });
 
+// Muster A — „Begriff und Erläuterung": <strong>Term:</strong> Erläuterung ist
+// kein Satz, sondern ein Begriff mit Glosse; die Wortstellung zwischen beiden
+// wandert in keiner Sprache. Siehe `findGlossPair` in collect.ts für die drei
+// Bedingungen (a)/(b)/(c) und die Begründung, warum keine davon einzeln
+// lockerbar ist.
+describe('collectSvelteSites — Muster A: Begriff und Erläuterung', () => {
+	it('extrahiert Begriff und Erläuterung als zwei eigenständige Botschaften (einzeilig)', () => {
+		const result = collect(
+			`<li><strong>GPS-Koordinaten:</strong> Am wertvollsten für die Forschung</li>`
+		);
+		expect(result.sites.map((s) => [s.text, s.aspect])).toEqual([
+			['GPS-Koordinaten:', 'text'],
+			['Am wertvollsten für die Forschung', 'text']
+		]);
+		expect(result.skipped).toEqual([]);
+	});
+
+	it('extrahiert Begriff und Erläuterung auch mehrzeilig — die Zeilenstruktur ist im AST egal', () => {
+		const result = collect(
+			`<li>\n\t<strong>Tipp:</strong> Screenshots von Navigations-Apps sind hilfreich\n</li>`
+		);
+		expect(result.sites.map((s) => [s.text, s.aspect])).toEqual([
+			['Tipp:', 'text'],
+			['Screenshots von Navigations-Apps sind hilfreich', 'text']
+		]);
+		expect(result.skipped).toEqual([]);
+	});
+
+	it('bleibt Fragment ohne Doppelpunkt, auch wenn die Auszeichnung erstes Kind ist (Bedingung b)', () => {
+		const result = collect(`<p>Vielen Dank für Ihre <strong>Meldung</strong>!</p>`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => [s.text, s.reason])).toEqual([
+			['Vielen Dank für Ihre', 'sentence-fragment'],
+			['Meldung', 'sentence-fragment'],
+			['!', 'no-letter-group']
+		]);
+	});
+
+	it('bleibt Fragment, wenn die Auszeichnung mit Doppelpunkt NICHT erstes Kind ist (Bedingung a)', () => {
+		const result = collect(`<p>Bitte <strong>hier:</strong> klicken</p>`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => [s.text, s.reason])).toEqual([
+			['Bitte', 'sentence-fragment'],
+			['hier:', 'sentence-fragment'],
+			['klicken', 'sentence-fragment']
+		]);
+	});
+
+	it('bleibt verweigert, wenn die Erläuterung eine Interpolation enthält — Interpolation hat Vorrang', () => {
+		const result = collect(`<p><strong>Achtung:</strong> Der Wert {n} ist zu hoch</p>`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => [s.text, s.reason])).toEqual([
+			['Achtung:', 'sentence-fragment'],
+			['Der Wert', 'interpolation'],
+			['ist zu hoch', 'interpolation']
+		]);
+	});
+
+	it('bleibt Fragment ohne Doppelpunkt in der Auszeichnung (Begriff ohne Doppelpunkt)', () => {
+		const result = collect(`<li><strong>Ohne Doppelpunkt</strong> Erläuterung</li>`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => [s.text, s.reason])).toEqual([
+			['Ohne Doppelpunkt', 'sentence-fragment'],
+			['Erläuterung', 'sentence-fragment']
+		]);
+	});
+});
+
 describe('applySvelteSitesToSource — Ersetzungsformen parsen als gültiges Svelte', () => {
 	it('ersetzt einen Textknoten durch {m.key()} — Ergebnis parst erneut', () => {
 		const source = `<p>Ein Text</p>`;
