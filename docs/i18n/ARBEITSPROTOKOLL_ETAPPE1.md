@@ -1004,6 +1004,51 @@ Anzeigetext; sie zu ändern wäre eine Formatierungsentscheidung, keine
 
 **Stand A: 83 Kandidaten in 28 Dateien.**
 
+### Welle C4: fünf Dateien, vier Modulkonstanten
+
+Commit 6128040e, 27 neue Schlüssel. **A 83 → 56 in 24 Dateien.**
+
+`formConfig.ts`, `locationControlState.ts`, `uploadUtils.ts`,
+`submitSightingForm.ts`, `geolocation.ts`.
+
+#### Der eigentliche Aufwand war nicht das Übersetzen
+
+Vier **Modulkonstanten** hätten die Sprache eingefroren und mussten umgebaut
+werden, bevor eine einzige Zeichenkette ersetzt wurde:
+
+| vorher                                | nachher                                           |
+| ------------------------------------- | ------------------------------------------------- |
+| `formStepsConfig[].title/description` | Getter auf den Array-Einträgen                    |
+| `LOCATION_LABEL_IDLE` / `_TRACKING`   | `locationLabelIdle()` / `locationLabelTracking()` |
+| `FALLBACK_MESSAGE`                    | `fallbackMessage()`                               |
+| `DISALLOWED_FIELD_MESSAGE`            | `disallowedFieldMessage()`                        |
+
+Ein `const X = 'Text'` wird beim Modulladen **einmal** aufgelöst. Jeder spätere
+Leser bekäme die Sprache, in der der Prozess gestartet ist — und kein Test
+merkte es, weil der Wert stabil ist und richtig aussieht. Das ist der Defekt
+aus Entwurf 2.3/4.1, hier zum ersten Mal außerhalb der Schicht B.
+
+'Upload fehlgeschlagen. Versuchen Sie es erneut.' gab es bereits als Schlüssel
+aus `constants/upload.ts` und wird **wiederverwendet** statt gedoppelt —
+dieselbe Zeichenkette in zwei Dateien ist eine Botschaft, nicht zwei, die
+auseinanderlaufen können.
+
+#### BEWUSST NICHT übersetzt: `balticSeaStatus.ts`
+
+Die 5 Kandidaten dort bleiben stehen, und zwar belegt: **Jeder** Verbraucher
+ist Admin-Oberfläche, Museums-Mail oder ein Server-Filter —
+`src/lib/components/admin/**`, `routes/admin/**`,
+`server/templates/balticSeaEmailContext.ts`, `server/db/balticSeaFilter.ts`.
+Keine öffentliche Fläche liest die Datei, und beide Zielgruppen werden
+ausdrücklich nicht lokalisiert. Sie zu übersetzen hätte eine Locale-Falle
+eingebaut, von der niemand etwas hätte.
+
+Das ist der erste Fall in Befund C, in dem die **Verbraucher-Prüfung Arbeit
+verhindert** statt sie zu formen — und damit ihr eigentlicher Zweck.
+
+Nachweise: `svelte-check` 0 Fehler, `test:quick` grün (4955 + 780), alle drei
+E2E-Shards im ersten Lauf grün (229 + 94 + 156 = 479).
+
 ### Was diese Messung NICHT ist
 
 Kein Guard. Sie liegt als Zahl im Protokoll, nicht im Testlauf — der
