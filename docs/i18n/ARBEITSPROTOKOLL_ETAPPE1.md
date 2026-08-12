@@ -638,11 +638,53 @@ Nachweise: `test:quick` grün (4948 + 780), **alle drei E2E-Shards grün ohne
    Nachgezogen per `--amend`, mit dem Beleg, dass beide Dateien danach
    unverändert 907 Schlüssel tragen und der Diff rein weißraumhaft ist.
 
+### Welle 2: `SightingsMapView` 9 → 0, `DropzoneEnhanced` 8 → 0
+
+Commit e94a3d3a, 26 neue Schlüssel.
+
+**Der Zähler hat hier zu wenig gemeldet, und das war absehbar.**
+`SightingsMapView` trägt die gesamte Lokalisierungs-Naht der Karte in einem
+Objektliteral: `const translations: MapTranslations` versorgt
+`popupContent.ts`, `countManager.ts` und die Legende. Gezählt wurden davon
+sechs Einträge — die übrigen („Tierart", „Position", „Name", „Totfund", …)
+sind Einzelwörter und fallen unter die Zwei-Buchstabengruppen-Regel. Nur die
+sechs zu übersetzen hätte das Popup unter `/en` halb deutsch gelassen.
+Deshalb sind alle fünfzehn Textfelder jetzt Botschaften. Gleiche Begründung
+wie bei `'Serverfehler'` in Welle 1: **Die Regel ist eine untere Schranke für
+Anzeigetext, keine Definition davon.** Wer eine Datei anfasst, liest sie
+ganz — der Zähler sagt nur, wo man anfangen muss.
+
+Drei Stellen brauchten Parameter statt einer festen Botschaft: der
+Art-Chip-Rückfall (`Art {id}`), der Anzahl-Chip (`Anzahl {name}`) und der
+Dateilimit-Toast der Dropzone (`Nur {allowed} von {total} … {max}`).
+
+### Zwei Befunde aus Welle 2, beide offen
+
+1. **`translations.language: 'de'` hat keinen einzigen Verbraucher.** Kein
+   Treffer in `src/lib/map/**`. Ein totes Feld auf der Schnittstelle
+   `MapTranslations` — stehen gelassen statt geraten, was es bedeuten soll.
+2. **`popupContent.ts` hartcodiert `'Ja'` und `'Unbekannte Art'`.** Die Datei
+   ist `.ts` und liegt damit außerhalb des Schicht-C-Guards, der nur `.svelte`
+   liest. Das ist dieselbe Bauart blinder Fleck wie Befund B eine Ebene höher:
+   Der Umfang ist über die Dateiendung definiert, der Anzeigetext hält sich
+   nicht daran. Eine spätere Ausweitung auf die `.ts`-Dateien unter
+   `src/lib/map/` und `src/lib/report/` ist der nächste logische Schritt —
+   erst messen, dann entscheiden.
+
+### Zur Flakiness, damit sie nicht als Befund missverstanden wird
+
+Erster Vollauf nach Welle 2: drei Zeitüberschreitungen im Unit-Lauf
+(`localePinning` ×2, `legacy.contract`), im Wiederholungslauf einer, isoliert
+2/2 grün. E2E: `smoke` 229 und `form` 94 grün, `map` einmal rot mit einer
+`toHaveAttribute`-Zusicherung und danach **156/156 grün bei identischem
+Code**. Der Spec-Name wurde nicht festgehalten — das ist ein Versäumnis der
+Messung, kein Beleg für Harmlosigkeit; festgehalten statt weggeredet.
+
 ### Stand Befund B
 
-69 Kandidaten in 24 Dateien offen. Die dicksten Posten: `SightingsMapView` 9,
-`DropzoneEnhanced` 8, `UnifiedDropzone` 6, `ModernReportForm` 4,
-`ReportKindChoice` 4, `VerifyLocation` 4, `WeatherDataFetcher` 4, `Media` 4.
+52 Kandidaten in 22 Dateien offen. Die dicksten Posten: `UnifiedDropzone` 6,
+dann je 4 `ModernReportForm`, `ReportKindChoice`, `VerifyLocation`,
+`WeatherDataFetcher` und `Media`.
 Nicht alle sind Übersetzungsarbeit — Cookie-Zeichenketten, erzeugte
 Element-IDs, Cache-Schlüssel und geworfene Entwicklerfehler stecken darin und
 werden je Datei einzeln entschieden.
