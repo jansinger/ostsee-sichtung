@@ -61,22 +61,22 @@ type ExtractionPlan = ReturnType<typeof planExtraction>;
  *    Regel — er meldete auf Anhieb 27 Stellen, die in keiner Zählung dieser
  *    Etappe je vorkamen.
  *
- * **Umfang.** Dieselben 84 Dateien, die der Extraktor scannt — die
- * Ausschlussliste (`isSveltePathInScope` in `plan.ts`) ist dort benannt und
- * begründet (Admin, Styleguide, `/docs`, `ApiDocumentation.svelte`). Sie wird
- * hier bewusst **nicht** kopiert: Zwei Listen für denselben Umfang altern
- * getrennt.
- *
  * 4. **Anzeigetext im `<script>`-Block** (`Anzeigetext im <script>-Block`).
  *    Der Extraktor liest von einer `.svelte`-Datei nur das Markup. Ein
  *    `const hint = 'Karte wird initialisiert…'` ist für die Zusicherungen 1
  *    bis 3 unsichtbar; „0 mechanische Fundstellen" las sich deshalb als
- *    „Schicht C ist fertig". Sie ist es nicht — 78 Stellen in 25 Dateien.
+ *    „Schicht C ist fertig". Sie ist es nicht — 69 Stellen in 24 Dateien.
  *    Auch das ein Bestandszähler, aus demselben Grund wie (2): Er kann heute
  *    nicht null sein, aber er kann nicht mehr wachsen. Die Regel ist dieselbe
  *    wie in Schicht A/B (`multiWordLiterals`), abzüglich zweier benannter
  *    Klassen, die nie Anzeigetext sind: Tailwind-Klassenlisten (41) und
  *    Logmeldungen (39).
+ *
+ * **Umfang.** Dieselben 84 Dateien, die der Extraktor scannt — die
+ * Ausschlussliste (`isSveltePathInScope` in `plan.ts`) ist dort benannt und
+ * begründet (Admin, Styleguide, `/docs`, `ApiDocumentation.svelte`). Sie wird
+ * hier bewusst **nicht** kopiert: Zwei Listen für denselben Umfang altern
+ * getrennt.
  *
  * Läuft im Node-Projekt (`npm run test:unit`, damit auch in `test:quick`).
  */
@@ -468,7 +468,7 @@ export function findScriptDisplayText(source: string): SourceHit[] {
  * Hartcodierter Anzeigetext im `<script>`-Block, je Datei — erhoben am
  * 2026-08-12 (Befund B des Schicht-C-Guards).
  *
- * 78 Stellen in 25 Dateien, von 158 mehrwortigen Literalen insgesamt (41
+ * 69 Stellen in 24 Dateien, von 158 mehrwortigen Literalen insgesamt (41
  * Klassenlisten und 39 Logmeldungen sind ausgeschlossen, siehe oben). Nicht
  * alle 78 sind Übersetzungsarbeit: Darunter sind Cookie-Zeichenketten
  * (`LanguageSwitcher`), erzeugte Element-IDs (`BaseInput`, `UnifiedDropzone`),
@@ -502,7 +502,6 @@ const SCRIPT_TEXT_LEDGER: Readonly<Record<string, number>> = {
 	'src/lib/report/components/sections/Behavior.svelte': 1,
 	'src/lib/report/components/sections/Media.svelte': 4,
 	'src/lib/report/components/steps/Step4Contact.svelte': 2,
-	'src/routes/+error.svelte': 9,
 	'src/routes/bestimmungshilfe/+page.svelte': 2
 };
 
