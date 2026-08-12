@@ -63,6 +63,16 @@ function isFormOptionsFile(relativeFilePath: string): boolean {
 	return relativeFilePath.includes(FORM_OPTIONS_PATH_SEGMENT);
 }
 
+/**
+ * Schicht C (Svelte-Markup) erkennt sich an der Dateiendung, nicht an einem
+ * Pfadsegment wie `formOptions/` — die Dateien liegen über den ganzen
+ * öffentlichen Baum verteilt (siehe `SVELTE_SCOPE_EXCLUDED_PREFIXES` in
+ * `plan.ts`).
+ */
+function isSvelteFile(relativeFilePath: string): boolean {
+	return relativeFilePath.endsWith('.svelte');
+}
+
 export function renderDryRunReport(plan: ExtractionPlan): string {
 	const lines: string[] = [];
 	const totalSites = plan.files.reduce((sum, f) => sum + f.sites.length, 0);
@@ -73,6 +83,17 @@ export function renderDryRunReport(plan: ExtractionPlan): string {
 	lines.push(`Botschaften: ${totalSites} — übersprungen: ${plan.skipped.length}`);
 	lines.push('');
 
+	// Nachweis 1 (Aufgabe 2.2/Befund): die Planungszahlen für die nächste
+	// Aufgabe (Umbau der Markup-Dateien) müssen sich aus DIESEM Bericht ablesen
+	// lassen — nicht aus einem Scratchpad-Skript, das den Umfang nicht kennt,
+	// den das Werkzeug jetzt selbst definiert.
+	lines.push('## Übersprungen je Grund');
+	lines.push('');
+	for (const [reason, count] of countByReason(plan.skipped)) {
+		lines.push(`- ${reason}: ${count}`);
+	}
+	lines.push('');
+
 	lines.push('## Botschaften je Datei');
 	lines.push('');
 	for (const f of plan.files) {
@@ -80,8 +101,9 @@ export function renderDryRunReport(plan: ExtractionPlan): string {
 	}
 	lines.push('');
 
-	const schemaFiles = plan.files.filter((f) => !isFormOptionsFile(f.file));
+	const schemaFiles = plan.files.filter((f) => !isFormOptionsFile(f.file) && !isSvelteFile(f.file));
 	const formOptionsFiles = plan.files.filter((f) => isFormOptionsFile(f.file));
+	const svelteFiles = plan.files.filter((f) => isSvelteFile(f.file));
 
 	lines.push('## Geplante Diffs');
 	lines.push('');
@@ -108,6 +130,18 @@ export function renderDryRunReport(plan: ExtractionPlan): string {
 	);
 	lines.push('');
 	for (const f of formOptionsFiles) {
+		const diff = renderUnifiedDiff(f.file, f.before, f.after);
+		if (diff) {
+			lines.push('```diff');
+			lines.push(diff);
+			lines.push('```');
+			lines.push('');
+		}
+	}
+
+	lines.push('### Svelte-Markup (Schicht C)');
+	lines.push('');
+	for (const f of svelteFiles) {
 		const diff = renderUnifiedDiff(f.file, f.before, f.after);
 		if (diff) {
 			lines.push('```diff');
@@ -155,4 +189,17 @@ export function renderDryRunReport(plan: ExtractionPlan): string {
 	lines.push('');
 
 	return lines.join('\n');
+}
+
+/**
+ * Zählt die übersprungenen Fundstellen je `SkipReason`, sortiert nach
+ * Codepoint (derselbe Grund wie `sortByKey` in `plan.ts` — deterministisch
+ * über Maschinen und Node-Builds hinweg).
+ */
+function countByReason(skipped: SkippedSite[]): Array<[string, number]> {
+	const counts = new Map<string, number>();
+	for (const s of skipped) {
+		counts.set(s.reason, (counts.get(s.reason) ?? 0) + 1);
+	}
+	return [...counts.entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
 }

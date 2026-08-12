@@ -9,18 +9,112 @@
  */
 import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { applySitesToSource } from './apply';
-import { collectFormOptionsSites, collectSchemaSites } from './collect';
+import { applySitesToSource, applySvelteSitesToSource } from './apply';
+import { collectFormOptionsSites, collectSchemaSites, collectSvelteSites } from './collect';
 import { createKeyRegistry } from './messageKey';
 import type { ExtractionPlan } from './render';
 
 const SCHEMA_FILE = 'src/lib/form/validation/sightingSchema.ts';
 const FORM_OPTIONS_DIR = 'src/lib/report/formOptions';
 
+/**
+ * Der Umfang für Schicht C (Aufgabe 2.2/Befund): `.svelte`-Dateien unter
+ * `src/`, öffentlicher Bereich — siehe `docs/i18n/PLAN_ETAPPE2.md` und
+ * `docs/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md` Abschnitt 4.2.
+ */
+const SVELTE_SCOPE_ROOT = 'src';
+
+/**
+ * Verzeichnis-Ausschlüsse, je mit Begründung. Ein Verzeichnis unter
+ * `src/routes/admin/` (etwa `src/routes/admin/docs/`) fällt bereits über den
+ * `src/routes/admin/`-Eintrag heraus — kein eigener Eintrag nötig.
+ */
+export const SVELTE_SCOPE_EXCLUDED_PREFIXES: ReadonlyArray<{
+	readonly prefix: string;
+	readonly reason: string;
+}> = [
+	{
+		prefix: 'src/routes/styleguide/',
+		reason: 'Entwicklerfläche, laut Entwurf 4.2 nie lokalisiert'
+	},
+	{
+		prefix: 'src/routes/docs/',
+		reason:
+			'Entwicklerfläche, laut Entwurf 4.2 nie lokalisiert (deckt auch src/routes/admin/docs/ nicht ab — das läuft über den admin-Eintrag unten)'
+	},
+	{
+		prefix: 'src/routes/admin/',
+		reason:
+			'Admin wird nicht lokalisiert (Entwurf 4.2/4.3) — schließt src/routes/admin/docs/ mit ein'
+	},
+	{
+		prefix: 'src/lib/components/admin/',
+		reason: 'Admin wird nicht lokalisiert (Entwurf 4.2/4.3)'
+	}
+];
+
+/** Einzelne Dateien, die keinem Verzeichnis-Ausschluss oben unterliegen. */
+export const SVELTE_SCOPE_EXCLUDED_FILES: ReadonlyArray<{
+	readonly path: string;
+	readonly reason: string;
+}> = [
+	{
+		path: 'src/lib/components/docs/ApiDocumentation.svelte',
+		reason: 'Entwicklerfläche (API-Dokumentation), laut Entwurf 4.2 nie lokalisiert'
+	}
+];
+
+/**
+ * Gehört `relativePath` (posix-Trenner, ab Repo-Wurzel, z.B.
+ * `src/routes/about/+page.svelte`) zum Umfang von Schicht C?
+ *
+ * Exportiert, damit die Ausschlussliste isoliert testbar ist — unabhängig
+ * davon, ob die aktuelle Dateisystem-Bauart eine feste Liste oder ein
+ * Verzeichnis-Scan ist (siehe `createNodeFileSystem.listSvelteFiles` unten).
+ */
+export function isSveltePathInScope(relativePath: string): boolean {
+	if (SVELTE_SCOPE_EXCLUDED_FILES.some((f) => f.path === relativePath)) {
+		return false;
+	}
+	return !SVELTE_SCOPE_EXCLUDED_PREFIXES.some((e) => relativePath.startsWith(e.prefix));
+}
+
+/**
+ * Läuft `src/` rekursiv ab und sammelt jede `.svelte`-Datei als Pfad ab
+ * Repo-Wurzel, mit `/` als Trenner (unabhängig vom Betriebssystem).
+ *
+ * Bewusst ein Verzeichnis-Scan, keine feste Liste: Eine neue öffentliche
+ * `.svelte`-Datei landet automatisch im nächsten Lauf im Umfang, ohne dass
+ * irgendwo eine Liste gepflegt werden müsste (Auftrag, Nachweis 3). Die
+ * Ausschlussliste bleibt trotzdem explizit benannt (`isSveltePathInScope`) —
+ * sie ist der einzige Ort, an dem "nicht im Umfang" eine Begründung trägt.
+ */
+function walkSvelteFiles(absoluteDir: string, root: string): string[] {
+	const found: string[] = [];
+	for (const entry of readdirSync(absoluteDir, { withFileTypes: true })) {
+		const absoluteChild = resolve(absoluteDir, entry.name);
+		if (entry.isDirectory()) {
+			found.push(...walkSvelteFiles(absoluteChild, root));
+			continue;
+		}
+		if (entry.isFile() && entry.name.endsWith('.svelte')) {
+			const relativePath = absoluteChild
+				.slice(root.length + 1)
+				.split(sepRegex)
+				.join('/');
+			found.push(relativePath);
+		}
+	}
+	return found;
+}
+
+const sepRegex = /\\/g;
+
 /** Minimal-Schnittstelle für Dateizugriff — austauschbar für Tests. */
 export interface ExtractFileSystem {
 	readFile(relativePath: string): string;
 	listFormOptionFiles(): string[];
+	listSvelteFiles(): string[];
 }
 
 export function createNodeFileSystem(root: string): ExtractFileSystem {
@@ -30,7 +124,11 @@ export function createNodeFileSystem(root: string): ExtractFileSystem {
 			readdirSync(resolve(root, FORM_OPTIONS_DIR))
 				.filter((name) => name.endsWith('.ts') && !name.endsWith('.test.ts'))
 				.sort()
-				.map((name) => `${FORM_OPTIONS_DIR}/${name}`)
+				.map((name) => `${FORM_OPTIONS_DIR}/${name}`),
+		listSvelteFiles: () =>
+			walkSvelteFiles(resolve(root, SVELTE_SCOPE_ROOT), resolve(root))
+				.filter(isSveltePathInScope)
+				.sort()
 	};
 }
 
@@ -70,6 +168,25 @@ export function planExtraction(
 			file: relativePath,
 			before: source,
 			after: applySitesToSource(source, result.sites),
+			sites: result.sites
+		});
+		skipped.push(...result.skipped);
+	}
+
+	// Schicht C (Aufgabe 2.2/Befund): `.svelte`-Dateien im Umfang aus
+	// `fs.listSvelteFiles()` — Ausschlüsse (Admin, Styleguide, Docs,
+	// ApiDocumentation.svelte) sind bereits dort herausgefiltert
+	// (`isSveltePathInScope`). Eigene Ersetzungsform (`applySvelteSitesToSource`)
+	// statt `applySitesToSource`: Textknoten und Attribute brauchen je eine
+	// andere Zielform als ein Aufrufargument in Schema/formOptions (siehe
+	// `apply.ts`).
+	for (const relativePath of fs.listSvelteFiles()) {
+		const source = fs.readFile(relativePath);
+		const result = collectSvelteSites(source, relativePath, taken);
+		files.push({
+			file: relativePath,
+			before: source,
+			after: applySvelteSitesToSource(source, result.sites),
 			sites: result.sites
 		});
 		skipped.push(...result.skipped);

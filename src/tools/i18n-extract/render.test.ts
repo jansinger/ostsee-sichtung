@@ -233,4 +233,60 @@ describe('renderDryRunReport', () => {
 
 		expect(report).not.toContain('bereits übersetzt:');
 	});
+
+	// Nachweis 1 (Auftrag zu Aufgabe 2.2/Befund): die Zahlen für die Planung der
+	// nächsten Aufgabe müssen aus dem Werkzeug kommen, nicht aus einem
+	// Scratchpad-Skript — dafür braucht der Bericht eine Aufschlüsselung je
+	// Übersprungen-Grund, nicht nur die Gesamtsumme.
+	it('schlüsselt die Übersprungenen nach Grund auf, alphabetisch sortiert', () => {
+		const plan = buildPlan({
+			skipped: [
+				buildSkipped({ reason: 'non-literal-argument' }),
+				buildSkipped({ file: 'b.ts', reason: 'meta-key-denied' }),
+				buildSkipped({ file: 'c.ts', reason: 'meta-key-denied' })
+			]
+		});
+
+		const report = renderDryRunReport(plan);
+
+		expect(report).toContain('## Übersprungen je Grund');
+		expect(report).toContain('- meta-key-denied: 2');
+		expect(report).toContain('- non-literal-argument: 1');
+
+		const headingIndex = report.indexOf('## Übersprungen je Grund');
+		const metaIndex = report.indexOf('- meta-key-denied: 2');
+		const nonLiteralIndex = report.indexOf('- non-literal-argument: 1');
+		expect(metaIndex).toBeGreaterThan(headingIndex);
+		expect(nonLiteralIndex).toBeGreaterThan(metaIndex);
+	});
+
+	// Schicht C (Svelte) bekommt einen eigenen Diff-Abschnitt — sonst liefen die
+	// Markup-Diffs unter "Schema (Schicht A)" mit, obwohl `apply.ts` für Svelte
+	// eine andere Ersetzungsform baut (`{m.key()}` statt `m.key({}, { locale })`).
+	it('zeigt Svelte-Diffs in einem eigenen Abschnitt, getrennt von Schema und formOptions', () => {
+		const svelteSite = buildSite({
+			file: 'src/lib/report/components/Gruss.svelte',
+			key: 'report_components_gruss_text_hallo',
+			text: 'Hallo',
+			aspect: 'text',
+			field: 'src/lib/report/components/Gruss.svelte'
+		});
+		const plan = buildPlan({
+			files: [
+				{
+					file: svelteSite.file,
+					before: `<p>Hallo</p>`,
+					after: `<p>{m.report_components_gruss_text_hallo()}</p>`,
+					sites: [svelteSite]
+				}
+			]
+		});
+
+		const report = renderDryRunReport(plan);
+
+		expect(report).toContain('### Svelte-Markup (Schicht C)');
+		const svelteIndex = report.indexOf('### Svelte-Markup (Schicht C)');
+		const diffIndex = report.indexOf('{m.report_components_gruss_text_hallo()}');
+		expect(diffIndex).toBeGreaterThan(svelteIndex);
+	});
 });

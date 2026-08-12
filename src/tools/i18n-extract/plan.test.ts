@@ -1,6 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, describe, expect, it } from 'vitest';
 import {
 	collectMessages,
+	createNodeFileSystem,
+	isSveltePathInScope,
 	mergeMessageCatalogue,
 	planExtraction,
 	type ExtractFileSystem
@@ -22,7 +27,8 @@ const OPTIONS_SOURCE = `
 function fakeFs(): ExtractFileSystem {
 	return {
 		readFile: (path: string) => (path.includes('formOptions') ? OPTIONS_SOURCE : SCHEMA_SOURCE),
-		listFormOptionFiles: () => ['src/lib/report/formOptions/sex.ts']
+		listFormOptionFiles: () => ['src/lib/report/formOptions/sex.ts'],
+		listSvelteFiles: () => []
 	};
 }
 
@@ -69,7 +75,8 @@ describe('planExtraction', () => {
 			listFormOptionFiles: () => [
 				'src/lib/report/formOptions/sex.ts',
 				'src/lib/report/formOptions/empty.ts'
-			]
+			],
+			listSvelteFiles: () => []
 		};
 
 		const plan = planExtraction('/repo', fs);
@@ -77,6 +84,99 @@ describe('planExtraction', () => {
 		const emptyFile = plan.files.find((f) => f.file === 'src/lib/report/formOptions/empty.ts');
 		expect(emptyFile).toBeDefined();
 		expect(emptyFile?.sites).toEqual([]);
+	});
+});
+
+describe('isSveltePathInScope — Ausschlussliste für Schicht C', () => {
+	// Nachweis 2 (Auftrag): eine Admin-Datei und eine Styleguide-Datei dürfen
+	// nicht im Umfang sein, eine öffentliche Komponente schon.
+	it('schließt eine Datei unter src/routes/admin/ aus', () => {
+		expect(isSveltePathInScope('src/routes/admin/sichtungen/+page.svelte')).toBe(false);
+	});
+
+	it('schließt eine Datei unter src/routes/admin/docs/ aus (deckt vom admin-Eintrag mit ab)', () => {
+		expect(isSveltePathInScope('src/routes/admin/docs/+page.svelte')).toBe(false);
+	});
+
+	it('schließt eine Datei unter src/lib/components/admin/ aus', () => {
+		expect(isSveltePathInScope('src/lib/components/admin/AdminFooter.svelte')).toBe(false);
+	});
+
+	it('schließt eine Datei unter src/routes/styleguide/ aus', () => {
+		expect(isSveltePathInScope('src/routes/styleguide/+page.svelte')).toBe(false);
+	});
+
+	it('schließt eine Datei unter src/routes/docs/ aus', () => {
+		expect(isSveltePathInScope('src/routes/docs/+page.svelte')).toBe(false);
+	});
+
+	it('schließt ApiDocumentation.svelte einzeln aus', () => {
+		expect(isSveltePathInScope('src/lib/components/docs/ApiDocumentation.svelte')).toBe(false);
+	});
+
+	it('lässt eine öffentliche Komponente im Umfang', () => {
+		expect(isSveltePathInScope('src/lib/report/components/FormHelp.svelte')).toBe(true);
+		expect(isSveltePathInScope('src/routes/about/+page.svelte')).toBe(true);
+	});
+});
+
+describe('createNodeFileSystem.listSvelteFiles — Verzeichnis-Scan, keine feste Liste', () => {
+	let tempRoot: string;
+
+	afterEach(() => {
+		if (tempRoot) {
+			rmSync(tempRoot, { recursive: true, force: true });
+		}
+	});
+
+	// Nachweis 3 (Auftrag): eine NEUE öffentliche `.svelte`-Datei wird ohne
+	// jede Code-Änderung mitgescannt, weil `listSvelteFiles` ein Verzeichnis
+	// abläuft (`walkSvelteFiles`) statt eine feste Liste zu führen. Belegt an
+	// einem echten Verzeichnis-Fixture, nicht an der fakeFs — die fakeFs
+	// könnte die Bauart nicht unterscheiden.
+	it('nimmt eine neu angelegte öffentliche Datei automatisch mit, ohne dass eine Liste gepflegt wird', () => {
+		tempRoot = mkdtempSync(join(tmpdir(), 'i18n-extract-scope-'));
+		mkdirSync(join(tempRoot, 'src/routes/admin'), { recursive: true });
+		mkdirSync(join(tempRoot, 'src/lib/report/components'), { recursive: true });
+		writeFileSync(join(tempRoot, 'src/routes/admin/+page.svelte'), '<h1>Admin</h1>');
+		writeFileSync(join(tempRoot, 'src/lib/report/components/Existing.svelte'), '<p>Bestehend</p>');
+
+		const before = createNodeFileSystem(tempRoot).listSvelteFiles();
+		expect(before).toEqual(['src/lib/report/components/Existing.svelte']);
+
+		// Die "neue" Datei entsteht erst jetzt — kein Eintrag in irgendeiner
+		// Liste wurde dafür angepasst.
+		writeFileSync(join(tempRoot, 'src/lib/report/components/NeuKomponente.svelte'), '<p>Neu</p>');
+
+		const after = createNodeFileSystem(tempRoot).listSvelteFiles();
+		expect(after).toEqual([
+			'src/lib/report/components/Existing.svelte',
+			'src/lib/report/components/NeuKomponente.svelte'
+		]);
+		// Die Admin-Datei bleibt in beiden Läufen draußen.
+		expect(after).not.toContain('src/routes/admin/+page.svelte');
+	});
+});
+
+describe('planExtraction — Schicht C (Svelte)', () => {
+	it('sammelt Fundstellen aus Svelte-Dateien im Umfang und ersetzt sie in der Textknoten-Form', () => {
+		const fs: ExtractFileSystem = {
+			readFile: (path: string) => {
+				if (path.endsWith('.svelte')) {
+					return `<p>Hallo Welt</p>`;
+				}
+				return path.includes('formOptions') ? OPTIONS_SOURCE : SCHEMA_SOURCE;
+			},
+			listFormOptionFiles: () => [],
+			listSvelteFiles: () => ['src/lib/report/components/Gruss.svelte']
+		};
+
+		const plan = planExtraction('/repo', fs);
+
+		const svelteFile = plan.files.find((f) => f.file === 'src/lib/report/components/Gruss.svelte');
+		expect(svelteFile).toBeDefined();
+		expect(svelteFile?.sites).toHaveLength(1);
+		expect(svelteFile?.after).toBe(`<p>{m.${svelteFile?.sites[0]?.key}()}</p>`);
 	});
 });
 

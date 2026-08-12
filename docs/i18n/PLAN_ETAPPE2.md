@@ -246,69 +246,69 @@ Ihre <strong>Meldung</strong>!` zerfällt in drei Knoten; sie einzeln zu
       ist Aufgabe 2.3):
 
       | | Anzahl |
-              | --- | ---: |
-              | Dateien im Umfang | 68 |
-              | Gefunden (extrahierbar) | 325 |
-              | Übersprungen gesamt | 362 |
-              | davon Satzfragment | **244** |
-              | davon Interpolation | 65 |
-              | davon dynamisches Attribut | 35 |
-              | davon keine Buchstabengruppe | 11 |
-              | davon Plural-Kandidat | 7 |
+                  | --- | ---: |
+                  | Dateien im Umfang | 68 |
+                  | Gefunden (extrahierbar) | 325 |
+                  | Übersprungen gesamt | 362 |
+                  | davon Satzfragment | **244** |
+                  | davon Interpolation | 65 |
+                  | davon dynamisches Attribut | 35 |
+                  | davon keine Buchstabengruppe | 11 |
+                  | davon Plural-Kandidat | 7 |
 
-              **244 Satzfragmente** sind die Planungsgrundlage für Aufgabe 2.3 — mehr
-              als die 53 Inline-Elemente aus der ursprünglichen Schätzung, weil jedes
-              betroffene Element mehrere Textknoten gleichzeitig verwirft (z. B. drei
-              Knoten für ein Element mit einem ausgezeichneten Wort).
+                  **244 Satzfragmente** sind die Planungsgrundlage für Aufgabe 2.3 — mehr
+                  als die 53 Inline-Elemente aus der ursprünglichen Schätzung, weil jedes
+                  betroffene Element mehrere Textknoten gleichzeitig verwirft (z. B. drei
+                  Knoten für ein Element mit einem ausgezeichneten Wort).
 
-              **Nacharbeit während des Trockenlaufs:** Die ursprüngliche Regel prüfte
-              nur direkte Geschwister eines Textknotens. Ein Textknoten, der
-              innerhalb eines Inline-Elements (`<strong>`) tatsächlich einziges Kind
-              ist, wurde dadurch trotzdem extrahiert, obwohl das umschließende
-              Element (`<p>`) gemischten Inhalt hat — die Regel griff eine Ebene zu
-              flach. Behoben durch Weiterreichen eines `ancestorMixed`-Flags durch
-              die Fragment-Traversierung: Ein Fragment gilt als gemischt, wenn es
-              sowohl einen Textknoten mit Buchstaben als auch ein Element-/Ausdrucks-
-              Kind enthält; dieser Status vererbt sich auf jedes Fragment darunter.
-              Verschachtelung allein (`<div><p>Text</p></div>`) bleibt unberührt —
-              keines der beiden beteiligten Fragmente ist für sich gemischt.
+                  **Nacharbeit während des Trockenlaufs:** Die ursprüngliche Regel prüfte
+                  nur direkte Geschwister eines Textknotens. Ein Textknoten, der
+                  innerhalb eines Inline-Elements (`<strong>`) tatsächlich einziges Kind
+                  ist, wurde dadurch trotzdem extrahiert, obwohl das umschließende
+                  Element (`<p>`) gemischten Inhalt hat — die Regel griff eine Ebene zu
+                  flach. Behoben durch Weiterreichen eines `ancestorMixed`-Flags durch
+                  die Fragment-Traversierung: Ein Fragment gilt als gemischt, wenn es
+                  sowohl einen Textknoten mit Buchstaben als auch ein Element-/Ausdrucks-
+                  Kind enthält; dieser Status vererbt sich auf jedes Fragment darunter.
+                  Verschachtelung allein (`<div><p>Text</p></div>`) bleibt unberührt —
+                  keines der beiden beteiligten Fragmente ist für sich gemischt.
 
-              **Nachbesserung 2026-08-12 — Fragment-Regel geschärft:** Die 244
-              Satzfragmente enthielten Fälle wie `<button><SaveIcon /> Speichern</button>`
-              oder `<h2><MapPin /> Ortsangaben</h2>` — eigenständige Beschriftungen
-              neben einem Icon, kein Satz mit Wortstellung. Die Regel verwarf sie nur,
-              weil ein Geschwister-*Element* existierte, unabhängig davon, ob dieses
-              Geschwister selbst Text trug. Geschärft: Ein Geschwister macht einen
-              Textknoten nur noch dann zum Fragment, wenn es selbst irgendwo in seinem
-              Teilbaum einen Textknoten mit Buchstabengruppe enthält
-              (`nodeContainsLetterText` in `collect.ts`) — oder ein dynamischer
-              Ausdruck ist (Interpolationsfall, unverändert). Icon-Komponenten,
-              `<svg>`, `<img>` und leere `<span>`s erzeugen dadurch kein Fragment
-              mehr; `<strong>Meldung</strong>` und ein Link mit Text bleiben
-              Fragmente, weil ihr Teilbaum Text enthält.
+                  **Nachbesserung 2026-08-12 — Fragment-Regel geschärft:** Die 244
+                  Satzfragmente enthielten Fälle wie `<button><SaveIcon /> Speichern</button>`
+                  oder `<h2><MapPin /> Ortsangaben</h2>` — eigenständige Beschriftungen
+                  neben einem Icon, kein Satz mit Wortstellung. Die Regel verwarf sie nur,
+                  weil ein Geschwister-*Element* existierte, unabhängig davon, ob dieses
+                  Geschwister selbst Text trug. Geschärft: Ein Geschwister macht einen
+                  Textknoten nur noch dann zum Fragment, wenn es selbst irgendwo in seinem
+                  Teilbaum einen Textknoten mit Buchstabengruppe enthält
+                  (`nodeContainsLetterText` in `collect.ts`) — oder ein dynamischer
+                  Ausdruck ist (Interpolationsfall, unverändert). Icon-Komponenten,
+                  `<svg>`, `<img>` und leere `<span>`s erzeugen dadurch kein Fragment
+                  mehr; `<strong>Meldung</strong>` und ein Link mit Text bleiben
+                  Fragmente, weil ihr Teilbaum Text enthält.
 
-              Zahlen vorher/nachher, über denselben Bestand gemessen (alle 120
-              `.svelte`-Dateien unter `src/` — die ursprüngliche 68-Datei-Auswahl war
-              eine unversionierte Scratchpad-Auswahl „nach Nutzersichtbarkeit" und
-              nicht mehr reproduzierbar; die hier verwendete umfasst sie mit):
+                  Zahlen vorher/nachher, über denselben Bestand gemessen (alle 120
+                  `.svelte`-Dateien unter `src/` — die ursprüngliche 68-Datei-Auswahl war
+                  eine unversionierte Scratchpad-Auswahl „nach Nutzersichtbarkeit" und
+                  nicht mehr reproduzierbar; die hier verwendete umfasst sie mit):
 
-              | | vorher | nachher |
-              | --- | ---: | ---: |
-              | Gefunden (extrahierbar) | 689 | 827 |
-              | Übersprungen gesamt | 871 | 733 |
-              | davon Satzfragment | 551 | 404 |
-              | davon Interpolation | 207 | 207 |
-              | davon dynamisches Attribut | 63 | 63 |
-              | davon Plural-Kandidat | 28 | 33 |
-              | davon keine Buchstabengruppe | 22 | 26 |
+                  | | vorher | nachher |
+                  | --- | ---: | ---: |
+                  | Gefunden (extrahierbar) | 689 | 827 |
+                  | Übersprungen gesamt | 871 | 733 |
+                  | davon Satzfragment | 551 | 404 |
+                  | davon Interpolation | 207 | 207 |
+                  | davon dynamisches Attribut | 63 | 63 |
+                  | davon Plural-Kandidat | 28 | 33 |
+                  | davon keine Buchstabengruppe | 22 | 26 |
 
-              Satzfragmente sinken um 147 (551 → 404), Funde steigen um 138
-              (689 → 827) — die Differenz von 9 verteilt sich auf Plural-Kandidat
-              (+5) und keine-Buchstabengruppe (+4): Ein zuvor durch das
-              Geschwister-Element maskierter Textknoten (z. B. eine Ziffer in einem
-              Badge wie `<span class="badge">3</span>`) durchläuft jetzt dieselbe
-              `addSite`-Prüfung wie jeder andere Textknoten und kann dort selbst
-              verworfen werden.
+                  Satzfragmente sinken um 147 (551 → 404), Funde steigen um 138
+                  (689 → 827) — die Differenz von 9 verteilt sich auf Plural-Kandidat
+                  (+5) und keine-Buchstabengruppe (+4): Ein zuvor durch das
+                  Geschwister-Element maskierter Textknoten (z. B. eine Ziffer in einem
+                  Badge wie `<span class="badge">3</span>`) durchläuft jetzt dieselbe
+                  `addSite`-Prüfung wie jeder andere Textknoten und kann dort selbst
+                  verworfen werden.
 
 - [x] **6. Nachweise.** Mutation je Verweigerungsgrund (Regel entfernen → die
       zugehörige Gegenprobe wird rot). `npm run test:quick` grün.
@@ -337,3 +337,83 @@ der Stichprobe der 325 extrahierten Fundstellen war nichts, das besser
 Handarbeit gewesen wäre — jede geprüfte Fundstelle ist ein eigenständiger,
 kontextfreier Anzeigetext (Navigationseinträge, Labels, Logo-`alt`-Texte,
 Meldungen).
+
+---
+
+## Nacharbeit 2026-08-12 — Umfang im Werkzeug verankert
+
+**Befund:** `planExtraction` kannte bis hierhin nur `sightingSchema.ts` und
+`formOptions/` als feste Quellen. Die 68-Datei-Auswahl aus Schritt 5 und die
+Vorher/Nachher-Zahlen aus der Nachbesserung liefen beide über ein
+Scratchpad-Skript, das den Umfang nicht im Werkzeug führte — der Umsetzer der
+Nachbesserung berichtete ausdrücklich, dass er die ursprüngliche
+68-Datei-Auswahl nicht mehr reproduzieren konnte und stattdessen über alle 120
+`.svelte`-Dateien maß. **Beide oben genannten Datei- und Fundzahlen (68 bzw.
+120 Dateien) sind damit nicht nachrechenbar und durch die Zahlen in diesem
+Abschnitt ersetzt.**
+
+`planExtraction` (`src/tools/i18n-extract/plan.ts`) kennt den Umfang jetzt
+selbst: `ExtractFileSystem.listSvelteFiles()` läuft `src/` rekursiv ab
+(`walkSvelteFiles`) und filtert mit der benannten, im Code begründeten
+Ausschlussliste `SVELTE_SCOPE_EXCLUDED_PREFIXES` /
+`SVELTE_SCOPE_EXCLUDED_FILES` (`isSveltePathInScope`):
+
+| Ausschluss                                        | Begründung                                                             |
+| ------------------------------------------------- | ---------------------------------------------------------------------- |
+| `src/routes/styleguide/`                          | Entwicklerfläche, laut Entwurf 4.2 nie lokalisiert                     |
+| `src/routes/docs/`                                | Entwicklerfläche, laut Entwurf 4.2 nie lokalisiert                     |
+| `src/routes/admin/` (inkl. `.../docs/`)           | Admin wird nicht lokalisiert (Entwurf 4.2/4.3)                         |
+| `src/lib/components/admin/`                       | Admin wird nicht lokalisiert (Entwurf 4.2/4.3)                         |
+| `src/lib/components/docs/ApiDocumentation.svelte` | Entwicklerfläche (API-Dokumentation), laut Entwurf 4.2 nie lokalisiert |
+
+Bauart bewusst ein **Verzeichnis-Scan, keine feste Datei-Liste**: Eine neue
+öffentliche `.svelte`-Datei landet automatisch im nächsten Lauf im Umfang,
+ohne dass irgendwo eine Liste nachgepflegt werden müsste — belegt durch einen
+Test, der in einem echten Verzeichnis-Fixture eine Datei nachträglich anlegt
+und prüft, dass sie ohne Codeänderung erscheint
+(`src/tools/i18n-extract/plan.test.ts`, `createNodeFileSystem.listSvelteFiles`).
+
+### Die reproduzierbaren Zahlen
+
+Erzeugt von `npm run i18n:extract` (kompletter Trockenlauf, ohne
+`--write-messages`), Stand 2026-08-12:
+
+|                                       | Anzahl |
+| ------------------------------------- | -----: |
+| Gescannte Dateien gesamt              |    102 |
+| davon `.svelte` im Umfang (Schicht C) |     84 |
+| davon `sightingSchema.ts` (Schicht A) |      1 |
+| davon `formOptions/*.ts` (Schicht B)  |     17 |
+| Botschaften gesamt                    |    402 |
+| Übersprungen gesamt                   |    485 |
+
+Übersprungen je Grund (neu: direkt aus dem Bericht, Abschnitt „Übersprungen je
+Grund" in `renderDryRunReport`):
+
+| Grund                | Anzahl |
+| -------------------- | -----: |
+| already-translated   |    132 |
+| dynamic-attribute    |     44 |
+| empty-string         |      1 |
+| interpolation        |     65 |
+| meta-key-denied      |     34 |
+| method-unknown       |      1 |
+| no-letter-group      |     12 |
+| non-literal-argument |      1 |
+| numeric-only         |      3 |
+| plural-candidate     |     11 |
+| record-pattern-miss  |      1 |
+| sentence-fragment    |    165 |
+| test-name-argument   |     15 |
+
+Kontrollrechnung (Auftrag): 120 `.svelte`-Dateien unter `src/` insgesamt, 36
+davon ausgeschlossen (15 `src/routes/admin/`, 15
+`src/lib/components/admin/`, 1 `src/routes/styleguide/`, 4 `src/routes/docs/`,
+1 `ApiDocumentation.svelte`) → 120 − 36 = 84, deckungsgleich mit der
+Werkzeug-Ausgabe. Die Summe der Übersprungen-je-Grund-Zeilen (485) stimmt mit
+der Kopfzeile überein.
+
+Diese Zahlen sind die Planungsgrundlage für Aufgabe 2.3 (Umbau der
+Markup-Dateien in Wellen) — nicht mehr die 68/449 aus dem Entwurf oder die
+689/827 aus der Nachbesserung, beide über nicht mehr vorhandene
+Scratchpad-Skripte gemessen.
