@@ -48,7 +48,10 @@
   (`canNavigateToStep`) und dasselbe `aria-current` benutzen; es gibt keinen
   Zustand, der nur in einer der beiden existiert.
 -->
-<nav class="mb-8 hidden md:block" aria-label={m.report_components_form_formsteps_aria_label_formular_schritte()}>
+<nav
+	class="mb-8 hidden md:block"
+	aria-label={m.report_components_form_formsteps_aria_label_formular_schritte()}
+>
 	<ul class="steps steps-horizontal w-full">
 		{#each steps as step, index (step.id)}
 			{@const navigable = canNavigateTo(index)}

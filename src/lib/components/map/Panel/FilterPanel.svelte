@@ -113,7 +113,8 @@
 
 		<div class="space-y-2">
 			<div class="label py-1">
-				<span class="text-sm font-medium">{m.components_map_panel_filterpanel_text_zeitraum()}</span>
+				<span class="text-sm font-medium">{m.components_map_panel_filterpanel_text_zeitraum()}</span
+				>
 			</div>
 
 			<!-- M10: Ein Track, zwei Griffe, gefüllter Bereich; Datums-Felder als

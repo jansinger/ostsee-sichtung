@@ -108,7 +108,9 @@
 					<OstseeTiereLogo size="sm" showText={true} className="ml-2" />
 					{#if isAdmin}
 						<span class="divider divider-horizontal mx-2"></span>
-						<span class="text-base-content/70 text-lg font-semibold">{m.components_publicnavbar_text_admin()}</span>
+						<span class="text-base-content/70 text-lg font-semibold"
+							>{m.components_publicnavbar_text_admin()}</span
+						>
 					{/if}
 				</div>
 				<div class="navbar-end w-auto gap-2">
@@ -175,7 +177,10 @@
 
 					<!-- Mobile menu -->
 					<details bind:this={mobileMenuElement} class="dropdown dropdown-end lg:hidden">
-						<summary aria-label={m.components_publicnavbar_aria_label_menue()} class="btn btn-ghost">
+						<summary
+							aria-label={m.components_publicnavbar_aria_label_menue()}
+							class="btn btn-ghost"
+						>
 							<Icon icon="lucide:list" width="24" class="h-6 w-6 shrink-0" />
 						</summary>
 						<ul

@@ -237,7 +237,10 @@
        Dezimalgrad-Feld unten). Ob eine Koordinate fehlt, entscheidet Yup. -->
 {#snippet requiredMark()}
 	{#if required}
-		<span class="text-error ml-1 text-sm" aria-label={m.report_components_form_locationinput_aria_label_pflichtfeld()}>*</span>
+		<span
+			class="text-error ml-1 text-sm"
+			aria-label={m.report_components_form_locationinput_aria_label_pflichtfeld()}>*</span
+		>
 	{/if}
 {/snippet}
 
@@ -258,7 +261,9 @@
 	     `min-w-0` gehört zwingend dazu: Ohne das Aufheben von `min-width: auto`
 	     bleibt das Select auch in der gestapelten Fassung zu breit. -->
 	<div class="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-		<label class="label" for="gps-format">{m.report_components_form_locationinput_text_gps_eingabeformat()}</label>
+		<label class="label" for="gps-format"
+			>{m.report_components_form_locationinput_text_gps_eingabeformat()}</label
+		>
 		<select id="gps-format" class="select w-full min-w-0 md:ml-auto md:w-auto" bind:value={mode}>
 			<option value="dd">Dezimalgrad (z.B. 54.5042° N)</option>
 			<option value="dm">Grad, Dezimalminute (z.B. 54° 30.25' N)</option>
@@ -274,7 +279,9 @@
 		     eine falsche Aussage. Gilt genauso im Format „Grad, Dezimalminute". -->
 		<div class="grid grid-cols-1 gap-2 md:grid-cols-2">
 			<div>
-				<label class="label" for="dms-lat-deg">{m.report_components_form_locationinput_text_breite_n()}{@render requiredMark()}</label>
+				<label class="label" for="dms-lat-deg"
+					>{m.report_components_form_locationinput_text_breite_n()}{@render requiredMark()}</label
+				>
 				<div class="flex gap-2">
 					<div>
 						<input
@@ -312,7 +319,9 @@
 				</div>
 			</div>
 			<div>
-				<label class="label" for="dms-lon-deg">{m.report_components_form_locationinput_text_laenge_e()}{@render requiredMark()}</label>
+				<label class="label" for="dms-lon-deg"
+					>{m.report_components_form_locationinput_text_laenge_e()}{@render requiredMark()}</label
+				>
 				<div class="flex gap-2">
 					<div>
 						<input
@@ -353,7 +362,9 @@
 	{:else if mode === 'dm'}
 		<div class="grid grid-cols-1 gap-2 md:grid-cols-2">
 			<div>
-				<label class="label" for="dm-lat-deg">{m.report_components_form_locationinput_text_breite_n_2()}{@render requiredMark()}</label>
+				<label class="label" for="dm-lat-deg"
+					>{m.report_components_form_locationinput_text_breite_n_2()}{@render requiredMark()}</label
+				>
 				<div class="flex gap-2">
 					<div>
 						<input
@@ -382,7 +393,9 @@
 				</div>
 			</div>
 			<div>
-				<label class="label" for="dm-lon-deg">{m.report_components_form_locationinput_text_laenge_e_2()}{@render requiredMark()}</label>
+				<label class="label" for="dm-lon-deg"
+					>{m.report_components_form_locationinput_text_laenge_e_2()}{@render requiredMark()}</label
+				>
 				<div class="flex gap-2">
 					<div>
 						<input
@@ -414,7 +427,9 @@
 	{:else}
 		<div class="grid grid-cols-1 gap-2 md:grid-cols-2">
 			<div>
-				<label class="label" for="latitude">{m.report_components_form_locationinput_text_breite_n_3()}{@render requiredMark()}</label>
+				<label class="label" for="latitude"
+					>{m.report_components_form_locationinput_text_breite_n_3()}{@render requiredMark()}</label
+				>
 				<!-- step deckt die volle Spaltengenauigkeit ab: `gps_breite` ist
 				     numeric(8,6). Mit dem früheren step="0.0001" wies die
 				     Constraint-Validierung des Browsers jede Bestandskoordinate mit
@@ -435,7 +450,9 @@
 				/>
 			</div>
 			<div>
-				<label class="label" for="longitude">{m.report_components_form_locationinput_text_laenge_e_3()}{@render requiredMark()}</label>
+				<label class="label" for="longitude"
+					>{m.report_components_form_locationinput_text_laenge_e_3()}{@render requiredMark()}</label
+				>
 				<input
 					id="longitude"
 					class="input w-full"
@@ -494,7 +511,11 @@
 		     Ohne diese Verknüpfung wäre der Satz nur optisch vorhanden — die
 		     Felder hier sind rohe Inputs und laufen nicht über `FormField`,
 		     das `aria-describedby` sonst zentral setzt (`design-system.md`). -->
-		<div role="group" aria-label={m.report_components_form_locationinput_aria_label_koordinaten()} aria-describedby={hintId}>
+		<div
+			role="group"
+			aria-label={m.report_components_form_locationinput_aria_label_koordinaten()}
+			aria-describedby={hintId}
+		>
 			<p id={hintId} class="text-base-content/70 text-support mb-2" data-testid="coordinates-hint">
 				{coordinatesHint}
 			</p>

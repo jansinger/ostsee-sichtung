@@ -50,7 +50,10 @@
 {#if user}
 	<details bind:this={detailsElement} class="dropdown dropdown-end">
 		<!-- User Picture Button -->
-		<summary class="btn btn-ghost btn-circle" aria-label={m.components_usermenu_aria_label_benutzer_menue()}>
+		<summary
+			class="btn btn-ghost btn-circle"
+			aria-label={m.components_usermenu_aria_label_benutzer_menue()}
+		>
 			{#if user.picture}
 				<div class="avatar">
 					<div class="h-8 w-8 rounded-full">
@@ -68,7 +71,7 @@
 
 		<!-- Dropdown Menu -->
 		<div
-			class="dropdown-content bg-base-100 rounded-box border-base-300 z-overlay mt-2 w-64 border p-2 shadow-floating"
+			class="dropdown-content bg-base-100 rounded-box border-base-300 z-overlay shadow-floating mt-2 w-64 border p-2"
 		>
 			<!-- User Info Header -->
 			<div class="border-base-200 border-b px-4 py-2">

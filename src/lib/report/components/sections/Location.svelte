@@ -21,7 +21,10 @@
 </script>
 
 <!-- Location Section -->
-<SectionCard title={m.report_components_sections_location_title_standort_der_sichtung()} icon="lucide:map-pin">
+<SectionCard
+	title={m.report_components_sections_location_title_standort_der_sichtung()}
+	icon="lucide:map-pin"
+>
 	<!-- Position Type Selection -->
 	<FormField name="hasPosition" />
 

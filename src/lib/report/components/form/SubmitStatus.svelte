@@ -108,7 +108,9 @@
 		data-testid="submit-status-submitting"
 	>
 		<span class="loading loading-spinner loading-sm text-primary mt-0.5"></span>
-		<p class="text-base-content font-medium">{m.report_components_form_submitstatus_text_ihre_meldung_wird_gesendet()}</p>
+		<p class="text-base-content font-medium">
+			{m.report_components_form_submitstatus_text_ihre_meldung_wird_gesendet()}
+		</p>
 	</div>
 {:else if state === 'offline'}
 	<!--
@@ -125,7 +127,9 @@
 	>
 		<Icon icon="lucide:wifi-off" class="mt-0.5 shrink-0" aria-hidden="true" />
 		<div>
-			<p class="text-base-content font-bold">{m.report_components_form_submitstatus_text_keine_internetverbindung()}</p>
+			<p class="text-base-content font-bold">
+				{m.report_components_form_submitstatus_text_keine_internetverbindung()}
+			</p>
 			<p class="text-base-content mt-1 text-sm">
 				Die Meldung kann gerade nicht abgeschickt werden.
 				<strong>Ihre Eingaben bleiben vollständig gespeichert</strong> — auch wenn Sie diese Seite schließen.
@@ -208,7 +212,9 @@
 	>
 		<Icon icon="lucide:triangle-alert" class="mt-0.5 shrink-0" aria-hidden="true" />
 		<div>
-			<p class="text-base-content font-bold">{m.report_components_form_submitstatus_text_aufnahme_uebertragen_meldung_nicht()}</p>
+			<p class="text-base-content font-bold">
+				{m.report_components_form_submitstatus_text_aufnahme_uebertragen_meldung_nicht()}
+			</p>
 			<p class="text-base-content mt-1 text-sm">
 				<!--
 					Der Grund gehört auch hierhin. Vorher trug nur `failed` ihn, und eine

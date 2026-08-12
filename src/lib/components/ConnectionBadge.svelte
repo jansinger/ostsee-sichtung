@@ -89,7 +89,9 @@
 			{m.components_connectionbadge_text_offline()}
 		</span>
 		{#if !compact}
-			<span class="text-base-content/70 text-support">{m.components_connectionbadge_text_eingaben_werden_gespeichert()}</span>
+			<span class="text-base-content/70 text-support"
+				>{m.components_connectionbadge_text_eingaben_werden_gespeichert()}</span
+			>
 		{/if}
 	</div>
 {:else if connection.justReconnected}

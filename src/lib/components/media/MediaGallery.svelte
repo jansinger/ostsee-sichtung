@@ -101,7 +101,7 @@
 				</div>
 				<div class="space-y-2">
 					{#each otherFiles as file (file.id)}
-						<div class="bg-base-100 flex items-center gap-3 rounded-lg p-3 shadow-raised">
+						<div class="bg-base-100 shadow-raised flex items-center gap-3 rounded-lg p-3">
 							<Icon icon={getFileTypeIcon(file.mimeType)} width="20" class="text-base-content/60" />
 							<div class="min-w-0 flex-1">
 								<p class="text-base-content truncate text-sm font-medium">
@@ -134,7 +134,9 @@
 	<div class="bg-base-100 flex items-center justify-center rounded-lg p-8 text-center">
 		<div class="space-y-3">
 			<Icon icon="lucide:images" width="32" class="text-base-content/70 mx-auto" />
-			<p class="text-base-content/60 text-sm">{m.components_media_mediagallery_text_keine_medien_vorhanden()}</p>
+			<p class="text-base-content/60 text-sm">
+				{m.components_media_mediagallery_text_keine_medien_vorhanden()}
+			</p>
 		</div>
 	</div>
 {/if}

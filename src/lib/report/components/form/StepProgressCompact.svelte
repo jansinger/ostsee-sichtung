@@ -58,7 +58,10 @@
 -->
 <ConnectionBadge announce={false} class="mb-2 md:hidden" />
 
-<nav class="flex items-center gap-3 md:hidden" aria-label={m.report_components_form_stepprogresscompact_aria_label_formular_schritte()}>
+<nav
+	class="flex items-center gap-3 md:hidden"
+	aria-label={m.report_components_form_stepprogresscompact_aria_label_formular_schritte()}
+>
 	<p class="text-support text-base-content/70 shrink-0">
 		Schritt {currentStep + 1} von {steps.length}
 	</p>

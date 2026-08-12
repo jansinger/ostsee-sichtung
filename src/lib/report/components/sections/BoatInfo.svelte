@@ -30,7 +30,10 @@
 </script>
 
 {#if !isFromLand($form.sightingFrom)}
-	<SectionCard title={m.report_components_sections_boatinfo_title_boot_schiffsinformationen()} icon="lucide:anchor">
+	<SectionCard
+		title={m.report_components_sections_boatinfo_title_boot_schiffsinformationen()}
+		icon="lucide:anchor"
+	>
 		<p class="text-base-content/70 mb-4 text-sm">
 			{m.report_components_sections_boatinfo_text_falls_sie_von_einem_boot()}
 		</p>

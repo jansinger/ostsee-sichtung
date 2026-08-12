@@ -31,15 +31,24 @@
 		-->
 		<div class="footer sm:footer-horizontal container mx-auto p-6 sm:p-8">
 			<nav aria-labelledby="footer-navigation">
-				<h2 id="footer-navigation" class="footer-title">{m.components_publicfooter_text_navigation()}</h2>
-				<a href={localizeHref('/')} class="link link-hover py-3">{m.components_publicfooter_text_meldung()}</a>
-				<a href={localizeHref('/map')} class="link link-hover py-3">{m.components_publicfooter_text_sichtungskarte()}</a>
-				<a href={localizeHref('/bestimmungshilfe')} class="link link-hover py-3">{m.components_publicfooter_text_bestimmungshilfe()}</a
+				<h2 id="footer-navigation" class="footer-title">
+					{m.components_publicfooter_text_navigation()}
+				</h2>
+				<a href={localizeHref('/')} class="link link-hover py-3"
+					>{m.components_publicfooter_text_meldung()}</a
+				>
+				<a href={localizeHref('/map')} class="link link-hover py-3"
+					>{m.components_publicfooter_text_sichtungskarte()}</a
+				>
+				<a href={localizeHref('/bestimmungshilfe')} class="link link-hover py-3"
+					>{m.components_publicfooter_text_bestimmungshilfe()}</a
 				>
 				<!-- „Hintergrund" wie in der Navigation: Ein Ziel trägt einen Namen —
 				     „Über uns" hier und „Hintergrund" oben wären zwei Namen für
 				     dieselbe Seite. -->
-				<a href={localizeHref('/about')} class="link link-hover py-3">{m.components_publicfooter_text_hintergrund()}</a>
+				<a href={localizeHref('/about')} class="link link-hover py-3"
+					>{m.components_publicfooter_text_hintergrund()}</a
+				>
 			</nav>
 
 			<!--
@@ -59,7 +68,9 @@
 				6 einer Linkzeile — auffindbar ist Teil der Pflicht.
 			-->
 			<nav aria-labelledby="footer-rechtliches">
-				<h2 id="footer-rechtliches" class="footer-title">{m.components_publicfooter_text_rechtliches()}</h2>
+				<h2 id="footer-rechtliches" class="footer-title">
+					{m.components_publicfooter_text_rechtliches()}
+				</h2>
 				<a
 					href="https://www.deutsches-meeresmuseum.de/impressum"
 					target="_blank"
@@ -78,7 +89,9 @@
 				<h2 id="footer-projekt" class="footer-title">{m.components_publicfooter_text_projekt()}</h2>
 				<!-- `/docs` bewusst NICHT über `localizeHref`: Der Pfad steht in
 				     `NICHT_LOKALISIERT` (languagePrefix.ts) — ein `/en/docs` wäre eine 404. -->
-				<a href="/docs" class="link link-hover py-3">{m.components_publicfooter_text_dokumentation()}</a>
+				<a href="/docs" class="link link-hover py-3"
+					>{m.components_publicfooter_text_dokumentation()}</a
+				>
 				<a
 					href="https://github.com/jansinger/ostsee-tiere"
 					target="_blank"

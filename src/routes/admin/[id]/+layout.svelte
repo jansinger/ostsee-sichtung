@@ -26,7 +26,7 @@
 			<span class="loading loading-spinner loading-lg"></span>
 		</div>
 	{:then}
-		<div class="bg-base-100 rounded-lg shadow-raised">
+		<div class="bg-base-100 shadow-raised rounded-lg">
 			<div class="p-6">
 				{@render children()}
 			</div>

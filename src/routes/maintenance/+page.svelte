@@ -16,7 +16,7 @@
 </svelte:head>
 
 <div class="bg-base-200 flex min-h-screen items-center justify-center">
-	<div class="card bg-base-100 w-full max-w-md shadow-raised">
+	<div class="card bg-base-100 shadow-raised w-full max-w-md">
 		<div class="card-body text-center">
 			<!-- Logo -->
 			<div class="mb-6 flex justify-center">

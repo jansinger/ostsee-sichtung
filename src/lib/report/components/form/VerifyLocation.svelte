@@ -171,7 +171,9 @@
 					<!-- In Baltic Sea -->
 					<div class="alert alert-success mt-0 mb-4" data-testid="verify-location-inside">
 						<Icon icon="lucide:circle-check" class="h-6 w-6 shrink-0" />
-						<span>{m.report_components_form_verifylocation_text_die_koordinaten_liegen_innerhalb_der()}</span>
+						<span
+							>{m.report_components_form_verifylocation_text_die_koordinaten_liegen_innerhalb_der()}</span
+						>
 					</div>
 				{:else if currentResult.inChartArea}
 					<!-- Outside Baltic Sea (only show in browser). Klasse und Text kommen aus

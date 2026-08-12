@@ -205,7 +205,11 @@
 	}
 </script>
 
-<SectionCard title={m.report_components_form_position_positionpanel_title_positionsangabe()} icon="lucide:map-pin" variant="inset">
+<SectionCard
+	title={m.report_components_form_position_positionpanel_title_positionsangabe()}
+	icon="lucide:map-pin"
+	variant="inset"
+>
 	<!-- Nur noch die Frage: „Ein Foto mit GPS-Daten ist der schnellste Weg" stand
 	     zwei Zeilen später in der Hero-Karte fast wörtlich noch einmal. -->
 	<p class="text-base-content/70 mb-4 text-sm">{positionLabel}</p>
@@ -263,7 +267,9 @@
 	     was hinter der zugeklappten Disclosure lag. Die Karte steht jetzt offen
 	     darunter und kündigt sich selbst an; übrig bleiben muss nur noch das
 	     „oder". -->
-	<div class="divider text-base-content/70 text-support mt-6 mb-3">{m.report_components_form_position_positionpanel_text_oder()}</div>
+	<div class="divider text-base-content/70 text-support mt-6 mb-3">
+		{m.report_components_form_position_positionpanel_text_oder()}
+	</div>
 
 	<!--
 		Karte und Koordinatenfelder stehen dauerhaft offen — auf Wunsch des

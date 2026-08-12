@@ -57,7 +57,10 @@
 </script>
 
 <!-- Environmental Conditions Section -->
-<SectionCard title={m.report_components_sections_environment_title_umweltbedingungen()} icon="lucide:waves">
+<SectionCard
+	title={m.report_components_sections_environment_title_umweltbedingungen()}
+	icon="lucide:waves"
+>
 	<p class="text-base-content/70 mb-4 text-sm">
 		{m.report_components_sections_environment_text_wetter_und_seebedingungen_beeinflussen_s()}
 	</p>

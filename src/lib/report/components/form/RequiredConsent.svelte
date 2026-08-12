@@ -57,7 +57,9 @@
 						class="text-success-strong mt-0.5"
 					/>
 					<div>
-						<p class="font-medium">{m.report_components_form_requiredconsent_text_oeffentliche_wissenschaftsdaten()}</p>
+						<p class="font-medium">
+							{m.report_components_form_requiredconsent_text_oeffentliche_wissenschaftsdaten()}
+						</p>
 						<p class="text-base-content/70 text-xs">
 							{m.report_components_form_requiredconsent_text_datum_position_tierart_werden_fuer()}
 						</p>
@@ -66,7 +68,9 @@
 				<div class="flex items-start gap-3">
 					<Icon icon="lucide:lock" width="20" height="20" class="text-info-strong mt-0.5" />
 					<div>
-						<p class="font-medium">{m.report_components_form_requiredconsent_text_private_kontaktdaten()}</p>
+						<p class="font-medium">
+							{m.report_components_form_requiredconsent_text_private_kontaktdaten()}
+						</p>
 						<p class="text-base-content/70 text-xs">
 							{m.report_components_form_requiredconsent_text_ihre_persoenlichen_daten_bleiben_vertrau()}
 						</p>

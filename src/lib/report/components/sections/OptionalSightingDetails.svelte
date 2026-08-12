@@ -19,7 +19,10 @@
      wieder ins Meldeformular ein, zeigt sie dort nicht still zwei Felder, die
      das Museum abbestellt hat. -->
 {#if adminMode}
-	<SectionCard title={m.report_components_sections_optionalsightingdetails_title_weitere_sichtungsdetails()} icon="lucide:activity">
+	<SectionCard
+		title={m.report_components_sections_optionalsightingdetails_title_weitere_sichtungsdetails()}
+		icon="lucide:activity"
+	>
 		<!-- Das Museum hat „Verteilung der Tiere" am 2026-08-04 aus dem Meldeformular
 		     abbestellt: Sie lässt sich aus der Anzahl der Tiere erschließen. Die
 		     Admin-Maske behält das Feld, weil dort der Bestand korrigiert wird. -->

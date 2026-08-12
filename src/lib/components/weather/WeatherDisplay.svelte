@@ -223,7 +223,9 @@
 	</div>
 {:else}
 	<div class="weather-display">
-		<p class="text-base-content/60 text-sm">{m.components_weather_weatherdisplay_text_keine_wetterdaten_verfuegbar()}</p>
+		<p class="text-base-content/60 text-sm">
+			{m.components_weather_weatherdisplay_text_keine_wetterdaten_verfuegbar()}
+		</p>
 	</div>
 {/if}
 

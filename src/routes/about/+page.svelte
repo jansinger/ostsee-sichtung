@@ -60,7 +60,9 @@
 		     `section`. Vorher standen hier text-6xl/5xl/4xl/3xl/2xl/xl — dass das
 		     nie auffiel, lag an der globalen h1-Regel aus mapStyles.css, die den
 		     Titel auf Mobil auf 20px zwang und die Staffelung damit verdeckte. -->
-		<h1 class="text-primary text-display mb-8 font-bold tracking-tight">{m.routes_about_page_text_ueber_ostsee_tiere()}</h1>
+		<h1 class="text-primary text-display mb-8 font-bold tracking-tight">
+			{m.routes_about_page_text_ueber_ostsee_tiere()}
+		</h1>
 		<div class="mx-auto max-w-4xl">
 			<p class="text-base-content/80 mb-6 text-2xl leading-relaxed">
 				Die Ostsee-Tiere Plattform ermöglicht es <strong class="text-primary"
@@ -110,7 +112,9 @@
 					<div class="mb-6 flex justify-center">
 						<Icon icon="lucide:activity" width="60" class="text-primary opacity-80" />
 					</div>
-					<h3 class="text-primary text-section mb-4 font-bold">{m.routes_about_page_text_citizen_science()}</h3>
+					<h3 class="text-primary text-section mb-4 font-bold">
+						{m.routes_about_page_text_citizen_science()}
+					</h3>
 					<p class="text-base-content/70 text-lg leading-relaxed">
 						Bürgerwissenschaft macht <strong>jeden zum Forscher</strong> und trägt zu wichtigen wissenschaftlichen
 						Erkenntnissen bei.
@@ -127,7 +131,9 @@
 								     Untergrenze der Seite derzeit nicht — aber sie steht unter
 								     derselben DaisyUI-Regel, und die nächste Textänderung würde den
 								     Überlauf sonst erneut aufmachen. -->
-								<div class="stat-desc whitespace-normal">{m.routes_about_page_text_in_unserer_datenbank()}</div>
+								<div class="stat-desc whitespace-normal">
+									{m.routes_about_page_text_in_unserer_datenbank()}
+								</div>
 							</div>
 						</div>
 					{/if}
@@ -158,13 +164,17 @@
 					>
 						<Icon icon="lucide:pen-line" width="48" class="text-primary" />
 					</div>
-					<h3 class="card-title text-primary text-section mb-4 justify-center">{m.routes_about_page_text_einfaches_melden()}</h3>
+					<h3 class="card-title text-primary text-section mb-4 justify-center">
+						{m.routes_about_page_text_einfaches_melden()}
+					</h3>
 					<p class="text-base-content/80 text-base leading-relaxed">
 						<strong>Intuitive Formulare</strong> führen Sie Schritt für Schritt durch die Erfassung
 						Ihrer Sichtung mit <em>GPS-genauer Lokalisierung</em>.
 					</p>
 					<div class="mt-4">
-						<div class="badge badge-primary badge-outline">{m.routes_about_page_text_gps_integration()}</div>
+						<div class="badge badge-primary badge-outline">
+							{m.routes_about_page_text_gps_integration()}
+						</div>
 					</div>
 				</div>
 			</div>
@@ -188,7 +198,9 @@
 						detaillierten Karte der Ostsee und entdecken Sie <em>Muster und Hotspots</em>.
 					</p>
 					<div class="mt-4">
-						<div class="badge badge-secondary badge-outline">{m.routes_about_page_text_openlayers()}</div>
+						<div class="badge badge-secondary badge-outline">
+							{m.routes_about_page_text_openlayers()}
+						</div>
 					</div>
 				</div>
 			</div>
@@ -216,7 +228,9 @@
 						damit für <em>Forschung und Lehre</em> nutzbar.
 					</p>
 					<div class="mt-4">
-						<div class="badge badge-accent badge-outline">{m.routes_about_page_text_open_data()}</div>
+						<div class="badge badge-accent badge-outline">
+							{m.routes_about_page_text_open_data()}
+						</div>
 					</div>
 				</div>
 			</div>
@@ -526,7 +540,9 @@
 							     dem `padding-inline` der `.stat` (48px) die Untergrenze der ganzen
 							     Seite bei 320px. Wo Platz ist, ändert sich nichts — umbrechbarer Text
 							     bricht erst, wenn er muss. -->
-							<div class="stat-desc whitespace-normal">{m.routes_about_page_text_freigegebene_sichtungen()}</div>
+							<div class="stat-desc whitespace-normal">
+								{m.routes_about_page_text_freigegebene_sichtungen()}
+							</div>
 						</div>
 					{/if}
 					{#if data.totalObservers != null}
@@ -535,7 +551,9 @@
 							<div class="stat-value text-secondary-strong">
 								{new Intl.NumberFormat(zahlenLocale).format(data.totalObservers)}
 							</div>
-							<div class="stat-desc whitespace-normal">{m.routes_about_page_text_melder_adressen_insgesamt()}</div>
+							<div class="stat-desc whitespace-normal">
+								{m.routes_about_page_text_melder_adressen_insgesamt()}
+							</div>
 						</div>
 					{/if}
 					<!-- Die dritte Kachel („Für die / Wissenschaft / verfügbar") ist

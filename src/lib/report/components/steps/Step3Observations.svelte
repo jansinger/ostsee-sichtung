@@ -58,7 +58,9 @@
 				<Icon icon="lucide:activity" width="20" class="text-primary md:h-6 md:w-6" />
 			</div>
 		</div>
-		<h2 class="text-base-content text-xl font-bold md:text-2xl">{m.report_components_steps_step3observations_text_weitere_informationen()}</h2>
+		<h2 class="text-base-content text-xl font-bold md:text-2xl">
+			{m.report_components_steps_step3observations_text_weitere_informationen()}
+		</h2>
 		<!-- „Fotos/Videos" stand hier, solange der Upload auf diesem Schritt lag.
 		     Seit dem 2026-08-04 steht er auf Schritt 2 — der Halbsatz verspräche
 		     sonst etwas, das einen Schritt weiter vorne liegt, und das ausgerechnet
@@ -81,7 +83,9 @@
 			</button>
 		</div>
 
-		<div class="divider text-xs opacity-70">{m.report_components_steps_step3observations_text_oder_details_hinzufuegen()}</div>
+		<div class="divider text-xs opacity-70">
+			{m.report_components_steps_step3observations_text_oder_details_hinzufuegen()}
+		</div>
 	</div>
 
 	<!-- `Media` steht seit dem 2026-08-04 auf Schritt 2 (`Step2SightingDetails`).

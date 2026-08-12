@@ -108,7 +108,11 @@
 	}
 </script>
 
-<div class="space-y-2" role="group" aria-label={m.components_map_panel_dualrangeslider_aria_label_zeitraum_waehlen()}>
+<div
+	class="space-y-2"
+	role="group"
+	aria-label={m.components_map_panel_dualrangeslider_aria_label_zeitraum_waehlen()}
+>
 	<div
 		class="dual-range"
 		data-testid="dual-range"

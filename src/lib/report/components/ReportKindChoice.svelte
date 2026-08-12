@@ -95,11 +95,15 @@
 		     `ModernReportForm.svelte`. Ohne sie sah ein eingebetteter Besucher den
 		     Titel doppelt, und der Höhensprung beim Wechsel zu Schritt 1 (dort
 		     bereits unterdrückt) fiel größer aus (Abschlussreview, Politur). -->
-		<h1 class="text-display mb-2">{m.report_components_reportkindchoice_text_meerestier_melden()}</h1>
+		<h1 class="text-display mb-2">
+			{m.report_components_reportkindchoice_text_meerestier_melden()}
+		</h1>
 	{/if}
 	<!-- Beantwortet die naheliegende Frage „warum werde ich das gefragt?" genau
 	     dort, wo sie anfällt. -->
-	<p class="text-base-content/70 mb-6">{m.report_components_reportkindchoice_text_damit_wir_ihnen_die_passenden()}</p>
+	<p class="text-base-content/70 mb-6">
+		{m.report_components_reportkindchoice_text_damit_wir_ihnen_die_passenden()}
+	</p>
 
 	<h2 id="report-kind-question" class="text-section mb-3" bind:this={questionEl}>
 		{m.report_components_reportkindchoice_text_was_moechten_sie_melden()}

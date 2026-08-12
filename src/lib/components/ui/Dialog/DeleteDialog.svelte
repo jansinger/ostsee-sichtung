@@ -50,19 +50,28 @@
 	onclose={handleClose}
 >
 	<div class="modal-box w-96">
-		<h3 id="delete-dialog-title" class="mb-4 text-lg font-bold">{m.components_ui_dialog_deletedialog_text_sichtung_loeschen()}</h3>
+		<h3 id="delete-dialog-title" class="mb-4 text-lg font-bold">
+			{m.components_ui_dialog_deletedialog_text_sichtung_loeschen()}
+		</h3>
 		<p class="mb-4">
 			{m.components_ui_dialog_deletedialog_text_sind_sie_sicher_dass_sie()}
 		</p>
 		<div class="modal-action">
-			<button class="btn" onclick={cancel}>{m.components_ui_dialog_deletedialog_text_abbrechen()}</button>
-			<button class="btn btn-error" onclick={confirm}>{m.components_ui_dialog_deletedialog_text_loeschen()}</button>
+			<button class="btn" onclick={cancel}
+				>{m.components_ui_dialog_deletedialog_text_abbrechen()}</button
+			>
+			<button class="btn btn-error" onclick={confirm}
+				>{m.components_ui_dialog_deletedialog_text_loeschen()}</button
+			>
 		</div>
 	</div>
 	<!-- Schleier über der Seite dahinter, kein Theme-Ton: bg-scrim/<n>
 	     (--scrim-surface in tokens.css). -->
 	<form method="dialog" class="modal-backdrop bg-scrim/50">
-		<button aria-label={m.components_ui_dialog_deletedialog_aria_label_dialog_schliessen()} onclick={cancel}>
+		<button
+			aria-label={m.components_ui_dialog_deletedialog_aria_label_dialog_schliessen()}
+			onclick={cancel}
+		>
 			<span class="sr-only">{m.components_ui_dialog_deletedialog_text_dialog_schliessen()}</span>
 		</button>
 	</form>

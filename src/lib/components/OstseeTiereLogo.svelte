@@ -2,7 +2,7 @@
 	import * as m from '$lib/paraglide/messages';
 	import { localizeHref } from '$lib/paraglide/runtime';
 
-	let { 
+	let {
 		size = 'md',
 		showText = true,
 		linkToHome = true,
@@ -16,19 +16,21 @@
 
 	// Größen-Definitionen
 	const sizeMap = {
-		xs: { logo: 32, text: 'text-sm' },      // 32px - Mini
-		sm: { logo: 48, text: 'text-base' },    // 48px - Klein (Admin Nav)
-		md: { logo: 64, text: 'text-lg' },      // 64px - Medium
-		lg: { logo: 96, text: 'text-xl' },      // 96px - Groß
-		xl: { logo: 128, text: 'text-2xl' }     // 128px - Extra groß
+		xs: { logo: 32, text: 'text-sm' }, // 32px - Mini
+		sm: { logo: 48, text: 'text-base' }, // 48px - Klein (Admin Nav)
+		md: { logo: 64, text: 'text-lg' }, // 64px - Medium
+		lg: { logo: 96, text: 'text-xl' }, // 96px - Groß
+		xl: { logo: 128, text: 'text-2xl' } // 128px - Extra groß
 	};
 
 	const currentSize = $derived(sizeMap[size]);
-	
+
 	// WebP-Support für moderne Browser
-	const supportsWebP = typeof window !== 'undefined' && 
-		window.document?.createElement('canvas').toDataURL('image/webp').indexOf('data:image/webp') === 0;
-	
+	const supportsWebP =
+		typeof window !== 'undefined' &&
+		window.document?.createElement('canvas').toDataURL('image/webp').indexOf('data:image/webp') ===
+			0;
+
 	// Dynamische Bildquelle basierend auf Größe und Format
 	const imageSrc = $derived(
 		supportsWebP && currentSize.logo <= 128
@@ -40,10 +42,10 @@
 {#if linkToHome}
 	<a
 		href={localizeHref('/')}
-		class="inline-flex items-center gap-2 hover:opacity-90 transition-opacity {className}"
+		class="inline-flex items-center gap-2 transition-opacity hover:opacity-90 {className}"
 		aria-label={m.components_ostseetierelogo_aria_label_ostsee_tiere_startseite()}
 	>
-		<img 
+		<img
 			src={imageSrc}
 			alt={m.components_ostseetierelogo_alt_ostsee_tiere_logo_springender_delfin()}
 			width={currentSize.logo}
@@ -60,7 +62,7 @@
 	</a>
 {:else}
 	<div class="inline-flex items-center gap-2 {className}">
-		<img 
+		<img
 			src={imageSrc}
 			alt={m.components_ostseetierelogo_alt_ostsee_tiere_logo_springender_delfin_2()}
 			width={currentSize.logo}

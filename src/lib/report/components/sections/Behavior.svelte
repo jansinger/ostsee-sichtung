@@ -40,7 +40,10 @@
 </script>
 
 <!-- Animal Behavior Section -->
-<SectionCard title={m.report_components_sections_behavior_title_verhalten_der_tiere()} icon="lucide:waves">
+<SectionCard
+	title={m.report_components_sections_behavior_title_verhalten_der_tiere()}
+	icon="lucide:waves"
+>
 	<p class="text-base-content/70 mb-4 text-sm">
 		{m.report_components_sections_behavior_text_verhaltensinformationen_helfen_wissensch()}
 	</p>

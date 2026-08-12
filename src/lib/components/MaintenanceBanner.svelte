@@ -13,7 +13,7 @@
 			<Icon icon="lucide:alert-circle" class="size-5" />
 		</div>
 		<div class="flex-1">
-			<h3 class="font-bold flex items-center gap-2">
+			<h3 class="flex items-center gap-2 font-bold">
 				<Icon icon="lucide:triangle-alert" width="20" height="20" class="text-warning-strong" />
 				{m.components_maintenancebanner_text_wartungsmodus_ist_aktiv()}
 			</h3>
@@ -22,7 +22,8 @@
 			</div>
 			{#if maintenanceMessage}
 				<div class="mt-2 text-sm opacity-80">
-					<strong>{m.components_maintenancebanner_text_aktuelle_nachricht()}</strong> {maintenanceMessage}
+					<strong>{m.components_maintenancebanner_text_aktuelle_nachricht()}</strong>
+					{maintenanceMessage}
 				</div>
 			{/if}
 		</div>

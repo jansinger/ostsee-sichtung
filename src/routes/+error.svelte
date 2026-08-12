@@ -134,7 +134,9 @@
 				{#if error?.message && status !== 404}
 					<div class="collapse-arrow bg-base-200 collapse mb-4">
 						<input type="checkbox" />
-						<div class="collapse-title text-sm font-medium">{m.routes_error_text_technische_details()}</div>
+						<div class="collapse-title text-sm font-medium">
+							{m.routes_error_text_technische_details()}
+						</div>
 						<div class="collapse-content">
 							<div class="mockup-code text-xs">
 								<pre class="text-error"><code>{error.message}</code></pre>
@@ -146,12 +148,20 @@
 				<!-- Aktions-Buttons -->
 				<div class="card-actions w-full justify-center">
 					<div class="join join-vertical sm:join-horizontal">
-						<button class="btn btn-primary join-item" onclick={goHome} aria-label={m.routes_error_aria_label_zur_startseite()}>
+						<button
+							class="btn btn-primary join-item"
+							onclick={goHome}
+							aria-label={m.routes_error_aria_label_zur_startseite()}
+						>
 							<Icon icon="lucide:home" class="mr-2 h-4 w-4" />
 							{m.routes_error_text_startseite()}
 						</button>
 
-						<button class="btn btn-ghost join-item" onclick={goBack} aria-label={m.routes_error_aria_label_zurueck()}>
+						<button
+							class="btn btn-ghost join-item"
+							onclick={goBack}
+							aria-label={m.routes_error_aria_label_zurueck()}
+						>
 							<Icon icon="lucide:arrow-left" class="mr-2 h-4 w-4" />
 							{m.routes_error_text_zurueck()}
 						</button>
@@ -172,7 +182,7 @@
 		</div>
 
 		<!-- Zusätzliche Hilfe-Karte -->
-		<div class="card bg-base-100 mt-4 shadow-raised">
+		<div class="card bg-base-100 shadow-raised mt-4">
 			<div class="card-body">
 				<h2 class="card-title text-lg">
 					<Icon icon="lucide:info" class="mr-2 h-5 w-5" />
@@ -191,7 +201,11 @@
 
 				<!-- Zur Startseite -->
 				<div class="card-actions mt-4 justify-end">
-					<button class="btn btn-sm btn-ghost" onclick={goHome} aria-label={m.routes_error_aria_label_zur_startseite_2()}>
+					<button
+						class="btn btn-sm btn-ghost"
+						onclick={goHome}
+						aria-label={m.routes_error_aria_label_zur_startseite_2()}
+					>
 						<Icon icon="lucide:home" class="mr-1 h-4 w-4" />
 						{m.routes_error_text_zur_startseite()}
 					</button>
