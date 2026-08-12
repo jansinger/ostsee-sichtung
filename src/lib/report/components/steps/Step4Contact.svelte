@@ -69,7 +69,9 @@
 				<Icon icon="lucide:user" width="20" class="text-primary md:h-6 md:w-6" />
 			</div>
 		</div>
-		<h2 class="text-base-content text-xl font-bold md:text-2xl">{m.report_components_steps_step4contact_text_kontaktdaten()}</h2>
+		<h2 class="text-base-content text-xl font-bold md:text-2xl">
+			{m.report_components_steps_step4contact_text_kontaktdaten()}
+		</h2>
 		<!-- Der frühere Satz „Ihre persönlichen Daten werden nie öffentlich
 		     angezeigt!" war nachweislich falsch: Direkt darunter stehen die
 		     Einwilligungen zur Namensnennung, und `/api/map/sightings` liefert
@@ -89,7 +91,8 @@
 		     Die neue Fassung sagt, was tatsächlich passiert, und erklärt die
 		     Ankreuzfelder darunter, statt ihnen zu widersprechen. -->
 		<p class="text-base-content/70 mx-auto max-w-2xl text-sm md:text-base">
-			<strong>{m.report_components_steps_step4contact_text_datenschutz()}</strong> {m.report_components_steps_step4contact_text_ihre_kontaktdaten_verwenden_wir_ausschli()}
+			<strong>{m.report_components_steps_step4contact_text_datenschutz()}</strong>
+			{m.report_components_steps_step4contact_text_ihre_kontaktdaten_verwenden_wir_ausschli()}
 		</p>
 	</div>
 
@@ -106,8 +109,12 @@
 			</p>
 			<ul class="list-inside list-disc space-y-1 text-xs">
 				<li>{m.report_components_steps_step4contact_text_bestaetigung_ihrer_meldung()}</li>
-				<li>{m.report_components_steps_step4contact_text_wichtige_rueckfragen_zur_datenqualitaet()}</li>
-				<li>{m.report_components_steps_step4contact_text_information_ueber_wissenschaftliche_erge()}</li>
+				<li>
+					{m.report_components_steps_step4contact_text_wichtige_rueckfragen_zur_datenqualitaet()}
+				</li>
+				<li>
+					{m.report_components_steps_step4contact_text_information_ueber_wissenschaftliche_erge()}
+				</li>
 			</ul>
 
 			<div class="alert alert-info mt-4">
@@ -272,7 +279,8 @@
 		<!-- Persistent Data Storage Consent -->
 		<div class="mt-6 space-y-4" data-consent-surface>
 			<h4 class="text-base font-semibold">
-				<Icon icon="lucide:save" width="16" class="inline" /> {m.report_components_steps_step4contact_text_dauerhafte_speicherung_der_kontaktdaten()}
+				<Icon icon="lucide:save" width="16" class="inline" />
+				{m.report_components_steps_step4contact_text_dauerhafte_speicherung_der_kontaktdaten()}
 			</h4>
 			<p class="text-base-content/70 mb-4 text-sm">
 				{m.report_components_steps_step4contact_text_moechten_sie_dass_ihre_kontaktdaten()}

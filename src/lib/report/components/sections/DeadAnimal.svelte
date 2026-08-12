@@ -36,7 +36,8 @@
 				{m.report_components_sections_deadanimal_gloss_nicht_beruehren()}
 			</li>
 			<li>
-				<strong>{m.report_components_sections_deadanimal_text_behoerden_informieren()}</strong> {m.report_components_sections_deadanimal_text_meeresmuseum_wasserschutzpolizei_nationa()}
+				<strong>{m.report_components_sections_deadanimal_text_behoerden_informieren()}</strong>
+				{m.report_components_sections_deadanimal_text_meeresmuseum_wasserschutzpolizei_nationa()}
 			</li>
 		</ul>
 	</div>

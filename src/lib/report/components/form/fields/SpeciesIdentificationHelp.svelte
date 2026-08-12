@@ -188,7 +188,9 @@
 		>
 			<Icon icon={isExpanded ? 'lucide:chevron-down' : 'lucide:chevron-right'} width="16" />
 			<Icon icon="lucide:circle-help" width="16" />
-			<span>{m.report_components_form_fields_speciesidentificationhel_text_hilfe_bei_der_tiererkennung()}</span>
+			<span
+				>{m.report_components_form_fields_speciesidentificationhel_text_hilfe_bei_der_tiererkennung()}</span
+			>
 		</button>
 	{/if}
 
@@ -398,16 +400,22 @@
 										<div class="border-base-300 border-t pt-2">
 											<div class="{styles.muted} grid grid-cols-1 gap-1">
 												<div>
-													<span class="font-medium">{m.report_components_form_fields_speciesidentificationhel_text_groesse()}</span>
+													<span class="font-medium"
+														>{m.report_components_form_fields_speciesidentificationhel_text_groesse()}</span
+													>
 													<span class="ml-1">{species.size}</span>
 												</div>
 												<div>
-													<span class="font-medium">{m.report_components_form_fields_speciesidentificationhel_text_gewicht()}</span>
+													<span class="font-medium"
+														>{m.report_components_form_fields_speciesidentificationhel_text_gewicht()}</span
+													>
 													<span class="ml-1">{species.weight}</span>
 												</div>
 												{#if species.scientificName !== '—'}
 													<div>
-														<span class="font-medium">{m.report_components_form_fields_speciesidentificationhel_text_wissenschaftlich()}</span>
+														<span class="font-medium"
+															>{m.report_components_form_fields_speciesidentificationhel_text_wissenschaftlich()}</span
+														>
 														<span class="ml-1 italic">{species.scientificName}</span>
 													</div>
 												{/if}
@@ -437,10 +445,16 @@
 					</svelte:element>
 					<div class="{styles.body} space-y-1">
 						<p>
-							<strong>{m.report_components_form_fields_speciesidentificationhel_text_robbe()}</strong> {m.report_components_form_fields_speciesidentificationhel_text_der_runde_kopf_steht_senkrecht()}
+							<strong
+								>{m.report_components_form_fields_speciesidentificationhel_text_robbe()}</strong
+							>
+							{m.report_components_form_fields_speciesidentificationhel_text_der_runde_kopf_steht_senkrecht()}
 						</p>
 						<p>
-							<strong>{m.report_components_form_fields_speciesidentificationhel_text_schweinswal()}</strong> {m.report_components_form_fields_speciesidentificationhel_text_kein_kopf_zu_sehen_nur()}
+							<strong
+								>{m.report_components_form_fields_speciesidentificationhel_text_schweinswal()}</strong
+							>
+							{m.report_components_form_fields_speciesidentificationhel_text_kein_kopf_zu_sehen_nur()}
 						</p>
 					</div>
 				</div>
@@ -457,13 +471,22 @@
 					</svelte:element>
 					<div class="{styles.body} space-y-1">
 						<p>
-							<strong>{m.report_components_form_fields_speciesidentificationhel_text_kegelrobbe()}</strong> {m.report_components_form_fields_speciesidentificationhel_text_langer_kopf_gerade_linie_von()}
+							<strong
+								>{m.report_components_form_fields_speciesidentificationhel_text_kegelrobbe()}</strong
+							>
+							{m.report_components_form_fields_speciesidentificationhel_text_langer_kopf_gerade_linie_von()}
 						</p>
 						<p>
-							<strong>{m.report_components_form_fields_speciesidentificationhel_text_seehund()}</strong> {m.report_components_form_fields_speciesidentificationhel_text_kurze_schnauze_mit_deutlichem_absatz()}
+							<strong
+								>{m.report_components_form_fields_speciesidentificationhel_text_seehund()}</strong
+							>
+							{m.report_components_form_fields_speciesidentificationhel_text_kurze_schnauze_mit_deutlichem_absatz()}
 						</p>
 						<p>
-							<strong>{m.report_components_form_fields_speciesidentificationhel_text_ringelrobbe()}</strong> {m.report_components_form_fields_speciesidentificationhel_text_kleinste_art_helle_ringe_im()}
+							<strong
+								>{m.report_components_form_fields_speciesidentificationhel_text_ringelrobbe()}</strong
+							>
+							{m.report_components_form_fields_speciesidentificationhel_text_kleinste_art_helle_ringe_im()}
 						</p>
 						<p class="text-base-content/70">
 							Das Kopfprofil ist auch auf 100–200 m mit dem Fernglas erkennbar. Die Nasenlöcher sind
@@ -483,13 +506,21 @@
 						{m.report_components_form_fields_speciesidentificationhel_text_was_der_forschung_am_meisten()}
 					</svelte:element>
 					<ul class={styles.list}>
-						<li>{m.report_components_form_fields_speciesidentificationhel_text_ein_foto_auch_unscharf()}</li>
-						<li>{m.report_components_form_fields_speciesidentificationhel_text_genaue_position_und_uhrzeit()}</li>
-						<li>{m.report_components_form_fields_speciesidentificationhel_text_groesse_im_vergleich_zu_ihrem()}</li>
+						<li>
+							{m.report_components_form_fields_speciesidentificationhel_text_ein_foto_auch_unscharf()}
+						</li>
+						<li>
+							{m.report_components_form_fields_speciesidentificationhel_text_genaue_position_und_uhrzeit()}
+						</li>
+						<li>
+							{m.report_components_form_fields_speciesidentificationhel_text_groesse_im_vergleich_zu_ihrem()}
+						</li>
 						<li>
 							{m.report_components_form_fields_speciesidentificationhel_text_bei_unsicherheit_unbekannte_wal_bzw()}
 						</li>
-						<li>{m.report_components_form_fields_speciesidentificationhel_text_halten_sie_abstand_besonders_zu()}</li>
+						<li>
+							{m.report_components_form_fields_speciesidentificationhel_text_halten_sie_abstand_besonders_zu()}
+						</li>
 					</ul>
 				</div>
 			</div>

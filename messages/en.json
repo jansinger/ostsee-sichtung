@@ -8,13 +8,8 @@
 	"components_form_unifieddropzone_text_alle_loeschen": "Alle löschen",
 	"components_form_unifieddropzone_text_datei_hochgeladen_plural": [
 		{
-			"declarations": [
-				"input count",
-				"local countPlural = count: plural"
-			],
-			"selectors": [
-				"countPlural"
-			],
+			"declarations": ["input count", "local countPlural = count: plural"],
+			"selectors": ["countPlural"],
 			"match": {
 				"countPlural=one": "{count} file uploaded",
 				"countPlural=other": "{count} files uploaded"
@@ -335,13 +330,8 @@
 	"report_components_form_fields_dropzoneenhanced_text_bitte_waehlen_sie_die_position": "Bitte wählen Sie die Position manuell auf der Karte oder laden Sie ein Foto mit\n\t\t\t\t\t\t\t\t\tGPS-Daten hoch.",
 	"report_components_form_fields_dropzoneenhanced_text_datei_plural": [
 		{
-			"declarations": [
-				"input count",
-				"local countPlural = count: plural"
-			],
-			"selectors": [
-				"countPlural"
-			],
+			"declarations": ["input count", "local countPlural = count: plural"],
+			"selectors": ["countPlural"],
 			"match": {
 				"countPlural=one": "{count} file",
 				"countPlural=other": "{count} files"

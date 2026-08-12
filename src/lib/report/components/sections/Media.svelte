@@ -66,7 +66,10 @@
      Konfiguration sie zulässt: Er ist eine Überschrift, kein Versprechen — was
      tatsächlich angenommen wird, sagt `formatDescription` eine Zeile tiefer und
      passt sich an. Der Fließtext daneben ist bewusst formatneutral gehalten. -->
-<SectionCard title={m.report_components_sections_media_title_fotos_videos_hochladen_optional()} icon="lucide:camera">
+<SectionCard
+	title={m.report_components_sections_media_title_fotos_videos_hochladen_optional()}
+	icon="lucide:camera"
+>
 	<!-- Der Einwilligungssatz der Vorlage („Mit dem Hochladen … stimmen Sie deren
 	     Speicherung zu") steht hier bewusst NICHT: Denselben Vorgang beschreibt
 	     `UPLOAD_NOTICE` an der Dropzone darunter genauer — sofortige Übertragung,
@@ -106,7 +109,10 @@
 			{m.report_components_sections_media_text_aufnahmen_sind_extrem_wertvoll_fuer()}
 		</p>
 		<ul class="list-inside list-disc space-y-1 text-xs">
-			<li><strong>{m.report_components_sections_media_text_artbestimmung()}</strong> {m.report_components_sections_media_text_auch_unscharfe_aufnahmen_koennen_helfen()}</li>
+			<li>
+				<strong>{m.report_components_sections_media_text_artbestimmung()}</strong>
+				{m.report_components_sections_media_text_auch_unscharfe_aufnahmen_koennen_helfen()}
+			</li>
 			<!-- Bis zum 2026-08-04 stand hier „Automatische Positionserkennung aus
 			     Fotos". Das löst dieser Schritt nicht ein: Die Dropzone unten läuft mit
 			     `enableGPSExtraction={false}`, und `applyExifPosition` hängt in
@@ -119,8 +125,8 @@
 			     Ankündigung, dass ein beliebiges der zehn Fotos die eigene Eingabe
 			     überschreibt. -->
 			<li>
-				<strong>{m.report_components_sections_media_text_metadaten()}</strong> GPS-Position und Aufnahmezeit aus dem Foto helfen bei der Einordnung
-				— Ihre Angaben aus Schritt 1 bleiben davon unberührt
+				<strong>{m.report_components_sections_media_text_metadaten()}</strong> GPS-Position und Aufnahmezeit
+				aus dem Foto helfen bei der Einordnung — Ihre Angaben aus Schritt 1 bleiben davon unberührt
 			</li>
 			<li>
 				<strong>{m.report_components_sections_media_text_formate()}</strong>
@@ -128,7 +134,8 @@
 			</li>
 			{#if allowsVideo}
 				<li>
-					<strong>{m.report_components_sections_media_text_videos()}</strong> {m.report_components_sections_media_text_grosse_videos_koennen_ueber_mobilfunk()}
+					<strong>{m.report_components_sections_media_text_videos()}</strong>
+					{m.report_components_sections_media_text_grosse_videos_koennen_ueber_mobilfunk()}
 				</li>
 			{/if}
 		</ul>

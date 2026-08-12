@@ -142,9 +142,13 @@
 									<strong>{m.report_components_formhelp_term_gewaessername()}</strong>
 									{m.report_components_formhelp_gloss_gewaessername()}
 								</li>
-								<li><strong>{m.report_components_formhelp_text_genaue_zeit()}</strong> {m.report_components_formhelp_text_hilft_bei_verhaltensanalysen()}</li>
 								<li>
-									<strong>{m.report_components_formhelp_text_tipp()}</strong> {m.report_components_formhelp_text_screenshots_von_navigations_apps_sind_hi()}
+									<strong>{m.report_components_formhelp_text_genaue_zeit()}</strong>
+									{m.report_components_formhelp_text_hilft_bei_verhaltensanalysen()}
+								</li>
+								<li>
+									<strong>{m.report_components_formhelp_text_tipp()}</strong>
+									{m.report_components_formhelp_text_screenshots_von_navigations_apps_sind_hi()}
 								</li>
 							</ul>
 						</div>
@@ -169,9 +173,13 @@
 									<strong>{m.report_components_formhelp_term_anzahl()}</strong>
 									{m.report_components_formhelp_gloss_anzahl()}
 								</li>
-								<li><strong>{m.report_components_formhelp_text_jungtiere()}</strong> {m.report_components_formhelp_text_wichtig_fuer_populationsstudien()}</li>
 								<li>
-									<strong>{m.report_components_formhelp_text_entfernung()}</strong> {m.report_components_formhelp_text_hilft_bei_der_einschaetzung_der()}
+									<strong>{m.report_components_formhelp_text_jungtiere()}</strong>
+									{m.report_components_formhelp_text_wichtig_fuer_populationsstudien()}
+								</li>
+								<li>
+									<strong>{m.report_components_formhelp_text_entfernung()}</strong>
+									{m.report_components_formhelp_text_hilft_bei_der_einschaetzung_der()}
 								</li>
 							</ul>
 						</div>
@@ -182,12 +190,22 @@
 								Schritt 3: Weitere Informationen
 							</h4>
 							<ul class="space-y-1 text-xs">
-								<li><strong>{m.report_components_formhelp_text_verhalten()}</strong> {m.report_components_formhelp_text_fuetterung_ruhen_springen_etc()}</li>
 								<li>
-									<strong>{m.report_components_formhelp_text_umwelt()}</strong> {m.report_components_formhelp_text_seegang_und_sichtweite_beeinflussen_sich()}
+									<strong>{m.report_components_formhelp_text_verhalten()}</strong>
+									{m.report_components_formhelp_text_fuetterung_ruhen_springen_etc()}
 								</li>
-								<li><strong>{m.report_components_formhelp_text_fotos_videos()}</strong> {m.report_components_formhelp_text_extrem_hilfreich_fuer_artbestimmung()}</li>
-								<li><strong>{m.report_components_formhelp_text_tipp_2()}</strong> {m.report_components_formhelp_text_auch_unscharfe_bilder_koennen_nuetzlich()}</li>
+								<li>
+									<strong>{m.report_components_formhelp_text_umwelt()}</strong>
+									{m.report_components_formhelp_text_seegang_und_sichtweite_beeinflussen_sich()}
+								</li>
+								<li>
+									<strong>{m.report_components_formhelp_text_fotos_videos()}</strong>
+									{m.report_components_formhelp_text_extrem_hilfreich_fuer_artbestimmung()}
+								</li>
+								<li>
+									<strong>{m.report_components_formhelp_text_tipp_2()}</strong>
+									{m.report_components_formhelp_text_auch_unscharfe_bilder_koennen_nuetzlich()}
+								</li>
 							</ul>
 							<div class="bg-success/10 mt-2 rounded p-2">
 								<div class="text-base-content/70 text-xs">
@@ -210,10 +228,22 @@
 								Schritt 4: Kontaktdaten
 							</h4>
 							<ul class="space-y-1 text-xs">
-								<li><strong>{m.report_components_formhelp_text_e_mail()}</strong> {m.report_components_formhelp_text_fuer_bestaetigung_und_rueckfragen()}</li>
-								<li><strong>{m.report_components_formhelp_text_boot_info()}</strong> {m.report_components_formhelp_text_hilft_bei_stoerungsanalysen()}</li>
-								<li><strong>{m.report_components_formhelp_text_datenschutz()}</strong> {m.report_components_formhelp_text_nur_sichtungsdaten_werden_oeffentlich()}</li>
-								<li><strong>{m.report_components_formhelp_text_optional()}</strong> {m.report_components_formhelp_text_name_nur_mit_ihrer_zustimmung()}</li>
+								<li>
+									<strong>{m.report_components_formhelp_text_e_mail()}</strong>
+									{m.report_components_formhelp_text_fuer_bestaetigung_und_rueckfragen()}
+								</li>
+								<li>
+									<strong>{m.report_components_formhelp_text_boot_info()}</strong>
+									{m.report_components_formhelp_text_hilft_bei_stoerungsanalysen()}
+								</li>
+								<li>
+									<strong>{m.report_components_formhelp_text_datenschutz()}</strong>
+									{m.report_components_formhelp_text_nur_sichtungsdaten_werden_oeffentlich()}
+								</li>
+								<li>
+									<strong>{m.report_components_formhelp_text_optional()}</strong>
+									{m.report_components_formhelp_text_name_nur_mit_ihrer_zustimmung()}
+								</li>
 							</ul>
 						</div>
 					</div>

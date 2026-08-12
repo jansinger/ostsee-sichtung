@@ -106,9 +106,14 @@
 	<!-- Info-Box: wie die Marker codiert sind -->
 	<div class="bg-base-300/50 mb-4 rounded-lg p-3 text-sm">
 		<div class="flex items-start gap-2">
-			<Icon icon="lucide:info" class="text-info-strong mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+			<Icon
+				icon="lucide:info"
+				class="text-info-strong mt-0.5 h-4 w-4 shrink-0"
+				aria-hidden="true"
+			/>
 			<div>
-				<strong>{m.components_map_panel_legendpanel_text_so_lesen_sie_die_karte()}</strong> {m.components_map_panel_legendpanel_text_die_ringfarbe_zeigt_die_tiergruppe()}
+				<strong>{m.components_map_panel_legendpanel_text_so_lesen_sie_die_karte()}</strong>
+				{m.components_map_panel_legendpanel_text_die_ringfarbe_zeigt_die_tiergruppe()}
 			</div>
 		</div>
 	</div>
@@ -140,7 +145,7 @@
 				<!-- 0/0-Arten ausgrauen: visuelle Teile abschwächen, Checkbox bleibt bedienbar -->
 				<div class="flex flex-1 items-center gap-3 {total === 0 ? 'opacity-60 grayscale' : ''}">
 					<div
-						class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full shadow-raised"
+						class="shadow-raised flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
 						style="background-color: {MARKER_BACKGROUND_COLOR}; border: 3px solid {symbol
 							? symbol.baseColor
 							: speciesGroupStyles.unbekannt.color};"
@@ -190,7 +195,7 @@
 			<div class="hover:bg-base-200 flex items-center gap-3 rounded-lg p-2 transition-colors">
 				{#if group.key === 'ct0'}
 					<span
-						class="h-5 w-5 shrink-0 rounded-full shadow-raised"
+						class="shadow-raised h-5 w-5 shrink-0 rounded-full"
 						style="background-color: {MARKER_BACKGROUND_COLOR}; border: 3px solid {TOTFUND_RING_COLOR};"
 						aria-hidden="true"
 					></span>
@@ -222,7 +227,9 @@
 	     mittleren Zoomstufen und ist für die Kernaufgabe sekundär -->
 	<div class="hover:bg-base-200 flex items-center gap-3 rounded-lg p-2 transition-colors">
 		<Icon icon="lucide:anchor" class="text-base-content/70 h-4 w-4 shrink-0" aria-hidden="true" />
-		<span class="flex-1 text-sm">{m.components_map_panel_legendpanel_text_seezeichen_tonnen_openseamap()}</span>
+		<span class="flex-1 text-sm"
+			>{m.components_map_panel_legendpanel_text_seezeichen_tonnen_openseamap()}</span
+		>
 		<input
 			type="checkbox"
 			class="seamark-checkbox checkbox checkbox-sm"
