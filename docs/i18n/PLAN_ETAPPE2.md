@@ -417,3 +417,80 @@ Diese Zahlen sind die Planungsgrundlage für Aufgabe 2.3 (Umbau der
 Markup-Dateien in Wellen) — nicht mehr die 68/449 aus dem Entwurf oder die
 689/827 aus der Nachbesserung, beide über nicht mehr vorhandene
 Scratchpad-Skripte gemessen.
+
+
+---
+
+## Aufgabe 2.3a — Markup-Umbau, mechanischer Teil
+
+**Umfang:** die 399 Botschaften, die der Extraktor als mechanisch ersetzbar
+meldet, über 84 Dateien. Die 165 Satzfragmente, 68 Interpolationen und 11
+Plurale sind **nicht** Teil dieser Aufgabe — sie folgen als 2.3b mit eigenem Plan.
+
+### Was hier anders ist als in Etappe 1
+
+**Es gibt kein `germanBaseline.json` für Markup.** In Schicht A und B fror ein
+Schnappschuss 56 Felder, 17 Label-Dateien und 65 Meldungen ein; ein einzelnes
+geändertes Zeichen machte ihn rot. Für Markup existiert nichts Vergleichbares.
+
+Was stattdessen trägt, in dieser Reihenfolge:
+
+1. **Konstruktion.** `m.key()` liefert den Text aus `de.json`, und der stammt
+   wörtlich aus dem Quelltext. Solange die Offsets stimmen, ist die deutsche
+   Ausgabe unverändert — nicht durch einen Test, sondern durch die Bauart.
+2. **Der Compiler.** Das Review von 2.2 hat die Ersetzung auf alle 84 Dateien
+   angewandt und jedes Ergebnis neu geparst: null Fehler. Ungültiges Markup
+   fiele beim Bau auf.
+3. **Die E2E-Suite.** 290 Selektoren greifen über sichtbaren deutschen Text.
+   **Sie ist das eigentliche Netz dieser Aufgabe** — und `test:quick` enthält
+   sie nicht. Nach jeder Welle vollständig fahren, ohne `CI=1`, isoliert.
+
+### Der Schreibmodus
+
+Das Werkzeug schreibt bisher ausschliesslich `messages/de.json` und
+`messages/en.json`; zwei Wächtertests erzwingen das. Für diese Aufgabe braucht es
+einen zweiten, ausdrücklichen Modus — `--write-sources` —, der zusätzlich die
+Quelldateien im Umfang ändert.
+
+Die Wächter werden dabei **nicht abgeschwächt, sondern umformuliert**: Sie
+sagten „ausser messages/*.json wird nichts geschrieben". Neu: „ausser
+messages/*.json und, nur mit `--write-sources`, den Dateien im definierten
+Umfang wird nichts geschrieben". Ein Schreibzugriff auf irgendeinen anderen Pfad
+bleibt ein Fehlschlag.
+
+Zwei Auflagen aus dem Entwurf (Abschnitt 3.4) gelten hier:
+
+- **Abbruch bei unsauberem Arbeitsbaum.** Der erzeugte Diff muss nachträglich
+  prüfbar bleiben.
+- **Reihenfolge:** erst `--write-messages`, dann `npm run i18n:compile`, dann
+  `--write-sources`. Umgekehrt referenziert der Quelltext Botschaften, die es
+  noch nicht gibt, und der Typ-Check bricht.
+
+### Wellen
+
+**Welle 1 ist bewusst klein** — sie prüft die Mechanik end-to-end, bevor 84
+Dateien angefasst werden. Acht bis zehn Dateien, hohe Nutzersichtbarkeit, gute
+E2E-Deckung. Danach wird entschieden, ob die übrigen in grösseren Wellen laufen.
+
+Reihenfolge nach Nutzersichtbarkeit (Entwurf 5.3): Meldeformular → Karte →
+Navigation und Fussbereich → Toasts und Fehlerseiten → Inhaltsseiten.
+
+### Nachweise je Welle
+
+- `npm run test:quick` grün.
+- **Die betroffenen E2E-Shards vollständig**, ohne `CI=1`, isoliert. Bei einem
+  roten Spec: erst die Datei einzeln wiederholen, dann urteilen — in dieser
+  Etappe waren drei rote Specs in drei Läufen jedes Mal Lastartefakte, und jedes
+  Mal traf es einen anderen.
+- **Stichprobe im Diff:** fünf Ersetzungen von Hand gegen `de.json` prüfen —
+  steht dort wörtlich derselbe deutsche Text wie vorher im Markup?
+- `git diff` der Welle lesen, nicht nur die Statistik.
+
+### Abnahme 2.3a
+
+1. Alle 399 mechanischen Stellen ersetzt, der Trockenlauf meldet danach für
+   Schicht C **0 Botschaften** (wie er es für Schicht A und B bereits tut).
+2. Die Übersprungenen bleiben unverändert bei 488 — was Handarbeit war, ist
+   weiterhin Handarbeit.
+3. E2E vollständig grün.
+4. `de.json` und `en.json` tragen dieselben Schlüssel, `en` mit deutschem Wortlaut.
