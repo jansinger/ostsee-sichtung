@@ -340,3 +340,55 @@ und Guillemets.
 44 dynamische Attribute, 11 ohne Buchstabengruppe. Jede braucht eine Botschaft
 ueber das ganze Element mit Auszeichnung/Wert als Parameter.
 2.4 Plurale (11 Kandidaten, ICU) — 2.5 hreflang und og:locale.
+
+## Aufgabe 2.3b — die vier Handarbeits-Muster
+Commits: 3ec39c1e (Format-Drift abgetrennt), 1820e98c (Muster an 15 Faellen),
+a6a25216 (zwei Werkzeugregeln daraus).
+
+### Die vier Muster
+A BEGRIFF UND ERLAEUTERUNG. `<li><strong>GPS-Koordinaten:</strong> Am wertvollsten
+  fuer die Forschung</li>` — kein Satz, sondern Begriff mit Glosse. Die
+  Wortstellung wandert nicht. Zwei getrennte Botschaften genuegen.
+  MECHANISCH ERKENNBAR: ja, ueber `<strong>…:</strong>`. 30 Instanzen gefunden,
+  jede erzeugt zwei Fragment-Eintraege — rund 60 der 147, etwa 40 Prozent.
+  Bewusst NICHT gebaut; das ist die naechste Werkzeug-Verbesserung.
+B HANDGEBAUTER PLURAL. `{files.length} Datei{files.length !== 1 ? 'en' : ''}
+  hochgeladen` — deutsche Grammatik im Markup zusammengesetzt.
+  inlang nutzt NICHT das ICU-String-Literal `{count, plural, …}` (das ist ein
+  anderes Plugin), sondern sein eigenes Variantenformat:
+    "declarations": ["input count", "local countPlural = count: plural"],
+    "selectors": ["countPlural"],
+    "match": { "countPlural=one": "…", "countPlural=other": "…" }
+  Wiederverwendbar; nur `input <name>` und die Texte aendern sich.
+C AUSZEICHNUNG MITTEN IM SATZ. Geloest durch Markup-Umbau, NICHT durch {@html}.
+  Begruendung: {@html} auf einer Botschaft ist eine Tuer, die dauerhaft offen
+  bleibt, fuer einen Fall, der sich strukturell loesen laesst. Das einzige
+  {@html} im Projekt steht mit sanitizeHtml() an DB-Inhalten — kein Praezedenzfall.
+  WICHTIGE ABGRENZUNG, die die Umsetzung herausgearbeitet hat: Ein Element am
+  SATZENDE laesst sich oft ohne Wortlautaenderung abtrennen. Ein Element MITTEN
+  im Satz grundsaetzlich nicht — zwei feste Fragmente koennen nicht gleichzeitig
+  „dann H druecken" und „then press H" ergeben. Dort ist Umformulieren zwingend.
+  Genau eine deutsche Textstelle wurde dafuer geaendert (LoadingOverlay), im
+  Markup-Kommentar begruendet.
+D SATZZEICHEN ALS FUNDSTELLE. `(`, `)`, `/` neben dynamischen Werten.
+
+### Zwei Werkzeugfehler, aus der Musterarbeit gefallen
+1. `LETTER_GROUP = /\p{L}/u` — der Name sagte „Gruppe", das Muster traf einen
+   EINZELNEN Buchstaben. Deshalb wurde die Tastaturtaste `H` als Botschaft
+   extrahiert. Jetzt sind zwei Buchstaben noetig; `MB`, `NO`, `SW` bleiben
+   Botschaften (Gegentest).
+2. In `handleText` lief die Geschwister-Pruefung VOR der Buchstabenpruefung.
+   Reine Satzzeichen neben einem dynamischen Wert landeten dadurch unter
+   `interpolation` statt `no-letter-group` und verstellten den Blick auf die
+   echten Faelle. Reihenfolge gedreht: interpolation 84->58, no-letter-group
+   11->44.
+
+### KORREKTUR: `plural-candidate` ist eine Falsch-Positiv-Kategorie
+Alle 11 Eintraege sind reine Ziffern-Treffer („Schritt 1", „54.5042 Grad N") —
+KEIN echter Plural. Die echten Plurale stecken in `interpolation`. Aufgabe 2.4
+darf diese 11 NICHT als Pluralarbeit einplanen.
+
+### Stand der Handarbeit
+sentence-fragment 130 | interpolation 58 | dynamic-attribute 44 |
+no-letter-group 44 (Struktur, nie uebersetzt) | plural-candidate 11 (falsch-positiv)
+Echte Restarbeit: rund 232, davon ~60 durch die Muster-A-Erkennung mechanisierbar.
