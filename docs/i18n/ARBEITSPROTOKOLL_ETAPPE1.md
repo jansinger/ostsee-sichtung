@@ -14,7 +14,9 @@
 ---
 
 ## i18n Etappe 1, Aufgabe 1 (Plan: docs/superpowers/plans/2026-08-11-i18n-etappe1-task1-extraktor.md)
+
 Basis: 3d28f95c
+
 - Task 1.1: complete (commit 54945322, review clean, beide Verdikte erfüllt, keine Befunde)
 - Task 1.2: complete (commit b7fc0677, review clean). Gegenprobe am echten sightingSchema.ts: ['latitude'], nicht ['then'].
   Minor -> an Task 1.3 weitergegeben: register() ist ordnungsabhaengig; der Aufrufer muss eine stabile
@@ -27,9 +29,10 @@ Basis: 3d28f95c
 - Task 1.5: complete (commits de6b9b73, 6d52ae63, re-review abnahmefaehig). 379 Botschaften / 54 uebersprungen,
   test:quick gruen. Important-Befund: renderDryRunReport war ungetestet (Planfehler) -> Tests nachgereicht,
   per Mutation belegt. Minor: Zeilenumbruch-Annahme in renderUnifiedDiff jetzt kommentiert.
-ALLE FUENF TEILAUFGABEN KOMPLETT. Naechster Schritt: Abschluss-Review ueber 3d28f95c..HEAD.
+  ALLE FUENF TEILAUFGABEN KOMPLETT. Naechster Schritt: Abschluss-Review ueber 3d28f95c..HEAD.
 
 ### Planfehler aus Aufgabe 1, in den Plan zurueckzuschreiben
+
 1. Der CLI-Docstring im Plan enthielt woertlich '--apply', waehrend der Test desselben Plans die
    Zeichenkette in der Datei verbietet. Woertliche Uebernahme waere rot geblieben.
 2. Schritt 1.5/10 erwartete ~52 uebersprungene meta.icon. Falsch: icon-Werte sind Identifier, keine
@@ -40,10 +43,12 @@ ALLE FUENF TEILAUFGABEN KOMPLETT. Naechster Schritt: Abschluss-Review ueber 3d28
    Testluecke auf (StringKeyword-Zweig). Jede Teilaufgabe braucht ihre Mutation.
 
 ## Abschluss-Review Aufgabe 1: mergefaehig, kein Critical.
+
 Fix-Welle: ef19cf4a, 5283ca18, 3f65205e, a7da1e30, 2adbfd84, 0412d0ac. 106 Tests gruen, test:quick gruen,
 379 Botschaften unveraendert, 55 uebersprungen (vorher 54 - der neue Eintrag ist sightingSchema.ts:1422).
 
 ### OFFEN, Entscheidung des Menschen noetig (vor Aufgabe 3)
+
 1. speciesIdentification.ts: Hauptexport `Record<SpeciesEnum, SpeciesIdentificationEntry>` traegt mehrere
    hundert Zeilen deutschen Anzeigetext (Bestimmungshilfe). Wird weder eingesammelt noch gemeldet; der
    Bericht zeigt fuer die Datei "7" und liest sich damit wie "erledigt". Nach Entwurf ist das Schicht E /
@@ -58,7 +63,9 @@ Fix-Welle: ef19cf4a, 5283ca18, 3f65205e, a7da1e30, 2adbfd84, 0412d0ac. 106 Tests
    Diffs fuer Schicht B verwerfen, nicht anwenden.
 
 ## Nachtrag: alle vier offenen Punkte geloest (nicht an den Menschen delegiert)
+
 Commits 659fcf8c, 950664c4, 6615a2e9. 379 Botschaften unveraendert, uebersprungen 55 -> 89.
+
 - Punkt 1+3 (dieselbe Wurzel): das Werkzeug meldet jetzt nicht getroffene Exporte und listet jede
   gescannte Datei, auch mit 0. Befund dadurch: speciesIdentification.ts:66 traegt 316 String-Literale,
   vorher unsichtbar hinter der Zahl "7". Gehoert nach Etappe 4, ist aber jetzt sichtbar.
@@ -68,15 +75,17 @@ Commits 659fcf8c, 950664c4, 6615a2e9. 379 Botschaften unveraendert, uebersprunge
   Zielform ist (Modulkonstante friert die Sprache ein, Entwurf 2.3/4.1).
 
 ## i18n Etappe 1, Aufgabe 2 (Plan: docs/superpowers/plans/2026-08-11-i18n-etappe1-task2-schnappschuss.md)
+
 - Task 2.1: complete (3df1d9b6) + Fixes (06c2dc38). Review: 2 Important, beide behoben.
 - Task 2.2: complete (d24954db, review clean bis auf 1 Important -> f5c374a9).
   ERGEBNIS: alle 73 Meldungen provozierbar, UNPROVOKABLE_MESSAGES leer - kein toter Validierungstext.
 - Task 2.3: complete (d3d222e6). germanBaseline.json: 29.711 Bytes, 56 Felder, 17 Label-Dateien,
   65 Meldungen. Entscheidende Mutation belegt: Meldung in sightingSchema.ts um ein Zeichen geaendert
   -> Schnappschuss-Test ROT. Damit ist der Wortlaut festgenagelt.
-AUFGABE 2 KOMPLETT. Produktionscode unveraendert. test:quick gruen.
+  AUFGABE 2 KOMPLETT. Produktionscode unveraendert. test:quick gruen.
 
 ### Planfehler Aufgabe 2, zurueckzuschreiben
+
 1. germanBaseline.json stand im Dateiblock von 2.1, gehoert aber zu 2.3.
 2. Die vorgeschriebene Mutation in 2.2 (Meldung in sightingSchema.ts aendern -> Abdeckungstest rot)
    war LOGISCH FALSCH: Extraktor und Batterie lesen beide live aus derselben Datei und bewegen sich
@@ -84,8 +93,10 @@ AUFGABE 2 KOMPLETT. Produktionscode unveraendert. test:quick gruen.
 3. Der Sortier-Fix in collectDomainLabels war selbst ungetestet - vom Review gefunden.
 
 ## i18n Etappe 1, Aufgabe 3 (Plan: docs/superpowers/plans/2026-08-11-i18n-etappe1-task3-schichtB.md)
+
 Entscheidung 2026-08-11: PUBLIC_BOAT_DRIVE_OPTIONS und die getXLabel-Rueckfaelle sind IM Umfang;
 speciesIdentification (316 Literale) bleibt bestaetigt Etappe 4.
+
 - Task 3.1: complete (58339954, 6442b33c, review clean bis auf 2 Minor -> c8d4a104).
   messages/de.json + en.json: je 381 Schluessel. i18n:compile laeuft. Extraktor darf jetzt GENAU
   diese zwei Dateien schreiben (--write-messages), nichts sonst; Waechtertest per Mutation belegt.
@@ -93,6 +104,7 @@ speciesIdentification (316 Literale) bleibt bestaetigt Etappe 4.
   unveraendert, Mutation belegt (de.json-Wert geaendert -> Schnappschuss rot).
 
 ### CRITICAL, gefunden und behoben: cc392d96
+
 Meine Praemisse "null direkte Importe der *Labels-Records" war FALSCH. Zwei echte Verbraucher:
 src/routes/rest_sichtungen/antworten.json/+server.ts (LEGACY-API!) und SightingsMapView.svelte.
 Der Umbau auf getSpeciesLabel() haengte die Legacy-Antwort an getLocale(). Heute unauffaellig, weil
@@ -111,6 +123,7 @@ Aufrufstellen), a9858c74 + 765fea02 (Werkzeug-Nachbesserungen), d167a24a (Plan).
 `germanBaseline.json` über alle Commits bitgleich.
 
 ### Der wichtigste Befund der ganzen Etappe
+
 **Bis Aufgabe 4.1 gab es keinen einzigen Nachweis, dass die Zweisprachigkeit
 überhaupt funktioniert.** Alle siebzehn Locale-Zusicherungen im Projekt waren
 negativ formuliert (`expect(x).not.toBe(DIVERGED_EN_LABEL)`) — sie schützten das
@@ -127,6 +140,7 @@ Das ist strukturell die Etappe-0-Lehre eine Ebene höher: Dort waren einzelne
 Tests blind, hier war die gesamte Testmenge in eine Richtung blind.
 
 ### Zwei Lücken im Extraktor, beide von der Umsetzung gefunden
+
 1. `.integer(message)` stand in keiner der beiden Methodenlisten — vier Meldungen
    waren weder Fund noch Übersprungen, also unsichtbar. Ursache war die bewusste
    Asymmetrie aus Aufgabe 1 (meta-Liste geschlossen, Methodenliste offen) mit der
@@ -139,11 +153,13 @@ Tests blind, hier war die gesamte Testmenge in eine Richtung blind.
    Verbliebener Abschnitt: 56 Zeilen, alle technisch begründet.
 
 ### Fehler in meinem eigenen Auftrag an die Umsetzung
+
 Ich schrieb, `/api` sei von der Lokalisierung ausgenommen. Der Entwurf sagt das
 Gegenteil: Ein englischer Melder SOLL englische Validierungsfehler bekommen. Die
 Umsetzung ist dem Entwurf gefolgt, nicht meiner Kurzfassung. Richtig so.
 
 ### Erledigt, kein offener Fall
+
 `sightingSchema.ts:1413` (`meta(sightingFromTextBase.spec.meta ?? {})`) erscheint
 im Trockenlauf als zu prüfen. Es ist korrekt: `sightingFromTextBase` ist
 `base.fields.sightingFromText` (Zeile 1374) aus demselben, je Locale gebauten
@@ -151,6 +167,7 @@ Basis-Schema. Das Werkzeug kann diese Herkunft nur nicht sehen. Nicht erneut
 untersuchen.
 
 ### E2E-Nachweis Aufgabe 4
+
 Zwei saubere Vollläufe: 478 grün / 1 rot (`admin-spam-check.spec.ts:121`), dann
 479 grün / 0 rot. Der Spec besteht isoliert 3/3. Damit ist er unter Parallellast
 flaky, keine Regression des Umbaus — belegt durch den zweiten Vollauf mit
@@ -162,6 +179,7 @@ zweimal denselben. Eine echte Regression trifft dieselbe Stelle reproduzierbar.
 Wer hier künftig einen roten Lauf sieht: erst isoliert wiederholen, dann urteilen.
 
 ## STAND ETAPPE 1
+
 Aufgaben 1-4 komplett. OFFEN: Aufgabe 5 aus dem Entwurf — `hardcodedStringScan`
 für Schicht A und B (Entwurf Abschnitt 7). Sie ist das Netz gegen den Rückfall:
 die Zeile, die drei Monate später jemand schnell noch einfügt. Ohne sie hängt
@@ -173,6 +191,7 @@ Commits: e041c229 (Plan), 9fbf9945 (Guard), d3ecb6be (blinder Fleck behoben).
 `src/lib/form/validation/hardcodedStringScan.test.ts`, 24 Tests.
 
 ### Zwei Entwurfsentscheidungen, die nicht offensichtlich waren
+
 1. **Der Guard benutzt den Extraktor NICHT.** Naheliegend waere gewesen,
    `collectSchemaSites` wiederzuverwenden — es meldet fuer diese Dateien 0 Funde,
    der Guard waere eine Zeile. Aber `.integer(message)` war fuer den Extraktor
@@ -189,6 +208,7 @@ Commits: e041c229 (Plan), 9fbf9945 (Guard), d3ecb6be (blinder Fleck behoben).
    dass er nicht nach einer Woche abgeschaltet wird (Entwurf Abschnitt 7).
 
 ### Der Befund des Reviews
+
 Die erste Fassung geriet ueber `sightingSchema.ts` in katastrophales Backtracking
 (unverpaartes Backtick, >60 s). Behoben mit einer festen Randgrenze
 `MAX_LITERAL_EDGE = 300` — die aber einen blinden Fleck erzeugte: ein
@@ -202,11 +222,13 @@ Quantoren, die BEIDE Probleme verursachten, entfallen. End-to-end verifiziert:
 729-Zeichen-Fliesstext und der Nachlauf-Fall werden beide gemeldet.
 
 ## ETAPPE 1 ABGESCHLOSSEN
+
 Aufgaben 1-5 komplett. Schicht A (259 Botschaften) und Schicht B (17 Dateien)
 liefern aus dem Botschaftskatalog; `messages/en.json` traegt vorerst den
 deutschen Wortlaut. `germanBaseline.json` ist seit dem Einfrieren bitgleich.
 
 ### Was als Naechstes zu entscheiden ist
+
 - Die eigentliche Uebersetzung ist jetzt ein Diff auf EINER Datei
   (`messages/en.json`), ohne Quelltextaenderung. Die englischen Artnamen sind
   weiterhin ein ungepruefter Vorschlag (`I18N_ARTNAMEN_VORSCHLAG.md`).
@@ -222,6 +244,7 @@ deutschen Wortlaut. `germanBaseline.json` ist seit dem Einfrieren bitgleich.
 # Etappe 2 — Fortsetzung (Protokoll läuft hier weiter)
 
 ## Aufgabe 2.1 — Anzeigesprache en-GB
+
 Commits: f1c6e09a (Plan), 27ef62d5 (Zuordnung), 12a0fd18 + f4ea8959 + 5cc1bb40
 (uebersehene Stellen + Scan), 9959490a (Verhaltenstests).
 
@@ -230,6 +253,7 @@ bleibt in jedem Fall Europe/Berlin — per Mutation belegt (en -> Europe/London
 macht den Guard rot: London zeigt den 15., Berlin den 16.).
 
 ### Mein vierter Fundstellen-Irrtum in dieser Etappe
+
 Ich hatte behauptet, `routes/about/+page.svelte` sei die einzige oeffentliche
 Formatierungsstelle. Ein Review fand neun weitere (Kartensteuerung, Listenansicht,
 Popup, FormHelp, DropzoneEnhanced), die Umsetzung danach vier weitere. Alle waeren
@@ -242,6 +266,7 @@ bewusst: der Legacy-DD/MM/YY-Kontrakt (legacy-api/date-utils.ts, en-GB FEST fuer
 die iOS-App), der Admin-Bereich, die Export-Pfade.
 
 ### Beilaeufiger Befund, NICHT Teil der Mehrsprachigkeit
+
 `DropzoneEnhanced.svelte`: Ein gesetzter `mediaFile.timestamp` im Positions-Zweig
 treibt den `applyExifDateTime`-$effect in eine Endlosschleife
 (`effect_update_depth_exceeded`). Vorbestehend, unabhaengig von der Locale-Frage.
@@ -251,22 +276,25 @@ Zu klaeren: Tritt die Schleife auch im Browser auf? Dann ist es ein echter Fehle
 im Meldeformular. Reproduzierender Test zuerst.
 
 ## OFFEN in Etappe 2
+
 2.2 Extraktor lernt Svelte (Trockenlauf) — 2.3 Markup in Wellen, 68 Dateien,
 449 Botschaften — 2.4 Plurale (12 Kandidaten, ICU) — 2.5 hreflang und og:locale.
 
 ## Aufgabe 2.2 — Der Extraktor lernt Svelte
+
 Commits: 8f880564 (Sammler), 44698ff1 (Fragment-Regel geschaerft),
 7e481573 (Umfang im Werkzeug verankert), a4f4d88a (Kontrollfluss-Luecke).
 
 REPRODUZIERBARE ZAHLEN, aus dem Werkzeug (npm run i18n:extract), Stand 2026-08-12:
-  102 gescannte Dateien (1 Schema + 17 formOptions + 84 Svelte)
-  399 Botschaften, 488 uebersprungen
-  davon Satzfragment 165, Interpolation 68, dynamisches Attribut 44,
-  Plural-Kandidat 11, keine Buchstabengruppe 12
+102 gescannte Dateien (1 Schema + 17 formOptions + 84 Svelte)
+399 Botschaften, 488 uebersprungen
+davon Satzfragment 165, Interpolation 68, dynamisches Attribut 44,
+Plural-Kandidat 11, keine Buchstabengruppe 12
 Kontrollrechnung: 120 .svelte unter src/ minus 36 ausgeschlossene (Admin 30,
 Styleguide 1, Docs 4, ApiDocumentation 1) = 84.
 
 ### Drei Befunde, jeder von der stillen Sorte
+
 1. FRAGMENT-REGEL WAR ZU BREIT. Sie verwarf 244 Stellen, darunter 'Speichern',
    'Kontakt', 'Karte' — eigenstaendige Beschriftungen neben einem ICON. Ein Icon
    hat keine Wortstellung. Richtiger Unterscheider: Nur ein Geschwister-Element,
@@ -290,11 +318,13 @@ Belegt im Review: Die Ersetzung wurde auf ALLE 84 Dateien angewandt und jedes
 Ergebnis mit dem Svelte-Compiler neu geparst — null Fehler.
 
 ## OFFEN in Etappe 2
+
 2.3 Markup-Umbau: 399 mechanische Ersetzungen ueber 84 Dateien, dazu 165
 Satzfragmente + 68 Interpolationen + 11 Plurale als Handarbeit.
 2.4 Plurale (ICU) — 2.5 hreflang und og:locale.
 
 ## Aufgabe 2.3a — Markup-Umbau, mechanischer Teil: ABGESCHLOSSEN
+
 Commits: e29cc6ed (--write-sources), bb910c27 (Welle 1, 9 Dateien/56),
 4e9b70ad (Attribut-Zaehler), d8a5d0f5 (Welle 2, 18 Dateien/167),
 3087599e (Welle 3, 36 Dateien/114), 86e14fca (Welle 4, 3 Inhaltsseiten/62).
@@ -304,6 +334,7 @@ in de.json und en.json, identische Schluesselmenge; nur i18n_selbsttest
 unterscheidet sich (bewusst, aus Etappe 0). E2E nach JEDER Welle 479/479 gruen.
 
 ### Die Invariante, die das Signal traegt — und meine zwei Fehlversuche davor
+
 Mein erstes Abnahmekriterium lautete "Uebersprungene bleiben bei 488". Falsch:
 `already-translated` zaehlt bewusst in die Gesamtsumme und waechst mit jeder
 Welle. Die Umsetzung von Welle 2 hat der Vorgabe WIDERSPROCHEN statt die Zahl
@@ -317,17 +348,20 @@ Was haelt, ist die SUMME der fuenf offenen Kategorien. Sie stand vor Welle 1 bei
 keine verloren.
 
 ### Der Beweis aus Aufgabe 2.2 war notwendig, aber nicht hinreichend
+
 Dort hiess es: "alle 84 Dateien parsen nach der Ersetzung neu, null Fehler".
 Der Live-Lauf von Welle 1 zeigte zwei Fehler, die dieser Beweis nicht sehen
 konnte, weil beide GUELTIGE Syntax erzeugen:
+
 1. `svelteMessageKey` slugifizierte den Aspekt nicht. `aria-label` ergab
    `m.foo_aria-label_bar()` — eine SUBTRAKTION, kein Methodenaufruf. Parst
    einwandfrei, bedeutet etwas anderes.
 2. Der `import * as m from '$lib/paraglide/messages'` wurde nie ergaenzt.
-Gefunden hat beides erst `svelte-check`. LEHRE: Gueltige Syntax ist kein Beleg
-fuer richtigen Code; der Typ-Check ist das eigentliche Gate.
+   Gefunden hat beides erst `svelte-check`. LEHRE: Gueltige Syntax ist kein Beleg
+   fuer richtigen Code; der Typ-Check ist das eigentliche Gate.
 
 ### Fuer Schicht C gibt es kein germanBaseline.json
+
 In Schicht A/B machte ein einziges geaendertes Zeichen den Schnappschuss rot.
 Fuer Markup traegt nur: die Konstruktion (m.key() liefert den Text aus de.json,
 woertlich aus dem Markup), der Typ-Check, und die E2E-Suite. Deshalb wurde nach
@@ -336,43 +370,47 @@ Textstellen ZEICHENWEISE verglichen — inklusive Tabs, Entities, Halbgeviertstr
 und Guillemets.
 
 ## OFFEN in Etappe 2
+
 2.3b Handarbeit: 300 Stellen — 147 Satzfragmente, 87 Interpolationen,
 44 dynamische Attribute, 11 ohne Buchstabengruppe. Jede braucht eine Botschaft
 ueber das ganze Element mit Auszeichnung/Wert als Parameter.
 2.4 Plurale (11 Kandidaten, ICU) — 2.5 hreflang und og:locale.
 
 ## Aufgabe 2.3b — die vier Handarbeits-Muster
+
 Commits: 3ec39c1e (Format-Drift abgetrennt), 1820e98c (Muster an 15 Faellen),
 a6a25216 (zwei Werkzeugregeln daraus).
 
 ### Die vier Muster
+
 A BEGRIFF UND ERLAEUTERUNG. `<li><strong>GPS-Koordinaten:</strong> Am wertvollsten
   fuer die Forschung</li>` — kein Satz, sondern Begriff mit Glosse. Die
-  Wortstellung wandert nicht. Zwei getrennte Botschaften genuegen.
-  MECHANISCH ERKENNBAR: ja, ueber `<strong>…:</strong>`. 30 Instanzen gefunden,
-  jede erzeugt zwei Fragment-Eintraege — rund 60 der 147, etwa 40 Prozent.
-  Bewusst NICHT gebaut; das ist die naechste Werkzeug-Verbesserung.
+Wortstellung wandert nicht. Zwei getrennte Botschaften genuegen.
+MECHANISCH ERKENNBAR: ja, ueber `<strong>…:</strong>`. 30 Instanzen gefunden,
+jede erzeugt zwei Fragment-Eintraege — rund 60 der 147, etwa 40 Prozent.
+Bewusst NICHT gebaut; das ist die naechste Werkzeug-Verbesserung.
 B HANDGEBAUTER PLURAL. `{files.length} Datei{files.length !== 1 ? 'en' : ''}
   hochgeladen` — deutsche Grammatik im Markup zusammengesetzt.
-  inlang nutzt NICHT das ICU-String-Literal `{count, plural, …}` (das ist ein
-  anderes Plugin), sondern sein eigenes Variantenformat:
-    "declarations": ["input count", "local countPlural = count: plural"],
-    "selectors": ["countPlural"],
-    "match": { "countPlural=one": "…", "countPlural=other": "…" }
-  Wiederverwendbar; nur `input <name>` und die Texte aendern sich.
+inlang nutzt NICHT das ICU-String-Literal `{count, plural, …}` (das ist ein
+anderes Plugin), sondern sein eigenes Variantenformat:
+"declarations": ["input count", "local countPlural = count: plural"],
+"selectors": ["countPlural"],
+"match": { "countPlural=one": "…", "countPlural=other": "…" }
+Wiederverwendbar; nur `input <name>` und die Texte aendern sich.
 C AUSZEICHNUNG MITTEN IM SATZ. Geloest durch Markup-Umbau, NICHT durch {@html}.
-  Begruendung: {@html} auf einer Botschaft ist eine Tuer, die dauerhaft offen
-  bleibt, fuer einen Fall, der sich strukturell loesen laesst. Das einzige
-  {@html} im Projekt steht mit sanitizeHtml() an DB-Inhalten — kein Praezedenzfall.
-  WICHTIGE ABGRENZUNG, die die Umsetzung herausgearbeitet hat: Ein Element am
-  SATZENDE laesst sich oft ohne Wortlautaenderung abtrennen. Ein Element MITTEN
-  im Satz grundsaetzlich nicht — zwei feste Fragmente koennen nicht gleichzeitig
-  „dann H druecken" und „then press H" ergeben. Dort ist Umformulieren zwingend.
-  Genau eine deutsche Textstelle wurde dafuer geaendert (LoadingOverlay), im
-  Markup-Kommentar begruendet.
+Begruendung: {@html} auf einer Botschaft ist eine Tuer, die dauerhaft offen
+bleibt, fuer einen Fall, der sich strukturell loesen laesst. Das einzige
+{@html} im Projekt steht mit sanitizeHtml() an DB-Inhalten — kein Praezedenzfall.
+WICHTIGE ABGRENZUNG, die die Umsetzung herausgearbeitet hat: Ein Element am
+SATZENDE laesst sich oft ohne Wortlautaenderung abtrennen. Ein Element MITTEN
+im Satz grundsaetzlich nicht — zwei feste Fragmente koennen nicht gleichzeitig
+„dann H druecken" und „then press H" ergeben. Dort ist Umformulieren zwingend.
+Genau eine deutsche Textstelle wurde dafuer geaendert (LoadingOverlay), im
+Markup-Kommentar begruendet.
 D SATZZEICHEN ALS FUNDSTELLE. `(`, `)`, `/` neben dynamischen Werten.
 
 ### Zwei Werkzeugfehler, aus der Musterarbeit gefallen
+
 1. `LETTER_GROUP = /\p{L}/u` — der Name sagte „Gruppe", das Muster traf einen
    EINZELNEN Buchstaben. Deshalb wurde die Tastaturtaste `H` als Botschaft
    extrahiert. Jetzt sind zwei Buchstaben noetig; `MB`, `NO`, `SW` bleiben
@@ -384,22 +422,25 @@ D SATZZEICHEN ALS FUNDSTELLE. `(`, `)`, `/` neben dynamischen Werten.
    11->44.
 
 ### KORREKTUR: `plural-candidate` ist eine Falsch-Positiv-Kategorie
+
 Alle 11 Eintraege sind reine Ziffern-Treffer („Schritt 1", „54.5042 Grad N") —
 KEIN echter Plural. Die echten Plurale stecken in `interpolation`. Aufgabe 2.4
 darf diese 11 NICHT als Pluralarbeit einplanen.
 
 ### Stand der Handarbeit
+
 sentence-fragment 130 | interpolation 58 | dynamic-attribute 44 |
 no-letter-group 44 (Struktur, nie uebersetzt) | plural-candidate 11 (falsch-positiv)
 Echte Restarbeit: rund 232, davon ~60 durch die Muster-A-Erkennung mechanisierbar.
 
 ## Muster A mechanisiert
+
 Commits: 7937f43a (Regel), a51c7f88 (Welle), 5d21f1c9 (Formatierung).
 
 Die Regel verlangt DREI Bedingungen zusammen, keine reicht allein:
-  (a) das textbehaftete Geschwister ist das ERSTE Kind des Elternelements
-  (b) sein Text endet mit einem Doppelpunkt
-  (c) die Glosse folgt unmittelbar, danach kommt nichts mehr
+(a) das textbehaftete Geschwister ist das ERSTE Kind des Elternelements
+(b) sein Text endet mit einem Doppelpunkt
+(c) die Glosse folgt unmittelbar, danach kommt nichts mehr
 Ohne (a) faellt `<p>Bitte <strong>hier:</strong> klicken</p>` durch — ein echter
 Satz mit Doppelpunkt in der Auszeichnung. Interpolation behaelt Vorrang:
 `<strong>Achtung:</strong> Der Wert {n} ist zu hoch` bleibt Handarbeit.
@@ -410,17 +451,19 @@ strukturelle Pruefung verwirft, was ein `<strong>…:</strong>`-Grep nicht filte
 kann, weil er die Stellung im Elternelement nicht sieht.
 
 ### Die Buchfuehrung, zum vierten Mal praezisiert
+
 Meine Abnahmekriterien waren dreimal zu grob (erst "uebersprungen bleibt bei
 488", dann "die offenen Kategorien bleiben unveraendert", dann "die Gesamtsumme
 bleibt konstant"). Richtig ist:
-  Nach einer Welle faellt die GESAMTSUMME um genau die Zahl der ersetzten
-  Stellen — ein ersetzter Textknoten ist danach ein Ausdruck und verschwindet
-  aus der Zaehlung. Was halten MUSS, ist die Zahl der Uebersprungenen und jede
-  einzelne Kategorie darin.
+Nach einer Welle faellt die GESAMTSUMME um genau die Zahl der ersetzten
+Stellen — ein ersetzter Textknoten ist danach ein Ausdruck und verschwindet
+aus der Zaehlung. Was halten MUSS, ist die Zahl der Uebersprungenen und jede
+einzelne Kategorie darin.
 Gemessen: vor der Welle 45 Botschaften + 518 uebersprungen, danach 0 + 518,
 jede Kategorie identisch.
 
 ### Zwei eigene Fehler in diesem Abschnitt
+
 1. Ich habe mit `git stash` gemessen und dabei uebersehen, dass
    `src/lib/paraglide/` generiert und gitignoriert ist — es wurde nicht
    mitgestasht und war danach gegen die Kataloge veraltet. Der naechste
@@ -433,26 +476,29 @@ jede Kategorie identisch.
    Abweichungen).
 
 ### Beobachtung fuer spaeter
+
 Die Botschaften tragen die Quelltext-Einrueckung als eingebettete Zeilenumbrueche
 und Tabs mit. Fuer die Darstellung folgenlos (HTML kollabiert Leerraum), aber wer
 uebersetzt, sieht `\n\t\t\t\t` mitten im Satz. Kosmetisch, separat zu bereinigen
 — nicht mitten in einer Welle, weil es die deutschen Werte anfasst.
 
 ### Stand der Handarbeit
+
 sentence-fragment 78 | interpolation 58 | dynamic-attribute 44 |
 no-letter-group 44 (Struktur, nie uebersetzt) | plural-candidate 12 (falsch-positiv)
 Echte Restarbeit: rund 180.
 
 ## Aufgabe 2.3c — dynamische Attribute
+
 Commits: 96ce1282 (Dreiteilung), f482341b (14 mechanisiert), 50a8da41
 (Laufzeit-Test), c31fbe97 (Formatierung).
 
 Die 44 `dynamic-attribute` zerfielen in drei Gruppen:
-  23 Durchreichung — `title={file.name}`, `aria-label={title}`. KEIN deutscher
-     Text. Neue Kategorie `attribute-no-static-text`; nie Uebersetzungsarbeit,
-     stand aber in der Liste und liess die Restarbeit groesser aussehen.
-  14 Text mit eingebettetem Wert — mechanisiert zu parametrisierten Botschaften.
-   7 Ternary — bleibt Handarbeit.
+23 Durchreichung — `title={file.name}`, `aria-label={title}`. KEIN deutscher
+Text. Neue Kategorie `attribute-no-static-text`; nie Uebersetzungsarbeit,
+stand aber in der Liste und liess die Restarbeit groesser aussehen.
+14 Text mit eingebettetem Wert — mechanisiert zu parametrisierten Botschaften.
+7 Ternary — bleibt Handarbeit.
 Ergebnis: dynamic-attribute 44 -> 7. Echte Restarbeit 143 statt 300.
 
 Die Regel fuer Parameternamen (letzter bedeutungstragender Teil des Ausdrucks,
@@ -464,18 +510,97 @@ Beilaeufig gefunden: `LegendPanel.svelte` hatte eine vorbestehende Typluecke
 unsichtbar, weil `String(value)` jeden Typ klaglos nimmt. Erst die
 parametrisierte Botschaft machte sie sichtbar.
 
+## Aufgabe 2.3d — Hartcodiert-Guard für Schicht C
+
+Neu: `src/lib/i18n/hardcodedMarkupScan.test.ts`, 13 Tests, 1,9 s. Kein
+Produktionscode angefasst — der Arbeitsbaum enthält keine `.svelte`-Änderung,
+deshalb ist hier auch kein E2E-Vollauf fällig.
+
+### Warum nicht die Regel aus Schicht A/B
+
+Die dortige Regel („mehrwortiges Literal") auf rohes Markup angewandt wäre
+**heute an 136 Stellen rot** — den 78 Satzfragmenten und 58 Interpolationen, die
+als bewusst offene Handarbeit anstehen. Ein Guard, der ab Tag eins rot ist, wird
+abgeschaltet. Deshalb drei Zusicherungen:
+
+1. **Mechanisch**: der Extraktor meldet für die 84 Dateien null Fundstellen.
+2. **Bestandszähler** je offener Kategorie (`sentence-fragment` 78,
+   `interpolation` 58, `dynamic-attribute` 7, `no-letter-group` 44,
+   `plural-candidate` 12, `attribute-no-static-text` 24). `already-translated`
+   steht bewusst NICHT darin — es wächst mit jeder Welle und wäre kein Signal.
+3. **Unabhängiger Zweitmechanismus**: statischer Text in Attributen, die der
+   Extraktor gar nicht kennt.
+
+Jede Zusicherung per Mutation belegt, jede traf **genau ihre eigene** und keine
+andere: `<p>Ein neuer deutscher Hinweis</p>` → nur (1) rot.
+`<p>Vielen Dank <strong>für Ihre Meldung</strong></p>` → nur (2) rot (78→79).
+`<Hinweis description="…" />` → nur (3) rot. Danach zurückgesetzt, 13/13 grün.
+
+### BEFUND A: 27 Attribute, die diese Etappe nie gezählt hat
+
+Der Sammler betrachtet **vier** Attribute (`SVELTE_TARGET_ATTRIBUTES`:
+placeholder/title/aria-label/alt). Alles andere ist für ihn nicht vorhanden.
+Zusicherung 3 fand auf Anhieb 27 statische deutsche Texte:
+
+- **20× `content`** in `<svelte:head>` (Titel, Beschreibung, Schlagwörter der
+  fünf öffentlichen Seiten). Gehört zu Aufgabe 2.5 — dort wird der Kopfbereich
+  je Route ohnehin angefasst.
+- **7× Anzeigetext an Komponenten-Props**: `description` (SightingsMapView 2,
+  WeatherDataFetcher 1, FormHelp 1), `coordinatesHint`/`actionLabel`
+  (PositionPanel 2), `label` (SightingDetails 1). Echte Schicht-C-Stellen,
+  offene Arbeit, in keiner Zahl dieser Etappe enthalten.
+
+Das ist genau die Redundanz, für die der Guard von Schicht A/B den Extraktor
+nicht benutzt (dort: `.integer()`). Beide Male hat der zweite Mechanismus
+gefunden, wofür der erste blind war.
+
+### BEFUND B, der schwerere: der `<script>`-Block ist für alles unsichtbar
+
+Der Extraktor liest von einer `.svelte`-Datei **nur das Markup**. Deutscher
+Anzeigetext in einer Konstante des `<script>`-Blocks ist für ihn — und damit für
+alle drei Zusicherungen oben — nicht vorhanden. „0 mechanische Fundstellen"
+liest sich als „Schicht C ist mechanisch fertig". Sie ist es nicht.
+
+Gemessen (2026-08-12, Regel aus Schicht A/B auf die `<script>`-Blöcke der 84
+Dateien): **158 mehrwortige Literale in 35 Dateien**. Darunter neben
+Tailwind-Klassenlisten und englischen Logmeldungen echter Anzeigetext:
+
+- `routes/+error.svelte` — vier Fehlerseiten-Titel und -Texte („Seite nicht
+  gefunden", „Zugriff verweigert", …)
+- `BaseSelect.svelte` / `FieldRenderer.svelte` — `'Bitte wählen…'`
+- `DropzoneEnhanced.svelte` — drei Toasts („Datei erfolgreich hochgeladen.")
+- `ReportKindChoice.svelte` — die vier Texte der Einstiegsseite
+- `ConnectionBadge`, `OLMap`, `LoadingOverlay`, `LazyMapWrapper`,
+  `WeatherDataFetcher`, `SightingsMapView`, `SubmitStatus`, `FormActions`,
+  `Media`, `Step4Contact`, `Behavior`, `bestimmungshilfe/+page.svelte`
+
+Ein Guard dafür ist mit der Zwei-Buchstabengruppen-Regel **nicht** zu bauen:
+`'alert alert-warning items-start'` und `'bg-base-200/95 rounded-box flex'`
+erfüllen sie genauso. Das ist deshalb keine Lücke des Guards, sondern
+unerledigte Übersetzungsarbeit mit eigenem Umfang — sie gehört vor oder neben
+die 143 Handarbeitsfälle eingeplant, nicht danach.
+
+### Nebenbefund: drei Tests sind unter Volllast flaky
+
+`localePinning` (beide) und `legacy.contract` liefen im ersten Vollauf rot,
+alle drei mit `Test timed out in 5000ms` — kein Assertion-Fehlschlag. **Auf dem
+sauberen Baum ohne die neue Datei reproduziert** (3 rot), im Wiederholungslauf
+grün (4942/4942 + 780/780). Also Lastartefakt wie in Etappe 1 dreimal zuvor,
+keine Regression. Wer sie rot sieht: erst isoliert wiederholen.
+
 ---
 
 # ZWEI BEFUNDE FUER DIE WEITERARBEIT (2026-08-12)
 
 ## 1. `.prettierignore` deckt die Generatordateien nicht ab
+
 `npm run format` ist `prettier --write .` und formatiert damit auch erzeugte und
 mitgelieferte Datenbestaende. Gemessen an einem versehentlichen Vollauf:
-  src/tools/iho.json                      386.334 Zeilen
-  src/lib/server/geo/rbush-index.json     191.753 Zeilen
-  legacy-inbox/src/geo/rbush-index.json   191.753 Zeilen
-  src/css/weather-icons-wind.css            7.615 Zeilen
-  src/tools/baltic-inclusion-mask.geojson   4.545 Zeilen
+src/tools/iho.json 386.334 Zeilen
+src/lib/server/geo/rbush-index.json 191.753 Zeilen
+legacy-inbox/src/geo/rbush-index.json 191.753 Zeilen
+src/css/weather-icons-wind.css 7.615 Zeilen
+src/tools/baltic-inclusion-mask.geojson 4.545 Zeilen
 Zusammen ueber 777.000 geaenderte Zeilen — ein unbrauchbarer Diff, in dem eine
 echte Aenderung nicht mehr zu finden ist. Beim selben Lauf wurde auch
 `germanBaseline.json` angefasst, also der eingefrorene Schnappschuss.
@@ -486,18 +611,20 @@ ebenfalls hinein. NICHT im Rahmen der Mehrsprachigkeit erledigt, weil es ein
 eigenes Thema ist — aber wer als Naechstes formatiert, stolpert darueber.
 
 ## 2. Nicht selbst im Arbeitsbaum arbeiten, solange ein Agent darin laeuft
+
 Ich habe `prettier --write` gefahren, waehrend ein Umsetzer-Agent noch im selben
 Worktree arbeitete. Er fand meine Aenderungen, hielt sie fuer fremd und legte sie
 in einen Stash — richtig gehandelt, beschriftet statt verworfen. Aber:
- - mein `git add -A && git commit` schlug fehl, weil ihm der Index unter den
-   Haenden weggezogen wurde;
- - danach lag ein Arbeitsbaum mit 777.000 geaenderten Zeilen vor, dessen Herkunft
-   sich nicht mehr eindeutig zuordnen liess;
- - die Aufloesung kostete mehr Zeit als die Formatierung selbst.
-Der Skill verbietet parallele IMPLEMENTIERER aus genau diesem Grund. Die Regel
-gilt auch fuer den Koordinator: Solange ein Agent laeuft, wird im Arbeitsbaum
-nichts angefasst — auch nichts scheinbar Harmloses wie Formatierung. Lesende
-Befehle (git status, git diff, npm run i18n:extract) sind unproblematisch.
+
+- mein `git add -A && git commit` schlug fehl, weil ihm der Index unter den
+  Haenden weggezogen wurde;
+- danach lag ein Arbeitsbaum mit 777.000 geaenderten Zeilen vor, dessen Herkunft
+  sich nicht mehr eindeutig zuordnen liess;
+- die Aufloesung kostete mehr Zeit als die Formatierung selbst.
+  Der Skill verbietet parallele IMPLEMENTIERER aus genau diesem Grund. Die Regel
+  gilt auch fuer den Koordinator: Solange ein Agent laeuft, wird im Arbeitsbaum
+  nichts angefasst — auch nichts scheinbar Harmloses wie Formatierung. Lesende
+  Befehle (git status, git diff, npm run i18n:extract) sind unproblematisch.
 
 Dass HEAD dabei nie beschaedigt wurde, lag nicht an Vorsicht, sondern daran,
 dass der Agent sauber gestasht hat. Verlass dich nicht darauf.
