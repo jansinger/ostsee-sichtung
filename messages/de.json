@@ -2,8 +2,10 @@
 	"$schema": "https://inlang.com/schema/inlang-message-format",
 	"components_charts_barchart_text_werte_als_tabelle": "Werte als Tabelle",
 	"components_connectionbadge_text_eingaben_werden_gespeichert": "Eingaben werden gespeichert",
+	"components_connectionbadge_text_keine_internetverbindung_ihre_eingaben_w": "Keine Internetverbindung. Ihre Eingaben werden gespeichert.",
 	"components_connectionbadge_text_offline": "Offline",
 	"components_connectionbadge_text_wieder_online": "Wieder online",
+	"components_connectionbadge_text_wieder_online_2": "Wieder online.",
 	"components_form_unifieddropzone_aria_label_datei_entfernen": "Datei entfernen",
 	"components_form_unifieddropzone_aria_label_title_per_drag_drop_oder_klick": "{title} per Drag & Drop oder Klick",
 	"components_form_unifieddropzone_text_alle_loeschen": "Alle löschen",
@@ -29,8 +31,13 @@
 	"components_maintenancebanner_text_normale_benutzer_sehen_die_wartungsseite": "Normale Benutzer sehen die Wartungsseite. Als Admin haben Sie weiterhin Zugriff.",
 	"components_maintenancebanner_text_wartungsmodus_ist_aktiv": "Wartungsmodus ist aktiv",
 	"components_map_lazymapwrapper_aria_label_karte_neu_laden": "Karte neu laden",
+	"components_map_lazymapwrapper_text_karte_konnte_nicht_geladen_werden_bitte": "Karte konnte nicht geladen werden. Bitte versuchen Sie es erneut.",
 	"components_map_lazymapwrapper_text_neu_laden": "Neu laden",
+	"components_map_loadingoverlay_text_karte_wird_initialisiert": "Karte wird initialisiert...",
 	"components_map_loadingoverlay_text_tastaturkuerzel_hinweis": "Tastaturkürzel: Karte fokussieren, dann diese Taste drücken:",
+	"components_map_olmap_text_noch_keine_position_gewaehlt_tippen_sie": "Noch keine Position gewählt. Tippen Sie auf die Karte, um die Stelle zu markieren, an der Sie das Tier gesehen haben.",
+	"components_map_olmap_text_tippen_sie_auf_die_karte_gps": "Tippen Sie auf die Karte oder ziehen Sie den Marker an die Stelle, an der Sie das Tier gesehen haben. Der GPS-Button übernimmt Ihre aktuelle Position.",
+	"components_map_olmap_text_tippen_sie_auf_die_karte_oder_ziehen_sie": "Tippen Sie auf die Karte oder ziehen Sie den Marker an die Stelle, an der Sie das Tier gesehen haben.",
 	"components_map_panel_dualrangeslider_aria_label_zeitraum_ende": "Zeitraum Ende",
 	"components_map_panel_dualrangeslider_aria_label_zeitraum_start": "Zeitraum Start",
 	"components_map_panel_dualrangeslider_aria_label_zeitraum_waehlen": "Zeitraum wählen",
@@ -354,6 +361,7 @@
 	"i18n_selbsttest": "Sprachumschaltung aktiv",
 	"report_components_form_fields_basecheckbox_aria_label_hinweis_valuetext": "Hinweis: {valueText}",
 	"report_components_form_fields_basecheckbox_aria_label_pflichtfeld": "Pflichtfeld",
+	"report_components_form_fields_baseselect_text_bitte_waehlen": "Bitte wählen...",
 	"report_components_form_fields_basetoggle_aria_label_hinweis_valuetext": "Hinweis: {valueText}",
 	"report_components_form_fields_basetoggle_aria_label_pflichtfeld": "Pflichtfeld",
 	"report_components_form_fields_dropzoneenhanced_aria_label_analysiere_bilddaten": "Analysiere Bilddaten",
@@ -403,6 +411,7 @@
 	"report_components_form_fields_dropzoneenhanced_text_upload_laeuft_im_hintergrund_3": "Upload läuft im Hintergrund...",
 	"report_components_form_fields_fieldrenderer_aria_label_hinweis_valuetext": "Hinweis: {valueText}",
 	"report_components_form_fields_fieldrenderer_aria_label_pflichtfeld": "Pflichtfeld",
+	"report_components_form_fields_fieldrenderer_text_bitte_waehlen": "Bitte wählen...",
 	"report_components_form_fields_speciesidentificationhel_aria_label_alt_in_originalgroesse_anzeigen": "{alt} in Originalgröße anzeigen",
 	"report_components_form_fields_speciesidentificationhel_aria_label_modal_schliessen": "Modal schließen",
 	"report_components_form_fields_speciesidentificationhel_aria_label_schliessen": "Schließen",
@@ -438,6 +447,7 @@
 	"report_components_form_fields_speciesidentificationhel_text_was_der_forschung_am_meisten": "Was der Forschung am meisten hilft",
 	"report_components_form_fields_speciesidentificationhel_text_wissenschaftlich": "Wissenschaftlich:",
 	"report_components_form_formactions_text_formular_zuruecksetzen": "Formular zurücksetzen",
+	"report_components_form_formactions_text_moechten_sie_das_formular_wirklich_zurue": "Möchten Sie das Formular wirklich zurücksetzen? Alle bisher eingegebenen Daten gehen verloren.",
 	"report_components_form_formsteps_aria_label_formular_schritte": "Formular-Schritte",
 	"report_components_form_locationinput_aria_label_breite_dezimalminuten": "Breite Dezimalminuten",
 	"report_components_form_locationinput_aria_label_breite_minuten": "Breite Minuten",
@@ -482,9 +492,23 @@
 	"report_components_form_requiredconsent_text_private_kontaktdaten": "Private Kontaktdaten",
 	"report_components_form_stepnavigation_aria_label_formular_navigation": "Formular Navigation",
 	"report_components_form_stepnavigation_aria_label_vorheriger_schritt": "Vorheriger Schritt",
+	"report_components_form_stepnavigation_text_bitte_beheben_sie_die_fehler_plural": [
+		{
+			"declarations": ["input count", "input step", "local countPlural = count: plural"],
+			"selectors": ["countPlural"],
+			"match": {
+				"countPlural=one": "Bitte beheben Sie den Fehler in \"{step}\" bevor Sie fortfahren.",
+				"countPlural=other": "Bitte beheben Sie die {count} Fehler in \"{step}\" bevor Sie fortfahren."
+			}
+		}
+	],
+	"report_components_form_stepnavigation_text_schritt_step": "Schritt {step}",
 	"report_components_form_stepnavigation_text_zurueck": "← Zurück",
 	"report_components_form_stepprogresscompact_aria_label_formular_schritte": "Formular-Schritte",
 	"report_components_form_submitstatus_text_aufnahme_uebertragen_meldung_nicht": "Aufnahme übertragen, Meldung nicht",
+	"report_components_form_submitstatus_text_das_war_versuch_attempt": "Das war Versuch {attempt}.",
+	"report_components_form_submitstatus_text_das_war_versuch_attempt_von_maxattempts": "Das war Versuch {attempt} von {maxAttempts}.",
+	"report_components_form_submitstatus_text_der_server_hat_nicht_geantwortet": "Der Server hat nicht geantwortet",
 	"report_components_form_submitstatus_text_erneut_absenden": "Erneut absenden",
 	"report_components_form_submitstatus_text_erneut_absenden_2": "Erneut absenden",
 	"report_components_form_submitstatus_text_ihre_meldung_wird_gesendet": "Ihre Meldung wird gesendet …",
@@ -557,6 +581,7 @@
 	"report_components_reportkindfeedback_aria_label_art_der_meldung_aendern": "Art der Meldung ändern",
 	"report_components_sections_administrative_title_administratives": "Administratives",
 	"report_components_sections_animalinfo_title_tierinformationen": "Tierinformationen",
+	"report_components_sections_behavior_text_reaktion_auf_sie_oder_ihr_fahrzeug": "Reaktion auf Sie oder Ihr Fahrzeug",
 	"report_components_sections_behavior_text_verhaltensinformationen_helfen_wissensch": "Verhaltensinformationen helfen Wissenschaftlern, die Ökologie und das Wohlbefinden der Tiere zu\n\t\tverstehen",
 	"report_components_sections_behavior_title_verhalten_der_tiere": "Verhalten der Tiere",
 	"report_components_sections_boatinfo_text_falls_sie_von_einem_boot": "Falls Sie von einem Boot aus beobachtet haben — diese Angaben helfen, die Sichtung\n\t\t\teinzuordnen.",
@@ -602,6 +627,16 @@
 	"report_components_steps_step4contact_text_datenschutz_und_einverstaendnis": "Datenschutz und Einverständnis",
 	"report_components_steps_step4contact_text_dauerhafte_speicherung_der_kontaktdaten": "Dauerhafte Speicherung der Kontaktdaten",
 	"report_components_steps_step4contact_text_gespeicherte_kontaktdaten_gefunden": "✓ Gespeicherte Kontaktdaten gefunden",
+	"report_components_steps_step4contact_text_hochgeladene_aufnahmen_plural": [
+		{
+			"declarations": ["input count", "local countPlural = count: plural"],
+			"selectors": ["countPlural"],
+			"match": {
+				"countPlural=one": "Ihre hochgeladene Aufnahme:",
+				"countPlural=other": "Ihre {count} hochgeladenen Aufnahmen:"
+			}
+		}
+	],
 	"report_components_steps_step4contact_text_ihre_e_mail_adresse_ist_erforderlich_fue": "Ihre E-Mail-Adresse ist erforderlich für:",
 	"report_components_steps_step4contact_text_ihre_kontaktdaten": "Ihre Kontaktdaten",
 	"report_components_steps_step4contact_text_ihre_kontaktdaten_verwenden_wir_ausschli": "Ihre Kontaktdaten verwenden wir ausschließlich für Rückfragen zu Ihrer\n\t\t\tMeldung und geben sie nicht an Dritte weiter. Öffentlich sichtbar werden nur die Sichtungsdaten\n\t\t\tselbst — Datum, Position, Tierart, Anzahl und Ihre Ortsangaben zum Seegebiet. Ihr Name erscheint\n\t\t\tnur, wenn Sie das unten ausdrücklich erlauben.",
@@ -671,7 +706,9 @@
 	"routes_about_page_text_welche_rechte_sie_haben_und": "Welche Rechte Sie haben und an wen Sie sich damit wenden, steht in der\n\t\t\t\t\tDatenschutzerklärung des Deutschen Meeresmuseums. Wozu wir die einzelnen Angaben Ihrer\n\t\t\t\t\tMeldung verwenden, steht bei den Einwilligungen im Formular.",
 	"routes_about_page_text_werden_sie_teil_der_bewegung": "Werden Sie Teil der Bewegung",
 	"routes_bestimmungshilfe_page_text_bestimmungshilfe_fuer_meerestiere": "Bestimmungshilfe für Meerestiere",
+	"routes_bestimmungshilfe_page_text_bestimmungshilfe_wale_und_robben_der_ost": "Bestimmungshilfe: Wale und Robben der Ostsee erkennen",
 	"routes_bestimmungshilfe_page_text_klicken_sie_auf_eine_tierart": "Klicken Sie auf eine Tierart, um ihre Merkmale zu sehen. Die Merkmale sind danach\n\t\t\tgekennzeichnet, ob sie bei einer echten Sichtung überhaupt zu erkennen sind — auf Entfernung,\n\t\t\terst aus der Nähe oder nur mit Hintergrundwissen.",
+	"routes_bestimmungshilfe_page_text_schweinswal_oder_robbe_kegelrobbe_oder_s": "Schweinswal oder Robbe? Kegelrobbe oder Seehund? Erkennungsmerkmale, Artfotos und Verwechslungsgefahren für alle Meeressäuger der Ostsee — sortiert danach, was bei einer echten Sichtung auf dem Wasser überhaupt zu sehen ist.",
 	"routes_bestimmungshilfe_page_text_sichtung_melden": "Sichtung melden",
 	"routes_bestimmungshilfe_page_text_sichtungskarte_ansehen": "Sichtungskarte ansehen",
 	"routes_bestimmungshilfe_page_text_welches_tier_war_das_diese": "Welches Tier war das? Diese Seite hilft bei der Artbestimmung von Walen und Robben in der\n\t\t\tOstsee — mit Fotos, Erkennungsmerkmalen und den Verwechslungen, die am häufigsten vorkommen.",

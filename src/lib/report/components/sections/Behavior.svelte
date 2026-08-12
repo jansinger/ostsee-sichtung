@@ -36,7 +36,8 @@
 	 * und in der Admin-Maske unterschiedlich gefragt wird. Präzedenz mit
 	 * derselben Mechanik: `species` in `sections/AnimalInfo.svelte`.
 	 */
-	const REPORT_REACTION_LABEL = 'Reaktion auf Sie oder Ihr Fahrzeug';
+	const REPORT_REACTION_LABEL =
+		m.report_components_sections_behavior_text_reaktion_auf_sie_oder_ihr_fahrzeug();
 </script>
 
 <!-- Animal Behavior Section -->

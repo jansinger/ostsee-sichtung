@@ -27,7 +27,7 @@
 	};
 
 	const messageMap: Record<LoadingType, string> = {
-		initial: 'Karte wird initialisiert...'
+		initial: m.components_map_loadingoverlay_text_karte_wird_initialisiert()
 	};
 
 	const loadingType = $derived(type as LoadingType);

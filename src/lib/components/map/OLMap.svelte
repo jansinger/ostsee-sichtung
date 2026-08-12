@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import { addMarker, createMap, setMapCenter } from '$lib/utils/map/openLayersHelpers';
 	import Icon from '$lib/components/Icon.svelte';
 	import { untrack } from 'svelte';
@@ -63,11 +64,13 @@
 	let mapHint = $derived.by(() => {
 		if (hintOverride !== undefined) return hintOverride;
 		if (!hasPosition) {
-			return 'Noch keine Position gewählt. Tippen Sie auf die Karte, um die Stelle zu markieren, an der Sie das Tier gesehen haben.';
+			return m.components_map_olmap_text_noch_keine_position_gewaehlt_tippen_sie();
 		}
-		const base =
-			'Tippen Sie auf die Karte oder ziehen Sie den Marker an die Stelle, an der Sie das Tier gesehen haben.';
-		return enableGPS ? `${base} Der GPS-Button übernimmt Ihre aktuelle Position.` : base;
+		// Zwei GANZE Sätze statt Verkettung: Ein festes Fragment plus Anhang
+		// zwingt jede Zielsprache in die deutsche Satzfolge (Protokoll, Muster C).
+		return enableGPS
+			? m.components_map_olmap_text_tippen_sie_auf_die_karte_gps()
+			: m.components_map_olmap_text_tippen_sie_auf_die_karte_oder_ziehen_sie();
 	});
 
 	/** Verschiebt die Marker-Geometrie auf die übergebene Position. */

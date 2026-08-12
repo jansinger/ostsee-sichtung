@@ -35,7 +35,7 @@
 		attempt = 0,
 		maxAttempts = 3,
 		referenceId = '',
-		title = 'Der Server hat nicht geantwortet',
+		title = m.report_components_form_submitstatus_text_der_server_hat_nicht_geantwortet(),
 		onRetry
 	}: {
 		/** Aktueller Zustand der Übermittlung. `idle` rendert nichts. */
@@ -90,8 +90,11 @@
 	 */
 	const attemptLabel = $derived(
 		attempt > maxAttempts
-			? `Das war Versuch ${attempt}.`
-			: `Das war Versuch ${attempt} von ${maxAttempts}.`
+			? m.report_components_form_submitstatus_text_das_war_versuch_attempt({ attempt })
+			: m.report_components_form_submitstatus_text_das_war_versuch_attempt_von_maxattempts({
+					attempt,
+					maxAttempts
+				})
 	);
 </script>
 

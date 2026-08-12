@@ -65,7 +65,7 @@ type ExtractionPlan = ReturnType<typeof planExtraction>;
  *    Der Extraktor liest von einer `.svelte`-Datei nur das Markup. Ein
  *    `const hint = 'Karte wird initialisiert…'` ist für die Zusicherungen 1
  *    bis 3 unsichtbar; „0 mechanische Fundstellen" las sich deshalb als
- *    „Schicht C ist fertig". Sie ist es nicht — 29 Stellen in 19 Dateien.
+ *    „Schicht C ist fertig". Sie ist es nicht — es waren 78 Stellen in 25 Dateien.
  *    Auch das ein Bestandszähler, aus demselben Grund wie (2): Er kann heute
  *    nicht null sein, aber er kann nicht mehr wachsen. Die Regel ist dieselbe
  *    wie in Schicht A/B (`multiWordLiterals`), abzüglich zweier benannter
@@ -465,42 +465,41 @@ export function findScriptDisplayText(source: string): SourceHit[] {
 }
 
 /**
- * Hartcodierter Anzeigetext im `<script>`-Block, je Datei — erhoben am
- * 2026-08-12 (Befund B des Schicht-C-Guards).
+ * Was im `<script>`-Block an mehrwortigen Literalen übrig ist, je Datei.
  *
- * 29 Stellen in 19 Dateien, von 158 mehrwortigen Literalen insgesamt (41
- * Klassenlisten und 39 Logmeldungen sind ausgeschlossen, siehe oben). Nicht
- * alle 78 sind Übersetzungsarbeit: Darunter sind Cookie-Zeichenketten
- * (`LanguageSwitcher`), erzeugte Element-IDs (`BaseInput`, `UnifiedDropzone`),
- * Cache-Schlüssel (`WeatherDataFetcher`) und geworfene Entwicklerfehler
- * (`Form.svelte`, `FormField`). Sie werden **nicht** vorab ausgenommen — jede
- * Welle entscheidet die betroffene Datei einzeln und senkt die Zahl hier um
- * genau das, was sie gelöst oder als technisch begründet hat. Eine
- * Ausnahmeliste vorab wäre eine Entscheidung ohne Ansehen der Stelle.
+ * **Der Zähler ist abgearbeitet.** Er stand am 2026-08-12 bei 78 Stellen in 25
+ * Dateien (Befund B); die 70 Anzeigetexte darunter sind übersetzt. Was hier
+ * steht, sind die acht Stellen, die **kein** Anzeigetext sind — je mit
+ * Begründung an ihrer Zeile: zwei Cookie-Zeichenketten, zwei erzeugte
+ * Element-IDs, ein Cache-Schlüssel, zwei geworfene Entwicklerfehler (die den
+ * Programmierer erreichen, nie den Melder) und eine Liste von
+ * Dateiformat-Kürzeln.
+ *
+ * Sie stehen bewusst **hier** und nicht auf einer Ausnahmeliste. Eine Ausnahme
+ * verschwindet aus dem Blick; ein Zähler mit Begründung wird bei jeder Änderung
+ * an der Datei wieder gelesen. Wer eine dieser Stellen anfasst und dabei echten
+ * Text hinzufügt, macht den Test rot.
+ *
+ * Die Regel bleibt eine **untere Schranke** für Anzeigetext, keine Definition:
+ * Sie zählt nur, was Leerzeichen und zwei Buchstabengruppen hat. Einzelwörter
+ * (`'Serverfehler'`, `'Tierart'`, `'Totfund'`) fielen nie darunter und wurden
+ * in den Wellen trotzdem mitübersetzt — wer eine Datei anfasst, liest sie ganz.
  */
 const SCRIPT_TEXT_LEDGER: Readonly<Record<string, number>> = {
-	'src/lib/components/ConnectionBadge.svelte': 2,
+	/** Cookie-Zeichenketten (`; domain=…`, `LOCALE=…; path=/; max-age=…`). */
 	'src/lib/components/LanguageSwitcher.svelte': 2,
-	/** Bleibt: erzeugte Element-ID (`dropzone-${Math.random()…}`), kein Anzeigetext. */
+	/** Erzeugte Element-ID (`dropzone-${Math.random()…}`). */
 	'src/lib/components/form/UnifiedDropzone.svelte': 1,
-	'src/lib/components/map/LazyMapWrapper.svelte': 1,
-	'src/lib/components/map/LoadingOverlay.svelte': 1,
-	'src/lib/components/map/OLMap.svelte': 3,
-	/** Bleibt: Cache-Schlüssel aus Koordinaten und Zeit, kein Anzeigetext. */
+	/** Cache-Schlüssel aus Koordinaten und Zeit. */
 	'src/lib/components/weather/WeatherDataFetcher.svelte': 1,
+	/** Geworfener Entwicklerfehler: `<Form>` ohne `onSubmit`. Nie sichtbar. */
 	'src/lib/report/components/form/Form.svelte': 1,
-	'src/lib/report/components/form/FormActions.svelte': 1,
-	'src/lib/report/components/form/StepNavigation.svelte': 3,
-	'src/lib/report/components/form/SubmitStatus.svelte': 3,
+	/** Erzeugte Element-ID (`…-datalist`). */
 	'src/lib/report/components/form/fields/BaseInput.svelte': 1,
-	'src/lib/report/components/form/fields/BaseSelect.svelte': 1,
-	'src/lib/report/components/form/fields/FieldRenderer.svelte': 1,
+	/** Geworfener Entwicklerfehler: `FormField` außerhalb von `<Form>`. */
 	'src/lib/report/components/form/fields/FormField.svelte': 1,
-	'src/lib/report/components/sections/Behavior.svelte': 1,
-	/** Bleibt: 'JPG, PNG, GIF, WEBP' — Dateiformat-Kürzel, sprachneutral. */
-	'src/lib/report/components/sections/Media.svelte': 1,
-	'src/lib/report/components/steps/Step4Contact.svelte': 2,
-	'src/routes/bestimmungshilfe/+page.svelte': 2
+	/** `'JPG, PNG, GIF, WEBP'` — Dateiformat-Kürzel, sprachneutral. */
+	'src/lib/report/components/sections/Media.svelte': 1
 };
 
 describe('Anzeigetext im <script>-Block', () => {

@@ -6,9 +6,9 @@
 	import SpeciesIdentificationHelp from '$lib/report/components/form/fields/SpeciesIdentificationHelp.svelte';
 	import { localizeHref } from '$lib/paraglide/runtime';
 
-	const title = 'Bestimmungshilfe: Wale und Robben der Ostsee erkennen';
+	const title = m.routes_bestimmungshilfe_page_text_bestimmungshilfe_wale_und_robben_der_ost();
 	const description =
-		'Schweinswal oder Robbe? Kegelrobbe oder Seehund? Erkennungsmerkmale, Artfotos und Verwechslungsgefahren für alle Meeressäuger der Ostsee — sortiert danach, was bei einer echten Sichtung auf dem Wasser überhaupt zu sehen ist.';
+		m.routes_bestimmungshilfe_page_text_schweinswal_oder_robbe_kegelrobbe_oder_s();
 </script>
 
 <svelte:head>

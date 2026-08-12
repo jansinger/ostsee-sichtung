@@ -62,9 +62,9 @@
 	/** Was der Screenreader hört. Leer, solange alles in Ordnung ist. */
 	const liveText = $derived(
 		connection.isOffline
-			? 'Keine Internetverbindung. Ihre Eingaben werden gespeichert.'
+			? m.components_connectionbadge_text_keine_internetverbindung_ihre_eingaben_w()
 			: connection.justReconnected
-				? 'Wieder online.'
+				? m.components_connectionbadge_text_wieder_online_2()
 				: ''
 	);
 

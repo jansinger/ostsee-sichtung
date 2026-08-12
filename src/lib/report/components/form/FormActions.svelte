@@ -33,9 +33,7 @@
 
 	function handleReset() {
 		if (
-			confirm(
-				'Möchten Sie das Formular wirklich zurücksetzen? Alle bisher eingegebenen Daten gehen verloren.'
-			)
+			confirm(m.report_components_form_formactions_text_moechten_sie_das_formular_wirklich_zurue())
 		) {
 			onReset();
 		}
