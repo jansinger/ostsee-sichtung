@@ -1097,6 +1097,66 @@ Antwort ein Mensch liest und welche eine Maschine. Deutsche
 Validierungsmeldungen an den Melder gehören übersetzt, `File not found` und
 `Internal server error` nicht.
 
+## Befund C, Bereich E — die Klassifikation vor der Arbeit
+
+Erhoben 2026-08-12. **Keine Codeänderung**, das ist Absicht: Wer in `/api`
+übersetzt, ohne vorher zu klären, wer die Antwort liest, übersetzt
+Maschinenantworten — und das ist schlechter, als sie deutsch zu lassen.
+
+### Mein erster Unterscheider war zu grob, und der Beleg steht daneben
+
+Naheliegend war: „Endpunkt mit Auth-Guard = Admin, ohne = öffentlich."
+Gemessen ergibt das 123 Kandidaten „Admin" und 24 „offen" — und die Zahl ist
+falsch. `src/routes/api/sightings/+server.ts` erscheint darin als ADMIN,
+weil die Datei einen admin-geschützten `GET` **und** den öffentlichen `POST`
+enthält, mit dem jeder Melder seine Sichtung abschickt. Dasselbe gilt für
+`/api/files/upload`.
+
+**Die Zielgruppe hängt nicht an der Datei, nicht einmal am Endpunkt, sondern
+an der einzelnen Antwort.** Ein Guard auf Dateiebene ist dafür blind.
+
+### Der belastbare Weg: von der Anzeigestelle rückwärts
+
+Tragfähig ist nur, was sich am Client belegen lässt — wer zeigt eine
+Server-Meldung tatsächlich an? Fünf Pfade, jeder einzeln nachgesehen:
+
+| Endpunkt                  | Anzeigestelle                              | Kandidaten |
+| ------------------------- | ------------------------------------------ | ---------: |
+| `POST /api/sightings`     | `submitSightingForm.ts` → `result.message` |          9 |
+| `/api/files/upload`       | `uploadUtils.ts` → Toast                   |          9 |
+| `/api/files/delete`       | `uploadUtils.ts` → Toast                   |          8 |
+| `/api/geo/inBaltic`       | `VerifyLocation.svelte` → Fehlerzeile      |          5 |
+| `/api/weather/historical` | `WeatherDataFetcher.svelte` → `data.error` |          5 |
+
+**36 Kandidaten über fünf Dateien** — nicht 119. Alles Übrige ist Admin,
+Export, Maschinenantwort (`csp-report`, `maintenance-status`) oder
+Serverinternes.
+
+### ZWEI BEFUNDE: englischer Text erreicht heute schon den Melder
+
+Nicht Übersetzungsarbeit, sondern vorbestehende Fehler — sichtbar geworden,
+weil die Klassifikation die Anzeigestellen abgelaufen ist:
+
+1. `/api/weather/historical` antwortet dem Melder auf **Englisch**:
+   `'Could not fetch weather data for the specified location and date'` und
+   `'Internal server error'`. `WeatherDataFetcher` zeigt `data.error`
+   unverändert an.
+2. `/api/sightings:151` liefert `'Invalid form submission'`, und
+   `submitSightingForm` zeigt `message` an.
+
+Das ist dieselbe Klasse wie `'Unknown error'` in `VerifyLocation` (Welle C4,
+behoben). Beide gehören in die nächste Welle — sie sind der Grund, warum die
+Klassifikation mehr wert war als eine schnelle Ersetzung.
+
+### Was die nächste Welle zu entscheiden hat
+
+Innerhalb der 36 ist noch einmal zu trennen: `'Reference ID ist
+erforderlich'` und `'Content-Type muss multipart/form-data sein'` sind
+Programmierfehler-Meldungen an einen falsch gebauten Client, keine
+Melder-Texte. `'Sie haben in der letzten Stunde bereits … MB'` und
+`'Die Meldung enthält bereits … MB'` dagegen richten sich unmittelbar an den
+Menschen. Diese Trennung geht nur von Hand, Zeile für Zeile.
+
 ### Was diese Messung NICHT ist
 
 Kein Guard. Sie liegt als Zahl im Protokoll, nicht im Testlauf — der
