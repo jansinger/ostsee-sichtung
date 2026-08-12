@@ -1203,6 +1203,57 @@ ausdrückliches Locale-Argument — und gespeichert wird davon nichts.
 Nachweise: `svelte-check` 0 Fehler, `test:quick` grün (4955 + 780), alle drei
 E2E-Shards im ersten Lauf grün (229 + 94 + 156 = 479).
 
+## ABSCHLUSS-REVIEW DES BRANCHES (2026-08-12)
+
+26 Commits über 77af6e90, 62 Dateien, +2773/−449.
+
+### Die vier Invarianten, geprüft statt behauptet
+
+| Invariante                                               | Ergebnis                                                |
+| -------------------------------------------------------- | ------------------------------------------------------- |
+| `germanBaseline.json` bitgleich                          | **ja** — `git diff` gegen die Basis ist leer            |
+| Kein Altwert in `de.json`/`en.json` geändert             | **ja** — 897 → 1118 Schlüssel, 0 geänderte, 0 entfernte |
+| Schlüsselmengen `de` und `en` identisch                  | **ja**                                                  |
+| Kein `m.*`-Aufruf in Server-, Export- oder Legacy-Pfaden | **ja** — die Locale-Falle bleibt zu                     |
+
+Zusätzlich geprüft: keine verbliebene Modulkonstante hält ein fertiges
+Botschaftsergebnis (der Defekt aus Entwurf 2.3/4.1), und in den beiden
+gepinnten Dateien (`weather.ts`, `dateTime.ts`) trägt jeder Aufruf sein
+Locale-Argument.
+
+### KORREKTUR am Protokoll: `en.json` ist nicht mehr durchgehend deutsch
+
+An mehreren Stellen steht hier „nur `i18n_selbsttest` unterscheidet sich".
+Das stimmt seit PR #861 nicht mehr: **18 Schlüssel tragen bereits echtes
+Englisch** — die Muster-C-Umformulierungen (`LoadingOverlay`
+„Tastaturkürzel …" / „Keyboard shortcut …"), die beiden ICU-Plurale und die
+Begriff-Glosse-Paare aus `FormHelp` und `DeadAnimal`.
+
+Nachgerechnet: Alle 18 bestanden **bereits auf `main`**, keine kam durch
+diesen Branch hinzu. Die Aussage war also nicht falsch erhoben, sondern
+überholt — dieselbe Sorte Fehler wie die vier zu groben Buchführungen weiter
+oben, nur in der Dokumentation statt in der Messung.
+
+Folge für die Weiterarbeit: Wer künftig behauptet, `en.json` trage
+durchgehend den deutschen Wortlaut, prüft es nach. Der Vergleich ist eine
+Zeile:
+
+```
+python3 -c "import json;d=json.load(open('messages/de.json'));e=json.load(open('messages/en.json'));print([k for k in d if d[k]!=e[k]])"
+```
+
+### Was dieser Branch NICHT geleistet hat
+
+- Die **143 Handarbeitsfälle** der Schicht C (78 Satzfragmente, 58
+  Interpolationen, 7 Attribut-Ternaries) sind unangetastet. Der Guard zählt
+  sie, mehr nicht.
+- **Befund A** (7 Anzeigetexte an Komponenten-Props, 20 `content`-Attribute)
+  ist gezählt, nicht behoben.
+- `TRANSLATION_ROLLOUT_COMPLETE` bleibt `false`. Alles hier ist Infrastruktur;
+  die eigentliche Übersetzung bleibt ein Diff auf einer Datei.
+
+---
+
 ### Was diese Messung NICHT ist
 
 Kein Guard. Sie liegt als Zahl im Protokoll, nicht im Testlauf — der
