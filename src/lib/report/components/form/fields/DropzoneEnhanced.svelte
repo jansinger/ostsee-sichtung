@@ -370,7 +370,10 @@
 		// hinzugefügt werden (Maximum: 1)". Im Medien-Schritt sind beide Mengen
 		// identisch, dort ändert sich nichts.
 		if (isSingleFileMode && ownedMediaFiles.length > 0) {
-			createToast('info', 'Nur eine Datei erlaubt. Bestehende Datei wird ersetzt.');
+			createToast(
+				'info',
+				m.report_components_form_fields_dropzoneenhanced_text_nur_eine_datei_erlaubt_bestehende_datei()
+			);
 			await handleClear();
 		}
 
@@ -382,7 +385,9 @@
 		if (filesToProcess.length < newFiles.length) {
 			createToast(
 				'warning',
-				`Nur ${allowedCount} von ${newFiles.length} Dateien können hinzugefügt werden (Maximum: ${maxFiles}).`
+				m.report_components_form_fields_dropzoneenhanced_text_nur_allowed_von_total_dateien_koennen(
+					{ allowed: allowedCount, total: newFiles.length, max: maxFiles }
+				)
 			);
 		}
 
@@ -400,7 +405,10 @@
 				.then((uploadedFile) => {
 					// Update form data
 					addUploadedFile(uploadedFile);
-					createToast('success', 'Datei erfolgreich hochgeladen.');
+					createToast(
+						'success',
+						m.report_components_form_fields_dropzoneenhanced_text_datei_erfolgreich_hochgeladen()
+					);
 				})
 				.catch((error) => {
 					// Ein gewollter Abbruch (Abbrechen-Knopf) ist kein Fehler — dafür
@@ -413,7 +421,12 @@
 						logger.info({ uid: mediaFile.uid }, 'Upload vom Melder abgebrochen');
 					} else {
 						logger.error({ error }, 'Fehler beim Hochladen der Datei.');
-						createToast('error', error instanceof Error ? error.message : 'Fehler beim Hochladen');
+						createToast(
+							'error',
+							error instanceof Error
+								? error.message
+								: m.report_components_form_fields_dropzoneenhanced_text_fehler_beim_hochladen()
+						);
 					}
 					deleteFile(mediaFile.uid);
 				});
@@ -509,11 +522,17 @@
 				// Es besagt „diese Werte gehören uns" und erlaubt dem Ersatzfoto, sie zu
 				// überschreiben (exifDateTimeApply.ts). Nur der Hinweis im Panel geht.
 				onExifDateTimeApplied(false);
-				createToast('success', 'Datei erfolgreich gelöscht.');
+				createToast(
+					'success',
+					m.report_components_form_fields_dropzoneenhanced_text_datei_erfolgreich_geloescht()
+				);
 			}
 		} catch (error) {
 			logger.info({ error }, 'Fehler beim Löschen der Datei vom Server.');
-			createToast('error', 'Fehler beim Löschen der Datei.');
+			createToast(
+				'error',
+				m.report_components_form_fields_dropzoneenhanced_text_fehler_beim_loeschen_der_datei()
+			);
 		}
 	}
 
@@ -563,9 +582,15 @@
 			onExifDateTimeApplied(false);
 
 			triggerChange('uploadedFiles', uploadedFiles);
-			createToast('success', 'Alle Dateien erfolgreich gelöscht.');
+			createToast(
+				'success',
+				m.report_components_form_fields_dropzoneenhanced_text_alle_dateien_erfolgreich_geloescht()
+			);
 		} catch (_error) {
-			createToast('error', 'Fehler beim Löschen aller Dateien.');
+			createToast(
+				'error',
+				m.report_components_form_fields_dropzoneenhanced_text_fehler_beim_loeschen_aller_dateien()
+			);
 		}
 	}
 </script>
