@@ -253,3 +253,43 @@ im Meldeformular. Reproduzierender Test zuerst.
 ## OFFEN in Etappe 2
 2.2 Extraktor lernt Svelte (Trockenlauf) — 2.3 Markup in Wellen, 68 Dateien,
 449 Botschaften — 2.4 Plurale (12 Kandidaten, ICU) — 2.5 hreflang und og:locale.
+
+## Aufgabe 2.2 — Der Extraktor lernt Svelte
+Commits: 8f880564 (Sammler), 44698ff1 (Fragment-Regel geschaerft),
+7e481573 (Umfang im Werkzeug verankert), a4f4d88a (Kontrollfluss-Luecke).
+
+REPRODUZIERBARE ZAHLEN, aus dem Werkzeug (npm run i18n:extract), Stand 2026-08-12:
+  102 gescannte Dateien (1 Schema + 17 formOptions + 84 Svelte)
+  399 Botschaften, 488 uebersprungen
+  davon Satzfragment 165, Interpolation 68, dynamisches Attribut 44,
+  Plural-Kandidat 11, keine Buchstabengruppe 12
+Kontrollrechnung: 120 .svelte unter src/ minus 36 ausgeschlossene (Admin 30,
+Styleguide 1, Docs 4, ApiDocumentation 1) = 84.
+
+### Drei Befunde, jeder von der stillen Sorte
+1. FRAGMENT-REGEL WAR ZU BREIT. Sie verwarf 244 Stellen, darunter 'Speichern',
+   'Kontakt', 'Karte' — eigenstaendige Beschriftungen neben einem ICON. Ein Icon
+   hat keine Wortstellung. Richtiger Unterscheider: Nur ein Geschwister-Element,
+   das SELBST Text enthaelt, erzeugt ein Fragment. Verschob 147 Stellen von
+   Handarbeit auf mechanisch.
+2. DER UMFANG STAND IN EINEM WEGGEWORFENEN SKRIPT. Beide fruehen Messungen
+   (68 Dateien / 449, dann 689/827) liefen ueber Scratchpad-Skripte und waren
+   nicht nachrechenbar — der zweite Umsetzer konnte die erste Auswahl nicht
+   reproduzieren. Jetzt kennt planExtraction den Umfang selbst, mit benannter
+   Ausschlussliste und Begruendung je Eintrag.
+3. KONTROLLFLUSS-BLINDHEIT. Ein dynamischer Ausdruck in {#if}/{#each}/{#await}
+   war fuer Fragment- UND Interpolationsregel unsichtbar. Das Review hielt es
+   fuer hypothetisch (kein Vorkommen des exakten {#each}-Musters); der Fix fand
+   DREI echte Stellen der allgemeineren Klasse — ein Geschwister, dessen einziger
+   Inhalt ein Ausdruck ist: WeatherDisplay.svelte 'Wetter:' und 'Windrichtung:'
+   neben <strong>{ausdruck}</strong>, plus eine in FormHelp.svelte. Sie waeren
+   als eigenstaendige Botschaften extrahiert worden und haetten auf Englisch ihre
+   Fortsetzung verloren.
+
+Belegt im Review: Die Ersetzung wurde auf ALLE 84 Dateien angewandt und jedes
+Ergebnis mit dem Svelte-Compiler neu geparst — null Fehler.
+
+## OFFEN in Etappe 2
+2.3 Markup-Umbau: 399 mechanische Ersetzungen ueber 84 Dateien, dazu 165
+Satzfragmente + 68 Interpolationen + 11 Plurale als Handarbeit.
+2.4 Plurale (ICU) — 2.5 hreflang und og:locale.
