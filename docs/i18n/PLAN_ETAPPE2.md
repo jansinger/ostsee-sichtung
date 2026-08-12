@@ -246,32 +246,69 @@ Ihre <strong>Meldung</strong>!` zerfällt in drei Knoten; sie einzeln zu
       ist Aufgabe 2.3):
 
       | | Anzahl |
-          | --- | ---: |
-          | Dateien im Umfang | 68 |
-          | Gefunden (extrahierbar) | 325 |
-          | Übersprungen gesamt | 362 |
-          | davon Satzfragment | **244** |
-          | davon Interpolation | 65 |
-          | davon dynamisches Attribut | 35 |
-          | davon keine Buchstabengruppe | 11 |
-          | davon Plural-Kandidat | 7 |
+              | --- | ---: |
+              | Dateien im Umfang | 68 |
+              | Gefunden (extrahierbar) | 325 |
+              | Übersprungen gesamt | 362 |
+              | davon Satzfragment | **244** |
+              | davon Interpolation | 65 |
+              | davon dynamisches Attribut | 35 |
+              | davon keine Buchstabengruppe | 11 |
+              | davon Plural-Kandidat | 7 |
 
-          **244 Satzfragmente** sind die Planungsgrundlage für Aufgabe 2.3 — mehr
-          als die 53 Inline-Elemente aus der ursprünglichen Schätzung, weil jedes
-          betroffene Element mehrere Textknoten gleichzeitig verwirft (z. B. drei
-          Knoten für ein Element mit einem ausgezeichneten Wort).
+              **244 Satzfragmente** sind die Planungsgrundlage für Aufgabe 2.3 — mehr
+              als die 53 Inline-Elemente aus der ursprünglichen Schätzung, weil jedes
+              betroffene Element mehrere Textknoten gleichzeitig verwirft (z. B. drei
+              Knoten für ein Element mit einem ausgezeichneten Wort).
 
-          **Nacharbeit während des Trockenlaufs:** Die ursprüngliche Regel prüfte
-          nur direkte Geschwister eines Textknotens. Ein Textknoten, der
-          innerhalb eines Inline-Elements (`<strong>`) tatsächlich einziges Kind
-          ist, wurde dadurch trotzdem extrahiert, obwohl das umschließende
-          Element (`<p>`) gemischten Inhalt hat — die Regel griff eine Ebene zu
-          flach. Behoben durch Weiterreichen eines `ancestorMixed`-Flags durch
-          die Fragment-Traversierung: Ein Fragment gilt als gemischt, wenn es
-          sowohl einen Textknoten mit Buchstaben als auch ein Element-/Ausdrucks-
-          Kind enthält; dieser Status vererbt sich auf jedes Fragment darunter.
-          Verschachtelung allein (`<div><p>Text</p></div>`) bleibt unberührt —
-          keines der beiden beteiligten Fragmente ist für sich gemischt.
+              **Nacharbeit während des Trockenlaufs:** Die ursprüngliche Regel prüfte
+              nur direkte Geschwister eines Textknotens. Ein Textknoten, der
+              innerhalb eines Inline-Elements (`<strong>`) tatsächlich einziges Kind
+              ist, wurde dadurch trotzdem extrahiert, obwohl das umschließende
+              Element (`<p>`) gemischten Inhalt hat — die Regel griff eine Ebene zu
+              flach. Behoben durch Weiterreichen eines `ancestorMixed`-Flags durch
+              die Fragment-Traversierung: Ein Fragment gilt als gemischt, wenn es
+              sowohl einen Textknoten mit Buchstaben als auch ein Element-/Ausdrucks-
+              Kind enthält; dieser Status vererbt sich auf jedes Fragment darunter.
+              Verschachtelung allein (`<div><p>Text</p></div>`) bleibt unberührt —
+              keines der beiden beteiligten Fragmente ist für sich gemischt.
+
+              **Nachbesserung 2026-08-12 — Fragment-Regel geschärft:** Die 244
+              Satzfragmente enthielten Fälle wie `<button><SaveIcon /> Speichern</button>`
+              oder `<h2><MapPin /> Ortsangaben</h2>` — eigenständige Beschriftungen
+              neben einem Icon, kein Satz mit Wortstellung. Die Regel verwarf sie nur,
+              weil ein Geschwister-*Element* existierte, unabhängig davon, ob dieses
+              Geschwister selbst Text trug. Geschärft: Ein Geschwister macht einen
+              Textknoten nur noch dann zum Fragment, wenn es selbst irgendwo in seinem
+              Teilbaum einen Textknoten mit Buchstabengruppe enthält
+              (`nodeContainsLetterText` in `collect.ts`) — oder ein dynamischer
+              Ausdruck ist (Interpolationsfall, unverändert). Icon-Komponenten,
+              `<svg>`, `<img>` und leere `<span>`s erzeugen dadurch kein Fragment
+              mehr; `<strong>Meldung</strong>` und ein Link mit Text bleiben
+              Fragmente, weil ihr Teilbaum Text enthält.
+
+              Zahlen vorher/nachher, über denselben Bestand gemessen (alle 120
+              `.svelte`-Dateien unter `src/` — die ursprüngliche 68-Datei-Auswahl war
+              eine unversionierte Scratchpad-Auswahl „nach Nutzersichtbarkeit" und
+              nicht mehr reproduzierbar; die hier verwendete umfasst sie mit):
+
+              | | vorher | nachher |
+              | --- | ---: | ---: |
+              | Gefunden (extrahierbar) | 689 | 827 |
+              | Übersprungen gesamt | 871 | 733 |
+              | davon Satzfragment | 551 | 404 |
+              | davon Interpolation | 207 | 207 |
+              | davon dynamisches Attribut | 63 | 63 |
+              | davon Plural-Kandidat | 28 | 33 |
+              | davon keine Buchstabengruppe | 22 | 26 |
+
+              Satzfragmente sinken um 147 (551 → 404), Funde steigen um 138
+              (689 → 827) — die Differenz von 9 verteilt sich auf Plural-Kandidat
+              (+5) und keine-Buchstabengruppe (+4): Ein zuvor durch das
+              Geschwister-Element maskierter Textknoten (z. B. eine Ziffer in einem
+              Badge wie `<span class="badge">3</span>`) durchläuft jetzt dieselbe
+              `addSite`-Prüfung wie jeder andere Textknoten und kann dort selbst
+              verworfen werden.
 
 - [x] **6. Nachweise.** Mutation je Verweigerungsgrund (Regel entfernen → die
       zugehörige Gegenprobe wird rot). `npm run test:quick` grün.

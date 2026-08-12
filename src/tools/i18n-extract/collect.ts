@@ -838,6 +838,39 @@ export function collectSvelteSites(
 		);
 	}
 
+	/**
+	 * Enthält dieser Teilbaum irgendwo einen Textknoten mit Buchstabengruppe?
+	 * Icon-Komponenten (`<SaveIcon />`), `<svg>`, `<img>` oder ein leerer
+	 * `<span>` haben keinen Text in ihrem Teilbaum — ein Geschwister ohne
+	 * eigenen Text hat keine Wortstellung, die eine Übersetzung brechen könnte,
+	 * und macht einen benachbarten Textknoten deshalb NICHT zum Satzfragment.
+	 * `<strong>Meldung</strong>` dagegen enthält Text und bleibt fragmentbildend.
+	 * `ExpressionTag` zählt hier bewusst nicht als Text (kein literaler Inhalt,
+	 * sondern ein dynamischer Ausdruck) — der Interpolationsfall wird an den
+	 * Aufrufstellen separat behandelt.
+	 */
+	function nodeContainsLetterText(node: SvelteAstNode): boolean {
+		if (node.type === 'Comment' || node.type === 'ExpressionTag') {
+			return false;
+		}
+		if (node.type === 'Text') {
+			const data = typeof node.data === 'string' ? node.data : '';
+			return data.trim().length > 0 && LETTER_GROUP.test(data);
+		}
+		for (const [key, value] of Object.entries(node)) {
+			if (key === 'start' || key === 'end' || key === 'loc' || key === 'name_loc') {
+				continue;
+			}
+			if (isSvelteNode(value) && value.type === 'Fragment' && Array.isArray(value.nodes)) {
+				const typed = value.nodes.filter(isSvelteNode);
+				if (typed.some(nodeContainsLetterText)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 	function handleText(
 		node: SvelteAstNode,
 		siblings: SvelteAstNode[],
@@ -852,13 +885,20 @@ export function collectSvelteSites(
 		const end = typeof node.end === 'number' ? node.end : 0;
 
 		const others = significantSiblings(siblings, node);
-		if (others.length > 0) {
+		// Nur Geschwister, die selbst Text mit Buchstaben tragen (oder ein
+		// dynamischer Ausdruck sind), machen diesen Textknoten zum Fragment.
+		// Ein Icon-Geschwister (`<SaveIcon />` neben "Speichern") hat keine
+		// Wortstellung und bleibt deshalb außen vor — siehe `nodeContainsLetterText`.
+		const fragmentCausingSiblings = others.filter(
+			(n) => n.type === 'ExpressionTag' || nodeContainsLetterText(n)
+		);
+		if (fragmentCausingSiblings.length > 0) {
 			// Fall 1 (Satzfragment) und Fall 2 (Interpolation) der Tabelle: Der
 			// Textknoten ist nicht das einzige Kind seines Elements. Enthält die
 			// Geschwistergruppe einen Ausdrucksknoten, ist eine ICU-Botschaft mit
 			// Parameter nötig; sonst ist es ausgezeichneter Text (z.B. `<strong>`),
 			// dessen Wortstellung eine Übersetzung pro Teilknoten bricht.
-			const hasExpressionSibling = others.some((n) => n.type === 'ExpressionTag');
+			const hasExpressionSibling = fragmentCausingSiblings.some((n) => n.type === 'ExpressionTag');
 			skipped.push({
 				file: relativeFilePath,
 				line: lineOf(start),
@@ -915,11 +955,14 @@ export function collectSvelteSites(
 	 * Textknoten mit Buchstaben ALS AUCH Element-Kinder besitzt". `<div><p>Text</p></div>`
 	 * ist NICHT mixed — `div`s Fragment enthält nur das Element `p`, keinen Text;
 	 * `<li>Nur Text</li>` ist NICHT mixed — `li`s Fragment enthält nur Text, kein
-	 * Element. Erst `<p>Text <strong>x</strong></p>` ist mixed.
+	 * Element. Erst `<p>Text <strong>x</strong></p>` ist mixed. Ein Element-Kind
+	 * OHNE eigenen Text (Icon-Komponente, `<svg>`, leerer `<span>`) zählt dabei
+	 * NICHT als „Element-Kind" im Sinne dieser Regel — `<h2><MapPin /> Titel</h2>`
+	 * ist deshalb nicht mixed, siehe `nodeContainsLetterText`.
 	 */
 	function fragmentHasMixedContent(nodes: SvelteAstNode[]): boolean {
 		let hasLetterText = false;
-		let hasNonTextChild = false;
+		let hasTranslationRelevantSibling = false;
 		for (const n of nodes) {
 			if (n.type === 'Comment') {
 				continue;
@@ -931,9 +974,11 @@ export function collectSvelteSites(
 				}
 				continue;
 			}
-			hasNonTextChild = true;
+			if (n.type === 'ExpressionTag' || nodeContainsLetterText(n)) {
+				hasTranslationRelevantSibling = true;
+			}
 		}
-		return hasLetterText && hasNonTextChild;
+		return hasLetterText && hasTranslationRelevantSibling;
 	}
 
 	function visitFragmentNodes(nodes: unknown, elementName: string, ancestorMixed: boolean): void {

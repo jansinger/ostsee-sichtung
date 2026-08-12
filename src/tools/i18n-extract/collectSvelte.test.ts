@@ -172,6 +172,62 @@ describe('collectSvelteSites — Verweigerungsregeln', () => {
 	});
 });
 
+// Die Fragment-Regel prüfte bisher nur, OB ein Geschwister-Element existiert —
+// nicht, ob es selbst Text trägt. Ein Icon-Geschwister hat keine Wortstellung,
+// die eine Übersetzung brechen könnte, und darf deshalb kein Satzfragment
+// erzeugen. Sechs Fälle je Auftrag, dazu die Wiederholung des `<strong>`-Falls
+// als Gegenprobe (bereits oben abgedeckt, hier zur Vollständigkeit der Liste
+// referenziert).
+describe('collectSvelteSites — Fragment nur bei textbehaftetem Geschwister', () => {
+	it('verweigert weiterhin ein Satzfragment, wenn das Geschwister-Element selbst Text enthält (<strong>)', () => {
+		const result = collect(`<p>Vielen Dank für Ihre <strong>Meldung</strong>!</p>`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => [s.text, s.reason])).toEqual([
+			['Vielen Dank für Ihre', 'sentence-fragment'],
+			['Meldung', 'sentence-fragment'],
+			['!', 'sentence-fragment']
+		]);
+	});
+
+	it('verweigert ein Satzfragment, wenn ein Link-Geschwister Text enthält', () => {
+		const result = collect(`<p>Bitte <a href="/hilfe">hier klicken</a>, um fortzufahren</p>`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => [s.text, s.reason])).toEqual([
+			['Bitte', 'sentence-fragment'],
+			['hier klicken', 'sentence-fragment'],
+			[', um fortzufahren', 'sentence-fragment']
+		]);
+	});
+
+	it('extrahiert Text neben einem Icon-Geschwister ohne eigenen Text (Button-Label)', () => {
+		const result = collect(`<button><SaveIcon /> Speichern</button>`);
+		expect(result.sites.map((s) => [s.text, s.aspect])).toEqual([['Speichern', 'text']]);
+		expect(result.skipped).toEqual([]);
+	});
+
+	it('extrahiert eine Überschrift neben einem Icon-Geschwister ohne eigenen Text', () => {
+		const result = collect(`<h2><MapPin /> Ortsangaben</h2>`);
+		expect(result.sites.map((s) => [s.text, s.aspect])).toEqual([['Ortsangaben', 'text']]);
+		expect(result.skipped).toEqual([]);
+	});
+
+	it('extrahiert Text bei reiner Verschachtelung ohne gemischten Inhalt', () => {
+		const result = collect(`<div><p>Ein reiner Text</p></div>`);
+		expect(result.sites.map((s) => [s.text, s.aspect])).toEqual([['Ein reiner Text', 'text']]);
+		expect(result.skipped).toEqual([]);
+	});
+
+	// Das Badge selbst trägt „3" — eine Ziffer ohne Buchstabengruppe, kein
+	// Kandidat für Wortstellung. Es taucht separat als `plural-candidate` in
+	// `skipped` auf (unabhängige Regel, siehe `addSite`), macht aber „Sichtungen"
+	// daneben NICHT zum Satzfragment.
+	it('extrahiert Text neben einem Badge-Geschwister ohne Buchstabengruppe', () => {
+		const result = collect(`<p><span class="badge">3</span> Sichtungen</p>`);
+		expect(result.sites.map((s) => [s.text, s.aspect])).toEqual([['Sichtungen', 'text']]);
+		expect(result.skipped.map((s) => [s.text, s.reason])).toEqual([['3', 'plural-candidate']]);
+	});
+});
+
 describe('applySvelteSitesToSource — Ersetzungsformen parsen als gültiges Svelte', () => {
 	it('ersetzt einen Textknoten durch {m.key()} — Ergebnis parst erneut', () => {
 		const source = `<p>Ein Text</p>`;
