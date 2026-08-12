@@ -490,7 +490,17 @@ Navigation und Fussbereich → Toasts und Fehlerseiten → Inhaltsseiten.
 
 1. Alle 399 mechanischen Stellen ersetzt, der Trockenlauf meldet danach für
    Schicht C **0 Botschaften** (wie er es für Schicht A und B bereits tut).
-2. Die Übersprungenen bleiben unverändert bei 488 — was Handarbeit war, ist
-   weiterhin Handarbeit.
+2. Die **offenen** Kategorien bleiben unverändert: `sentence-fragment`,
+   `interpolation`, `dynamic-attribute`, `plural-candidate`, `no-letter-group`.
+   Was Handarbeit war, bleibt Handarbeit.
+
+   > **Korrektur (2026-08-12).** Hier stand zuerst „die Übersprungenen bleiben
+   > unverändert bei 488". Das war falsch und wäre nie erfüllbar gewesen:
+   > `already-translated` zählt bewusst in die Gesamtsumme mit — ein eigener Test
+   > in `render.test.ts` hält das fest —, und diese Kategorie **wächst mit jeder
+   > Welle**, weil jede ersetzte Stelle danach als erledigt gemeldet wird. Die
+   > Gesamtzahl ist deshalb kein Signal. Die offenen Kategorien sind es.
+   > Aufgefallen ist es der Umsetzung von Welle 2, die der Vorgabe widersprochen
+   > hat, statt die Zahl passend zu machen.
 3. E2E vollständig grün.
 4. `de.json` und `en.json` tragen dieselben Schlüssel, `en` mit deutschem Wortlaut.
