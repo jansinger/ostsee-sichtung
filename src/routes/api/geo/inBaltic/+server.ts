@@ -1,3 +1,4 @@
+import * as m from '$lib/paraglide/messages';
 import { createLogger } from '$lib/logger.server';
 import { checkBalticSeaFile } from '$lib/server/geo/checkBalticSeaFile';
 import { getClientIp } from '$lib/server/utils/getClientIp';
@@ -37,7 +38,7 @@ export async function GET(event: RequestEvent) {
 	if (!longitudeParam || !latitudeParam) {
 		logger.warn({ ip: clientIp }, 'Fehlende Parameter');
 		throw error(400, {
-			message: 'Die Parameter longitude und latitude müssen angegeben werden'
+			message: m.api_geo_inbaltic_text_parameter_longitude_latitude_angegeben()
 		});
 	}
 
@@ -57,7 +58,7 @@ export async function GET(event: RequestEvent) {
 		);
 
 		throw error(400, {
-			message: 'Die Parameter longitude und latitude müssen gültige Zahlen sein'
+			message: m.api_geo_inbaltic_text_parameter_longitude_latitude_zahlen()
 		});
 	}
 
@@ -69,7 +70,7 @@ export async function GET(event: RequestEvent) {
 		);
 
 		throw error(400, {
-			message: 'Der Parameter longitude muss zwischen -180 und 180 liegen'
+			message: m.api_geo_inbaltic_text_parameter_longitude_bereich()
 		});
 	}
 
@@ -80,7 +81,7 @@ export async function GET(event: RequestEvent) {
 		);
 
 		throw error(400, {
-			message: 'Der Parameter latitude muss zwischen -90 und 90 liegen'
+			message: m.api_geo_inbaltic_text_parameter_latitude_bereich()
 		});
 	}
 
@@ -112,6 +113,6 @@ export async function GET(event: RequestEvent) {
 	}
 
 	throw error(500, {
-		message: 'Fehler bei der Geo-Prüfung'
+		message: m.api_geo_inbaltic_text_fehler_bei_der_geo_pruefung()
 	});
 }

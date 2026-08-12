@@ -1,3 +1,4 @@
+import * as m from '$lib/paraglide/messages';
 import { FILE_VALIDATION_PRESETS, UPLOAD_ERROR_MESSAGES } from '$lib/constants/upload';
 import { maxUploadSizeFor } from '$lib/constants/uploadLimits';
 import { createLogger } from '$lib/logger.server';
@@ -44,7 +45,7 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress, 
 		const uid = formData.get('uid') as string;
 
 		if (!file) {
-			throw error(400, 'Keine Datei hochgeladen');
+			throw error(400, m.api_files_upload_text_keine_datei_hochgeladen());
 		}
 
 		if (!referenceId || !isCuid(referenceId)) {
@@ -126,7 +127,10 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress, 
 			);
 			throw error(
 				413,
-				`Die Meldung enthält bereits ${Math.round(alreadyUploaded / 1024 / 1024)} MB. Insgesamt sind ${uploadConfig.maxTotalUploadSize} MB erlaubt.`
+				m.api_files_upload_text_die_meldung_enthaelt_bereits_used_mb({
+					used: Math.round(alreadyUploaded / 1024 / 1024),
+					max: uploadConfig.maxTotalUploadSize
+				})
 			);
 		}
 
@@ -155,7 +159,9 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress, 
 			);
 			throw error(
 				429,
-				`Sie haben in der letzten Stunde bereits ${Math.round(budgetResult.usedBytes / 1024 / 1024)} MB übertragen. Bitte versuchen Sie es später erneut.`
+				m.api_files_upload_text_sie_haben_in_der_letzten_stunde_bereits({
+					used: Math.round(budgetResult.usedBytes / 1024 / 1024)
+				})
 			);
 		}
 
@@ -213,7 +219,8 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress, 
 			);
 			throw error(
 				400,
-				magicBytesValidation.message || 'Dateiinhalt stimmt nicht mit dem angegebenen Typ überein'
+				magicBytesValidation.message ||
+					m.api_files_upload_text_dateiinhalt_stimmt_nicht_mit_dem_angegeb()
 			);
 		}
 
@@ -227,7 +234,7 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress, 
 				},
 				'Potentially dangerous file type rejected'
 			);
-			throw error(400, 'Dieser Dateityp ist aus Sicherheitsgründen nicht erlaubt');
+			throw error(400, m.api_files_upload_text_dieser_dateityp_ist_aus_sicherheitsgruen());
 		}
 
 		const [uploadedFile, metadata] = await Promise.all([
@@ -274,6 +281,6 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress, 
 		}
 
 		logger.error({ error: err }, 'Unerwarteter Fehler beim Datei-Upload');
-		throw error(500, 'Interner Server-Fehler beim Datei-Upload');
+		throw error(500, m.api_files_upload_text_interner_server_fehler_beim_datei_upload());
 	}
 };

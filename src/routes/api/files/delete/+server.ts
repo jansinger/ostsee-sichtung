@@ -1,3 +1,4 @@
+import * as m from '$lib/paraglide/messages';
 import { createLogger } from '$lib/logger.server';
 import { db } from '$lib/server/db';
 import { sightingFiles } from '$lib/server/db/schema';
@@ -71,7 +72,7 @@ export const DELETE: RequestHandler = async ({ request, locals, getClientAddress
 
 			if (fileRecord.length === 0) {
 				logger.warn({ filePath }, 'File not found in database for deletion');
-				throw error(404, 'Datei nicht gefunden');
+				throw error(404, m.api_files_delete_text_datei_nicht_gefunden());
 			}
 
 			const file = fileRecord[0]!; // Safe after length check
@@ -88,10 +89,7 @@ export const DELETE: RequestHandler = async ({ request, locals, getClientAddress
 					},
 					'Non-admin user attempted to delete file assigned to sighting'
 				);
-				throw error(
-					403,
-					'Datei kann nicht gelöscht werden - sie ist bereits einer Sichtung zugeordnet'
-				);
+				throw error(403, m.api_files_delete_text_datei_kann_nicht_geloescht_werden_sie_is());
 			}
 
 			// Ownership-Binding: Anonyme, noch nicht zugeordnete Uploads dürfen nur von DEM
@@ -111,7 +109,7 @@ export const DELETE: RequestHandler = async ({ request, locals, getClientAddress
 					},
 					'Non-admin user attempted to delete file without matching upload-uid cookie'
 				);
-				throw error(403, 'Datei kann nicht gelöscht werden - keine Berechtigung');
+				throw error(403, m.api_files_delete_text_datei_kann_nicht_geloescht_werden_keine());
 			}
 
 			logger.info(
@@ -139,7 +137,7 @@ export const DELETE: RequestHandler = async ({ request, locals, getClientAddress
 		// Basic security check - no path traversal
 		if (filePath.includes('..') || filePath.includes('\\') || filePath.startsWith('/')) {
 			logger.warn({ filePath }, 'Verdächtiger Datei-Pfad erkannt');
-			throw error(400, 'Ungültiger Datei-Pfad');
+			throw error(400, m.api_files_delete_text_ungueltiger_datei_pfad());
 		}
 
 		// Use storage provider to delete file
@@ -163,7 +161,7 @@ export const DELETE: RequestHandler = async ({ request, locals, getClientAddress
 
 			return json({
 				success: true,
-				message: 'Datei erfolgreich gelöscht',
+				message: m.api_files_delete_text_datei_erfolgreich_geloescht(),
 				filePath
 			});
 		} catch (deleteError: unknown) {
@@ -172,7 +170,7 @@ export const DELETE: RequestHandler = async ({ request, locals, getClientAddress
 			// For cloud storage, we don't get ENOENT errors, so just log and continue
 			return json({
 				success: true,
-				message: 'Datei wurde gelöscht oder existierte bereits nicht',
+				message: m.api_files_delete_text_datei_wurde_geloescht_oder_existierte_be(),
 				filePath
 			});
 		}
@@ -182,6 +180,6 @@ export const DELETE: RequestHandler = async ({ request, locals, getClientAddress
 		}
 
 		logger.error({ error: err }, 'Unerwarteter Fehler beim Datei-Löschen');
-		throw error(500, 'Interner Server-Fehler beim Datei-Löschen');
+		throw error(500, m.api_files_delete_text_interner_server_fehler_beim_datei_loesch());
 	}
 };
