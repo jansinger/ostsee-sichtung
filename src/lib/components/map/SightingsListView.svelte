@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import { formatEntryDate, type SightingListEntry } from '$lib/map/listViewUtils';
 
 	// Barrierefreie Tabellen-Alternative zur Kartendarstellung (Befund K3).
@@ -8,7 +9,7 @@
 
 {#if entries.length === 0}
 	<p role="status" class="text-base-content p-6 text-center text-sm font-medium">
-		Keine Sichtungen für die aktuelle Auswahl vorhanden.
+		{m.components_map_sightingslistview_text_keine_sichtungen_fuer_die_aktuelle()}
 	</p>
 {:else}
 	<div class="overflow-x-auto">
@@ -19,11 +20,11 @@
 			</caption>
 			<thead>
 				<tr>
-					<th scope="col">Datum</th>
-					<th scope="col">Tierart</th>
-					<th scope="col">Anzahl</th>
-					<th scope="col">Totfund</th>
-					<th scope="col">Fahrwasser</th>
+					<th scope="col">{m.components_map_sightingslistview_text_datum()}</th>
+					<th scope="col">{m.components_map_sightingslistview_text_tierart()}</th>
+					<th scope="col">{m.components_map_sightingslistview_text_anzahl()}</th>
+					<th scope="col">{m.components_map_sightingslistview_text_totfund()}</th>
+					<th scope="col">{m.components_map_sightingslistview_text_fahrwasser()}</th>
 				</tr>
 			</thead>
 			<tbody>

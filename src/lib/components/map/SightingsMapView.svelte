@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import Icon from '$lib/components/Icon.svelte';
 	import { MapCountManager, type CountData } from '$lib/map/countManager';
 	import { getDaysInYear } from '$lib/map/dateUtils';
@@ -674,7 +675,7 @@
 			href="#map-skip-target"
 			class="btn btn-primary focus:z-skip sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-1/2 focus:-translate-x-1/2"
 		>
-			Karte überspringen
+			{m.components_map_sightingsmapview_text_karte_ueberspringen()}
 		</a>
 	{/if}
 
@@ -692,7 +693,7 @@
 		<div
 			class="scroll-styled z-raised absolute top-16 left-1/2 flex w-max max-w-[92vw] -translate-x-1/2 flex-nowrap items-center justify-start gap-1.5 overflow-x-auto px-1 pb-1"
 			role="group"
-			aria-label="Aktive Filter"
+			aria-label={m.components_map_sightingsmapview_aria_label_aktive_filter()}
 		>
 			{#if activeFilters.year !== undefined}
 				<button
@@ -721,7 +722,7 @@
 					type="button"
 					class={chipClass}
 					onclick={resetTimeFilter}
-					aria-label="Zeitraum-Filter entfernen und volles Jahr anzeigen"
+					aria-label={m.components_map_sightingsmapview_aria_label_zeitraum_filter_entfernen_und_volles_jah()}
 				>
 					Zeitraum {formatChipDate(activeFilters.from)}–{formatChipDate(activeFilters.to)}
 					<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
@@ -750,7 +751,7 @@
 				</button>
 			{/each}
 			<button type="button" class="{chipClass} btn-outline" onclick={resetAllFilters}>
-				Alle Filter zurücksetzen
+				{m.components_map_sightingsmapview_text_alle_filter_zuruecksetzen()}
 			</button>
 		</div>
 	{/if}
@@ -781,13 +782,11 @@
 			role="application"
 			tabindex={viewMode === 'map' ? 0 : -1}
 			inert={viewMode === 'list'}
-			aria-label="Interaktive Sichtungskarte der Ostsee"
+			aria-label={m.components_map_sightingsmapview_aria_label_interaktive_sichtungskarte_der_ostsee()}
 			aria-describedby="map-keyboard-hint"
 		></div>
 		<p id="map-keyboard-hint" class="sr-only">
-			Nach dem Fokussieren der Karte verschieben die Pfeiltasten den Kartenausschnitt, Plus und
-			Minus zoomen. Als Alternative steht die Listenansicht über den Umschalter „Karte / Liste" zur
-			Verfügung.
+			{m.components_map_sightingsmapview_text_nach_dem_fokussieren_der_karte()}
 		</p>
 		<div
 			id="info"
@@ -836,7 +835,7 @@
 			>
 				<StatusBlock
 					variant="empty"
-					title="Keine Sichtungen für den aktuellen Filter sichtbar"
+					title={m.components_map_sightingsmapview_title_keine_sichtungen_fuer_den_aktuellen()}
 					description="Passen Sie den Zeitraum oder die Tierart-Filter an."
 				/>
 			</div>
@@ -874,7 +873,7 @@
 				<button
 					onclick={dismissError}
 					class="btn btn-ghost btn-xs"
-					aria-label="Fehlermeldung schließen"
+					aria-label={m.components_map_sightingsmapview_aria_label_fehlermeldung_schliessen()}
 				>
 					✕
 				</button>
@@ -884,7 +883,7 @@
 		{#if viewMode === 'list'}
 			<section
 				class="bg-base-100 z-raised absolute inset-0 overflow-y-auto pt-16 pb-24"
-				aria-label="Listenansicht der Sichtungen"
+				aria-label={m.components_map_sightingsmapview_aria_label_listenansicht_der_sichtungen()}
 			>
 				<div class="mx-auto max-w-3xl px-4">
 					<SightingsListView entries={listEntries} year={currentDisplayedYear} />
@@ -894,13 +893,13 @@
 	</div>
 
 	<!-- K3: Sprungziel des Skip-Links — direkt hinter der Karte, vor den Panels -->
-	<div id="map-skip-target" tabindex="-1" class="sr-only">Ende der Karte</div>
+	<div id="map-skip-target" tabindex="-1" class="sr-only">{m.components_map_sightingsmapview_text_ende_der_karte()}</div>
 
 	<!-- K3: Umschalter Karte/Liste -->
 	<div
 		class="z-panel absolute bottom-4 left-1/2 -translate-x-1/2"
 		role="group"
-		aria-label="Darstellung der Sichtungen wählen"
+		aria-label={m.components_map_sightingsmapview_aria_label_darstellung_der_sichtungen_waehlen()}
 	>
 		<div class="join shadow-floating">
 			<button
@@ -909,7 +908,7 @@
 				aria-pressed={viewMode === 'map'}
 				onclick={() => (viewMode = 'map')}
 			>
-				Karte
+				{m.components_map_sightingsmapview_text_karte()}
 			</button>
 			<button
 				type="button"
@@ -917,7 +916,7 @@
 				aria-pressed={viewMode === 'list'}
 				onclick={() => (viewMode = 'list')}
 			>
-				Liste
+				{m.components_map_sightingsmapview_text_liste()}
 			</button>
 		</div>
 	</div>
@@ -949,8 +948,8 @@
 	<button
 		onclick={() => (showKeyboardHelp = true)}
 		class="bg-info text-info-content hover:bg-info/80 z-raised shadow-floating duration-instant fixed bottom-4 left-4 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full transition-colors"
-		aria-label="Tastatur-Hilfe anzeigen"
-		title="Tastaturkürzel anzeigen (H oder ?)"
+		aria-label={m.components_map_sightingsmapview_aria_label_tastatur_hilfe_anzeigen()}
+		title={m.components_map_sightingsmapview_title_tastaturkuerzel_anzeigen_h_oder()}
 	>
 		<span class="text-lg font-bold">?</span>
 	</button>
@@ -983,10 +982,10 @@
 				     exakt 58px hoch. -->
 				<img
 					src="/logo_dmm_positiv.svg"
-					alt="Logo des Deutschen Meeresmuseums - wissenschaftliche Einrichtung für Meeresforschung und Meeresschutz"
+					alt={m.components_map_sightingsmapview_alt_logo_des_deutschen_meeresmuseums()}
 					class="h-12 w-auto"
 					id="dmm"
-					title="Deutsches Meeresmuseum"
+					title={m.components_map_sightingsmapview_title_deutsches_meeresmuseum()}
 				/>
 			</div>
 		</div>
@@ -1004,11 +1003,11 @@
 				class="bg-base-100 shadow-floating max-h-[80vh] max-w-md rounded-lg p-6"
 			>
 				<div class="mb-4 flex items-center justify-between">
-					<h3 id="help-modal-title" class="text-lg font-bold">Tastaturkürzel</h3>
+					<h3 id="help-modal-title" class="text-lg font-bold">{m.components_map_sightingsmapview_text_tastaturkuerzel()}</h3>
 					<button
 						onclick={() => (showKeyboardHelp = false)}
 						class="btn btn-ghost btn-sm"
-						aria-label="Hilfe schließen"
+						aria-label={m.components_map_sightingsmapview_aria_label_hilfe_schliessen()}
 					>
 						✕
 					</button>
@@ -1016,24 +1015,24 @@
 
 				<div class="space-y-3">
 					<div class="flex justify-between">
-						<kbd class="kbd kbd-sm">H oder ?</kbd>
-						<span class="text-sm">Diese Hilfe anzeigen</span>
+						<kbd class="kbd kbd-sm">{m.components_map_sightingsmapview_text_h_oder()}</kbd>
+						<span class="text-sm">{m.components_map_sightingsmapview_text_diese_hilfe_anzeigen()}</span>
 					</div>
 					<div class="flex justify-between">
-						<kbd class="kbd kbd-sm">F</kbd>
-						<span class="text-sm">Filter-Panel öffnen/schließen</span>
+						<kbd class="kbd kbd-sm">{m.components_map_sightingsmapview_text_f()}</kbd>
+						<span class="text-sm">{m.components_map_sightingsmapview_text_filter_panel_oeffnen_schliessen()}</span>
 					</div>
 					<div class="flex justify-between">
-						<kbd class="kbd kbd-sm">L</kbd>
-						<span class="text-sm">Legende-Panel öffnen/schließen</span>
+						<kbd class="kbd kbd-sm">{m.components_map_sightingsmapview_text_l()}</kbd>
+						<span class="text-sm">{m.components_map_sightingsmapview_text_legende_panel_oeffnen_schliessen()}</span>
 					</div>
 					<div class="flex justify-between">
-						<kbd class="kbd kbd-sm">Z</kbd>
-						<span class="text-sm">Auf alle Meldungen zoomen</span>
+						<kbd class="kbd kbd-sm">{m.components_map_sightingsmapview_text_z()}</kbd>
+						<span class="text-sm">{m.components_map_sightingsmapview_text_auf_alle_meldungen_zoomen()}</span>
 					</div>
 					<div class="flex justify-between">
-						<kbd class="kbd kbd-sm">ESC</kbd>
-						<span class="text-sm">Dialoge schließen</span>
+						<kbd class="kbd kbd-sm">{m.components_map_sightingsmapview_text_esc()}</kbd>
+						<span class="text-sm">{m.components_map_sightingsmapview_text_dialoge_schliessen()}</span>
 					</div>
 				</div>
 
@@ -1046,7 +1045,7 @@
 							class="text-primary"
 							aria-hidden="true"
 						/>
-						Die Buchstaben-Kürzel wirken, solange der Fokus auf der Karte liegt
+						{m.components_map_sightingsmapview_text_die_buchstaben_kuerzel_wirken_solange_de()}
 					</p>
 					<p class="flex items-center gap-2">
 						<Icon
@@ -1056,7 +1055,7 @@
 							class="text-primary"
 							aria-hidden="true"
 						/>
-						Karte mit Tab fokussieren, dann mit den Pfeiltasten verschieben und mit + / − zoomen
+						{m.components_map_sightingsmapview_text_karte_mit_tab_fokussieren_dann()}
 					</p>
 					<p class="flex items-center gap-2">
 						<Icon
@@ -1066,7 +1065,7 @@
 							class="text-primary"
 							aria-hidden="true"
 						/>
-						Der Umschalter „Karte / Liste" zeigt alle Sichtungen als Tabelle
+						{m.components_map_sightingsmapview_text_der_umschalter_karte_liste()}
 					</p>
 					<p class="flex items-center gap-2">
 						<Icon
@@ -1076,7 +1075,7 @@
 							class="text-primary"
 							aria-hidden="true"
 						/>
-						Klicken Sie auf Marker für Details
+						{m.components_map_sightingsmapview_text_klicken_sie_auf_marker_fuer()}
 					</p>
 				</div>
 			</div>

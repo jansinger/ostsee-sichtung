@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	/**
 	 * DropzoneEnhanced Component
 	 *
@@ -585,7 +586,7 @@
 					class="btn btn-ghost btn-sm text-error hover:bg-error hover:text-error-content min-h-11"
 					onclick={handleClear}
 				>
-					Alle löschen
+					{m.report_components_form_fields_dropzoneenhanced_text_alle_loeschen()}
 				</button>
 			</div>
 
@@ -609,7 +610,7 @@
 													class="h-full w-full object-contain"
 												/>
 											{:else}
-												<span class="text-xl" role="img" aria-label="File type icon">
+												<span class="text-xl" role="img" aria-label={m.report_components_form_fields_dropzoneenhanced_aria_label_file_type_icon()}>
 													{getFileIcon(fileMetadata.mimeType)}
 												</span>
 											{/if}
@@ -620,7 +621,7 @@
 											<div
 												class="bg-primary text-primary-content absolute top-1 left-1 rounded px-1.5 py-0.5 text-xs"
 											>
-												Position
+												{m.report_components_form_fields_dropzoneenhanced_text_position()}
 											</div>
 										{/if}
 
@@ -668,7 +669,7 @@
 												type="button"
 												class="btn btn-circle btn-sm btn-error text-error-content absolute -top-2 -right-2 min-h-11 min-w-11"
 												onclick={() => handleFileRemoved(mediaFile.uid)}
-												aria-label="Datei entfernen"
+												aria-label={m.report_components_form_fields_dropzoneenhanced_aria_label_datei_entfernen()}
 											>
 												<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path
@@ -698,11 +699,11 @@
 										<div class="bg-success/10 mt-1 rounded p-1.5">
 											<div class="flex items-center gap-1">
 												<Icon icon="lucide:map-pin" width="12" class="text-success-strong" />
-												<span class="text-success-strong text-xs font-medium">GPS</span>
+												<span class="text-success-strong text-xs font-medium">{m.report_components_form_fields_dropzoneenhanced_text_gps()}</span>
 												{#if isInBalticArea(fileMetadata.exifData.longitude, fileMetadata.exifData.latitude)}
-													<span class="badge badge-success badge-xs">Ostsee</span>
+													<span class="badge badge-success badge-xs">{m.report_components_form_fields_dropzoneenhanced_text_ostsee()}</span>
 												{:else}
-													<span class="badge badge-warning badge-xs">Außerhalb</span>
+													<span class="badge badge-warning badge-xs">{m.report_components_form_fields_dropzoneenhanced_text_ausserhalb()}</span>
 												{/if}
 											</div>
 											<!-- Koordinaten sind Fließtext auf einem Tint, also base-content:
@@ -720,7 +721,7 @@
 										<div class="bg-base-300/50 mt-1 rounded p-1.5">
 											<p class="text-base-content/60 flex items-center gap-1 text-xs">
 												<Icon icon="lucide:map-pin" width="12" class="text-base-content/60" />
-												Keine GPS-Daten
+												{m.report_components_form_fields_dropzoneenhanced_text_keine_gps_daten()}
 											</p>
 										</div>
 									{/if}
@@ -753,10 +754,10 @@
 				<div
 					class="flex items-center justify-center gap-2 py-8"
 					role="status"
-					aria-label="Analysiere Bilddaten"
+					aria-label={m.report_components_form_fields_dropzoneenhanced_aria_label_analysiere_bilddaten()}
 				>
 					<div class="loading loading-spinner loading-md text-primary"></div>
-					<span class="text-base-content/60 text-sm">Analysiere Bilddaten...</span>
+					<span class="text-base-content/60 text-sm">{m.report_components_form_fields_dropzoneenhanced_text_analysiere_bilddaten()}</span>
 				</div>
 			</div>
 		{:then positionMediafileMetadata}
@@ -771,7 +772,7 @@
 						<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
 							<div class="flex items-center gap-2">
 								<Icon icon="lucide:map-pin" class="text-success-strong h-[18px] w-[18px]" />
-								<h4 class="text-sm font-semibold">GPS-Position</h4>
+								<h4 class="text-sm font-semibold">{m.report_components_form_fields_dropzoneenhanced_text_gps_position()}</h4>
 							</div>
 							<div class="badge badge-success badge-sm text-nowrap">
 								{formatLocation(
@@ -781,7 +782,7 @@
 							</div>
 							{#await positionMediaFile.uploadedFile}
 								<div class="loading loading-spinner loading-sm text-primary">
-									Upload läuft im Hintergrund...
+									{m.report_components_form_fields_dropzoneenhanced_text_upload_laeuft_im_hintergrund()}
 								</div>
 							{:then}
 								<!-- `min-h-11` hält das 44-px-Touch-Target (design-system.md). -->
@@ -790,7 +791,7 @@
 									class="btn btn-ghost btn-sm text-error hover:bg-error hover:text-error-content min-h-11"
 									onclick={handleClear}
 								>
-									Neu auswählen
+									{m.report_components_form_fields_dropzoneenhanced_text_neu_auswaehlen()}
 								</button>
 							{/await}
 						</div>
@@ -824,10 +825,10 @@
 							<div
 								class="mt-3 flex items-center justify-center gap-2"
 								role="status"
-								aria-label="Upload läuft"
+								aria-label={m.report_components_form_fields_dropzoneenhanced_aria_label_upload_laeuft()}
 							>
 								<div class="loading loading-spinner loading-sm"></div>
-								<span class="text-base-content/60 text-sm">Upload läuft im Hintergrund...</span>
+								<span class="text-base-content/60 text-sm">{m.report_components_form_fields_dropzoneenhanced_text_upload_laeuft_im_hintergrund_2()}</span>
 							</div>
 						{/await}
 					</div>
@@ -869,7 +870,7 @@
 									width="14"
 									class="text-success-strong shrink-0"
 								/>
-								Position, Datum und Uhrzeit aus dem Foto übernommen
+								{m.report_components_form_fields_dropzoneenhanced_text_position_datum_und_uhrzeit_aus()}
 							</p>
 						</div>
 
@@ -877,7 +878,7 @@
 							<div
 								class="loading loading-spinner loading-sm text-primary shrink-0"
 								role="status"
-								aria-label="Upload läuft"
+								aria-label={m.report_components_form_fields_dropzoneenhanced_aria_label_upload_laeuft_2()}
 							></div>
 						{:then}
 							<!-- `min-h-11` hält das 44-px-Touch-Target (design-system.md). -->
@@ -886,7 +887,7 @@
 								class="btn btn-ghost btn-sm text-error hover:bg-error hover:text-error-content min-h-11 shrink-0"
 								onclick={handleClear}
 							>
-								Neu auswählen
+								{m.report_components_form_fields_dropzoneenhanced_text_neu_auswaehlen_2()}
 							</button>
 						{/await}
 					</div>
@@ -897,7 +898,7 @@
 					<div class="mb-3 flex items-center justify-between gap-2">
 						<div class="flex items-center gap-2">
 							<Icon icon="lucide:image" class="text-primary h-[18px] w-[18px]" />
-							<h4 class="text-sm font-semibold">Foto hochgeladen</h4>
+							<h4 class="text-sm font-semibold">{m.report_components_form_fields_dropzoneenhanced_text_foto_hochgeladen()}</h4>
 						</div>
 						{#await positionMediaFile.uploadedFile}
 							<div class="loading loading-spinner loading-sm text-primary"></div>
@@ -908,7 +909,7 @@
 								class="btn btn-ghost btn-sm text-error hover:bg-error hover:text-error-content min-h-11"
 								onclick={handleClear}
 							>
-								Neu auswählen
+								{m.report_components_form_fields_dropzoneenhanced_text_neu_auswaehlen_3()}
 							</button>
 						{/await}
 					</div>
@@ -932,10 +933,9 @@
 						<div class="alert alert-warning mt-3">
 							<Icon icon="lucide:map-pin-off" width="20" />
 							<div>
-								<h4 class="font-medium">Keine GPS-Daten im Foto</h4>
+								<h4 class="font-medium">{m.report_components_form_fields_dropzoneenhanced_text_keine_gps_daten_im_foto()}</h4>
 								<p class="text-sm">
-									Bitte wählen Sie die Position manuell auf der Karte oder laden Sie ein Foto mit
-									GPS-Daten hoch.
+									{m.report_components_form_fields_dropzoneenhanced_text_bitte_waehlen_sie_die_position()}
 								</p>
 							</div>
 						</div>
@@ -957,10 +957,10 @@
 						<div
 							class="mt-3 flex items-center justify-center gap-2"
 							role="status"
-							aria-label="Upload läuft"
+							aria-label={m.report_components_form_fields_dropzoneenhanced_aria_label_upload_laeuft_3()}
 						>
 							<div class="loading loading-spinner loading-sm"></div>
-							<span class="text-base-content/60 text-sm">Upload läuft im Hintergrund...</span>
+							<span class="text-base-content/60 text-sm">{m.report_components_form_fields_dropzoneenhanced_text_upload_laeuft_im_hintergrund_3()}</span>
 						</div>
 					{/await}
 				</div>
@@ -975,8 +975,7 @@
 				<Icon aria-hidden="true" icon="lucide:circle-alert" width="20" class="shrink-0" />
 				<div>
 					<p class="text-sm">
-						Die Bilddaten dieses Fotos konnten nicht gelesen werden. Position, Datum und Uhrzeit
-						bitte selbst angeben — das Foto bleibt erhalten.
+						{m.report_components_form_fields_dropzoneenhanced_text_die_bilddaten_dieses_fotos_konnten()}
 					</p>
 					<div class="mt-3">
 						<button
@@ -985,7 +984,7 @@
 							onclick={handleClear}
 							data-testid="photo-analysis-failed-reset"
 						>
-							Neu auswählen
+							{m.report_components_form_fields_dropzoneenhanced_text_neu_auswaehlen_4()}
 						</button>
 					</div>
 				</div>

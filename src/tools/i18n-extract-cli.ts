@@ -50,6 +50,18 @@ const EN_MESSAGES_PATH = 'messages/en.json';
  * Bewusst NICHT `routes/about/+page.svelte` — die größte Datei (67 Funde),
  * gehört laut Plan in eine spätere Welle.
  *
+ * Welle 2 (Entwurf 5.3, „Meldeformular → Karte"): die restlichen
+ * Meldeformular-Komponenten mit der höchsten Nutzersichtbarkeit — der
+ * mehrschrittige Formularkörper (`ModernReportForm`, die vier `steps/*`,
+ * Standort-/Consent-/Upload-Eingaben, die Fotoschritt-Dropzone) — sowie die
+ * komplette Karte (Wrapper, Filter-/Legenden-/Range-Panel, Listen- und
+ * Kartenansicht). Weiterhin NICHT dabei: die kleinteiligen 1–2-Fund-Sections
+ * (`sections/*`, generische Feld-Primitive `fields/Base*`/`FieldRenderer`) —
+ * eine eigene, fokussierte Welle statt über zwei Themen verteilt — sowie die
+ * drei explizit zurückgestellten Inhaltsseiten
+ * (`routes/about/+page.svelte`, `SpeciesIdentificationHelp.svelte`,
+ * `routes/bestimmungshilfe/+page.svelte`).
+ *
  * Jeder Eintrag ist ein Pfad ab Repo-Wurzel mit `/` als Trenner — genau die
  * Form, die `planExtraction()` in `ExtractionPlan.files[].file` liefert.
  */
@@ -62,7 +74,27 @@ export const WRITE_SOURCES_SCOPE: readonly string[] = [
 	'src/lib/report/components/form/SubmitStatus.svelte',
 	'src/lib/report/components/SubmissionSuccess.svelte',
 	'src/lib/components/PublicNavbar.svelte',
-	'src/lib/components/PublicFooter.svelte'
+	'src/lib/components/PublicFooter.svelte',
+	// Welle 2 — Meldeformular (Rest)
+	'src/lib/report/components/ModernReportForm.svelte',
+	'src/lib/report/components/FormHelp.svelte',
+	'src/lib/report/components/steps/Step1LocationTime.svelte',
+	'src/lib/report/components/steps/Step2SightingDetails.svelte',
+	'src/lib/report/components/steps/Step3Observations.svelte',
+	'src/lib/report/components/steps/Step4Contact.svelte',
+	'src/lib/report/components/form/LocationInput.svelte',
+	'src/lib/report/components/form/VerifyLocation.svelte',
+	'src/lib/report/components/form/position/PositionPanel.svelte',
+	'src/lib/report/components/form/RequiredConsent.svelte',
+	'src/lib/report/components/form/UploadNotice.svelte',
+	'src/lib/report/components/form/fields/DropzoneEnhanced.svelte',
+	// Welle 2 — Karte
+	'src/lib/components/map/LazyMapWrapper.svelte',
+	'src/lib/components/map/Panel/DualRangeSlider.svelte',
+	'src/lib/components/map/Panel/FilterPanel.svelte',
+	'src/lib/components/map/Panel/LegendPanel.svelte',
+	'src/lib/components/map/SightingsListView.svelte',
+	'src/lib/components/map/SightingsMapView.svelte'
 ];
 
 /**

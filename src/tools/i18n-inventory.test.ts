@@ -401,7 +401,15 @@ describe('Verifikation an echten Dateien', () => {
 		expect(groupNameFound).toBe(false);
 	});
 
-	it('UploadNotice.svelte: findet sichtbaren Text, aber keinen der Begründungs-Kommentare', () => {
+	// Stand bis Welle 2 (Aufgabe 2.3a): UploadNotice.svelte trug noch
+	// hartcodierten deutschen Text, dieser Test belegte, dass das
+	// Muster-Werkzeug ihn findet (mehr als ein Wort), ohne den langen
+	// Begründungskommentar am Dateikopf mitzureißen. Welle 2 hat den Text
+	// mechanisch nach Paraglide extrahiert (`{m.…()}`) — das Muster-Werkzeug
+	// erfasst `ExpressionTag`-Inhalte grundsätzlich nicht (dasselbe Prinzip
+	// wie beim neuen Extraktor, siehe collect.ts-Dateikopf), findet also jetzt
+	// nichts mehr davon. Das ist der beabsichtigte Endzustand, keine Lücke.
+	it('UploadNotice.svelte: findet nach der Extraktion keinen hartcodierten Text mehr', () => {
 		const source = readFileSync(
 			resolve(PROJECT_ROOT, 'src/lib/report/components/form/UploadNotice.svelte'),
 			'utf-8'
@@ -417,16 +425,19 @@ describe('Verifikation an echten Dateien', () => {
 		);
 		expect(leakedComment).toBe(false);
 
-		// Der Dialogtitel ("Was mit Ihrer Aufnahme passiert") hat mehr als ein Wort und muss gefunden werden.
-		expect(findings.some((f) => f.rawText.includes('Was mit Ihrer Aufnahme passiert'))).toBe(true);
+		// Der Dialogtitel steckt jetzt in {m.…()} — kein Textknoten mehr, den
+		// das Muster-Werkzeug sehen könnte.
+		expect(findings.some((f) => f.rawText.includes('Was mit Ihrer Aufnahme passiert'))).toBe(false);
 
-		// "Verstanden" und "Datenschutzhinweis" sind Einzelwörter — dokumentierte Lücke (min. 2 Wörter).
+		// "Verstanden" und "Datenschutzhinweis" bleiben ungefunden — vorher wegen
+		// der dokumentierten Einzelwort-Lücke, jetzt zusätzlich weil beide Texte
+		// extrahiert sind.
 		expect(findings.some((f) => f.rawText === 'Verstanden')).toBe(false);
 		expect(findings.some((f) => f.rawText === 'Datenschutzhinweis')).toBe(false);
 
-		// aria-label="Hinweis schließen" ist ein Attribut-Fund mit zwei Wörtern.
+		// aria-label ist jetzt ebenfalls {m.…()} — kein Attribut-Literal mehr.
 		expect(
 			findings.some((f) => f.attribute === 'aria-label' && f.rawText === 'Hinweis schließen')
-		).toBe(true);
+		).toBe(false);
 	});
 });

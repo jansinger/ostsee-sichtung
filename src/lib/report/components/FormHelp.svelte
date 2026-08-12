@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import { browser } from '$app/environment';
 	import { createLogger } from '$lib/logger';
 	import type { SightingStatistics } from '$lib/server/db/sightingRepository';
@@ -58,7 +59,7 @@
 		<details class="collapse">
 			<summary class="collapse-title flex cursor-pointer items-center gap-2 text-sm font-medium">
 				<Icon icon="lucide:circle-help" width="16" class="text-info-strong" />
-				Hilfe & Tipps für eine wertvolle Meldung
+				{m.report_components_formhelp_text_hilfe_tipps_fuer_eine()}
 			</summary>
 			<div class="collapse-content text-base-content/80 text-sm">
 				<div class="space-y-4 pt-4">
@@ -66,12 +67,10 @@
 						<div>
 							<h4 class="flex items-center gap-2 font-semibold">
 								<Icon icon="lucide:zap" width="16" class="text-primary" />
-								Warum ist Ihre Meldung wichtig?
+								{m.report_components_formhelp_text_warum_ist_ihre_meldung_wichtig()}
 							</h4>
 							<p class="mt-1">
-								Jede Meldung hilft Wissenschaftlern dabei, Wanderrouten zu verstehen, Populationen
-								zu überwachen und Schutzmaßnahmen zu entwickeln. Ihre Beobachtung trägt direkt zum
-								Artenschutz bei!
+								{m.report_components_formhelp_text_jede_meldung_hilft_wissenschaftlern_dabe()}
 							</p>
 							<div class="bg-base-100 mt-3 rounded-lg p-3">
 								{#if !loading && fetchFailed}
@@ -91,7 +90,7 @@
 									<StatusBlock
 										variant="failed"
 										announce="status"
-										title="Statistiken konnten nicht geladen werden"
+										title={m.report_components_formhelp_title_statistiken_konnten_nicht_geladen_werden()}
 										description="Das Formular funktioniert vollständig — nur die Zahlen in diesem Hilfetext fehlen."
 									/>
 								{:else}
@@ -104,7 +103,7 @@
 													{statistics?.totalSightings.toLocaleString(zahlenLocale) ?? '–'}
 												{/if}
 											</div>
-											<div class="text-xs">freigegebene Sichtungen</div>
+											<div class="text-xs">{m.report_components_formhelp_text_freigegebene_sichtungen()}</div>
 										</div>
 										<div>
 											<div class="text-primary font-bold">
@@ -116,7 +115,7 @@
 													–
 												{/if}
 											</div>
-											<div class="text-xs">Beobachter füllen Zusatzfelder aus</div>
+											<div class="text-xs">{m.report_components_formhelp_text_beobachter_fuellen_zusatzfelder_aus()}</div>
 										</div>
 									</div>
 								{/if}
@@ -212,7 +211,7 @@
 						<div>
 							<h4 class="mb-4 flex items-center justify-center gap-2 text-center font-semibold">
 								<Icon icon="lucide:chart-pie" width="16" class="text-success-strong" />
-								Ihre Daten machen den Unterschied
+								{m.report_components_formhelp_text_ihre_daten_machen_den_unterschied()}
 							</h4>
 							<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 								<div class="bg-success/10 border-success/20 rounded-lg border p-4 text-center">
@@ -227,13 +226,13 @@
 									     stützte sich auf 7 Datensätze von 2002, die nie freigegeben wurden. Die
 									     freigegebene Reihe beginnt 2009. -->
 									<div class="text-base-content text-sm font-medium">
-										Jahre mit freigegebenen Sichtungen
+										{m.report_components_formhelp_text_jahre_mit_freigegebenen_sichtungen()}
 									</div>
 									<div class="text-base-content/70 mt-1 text-xs">
 										{#if !loading && statistics && statistics.uniqueUsers > 0}
 											{statistics.uniqueUsers.toLocaleString(zahlenLocale)} Personen haben bereits gemeldet
 										{:else}
-											viele Beobachtende melden bereits regelmäßig
+											{m.report_components_formhelp_text_viele_beobachtende_melden_bereits_regelm()}
 										{/if}
 									</div>
 								</div>
@@ -249,13 +248,13 @@
 											–
 										{/if}
 									</div>
-									<div class="text-base-content text-sm font-medium">mit Fotos/Videos</div>
+									<div class="text-base-content text-sm font-medium">{m.report_components_formhelp_text_mit_fotos_videos()}</div>
 									<div class="text-base-content/70 mt-1 text-xs">
 										{#if !loading && statistics}
 											{statistics.sightingsWithMedia.toLocaleString(zahlenLocale)} freigegebene Sichtungen
 											mit Medien dokumentiert
 										{:else}
-											durch Ihre Fotos wissenschaftlich dokumentiert
+											{m.report_components_formhelp_text_durch_ihre_fotos_wissenschaftlich_dokume()}
 										{/if}
 									</div>
 								</div>
@@ -279,7 +278,7 @@
 									{/if}
 								</div>
 								<div class="text-base-content text-xs">
-									freigegebene Totfunde bereits für die Wissenschaft dokumentiert
+									{m.report_components_formhelp_text_freigegebene_totfunde_bereits_fuer_die()}
 								</div>
 							</div>
 						</div>

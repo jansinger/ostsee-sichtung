@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	/**
 	 * Transparenzhinweis an jeder Dropzone: Die Datei wird sofort übertragen,
 	 * eine nicht abgeschickte Meldung wird befristet aufgeräumt, über die
@@ -42,7 +43,7 @@
 	<!-- Kurz genug für eine Zeile: In der iframe-Einbettung (schmalere Spalte)
 	     brach „Datenschutzhinweis zum Upload" um. Worum es geht, sagt der
 	     Dialogtitel. -->
-	<span>Datenschutzhinweis</span>
+	<span>{m.report_components_form_uploadnotice_text_datenschutzhinweis()}</span>
 </button>
 
 <!-- Dieser Dialog misst sich im DOM breiter als sein Elternelement, auch
@@ -64,7 +65,7 @@
 	<div class="modal-box">
 		<h3 id={titleId} class="flex items-center gap-2 text-lg font-bold">
 			<Icon icon="lucide:info" width="20" class="text-info-strong shrink-0" aria-hidden="true" />
-			Was mit Ihrer Aufnahme passiert
+			{m.report_components_form_uploadnotice_text_was_mit_ihrer_aufnahme_passiert()}
 		</h3>
 		<p class="mt-3 text-sm">{UPLOAD_NOTICE}</p>
 		<div class="modal-action">
@@ -74,7 +75,7 @@
 				onclick={() => dialogElement?.close()}
 				data-testid="upload-notice-close"
 			>
-				Verstanden
+				{m.report_components_form_uploadnotice_text_verstanden()}
 			</button>
 		</div>
 	</div>
@@ -90,6 +91,6 @@
 		type="button"
 		class="modal-backdrop"
 		onclick={() => dialogElement?.close()}
-		aria-label="Hinweis schließen"
+		aria-label={m.report_components_form_uploadnotice_aria_label_hinweis_schliessen()}
 	></button>
 </dialog>

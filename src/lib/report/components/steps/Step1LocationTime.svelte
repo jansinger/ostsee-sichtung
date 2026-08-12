@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import Icon from '$lib/components/Icon.svelte';
 	import PositionAndTime from '$lib/report/components/sections/PositionAndTime.svelte';
 </script>
@@ -16,7 +17,7 @@
 				<Icon icon="lucide:map-pin" width="20" class="text-primary md:h-6 md:w-6" />
 			</div>
 		</div>
-		<h2 class="text-base-content text-xl font-bold md:text-2xl">Position & Zeitpunkt</h2>
+		<h2 class="text-base-content text-xl font-bold md:text-2xl">{m.report_components_steps_step1locationtime_text_position_zeitpunkt()}</h2>
 		<p class="text-base-content/70 mx-auto max-w-2xl text-sm md:text-base">
 			<strong>Wo und wann fand die Sichtung statt?</strong> Je genauer, desto wertvoller für die Forschung.
 		</p>

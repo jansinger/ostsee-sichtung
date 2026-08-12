@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import { ddToDm, ddToDms, dmsToDd, dmToDd } from '$lib/utils/geo/coordinateConversion';
 	import { untrack } from 'svelte';
 
@@ -236,7 +237,7 @@
        Dezimalgrad-Feld unten). Ob eine Koordinate fehlt, entscheidet Yup. -->
 {#snippet requiredMark()}
 	{#if required}
-		<span class="text-error ml-1 text-sm" aria-label="Pflichtfeld">*</span>
+		<span class="text-error ml-1 text-sm" aria-label={m.report_components_form_locationinput_aria_label_pflichtfeld()}>*</span>
 	{/if}
 {/snippet}
 
@@ -257,7 +258,7 @@
 	     `min-w-0` gehört zwingend dazu: Ohne das Aufheben von `min-width: auto`
 	     bleibt das Select auch in der gestapelten Fassung zu breit. -->
 	<div class="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-		<label class="label" for="gps-format">GPS-Eingabeformat</label>
+		<label class="label" for="gps-format">{m.report_components_form_locationinput_text_gps_eingabeformat()}</label>
 		<select id="gps-format" class="select w-full min-w-0 md:ml-auto md:w-auto" bind:value={mode}>
 			<option value="dd">Dezimalgrad (z.B. 54.5042° N)</option>
 			<option value="dm">Grad, Dezimalminute (z.B. 54° 30.25' N)</option>
@@ -273,7 +274,7 @@
 		     eine falsche Aussage. Gilt genauso im Format „Grad, Dezimalminute". -->
 		<div class="grid grid-cols-1 gap-2 md:grid-cols-2">
 			<div>
-				<label class="label" for="dms-lat-deg">Breite (N){@render requiredMark()}</label>
+				<label class="label" for="dms-lat-deg">{m.report_components_form_locationinput_text_breite_n()}{@render requiredMark()}</label>
 				<div class="flex gap-2">
 					<div>
 						<input
@@ -282,7 +283,7 @@
 							type="number"
 							min="0"
 							max="90"
-							placeholder="Grad"
+							placeholder={m.report_components_form_locationinput_placeholder_grad()}
 							aria-required={required || undefined}
 							bind:value={dms.latitude.deg}
 							onchange={updateFromFields}
@@ -293,8 +294,8 @@
 						type="number"
 						min="0"
 						max="59"
-						placeholder="Min"
-						aria-label="Breite Minuten"
+						placeholder={m.report_components_form_locationinput_placeholder_min()}
+						aria-label={m.report_components_form_locationinput_aria_label_breite_minuten()}
 						bind:value={dms.latitude.min}
 						onchange={updateFromFields}
 					/>
@@ -303,15 +304,15 @@
 						type="number"
 						min="0"
 						max="59"
-						placeholder="Sek"
-						aria-label="Breite Sekunden"
+						placeholder={m.report_components_form_locationinput_placeholder_sek()}
+						aria-label={m.report_components_form_locationinput_aria_label_breite_sekunden()}
 						bind:value={dms.latitude.sec}
 						onchange={updateFromFields}
 					/>
 				</div>
 			</div>
 			<div>
-				<label class="label" for="dms-lon-deg">Länge (E){@render requiredMark()}</label>
+				<label class="label" for="dms-lon-deg">{m.report_components_form_locationinput_text_laenge_e()}{@render requiredMark()}</label>
 				<div class="flex gap-2">
 					<div>
 						<input
@@ -320,7 +321,7 @@
 							type="number"
 							min="0"
 							max="180"
-							placeholder="Grad"
+							placeholder={m.report_components_form_locationinput_placeholder_grad_2()}
 							aria-required={required || undefined}
 							bind:value={dms.longitude.deg}
 							onchange={updateFromFields}
@@ -331,8 +332,8 @@
 						type="number"
 						min="0"
 						max="59"
-						placeholder="Min"
-						aria-label="Länge Minuten"
+						placeholder={m.report_components_form_locationinput_placeholder_min_2()}
+						aria-label={m.report_components_form_locationinput_aria_label_laenge_minuten()}
 						bind:value={dms.longitude.min}
 						onchange={updateFromFields}
 					/>
@@ -341,8 +342,8 @@
 						type="number"
 						min="0"
 						max="59"
-						placeholder="Sek"
-						aria-label="Länge Sekunden"
+						placeholder={m.report_components_form_locationinput_placeholder_sek_2()}
+						aria-label={m.report_components_form_locationinput_aria_label_laenge_sekunden()}
 						bind:value={dms.longitude.sec}
 						onchange={updateFromFields}
 					/>
@@ -352,7 +353,7 @@
 	{:else if mode === 'dm'}
 		<div class="grid grid-cols-1 gap-2 md:grid-cols-2">
 			<div>
-				<label class="label" for="dm-lat-deg">Breite (N){@render requiredMark()}</label>
+				<label class="label" for="dm-lat-deg">{m.report_components_form_locationinput_text_breite_n_2()}{@render requiredMark()}</label>
 				<div class="flex gap-2">
 					<div>
 						<input
@@ -361,7 +362,7 @@
 							type="number"
 							min="0"
 							max="90"
-							placeholder="Grad"
+							placeholder={m.report_components_form_locationinput_placeholder_grad_3()}
 							aria-required={required || undefined}
 							bind:value={dm.latitude.deg}
 							onchange={updateFromFields}
@@ -373,15 +374,15 @@
 						min="0"
 						max="59.9999"
 						step="0.01"
-						placeholder="Dezimalmin"
-						aria-label="Breite Dezimalminuten"
+						placeholder={m.report_components_form_locationinput_placeholder_dezimalmin()}
+						aria-label={m.report_components_form_locationinput_aria_label_breite_dezimalminuten()}
 						bind:value={dm.latitude.min}
 						onchange={updateFromFields}
 					/>
 				</div>
 			</div>
 			<div>
-				<label class="label" for="dm-lon-deg">Länge (E){@render requiredMark()}</label>
+				<label class="label" for="dm-lon-deg">{m.report_components_form_locationinput_text_laenge_e_2()}{@render requiredMark()}</label>
 				<div class="flex gap-2">
 					<div>
 						<input
@@ -390,7 +391,7 @@
 							type="number"
 							min="0"
 							max="180"
-							placeholder="Grad"
+							placeholder={m.report_components_form_locationinput_placeholder_grad_4()}
 							aria-required={required || undefined}
 							bind:value={dm.longitude.deg}
 							onchange={updateFromFields}
@@ -402,8 +403,8 @@
 						min="0"
 						max="59.9999"
 						step="0.01"
-						placeholder="Dezimalmin"
-						aria-label="Länge Dezimalminuten"
+						placeholder={m.report_components_form_locationinput_placeholder_dezimalmin_2()}
+						aria-label={m.report_components_form_locationinput_aria_label_laenge_dezimalminuten()}
 						bind:value={dm.longitude.min}
 						onchange={updateFromFields}
 					/>
@@ -413,7 +414,7 @@
 	{:else}
 		<div class="grid grid-cols-1 gap-2 md:grid-cols-2">
 			<div>
-				<label class="label" for="latitude">Breite (N){@render requiredMark()}</label>
+				<label class="label" for="latitude">{m.report_components_form_locationinput_text_breite_n_3()}{@render requiredMark()}</label>
 				<!-- step deckt die volle Spaltengenauigkeit ab: `gps_breite` ist
 				     numeric(8,6). Mit dem früheren step="0.0001" wies die
 				     Constraint-Validierung des Browsers jede Bestandskoordinate mit
@@ -427,14 +428,14 @@
 					min="-90"
 					max="90"
 					step="0.000001"
-					placeholder="Dezimalgrad"
+					placeholder={m.report_components_form_locationinput_placeholder_dezimalgrad()}
 					aria-required={required || undefined}
 					bind:value={ddLatitude}
 					onchange={onDecimalChange}
 				/>
 			</div>
 			<div>
-				<label class="label" for="longitude">Länge (E){@render requiredMark()}</label>
+				<label class="label" for="longitude">{m.report_components_form_locationinput_text_laenge_e_3()}{@render requiredMark()}</label>
 				<input
 					id="longitude"
 					class="input w-full"
@@ -442,7 +443,7 @@
 					min="-180"
 					max="180"
 					step="0.000001"
-					placeholder="Dezimalgrad"
+					placeholder={m.report_components_form_locationinput_placeholder_dezimalgrad_2()}
 					aria-required={required || undefined}
 					bind:value={ddLongitude}
 					onchange={onDecimalChange}
@@ -478,7 +479,7 @@
 	{#if collapsibleCoordinates}
 		<details class="bg-base-100 collapse" data-testid="coordinate-fields">
 			<summary class="collapse-title min-h-11 py-3 text-sm font-medium">
-				Koordinaten eingeben
+				{m.report_components_form_locationinput_text_koordinaten_eingeben()}
 			</summary>
 			<div class="collapse-content">
 				{@render coordinateFields()}
@@ -493,7 +494,7 @@
 		     Ohne diese Verknüpfung wäre der Satz nur optisch vorhanden — die
 		     Felder hier sind rohe Inputs und laufen nicht über `FormField`,
 		     das `aria-describedby` sonst zentral setzt (`design-system.md`). -->
-		<div role="group" aria-label="Koordinaten" aria-describedby={hintId}>
+		<div role="group" aria-label={m.report_components_form_locationinput_aria_label_koordinaten()} aria-describedby={hintId}>
 			<p id={hintId} class="text-base-content/70 text-support mb-2" data-testid="coordinates-hint">
 				{coordinatesHint}
 			</p>

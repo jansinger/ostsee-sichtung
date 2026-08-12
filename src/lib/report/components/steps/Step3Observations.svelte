@@ -3,6 +3,7 @@
   Optional detailed information that enhances research value
 -->
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import { createLogger } from '$lib/logger';
 	import Behavior from '$lib/report/components/sections/Behavior.svelte';
 	import BoatInfo from '$lib/report/components/sections/BoatInfo.svelte';
@@ -57,7 +58,7 @@
 				<Icon icon="lucide:activity" width="20" class="text-primary md:h-6 md:w-6" />
 			</div>
 		</div>
-		<h2 class="text-base-content text-xl font-bold md:text-2xl">Weitere Informationen</h2>
+		<h2 class="text-base-content text-xl font-bold md:text-2xl">{m.report_components_steps_step3observations_text_weitere_informationen()}</h2>
 		<!-- „Fotos/Videos" stand hier, solange der Upload auf diesem Schritt lag.
 		     Seit dem 2026-08-04 steht er auf Schritt 2 — der Halbsatz verspräche
 		     sonst etwas, das einen Schritt weiter vorne liegt, und das ausgerechnet
@@ -73,14 +74,14 @@
 				onclick={skipToNextStep}
 				disabled={$isSubmitting}
 				class="btn btn-outline btn-secondary gap-2"
-				aria-label="Diesen optionalen Schritt überspringen"
+				aria-label={m.report_components_steps_step3observations_aria_label_diesen_optionalen_schritt_ueberspringen()}
 			>
 				<Icon icon="lucide:skip-forward" width="16" />
-				Schritt überspringen
+				{m.report_components_steps_step3observations_text_schritt_ueberspringen()}
 			</button>
 		</div>
 
-		<div class="divider text-xs opacity-70">oder Details hinzufügen</div>
+		<div class="divider text-xs opacity-70">{m.report_components_steps_step3observations_text_oder_details_hinzufuegen()}</div>
 	</div>
 
 	<!-- `Media` steht seit dem 2026-08-04 auf Schritt 2 (`Step2SightingDetails`).
