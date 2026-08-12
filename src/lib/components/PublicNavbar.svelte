@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import { page } from '$app/state';
 	import ConnectionBadge from '$lib/components/ConnectionBadge.svelte';
 	import Icon from '$lib/components/Icon.svelte';
@@ -40,12 +41,12 @@
 {#snippet publicItems()}
 	<li>
 		<a href={localizeHref('/')} class={currentPath === '/' ? 'active font-medium' : ''}>
-			Meldung
+			{m.components_publicnavbar_text_meldung()}
 		</a>
 	</li>
 	<li>
 		<a href={localizeHref('/map')} class={currentPath === '/map' ? 'active font-medium' : ''}>
-			Karte
+			{m.components_publicnavbar_text_karte()}
 		</a>
 	</li>
 	<li>
@@ -53,7 +54,7 @@
 			href={localizeHref('/bestimmungshilfe')}
 			class={currentPath === '/bestimmungshilfe' ? 'active font-medium' : ''}
 		>
-			Bestimmungshilfe
+			{m.components_publicnavbar_text_bestimmungshilfe()}
 		</a>
 	</li>
 	<!--
@@ -75,7 +76,7 @@
 	-->
 	<li>
 		<a href={localizeHref('/about')} class={currentPath === '/about' ? 'active font-medium' : ''}>
-			Hintergrund
+			{m.components_publicnavbar_text_hintergrund()}
 		</a>
 	</li>
 {/snippet}
@@ -107,7 +108,7 @@
 					<OstseeTiereLogo size="sm" showText={true} className="ml-2" />
 					{#if isAdmin}
 						<span class="divider divider-horizontal mx-2"></span>
-						<span class="text-base-content/70 text-lg font-semibold">Admin</span>
+						<span class="text-base-content/70 text-lg font-semibold">{m.components_publicnavbar_text_admin()}</span>
 					{/if}
 				</div>
 				<div class="navbar-end w-auto gap-2">
@@ -152,7 +153,7 @@
 								<li>
 									<details bind:this={adminMenuElement}>
 										<summary class={istAdminBereich ? 'active font-medium' : ''}>
-											Verwaltung
+											{m.components_publicnavbar_text_verwaltung()}
 										</summary>
 										<!-- Kein eigenes `z-*`: Der Header trägt bereits einen
 										     z-index und bildet damit einen Stacking-Context —
@@ -174,7 +175,7 @@
 
 					<!-- Mobile menu -->
 					<details bind:this={mobileMenuElement} class="dropdown dropdown-end lg:hidden">
-						<summary aria-label="Menü" class="btn btn-ghost">
+						<summary aria-label={m.components_publicnavbar_aria_label_menue()} class="btn btn-ghost">
 							<Icon icon="lucide:list" width="24" class="h-6 w-6 shrink-0" />
 						</summary>
 						<ul
@@ -189,7 +190,7 @@
 								mehr ohne Gegenwert.
 							-->
 							{#if isAdmin}
-								<li class="menu-title">Verwaltung</li>
+								<li class="menu-title">{m.components_publicnavbar_text_verwaltung_2()}</li>
 								{@render adminItems()}
 							{/if}
 

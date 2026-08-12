@@ -25,6 +25,7 @@
 </script>
 
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import Icon from '$lib/components/Icon.svelte';
 	import { ORPHAN_RETENTION_HOURS } from '$lib/constants/uploadRetention';
 	import { SUBMIT_STATUS_OFFLINE_ID } from './submitStatusIds';
@@ -107,7 +108,7 @@
 		data-testid="submit-status-submitting"
 	>
 		<span class="loading loading-spinner loading-sm text-primary mt-0.5"></span>
-		<p class="text-base-content font-medium">Ihre Meldung wird gesendet …</p>
+		<p class="text-base-content font-medium">{m.report_components_form_submitstatus_text_ihre_meldung_wird_gesendet()}</p>
 	</div>
 {:else if state === 'offline'}
 	<!--
@@ -124,7 +125,7 @@
 	>
 		<Icon icon="lucide:wifi-off" class="mt-0.5 shrink-0" aria-hidden="true" />
 		<div>
-			<p class="text-base-content font-bold">Keine Internetverbindung</p>
+			<p class="text-base-content font-bold">{m.report_components_form_submitstatus_text_keine_internetverbindung()}</p>
 			<p class="text-base-content mt-1 text-sm">
 				Die Meldung kann gerade nicht abgeschickt werden.
 				<strong>Ihre Eingaben bleiben vollständig gespeichert</strong> — auch wenn Sie diese Seite schließen.
@@ -139,7 +140,7 @@
 				-->
 				<button type="button" class="btn btn-primary btn-sm mt-3" onclick={onRetry}>
 					<Icon icon="lucide:refresh-cw" width="16" class="shrink-0" aria-hidden="true" />
-					Trotzdem versuchen
+					{m.report_components_form_submitstatus_text_trotzdem_versuchen()}
 				</button>
 			{/if}
 		</div>
@@ -171,7 +172,7 @@
 				{#if onRetry}
 					<button type="button" class="btn btn-primary btn-sm" onclick={onRetry}>
 						<Icon icon="lucide:refresh-cw" width="16" class="shrink-0" aria-hidden="true" />
-						Erneut absenden
+						{m.report_components_form_submitstatus_text_erneut_absenden()}
 					</button>
 				{/if}
 				{#if showReference}
@@ -207,7 +208,7 @@
 	>
 		<Icon icon="lucide:triangle-alert" class="mt-0.5 shrink-0" aria-hidden="true" />
 		<div>
-			<p class="text-base-content font-bold">Aufnahme übertragen, Meldung nicht</p>
+			<p class="text-base-content font-bold">{m.report_components_form_submitstatus_text_aufnahme_uebertragen_meldung_nicht()}</p>
 			<p class="text-base-content mt-1 text-sm">
 				<!--
 					Der Grund gehört auch hierhin. Vorher trug nur `failed` ihn, und eine
@@ -228,7 +229,7 @@
 				{#if onRetry}
 					<button type="button" class="btn btn-primary btn-sm" onclick={onRetry}>
 						<Icon icon="lucide:refresh-cw" width="16" class="shrink-0" aria-hidden="true" />
-						Erneut absenden
+						{m.report_components_form_submitstatus_text_erneut_absenden_2()}
 					</button>
 				{/if}
 				{#if showReference}

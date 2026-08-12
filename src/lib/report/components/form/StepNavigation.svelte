@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import Icon from '$lib/components/Icon.svelte';
 	import StepProgressCompact from './StepProgressCompact.svelte';
 	import { SUBMIT_STATUS_OFFLINE_ID } from './submitStatusIds';
@@ -319,16 +320,16 @@
 	<!-- Navigation UI -->
 	<nav
 		class="mt-2 flex items-center justify-between gap-2 md:mt-0"
-		aria-label="Formular Navigation"
+		aria-label={m.report_components_form_stepnavigation_aria_label_formular_navigation()}
 	>
 		<button
 			type="button"
 			onclick={previousStep}
 			disabled={isFirstStep || $isSubmitting}
 			class="btn btn-outline"
-			aria-label="Vorheriger Schritt"
+			aria-label={m.report_components_form_stepnavigation_aria_label_vorheriger_schritt()}
 		>
-			← Zurück
+			{m.report_components_form_stepnavigation_text_zurueck()}
 		</button>
 
 		<!--

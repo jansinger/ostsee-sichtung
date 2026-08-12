@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import { canNavigateToStep } from '$lib/form/validation/stepNavigation';
 	import { getFormContext } from '$lib/report/formContext';
 	import type { FormStep } from '$lib/report/types';
@@ -47,7 +48,7 @@
   (`canNavigateToStep`) und dasselbe `aria-current` benutzen; es gibt keinen
   Zustand, der nur in einer der beiden existiert.
 -->
-<nav class="mb-8 hidden md:block" aria-label="Formular-Schritte">
+<nav class="mb-8 hidden md:block" aria-label={m.report_components_form_formsteps_aria_label_formular_schritte()}>
 	<ul class="steps steps-horizontal w-full">
 		{#each steps as step, index (step.id)}
 			{@const navigable = canNavigateTo(index)}

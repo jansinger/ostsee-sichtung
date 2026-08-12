@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import { getSpeciesLabel } from '$lib/report/formOptions/species';
 	import type { SightingFormValues } from '$lib/types/Form';
 	import { formatWallClockDateTime } from '$lib/utils/format/formatWallClockDateTime';
@@ -29,7 +30,7 @@
 			<h1
 				class="text-base-content flex items-center justify-center gap-3 text-3xl font-bold lg:text-4xl"
 			>
-				Vielen Dank!
+				{m.report_components_submissionsuccess_text_vielen_dank()}
 				<Icon
 					icon="custom:porpoise"
 					width="32"
@@ -43,13 +44,13 @@
 			     dieses Formular wird auch ein Totfund gemeldet, und „Sichtung"
 			     schloss diesen Fall sprachlich aus. „Übermittelt" statt
 			     „gemeldet", weil „Ihre Meldung wurde gemeldet" doppelt sagt. -->
-			<p class="text-base-content/80 text-xl">Ihre Meldung wurde erfolgreich übermittelt</p>
+			<p class="text-base-content/80 text-xl">{m.report_components_submissionsuccess_text_ihre_meldung_wurde_erfolgreich_uebermitt()}</p>
 		</div>
 
 		<!-- Success Details -->
 		<div class="card bg-base-200 shadow-raised mb-8">
 			<div class="card-body">
-				<h2 class="card-title text-success-strong mb-4">Was passiert als Nächstes?</h2>
+				<h2 class="card-title text-success-strong mb-4">{m.report_components_submissionsuccess_text_was_passiert_als_naechstes()}</h2>
 
 				<div class="space-y-4">
 					<!-- Kein automatischer Mailversand an die meldende Person — weder beim
@@ -68,7 +69,7 @@
 							aria-hidden="true"
 						/>
 						<div>
-							<h3 class="font-semibold">Rückfragen zu Ihrer Meldung</h3>
+							<h3 class="font-semibold">{m.report_components_submissionsuccess_text_rueckfragen_zu_ihrer_meldung()}</h3>
 							<p class="text-base-content/70 text-sm">
 								Eine automatische Bestätigungsmail versenden wir nicht. Falls zu Ihrer Meldung etwas
 								offen bleibt, melden wir uns bei Ihnen — per E-Mail an <strong
@@ -88,9 +89,9 @@
 							aria-hidden="true"
 						/>
 						<div>
-							<h3 class="font-semibold">Wissenschaftliche Auswertung</h3>
+							<h3 class="font-semibold">{m.report_components_submissionsuccess_text_wissenschaftliche_auswertung()}</h3>
 							<p class="text-base-content/70 text-sm">
-								Ihre Daten fließen in die Forschung ein und helfen beim Schutz der Meerestiere
+								{m.report_components_submissionsuccess_text_ihre_daten_fliessen_in_die()}
 							</p>
 						</div>
 					</div>
@@ -104,7 +105,7 @@
 							aria-hidden="true"
 						/>
 						<div>
-							<h3 class="font-semibold">Fotos und Videos</h3>
+							<h3 class="font-semibold">{m.report_components_submissionsuccess_text_fotos_und_videos()}</h3>
 							<p class="text-base-content/70 text-sm">
 								{#if submittedData?.mediaUpload}
 									Ihre Aufnahmen wurden übermittelt und werden gemeinsam mit Ihrer Meldung geprüft.
@@ -126,9 +127,9 @@
 								aria-hidden="true"
 							/>
 							<div>
-								<h3 class="font-semibold">Totfund gemeldet</h3>
+								<h3 class="font-semibold">{m.report_components_submissionsuccess_text_totfund_gemeldet()}</h3>
 								<p class="text-base-content/70 text-sm">
-									Totfunde werden prioritär behandelt. Bei Bedarf werden wir Sie kontaktieren.
+									{m.report_components_submissionsuccess_text_totfunde_werden_prioritaer_behandelt_bei()}
 								</p>
 							</div>
 						</div>
@@ -143,7 +144,7 @@
 							aria-hidden="true"
 						/>
 						<div>
-							<h3 class="font-semibold">Daten einsehen</h3>
+							<h3 class="font-semibold">{m.report_components_submissionsuccess_text_daten_einsehen()}</h3>
 							<p class="text-base-content/70 text-sm">
 								Ihre Meldung erscheint nach Prüfung auf der
 								<a href={localizeHref('/map')} class="link link-primary">interaktiven Karte</a>
@@ -158,20 +159,19 @@
 		{#if submittedData}
 			<div class="card bg-base-100 shadow-raised mb-8">
 				<div class="card-body">
-					<h2 class="card-title mb-4">Ihre Meldung</h2>
+					<h2 class="card-title mb-4">{m.report_components_submissionsuccess_text_ihre_meldung()}</h2>
 					<div class="mb-4 grid grid-cols-1 gap-1 text-sm">
 						<div>
-							<span class="font-medium">Referenz-ID:</span>
+							<span class="font-medium">{m.report_components_submissionsuccess_text_referenz_id()}</span>
 							{submittedData.referenceId}
 						</div>
 						<span class="text-base-content/70 text-xs">
-							(Bitte geben Sie die ID bei Rückfragen an unser Team an. Die ID hilft bei der
-							Zuordnung Ihrer Meldung)
+							{m.report_components_submissionsuccess_text_bitte_geben_sie_die_id()}
 						</span>
 					</div>
 					<div class="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
 						<div>
-							<span class="font-medium">Tierart:</span>
+							<span class="font-medium">{m.report_components_submissionsuccess_text_tierart()}</span>
 							{getSpeciesLabel(submittedData.species)}
 						</div>
 						<div>
@@ -179,11 +179,11 @@
 							{submittedData.totalCount} Tier{submittedData.totalCount > 1 ? 'e' : ''}
 						</div>
 						<div>
-							<span class="font-medium">Datum:</span>
+							<span class="font-medium">{m.report_components_submissionsuccess_text_datum()}</span>
 							{formatWallClockDateTime(submittedData.sightingDate, submittedData.sightingTime)}
 						</div>
 						<div>
-							<span class="font-medium">Position:</span>
+							<span class="font-medium">{m.report_components_submissionsuccess_text_position()}</span>
 							{submittedData.hasPosition
 								? formatLocation(submittedData.longitude, submittedData.latitude)
 								: submittedData.waterway || 'Nicht angegeben'}
@@ -200,7 +200,7 @@
 		     abgeben", nur ohne den sauberen Zweig-Reset (UX-Review 2026-08-07). -->
 		<div class="flex flex-col justify-center gap-4 md:flex-row">
 			<button onclick={handleNewReport} class="btn btn-primary btn-lg">
-				Weitere Meldung abgeben
+				{m.report_components_submissionsuccess_text_weitere_meldung_abgeben()}
 			</button>
 		</div>
 
@@ -208,12 +208,12 @@
 		<div class="mt-12">
 			<div class="card bg-base-200">
 				<div class="card-body text-center">
-					<h3 class="mb-4 text-lg font-semibold">Interessiert an mehr?</h3>
+					<h3 class="mb-4 text-lg font-semibold">{m.report_components_submissionsuccess_text_interessiert_an_mehr()}</h3>
 
 					<div class="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
 						<a href={localizeHref('/map')} class="btn btn-outline btn-sm flex items-center gap-2">
 							<Icon icon="lucide:map" width="16" height="16" aria-hidden="true" />
-							Alle Sichtungen auf der Karte
+							{m.report_components_submissionsuccess_text_alle_sichtungen_auf_der_karte()}
 						</a>
 						<a
 							href="https://www.meeresmuseum.de"
@@ -222,12 +222,12 @@
 							class="btn btn-outline btn-sm flex items-center gap-2"
 						>
 							<Icon icon="lucide:shield-check" width="16" height="16" aria-hidden="true" />
-							Deutsches Meeresmuseum
+							{m.report_components_submissionsuccess_text_deutsches_meeresmuseum()}
 						</a>
 					</div>
 
 					<p class="text-base-content/60 mt-4 text-xs">
-						Folgen Sie uns für Updates zu Meeresforschung und Naturschutz
+						{m.report_components_submissionsuccess_text_folgen_sie_uns_fuer_updates()}
 					</p>
 				</div>
 			</div>
