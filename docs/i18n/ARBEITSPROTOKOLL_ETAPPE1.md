@@ -864,6 +864,63 @@ Beides in einem Zug zu übersetzen wäre falsch — eine Fehlerantwort an einen
 Client ist kein Anzeigetext. Vorschlag: erst je Endpunkt klären, welche
 Antwort ein Mensch liest, dann lokalisieren; die englischen bleiben.
 
+### Welle C1: `weather.ts` und `wording.ts`
+
+Commit 6989eebc, 51 neue Schlüssel. A fällt von 138 auf 98.
+
+#### Die Locale-Falle, zum vierten Mal — und diesmal an der schlimmsten Stelle
+
+`getWeatherDescription()` hat zwei Verbraucher, die in entgegengesetzte
+Richtungen ziehen: `weatherRefreshService.ts:250` und
+`/api/weather/historical` legen den Text als Teil von `weatherData` in der
+**JSONB-Spalte `weather_data`** ab (`schema.ts:111`); `WeatherDisplay.svelte`
+zeigt ihn an. Was gespeichert wird, darf nicht davon abhängen, in welcher
+Sprache der Melder unterwegs war — und anders als bei Legacy-API, CSV-Export
+und Museums-Mail wäre ein Fehler hier **nicht durch erneutes Ausliefern zu
+heilen**, weil er im Bestand steht.
+
+Die Entscheidung steckt deshalb in der Signatur:
+`getWeatherDescription(code, locale = baseLocale)`. Persistenz und
+API-Antwort bekommen Deutsch, ohne danach zu fragen; nur die Anzeige reicht
+`getLocale()` durch — und leitet aus dem **Code** ab, nicht aus der
+gespeicherten deutschen Zeichenkette.
+
+Der Record hält **Botschafts-Funktionen, keine aufgelösten Zeichenketten**.
+Ein Record aus Strings würde beim Modulladen einmal aufgelöst und fröre die
+Sprache für die Prozesslebensdauer ein — der Defekt, den Entwurf 2.3/4.1 für
+die Modulkonstanten der Schicht B beschreibt.
+
+#### Der Test war zuerst rot, und zwar an der richtigen Stelle
+
+`weatherLocalePinning.test.ts` vor dem Umbau: Die **Gegenprobe** fiel aus
+(`'Bedeckt'` statt der künstlich abweichenden englischen Fassung). Die beiden
+Pinnungs-Zusicherungen waren schon vorher grün — für den falschen Grund,
+weil die Funktion die Locale gar nicht kannte. Genau dafür steht die
+Gegenprobe da; ohne sie hätte der Test einen Zustand bescheinigt, den es
+nicht gab. Das ist der wichtigste Befund aus Etappe 1, hier zum zweiten Mal
+angewandt.
+
+#### `wording.ts`: `${verb}` mitten im Satz
+
+`mapHint` setzte seinen Satz mit einem Verb-Einschub zusammen („… an der Sie
+das Tier ${verb}"). Ein Parameter dort friert die deutsche Wortstellung ein;
+Englisch stellt sie anders. **Sechs ganze Sätze** statt eines Musters —
+Muster C, wie schon bei `OLMap` und `LoadingOverlay`.
+
+`sightingFromQuestion` gibt im Lebend-Zweig jetzt **dieselbe** Botschaft
+zurück, die das Schema als Label führt — nicht eine zweite mit gleichem
+Wortlaut. `wording.test.ts` prüft die Gleichheit gegen das Schema; zwei
+Kopien könnten in einer Zielsprache auseinanderlaufen, und der Test hätte es
+gemerkt, aber erst nach der Übersetzung.
+
+Geprüft, nicht angenommen: Alle Verbraucher von `wording.ts` sind
+`.svelte`-Komponenten — keine Pinnung nötig.
+
+Nachweise: `svelte-check` 0 Fehler, `test:quick` grün (4951 + 780), alle drei
+E2E-Shards im ersten Lauf grün (229 + 94 + 156 = 479).
+
+**Stand A: 98 Kandidaten in 28 Dateien** (vorher 138/30).
+
 ### Was diese Messung NICHT ist
 
 Kein Guard. Sie liegt als Zahl im Protokoll, nicht im Testlauf — der
