@@ -317,6 +317,43 @@ wie ein Eintrag in `abgewiesen/` ein Warnsignal ist und einen Menschen braucht.
 den Hinweis oben). Vor einem Rückstand-Lauf `notification.email.enabled`
 abschalten — und danach wieder ein.
 
+### Betrieb als Zeitplan: welcher Abbruch einen Menschen braucht
+
+Auf `hawking` läuft der Versand alle 15 Minuten über einen Plesk-Zeitplan
+(`legacy-sync/sync.sh`, ruft dieses Werkzeug aus dem deployten Repo). Der
+Wrapper dort beantwortet genau eine Frage — **muss jemand hinsehen?** — und
+die drei Abbruchgründe sind dafür ausdrücklich nicht gleichwertig:
+
+| Grund         | heilt sich selbst?                            | Zeitplan meldet |
+| ------------- | --------------------------------------------- | --------------- |
+| `rate-limit`  | ja, der nächste Lauf macht weiter             | nein            |
+| `netzwerk`    | nein — unklar, ob die Sichtung angelegt wurde | ja              |
+| `verschieben` | nein — Sichtung angelegt, Datei liegt noch da | ja              |
+
+Das Werkzeug selbst endet bei **jedem** Abbruch mit Exit 1; für einen Aufruf
+von Hand ist „nicht fertig geworden" die richtige Auskunft. Erst der Wrapper
+stuft `rate-limit` herunter.
+
+Der Grund steht in den Zahlen: Am 2026-08-12 trug ein Nutzer 60 Sichtungen aus
+sechs Jahren nach. Bei 20 Meldungen pro Stunde, die die Zielinstanz annimmt,
+verteilt sich das über Stunden — und jeder Lauf dazwischen endet am Limit. Mit
+vier Läufen je Stunde wären das vier Benachrichtigungen für einen Zustand, der
+in Ordnung ist. Nach einer Woche liest sie niemand mehr, und dann geht der eine
+echte Fehler darin unter.
+
+Die Ausnahme greift **nur, wenn sonst nichts auffiel**: Kam neben dem
+Rate-Limit eine Ablehnung vor, bleibt es bei Meldung und Exit 1. Eine
+abgelehnte Meldung braucht einen Menschen, unabhängig vom Limit.
+
+> **Offen (Stand 2026-08-12):** Die Benachrichtigung des Plesk-Zeitplans ist
+> nachweislich **nicht** angekommen — weder bei den planmäßigen Läufen, die am
+> Rate-Limit scheiterten, noch bei einer eigens angelegten Test-Aufgabe mit
+> Exit 1. Zustellung an die konfigurierte Adresse funktioniert (im Mail-Log
+> belegt), es entsteht schlicht keine Mail. Solange das nicht geklärt ist,
+> ersetzt der Zeitplan **keine** Überwachung: Ein Fehler bliebe still. Die
+> robustere Lösung wäre, den Versand nicht Plesk zu überlassen, sondern im
+> Skript selbst auszulösen.
+
 ## Tests
 
 Die Tests laufen im Vitest des Hauptrepos mit:
