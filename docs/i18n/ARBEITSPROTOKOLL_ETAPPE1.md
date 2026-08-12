@@ -442,3 +442,62 @@ uebersetzt, sieht `\n\t\t\t\t` mitten im Satz. Kosmetisch, separat zu bereinigen
 sentence-fragment 78 | interpolation 58 | dynamic-attribute 44 |
 no-letter-group 44 (Struktur, nie uebersetzt) | plural-candidate 12 (falsch-positiv)
 Echte Restarbeit: rund 180.
+
+## Aufgabe 2.3c — dynamische Attribute
+Commits: 96ce1282 (Dreiteilung), f482341b (14 mechanisiert), 50a8da41
+(Laufzeit-Test), c31fbe97 (Formatierung).
+
+Die 44 `dynamic-attribute` zerfielen in drei Gruppen:
+  23 Durchreichung — `title={file.name}`, `aria-label={title}`. KEIN deutscher
+     Text. Neue Kategorie `attribute-no-static-text`; nie Uebersetzungsarbeit,
+     stand aber in der Liste und liess die Restarbeit groesser aussehen.
+  14 Text mit eingebettetem Wert — mechanisiert zu parametrisierten Botschaften.
+   7 Ternary — bleibt Handarbeit.
+Ergebnis: dynamic-attribute 44 -> 7. Echte Restarbeit 143 statt 300.
+
+Die Regel fuer Parameternamen (letzter bedeutungstragender Teil des Ausdrucks,
+`||`/`??` vorher aufgeloest) traegt auch fuer die verbleibenden 58
+Interpolationen — sie haengt nur an der Ausdrucksform, nicht am Satz.
+
+Beilaeufig gefunden: `LegendPanel.svelte` hatte eine vorbestehende Typluecke
+(`value` aus Object.entries war `unknown` trotz `Record<string,string>`), bisher
+unsichtbar, weil `String(value)` jeden Typ klaglos nimmt. Erst die
+parametrisierte Botschaft machte sie sichtbar.
+
+---
+
+# ZWEI BEFUNDE FUER DIE WEITERARBEIT (2026-08-12)
+
+## 1. `.prettierignore` deckt die Generatordateien nicht ab
+`npm run format` ist `prettier --write .` und formatiert damit auch erzeugte und
+mitgelieferte Datenbestaende. Gemessen an einem versehentlichen Vollauf:
+  src/tools/iho.json                      386.334 Zeilen
+  src/lib/server/geo/rbush-index.json     191.753 Zeilen
+  legacy-inbox/src/geo/rbush-index.json   191.753 Zeilen
+  src/css/weather-icons-wind.css            7.615 Zeilen
+  src/tools/baltic-inclusion-mask.geojson   4.545 Zeilen
+Zusammen ueber 777.000 geaenderte Zeilen — ein unbrauchbarer Diff, in dem eine
+echte Aenderung nicht mehr zu finden ist. Beim selben Lauf wurde auch
+`germanBaseline.json` angefasst, also der eingefrorene Schnappschuss.
+
+Die Datei .prettierignore existiert und schliesst bereits Lockfiles, /static/,
+/drizzle/ und den erzeugten Paraglide-Code aus. Die obigen Pfade gehoeren
+ebenfalls hinein. NICHT im Rahmen der Mehrsprachigkeit erledigt, weil es ein
+eigenes Thema ist — aber wer als Naechstes formatiert, stolpert darueber.
+
+## 2. Nicht selbst im Arbeitsbaum arbeiten, solange ein Agent darin laeuft
+Ich habe `prettier --write` gefahren, waehrend ein Umsetzer-Agent noch im selben
+Worktree arbeitete. Er fand meine Aenderungen, hielt sie fuer fremd und legte sie
+in einen Stash — richtig gehandelt, beschriftet statt verworfen. Aber:
+ - mein `git add -A && git commit` schlug fehl, weil ihm der Index unter den
+   Haenden weggezogen wurde;
+ - danach lag ein Arbeitsbaum mit 777.000 geaenderten Zeilen vor, dessen Herkunft
+   sich nicht mehr eindeutig zuordnen liess;
+ - die Aufloesung kostete mehr Zeit als die Formatierung selbst.
+Der Skill verbietet parallele IMPLEMENTIERER aus genau diesem Grund. Die Regel
+gilt auch fuer den Koordinator: Solange ein Agent laeuft, wird im Arbeitsbaum
+nichts angefasst — auch nichts scheinbar Harmloses wie Formatierung. Lesende
+Befehle (git status, git diff, npm run i18n:extract) sind unproblematisch.
+
+Dass HEAD dabei nie beschaedigt wurde, lag nicht an Vorsicht, sondern daran,
+dass der Agent sauber gestasht hat. Verlass dich nicht darauf.
