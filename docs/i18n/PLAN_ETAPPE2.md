@@ -490,9 +490,24 @@ Navigation und Fussbereich → Toasts und Fehlerseiten → Inhaltsseiten.
 
 1. Alle 399 mechanischen Stellen ersetzt, der Trockenlauf meldet danach für
    Schicht C **0 Botschaften** (wie er es für Schicht A und B bereits tut).
-2. Die **offenen** Kategorien bleiben unverändert: `sentence-fragment`,
-   `interpolation`, `dynamic-attribute`, `plural-candidate`, `no-letter-group`.
-   Was Handarbeit war, bleibt Handarbeit.
+2. Die **Summe der offenen Kategorien bleibt konstant bei 300**
+   (`sentence-fragment` + `interpolation` + `dynamic-attribute` +
+   `plural-candidate` + `no-letter-group`). Was Handarbeit war, bleibt
+   Handarbeit — keine Stelle darf verschwinden.
+
+   Die einzelnen Kategorien **verschieben sich dabei**, und das ist richtig so:
+   Ein ersetzter Textknoten ist danach ein Ausdruck, und für seine Geschwister
+   wird er damit zu dynamischem Inhalt. Gemessen zwischen dem Stand vor Welle 1
+   und nach Welle 2:
+
+   | | vorher | nachher |
+   | --- | ---: | ---: |
+   | `sentence-fragment` | 165 | 147 |
+   | `interpolation` | 68 | 87 |
+   | `dynamic-attribute` | 44 | 44 |
+   | `plural-candidate` | 11 | 11 |
+   | `no-letter-group` | 12 | 11 |
+   | **Summe** | **300** | **300** |
 
    > **Korrektur (2026-08-12).** Hier stand zuerst „die Übersprungenen bleiben
    > unverändert bei 488". Das war falsch und wäre nie erfüllbar gewesen:
