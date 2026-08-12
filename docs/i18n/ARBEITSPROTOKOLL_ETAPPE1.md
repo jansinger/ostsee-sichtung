@@ -588,6 +588,67 @@ sauberen Baum ohne die neue Datei reproduziert** (3 rot), im Wiederholungslauf
 grün (4942/4942 + 780/780). Also Lastartefakt wie in Etappe 1 dreimal zuvor,
 keine Regression. Wer sie rot sieht: erst isoliert wiederholen.
 
+## Aufgabe 2.3e — Befund B abarbeiten (Anzeigetext im `<script>`-Block)
+
+Commits: ef7254f9 (Zähler), deceb209 (Welle 1).
+
+### Die Klassifikation, jetzt im Guard statt im Scratchpad
+
+Von 158 mehrwortigen Literalen in den `<script>`-Blöcken der 84 Dateien sind
+**41 Tailwind-Klassenlisten** und **39 Logmeldungen**; es bleiben **78 Kandidaten
+in 25 Dateien**. Beide Ausschlüsse stehen als benannte Regel im Guard
+(`STRUCTURAL_LITERAL`, `logCallRanges`), nicht in einem Messskript — die Lehre
+aus Aufgabe 2.2, Befund 2 („DER UMFANG STAND IN EINEM WEGGEWORFENEN SKRIPT").
+
+Der Log-Ausschluss rechnet **Klammerbilanz statt Zeile**. Eine zeilenweise
+Prüfung zählte vier Logmeldungen als Anzeigetext, weil `logger.warn('…', { … })`
+regelmäßig umbricht — darunter `'User contact data saved with consent-based
+persistence'`.
+
+Die Regel selbst ist jetzt **geteilt**: `multiWordLiterals` liegt in
+`sourceScan.testutil.ts`, beide Guards rufen sie auf. Vorher stand sie als Kopie
+in `hardcodedStringScan.test.ts` — genau die Lage, gegen die das Datei-Doc jener
+testutil-Datei argumentiert („Zwei Verfahren für dieselbe Aufgabe altern
+getrennt").
+
+### Welle 1: `routes/+error.svelte`, 9 → 0
+
+Zehn Literale (fünf Titel, fünf Beschreibungen) in `getErrorMessage()`. Neun
+davon zählte der Guard; `'Serverfehler'` ist ein Einzelwort und stand nie darin
+— trotzdem übersetzt. Die Zwei-Wort-Regel ist eine **untere Schranke** für
+Anzeigetext, keine Definition davon.
+
+Schlüssel von Hand, aber nach derselben Regel wie das Werkzeug
+(`slugify(text, 40)`), damit der Katalog neben den maschinell erzeugten
+Einträgen lesbar bleibt.
+
+Nachweise: `test:quick` grün (4948 + 780), **alle drei E2E-Shards grün ohne
+`CI=1`** (229 + 94 + 156 = 479, 0 rot).
+
+### Zwei Fehler von mir in diesem Abschnitt
+
+1. Ich habe `git checkout` auf eine Datei mit **uncommitteten** Änderungen
+   gefahren, um eine Mutation zurückzunehmen — und damit die halbe Arbeit
+   gelöscht. Für Mutationen an noch nicht committetem Code gilt: vorher
+   kopieren, danach zurückkopieren. `git checkout` nimmt nur eine Mutation an
+   committetem Code zurück.
+2. Ich habe die Kataloge mit `json.dump` geschrieben und dabei die
+   Einrückung der bestehenden ICU-Plural-Einträge verändert. Prettier hat es
+   gemeldet, der Commit lief trotzdem durch (der Hook prüft es nicht).
+   Nachgezogen per `--amend`, mit dem Beleg, dass beide Dateien danach
+   unverändert 907 Schlüssel tragen und der Diff rein weißraumhaft ist.
+
+### Stand Befund B
+
+69 Kandidaten in 24 Dateien offen. Die dicksten Posten: `SightingsMapView` 9,
+`DropzoneEnhanced` 8, `UnifiedDropzone` 6, `ModernReportForm` 4,
+`ReportKindChoice` 4, `VerifyLocation` 4, `WeatherDataFetcher` 4, `Media` 4.
+Nicht alle sind Übersetzungsarbeit — Cookie-Zeichenketten, erzeugte
+Element-IDs, Cache-Schlüssel und geworfene Entwicklerfehler stecken darin und
+werden je Datei einzeln entschieden.
+
+---
+
 ---
 
 # ZWEI BEFUNDE FUER DIE WEITERARBEIT (2026-08-12)
