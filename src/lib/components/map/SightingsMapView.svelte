@@ -700,7 +700,10 @@
 					type="button"
 					class={chipClass}
 					onclick={() => switchToYear(apiDefaultYear)}
-					aria-label="Filter Jahr {activeFilters.year} entfernen und zum Standard-Jahr {apiDefaultYear} wechseln"
+					aria-label={m.components_map_sightingsmapview_aria_label_filter_jahr_year_entfernen_und({
+						year: activeFilters.year,
+						apiDefaultYear: apiDefaultYear
+					})}
 				>
 					Jahr {activeFilters.year}
 					<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
@@ -711,7 +714,9 @@
 					type="button"
 					class="{chipClass} max-w-56"
 					onclick={clearSearchFilter}
-					aria-label="Suchfilter {activeFilters.query} entfernen"
+					aria-label={m.components_map_sightingsmapview_aria_label_suchfilter_query_entfernen({
+						query: activeFilters.query
+					})}
 				>
 					<span class="truncate">Suche „{activeFilters.query}"</span>
 					<Icon icon="lucide:x" width="14" height="14" class="shrink-0" aria-hidden="true" />
@@ -733,7 +738,9 @@
 					type="button"
 					class={chipClass}
 					onclick={() => showSpecies(speciesId)}
-					aria-label="{speciesLabel(speciesId)} wieder anzeigen"
+					aria-label={m.components_map_sightingsmapview_aria_label_specieslabel_wieder_anzeigen({
+						speciesLabel: speciesLabel(speciesId)
+					})}
 				>
 					Ohne {speciesLabel(speciesId)}
 					<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
@@ -744,7 +751,9 @@
 					type="button"
 					class={chipClass}
 					onclick={() => showColorGroup(colorGroup)}
-					aria-label="Gruppe {colorGroupLabel(colorGroup)} wieder anzeigen"
+					aria-label={m.components_map_sightingsmapview_aria_label_gruppe_colorgrouplabel_wieder_anzeigen(
+						{ colorGroupLabel: colorGroupLabel(colorGroup) }
+					)}
 				>
 					Ohne {colorGroupLabel(colorGroup)}
 					<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
@@ -814,7 +823,9 @@
 			>
 				<StatusBlock
 					variant="empty"
-					title="Keine Sichtungen für {currentDisplayedYear} vorhanden"
+					title={m.components_map_sightingsmapview_title_keine_sichtungen_fuer_currentdisplayedye({
+						currentDisplayedYear: currentDisplayedYear
+					})}
 					description="Für dieses Jahr liegen keine freigegebenen Meldungen vor."
 					action={latestYearWithData !== undefined && latestYearWithData !== currentDisplayedYear
 						? {
@@ -893,7 +904,9 @@
 	</div>
 
 	<!-- K3: Sprungziel des Skip-Links — direkt hinter der Karte, vor den Panels -->
-	<div id="map-skip-target" tabindex="-1" class="sr-only">{m.components_map_sightingsmapview_text_ende_der_karte()}</div>
+	<div id="map-skip-target" tabindex="-1" class="sr-only">
+		{m.components_map_sightingsmapview_text_ende_der_karte()}
+	</div>
 
 	<!-- K3: Umschalter Karte/Liste -->
 	<div
@@ -1003,7 +1016,9 @@
 				class="bg-base-100 shadow-floating max-h-[80vh] max-w-md rounded-lg p-6"
 			>
 				<div class="mb-4 flex items-center justify-between">
-					<h3 id="help-modal-title" class="text-lg font-bold">{m.components_map_sightingsmapview_text_tastaturkuerzel()}</h3>
+					<h3 id="help-modal-title" class="text-lg font-bold">
+						{m.components_map_sightingsmapview_text_tastaturkuerzel()}
+					</h3>
 					<button
 						onclick={() => (showKeyboardHelp = false)}
 						class="btn btn-ghost btn-sm"
@@ -1016,23 +1031,33 @@
 				<div class="space-y-3">
 					<div class="flex justify-between">
 						<kbd class="kbd kbd-sm">{m.components_map_sightingsmapview_text_h_oder()}</kbd>
-						<span class="text-sm">{m.components_map_sightingsmapview_text_diese_hilfe_anzeigen()}</span>
+						<span class="text-sm"
+							>{m.components_map_sightingsmapview_text_diese_hilfe_anzeigen()}</span
+						>
 					</div>
 					<div class="flex justify-between">
 						<kbd class="kbd kbd-sm">{m.components_map_sightingsmapview_text_f()}</kbd>
-						<span class="text-sm">{m.components_map_sightingsmapview_text_filter_panel_oeffnen_schliessen()}</span>
+						<span class="text-sm"
+							>{m.components_map_sightingsmapview_text_filter_panel_oeffnen_schliessen()}</span
+						>
 					</div>
 					<div class="flex justify-between">
 						<kbd class="kbd kbd-sm">{m.components_map_sightingsmapview_text_l()}</kbd>
-						<span class="text-sm">{m.components_map_sightingsmapview_text_legende_panel_oeffnen_schliessen()}</span>
+						<span class="text-sm"
+							>{m.components_map_sightingsmapview_text_legende_panel_oeffnen_schliessen()}</span
+						>
 					</div>
 					<div class="flex justify-between">
 						<kbd class="kbd kbd-sm">{m.components_map_sightingsmapview_text_z()}</kbd>
-						<span class="text-sm">{m.components_map_sightingsmapview_text_auf_alle_meldungen_zoomen()}</span>
+						<span class="text-sm"
+							>{m.components_map_sightingsmapview_text_auf_alle_meldungen_zoomen()}</span
+						>
 					</div>
 					<div class="flex justify-between">
 						<kbd class="kbd kbd-sm">{m.components_map_sightingsmapview_text_esc()}</kbd>
-						<span class="text-sm">{m.components_map_sightingsmapview_text_dialoge_schliessen()}</span>
+						<span class="text-sm"
+							>{m.components_map_sightingsmapview_text_dialoge_schliessen()}</span
+						>
 					</div>
 				</div>
 

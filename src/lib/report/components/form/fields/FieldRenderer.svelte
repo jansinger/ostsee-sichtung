@@ -353,7 +353,10 @@
 		{/if}
 		{label}
 		{#if required}
-			<span class="text-error ml-1 text-sm" aria-label={m.report_components_form_fields_fieldrenderer_aria_label_pflichtfeld()}>*</span>
+			<span
+				class="text-error ml-1 text-sm"
+				aria-label={m.report_components_form_fields_fieldrenderer_aria_label_pflichtfeld()}>*</span
+			>
 		{/if}
 
 		<!-- Status Indicator (Häkchen nur bei berührten, gültigen Feldern) -->
@@ -385,7 +388,9 @@
 				<button
 					type="button"
 					class="btn btn-ghost btn-sm btn-circle -my-2.5 min-h-11 min-w-11"
-					aria-label={`Hinweis: ${metaValues.valueText}`}
+					aria-label={m.report_components_form_fields_fieldrenderer_aria_label_hinweis_valuetext({
+						valueText: metaValues.valueText
+					})}
 				>
 					<Icon icon="lucide:info" width="14" class="text-base-content/70" />
 				</button>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import type { Snippet } from 'svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import { focusPanelHeading, returnFocusToToggle } from '$lib/map/panelFocus';
@@ -72,7 +73,7 @@
 <button
 	bind:this={toggleEl}
 	onclick={togglePanel}
-	class="glass text-base-content hover:bg-base-200 {accentBorderClass} {togglePositionClass} fixed right-0 z-nav flex h-32 w-11 cursor-pointer flex-col items-center justify-center rounded-l-lg border-2 border-r-0 shadow-floating backdrop-blur-sm transition-all duration-panel md:w-8 {isOpen
+	class="glass text-base-content hover:bg-base-200 {accentBorderClass} {togglePositionClass} z-nav shadow-floating duration-panel fixed right-0 flex h-32 w-11 cursor-pointer flex-col items-center justify-center rounded-l-lg border-2 border-r-0 backdrop-blur-sm transition-all md:w-8 {isOpen
 		? 'md:-translate-x-80'
 		: ''} {toggleHidden ? 'max-md:hidden' : ''}"
 	aria-label={title}
@@ -100,7 +101,7 @@
 	bind:this={panelEl}
 	id={panelId}
 	data-sheet-state={sheetExpanded ? 'expanded' : 'peek'}
-	class="glass {accentBorderClass} fixed z-panel overflow-hidden shadow-floating backdrop-blur-sm transition-[transform,height] duration-panel max-md:inset-x-0 max-md:bottom-0 max-md:rounded-t-2xl max-md:border-t-2 md:top-20 md:right-0 md:h-[calc(100%-5rem)] md:w-80 md:border-l-2 {sheetExpanded
+	class="glass {accentBorderClass} z-panel shadow-floating duration-panel fixed overflow-hidden backdrop-blur-sm transition-[transform,height] max-md:inset-x-0 max-md:bottom-0 max-md:rounded-t-2xl max-md:border-t-2 md:top-20 md:right-0 md:h-[calc(100%-5rem)] md:w-80 md:border-l-2 {sheetExpanded
 		? 'max-md:h-[85dvh]'
 		: 'max-md:h-[45dvh]'} {isOpen
 		? 'translate-x-0 translate-y-0'
@@ -136,7 +137,7 @@
 				<button
 					onclick={closePanel}
 					class="btn btn-ghost btn-sm hover:bg-base-200 min-h-11 min-w-11"
-					aria-label="{title} schließen"
+					aria-label={m.components_map_panel_mappanel_aria_label_title_schliessen({ title: title })}
 				>
 					<Icon icon="lucide:square-x" class="h-4 w-4" />
 				</button>

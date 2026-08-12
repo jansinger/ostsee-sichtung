@@ -97,7 +97,10 @@
 		>
 			{label}
 			{#if required}
-				<span class="text-error ml-1 text-sm" aria-label={m.report_components_form_fields_basecheckbox_aria_label_pflichtfeld()}>*</span>
+				<span
+					class="text-error ml-1 text-sm"
+					aria-label={m.report_components_form_fields_basecheckbox_aria_label_pflichtfeld()}>*</span
+				>
 			{/if}
 		</span>
 	</label>
@@ -108,7 +111,9 @@
 			<button
 				type="button"
 				class="btn btn-ghost btn-xs btn-circle"
-				aria-label={`Hinweis: ${valueText}`}
+				aria-label={m.report_components_form_fields_basecheckbox_aria_label_hinweis_valuetext({
+					valueText: valueText
+				})}
 			>
 				<Icon icon="lucide:info" width="14" class="text-base-content/60" />
 			</button>

@@ -72,7 +72,9 @@
 	onkeydown={handleKeydown}
 	tabindex="0"
 	role="button"
-	aria-label={`${file.originalName} öffnen`}
+	aria-label={m.components_media_mediathumbnail_aria_label_originalname_oeffnen({
+		originalName: file.originalName
+	})}
 >
 	{#if isImage(file.mimeType)}
 		<!-- Bild Thumbnail -->
@@ -206,11 +208,17 @@
 				{formatFileSize(file.size)}
 			</p>
 			{#if isVideo(file.mimeType)}
-				<div class="badge badge-primary badge-xs">{m.components_media_mediathumbnail_text_video()}</div>
+				<div class="badge badge-primary badge-xs">
+					{m.components_media_mediathumbnail_text_video()}
+				</div>
 			{:else if isImage(file.mimeType)}
-				<div class="badge badge-secondary badge-xs">{m.components_media_mediathumbnail_text_bild()}</div>
+				<div class="badge badge-secondary badge-xs">
+					{m.components_media_mediathumbnail_text_bild()}
+				</div>
 			{:else}
-				<div class="badge badge-neutral badge-xs">{m.components_media_mediathumbnail_text_datei()}</div>
+				<div class="badge badge-neutral badge-xs">
+					{m.components_media_mediathumbnail_text_datei()}
+				</div>
 			{/if}
 		</div>
 	</div>

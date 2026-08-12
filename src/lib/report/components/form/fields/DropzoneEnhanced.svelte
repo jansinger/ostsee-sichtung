@@ -660,7 +660,9 @@
 													type="button"
 													class="btn btn-circle btn-sm btn-ghost text-on-scrim absolute right-1 bottom-1"
 													onclick={() => mediaFile.abortUpload?.()}
-													aria-label={`Upload von ${mediaFile.fileName} abbrechen`}
+													aria-label={m.report_components_form_fields_dropzoneenhanced_aria_label_upload_von_filename_abbrechen(
+														{ fileName: mediaFile.fileName }
+													)}
 												>
 													<Icon icon="lucide:x" width="16" aria-hidden="true" />
 												</button>

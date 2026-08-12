@@ -287,7 +287,9 @@
 															type="button"
 															class="group shadow-raised hover:shadow-floating duration-instant relative cursor-pointer overflow-hidden rounded-lg transition-all contrast-more:hover:outline-2"
 															onclick={() => openImageModal(image.src, image.alt, image.copyright)}
-															aria-label={`${image.alt} in Originalgröße anzeigen`}
+															aria-label={m.report_components_form_fields_speciesidentificationhel_aria_label_alt_in_originalgroesse_anzeigen(
+																{ alt: image.alt }
+															)}
 														>
 															<img
 																src={image.src}

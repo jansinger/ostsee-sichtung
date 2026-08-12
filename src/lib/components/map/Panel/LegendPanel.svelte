@@ -84,6 +84,32 @@
 		countManager.setColorVisibility(colorGroup, visible);
 	}
 
+	// `Object.entries(translations.speciesMap)` (Aufrufstelle unten) liefert
+	// `speciesName` als `unknown`, nicht als `string` — eine bereits bestehende
+	// Typlücke, bisher folgenlos, weil `String(value)` und die reine
+	// Textknoten-Interpolation `{value}` jeden Typ klaglos annehmen.
+	//
+	// Ein generierter Paraglide-Botschaftsaufruf (`m.<key>({...})`) nimmt ein
+	// `unknown`-Argument dagegen NICHT klaglos an: Sein Typ ist eine
+	// Schnittmenge aus Aufruf-Signatur und `MessageMetadata<Inputs, Options,
+	// {}>`, und TypeScript löst den Aufruf bei einem `unknown`-Argument
+	// fälschlich gegen die `{}`-Seite der Schnittmenge auf
+	// („Type 'unknown' is not assignable to type '{}'", reproduziert isoliert
+	// gegen die kompilierten `.d.ts` außerhalb von Svelte — kein
+	// Komponenten-spezifischer Bug). `String(...)` am Argument macht daraus
+	// wieder ein konkretes `string` und behebt die Fehlmeldung.
+	function speciesVisibilityAriaLabel(
+		speciesName: unknown,
+		visible: number,
+		total: number
+	): string {
+		return m.components_map_panel_legendpanel_aria_label_sichtbarkeit_fuer_value_umschalten_aktue({
+			value: String(speciesName),
+			visible,
+			total
+		});
+	}
+
 	// M3: Sichtbarkeit der Seezeichen-Ebene — Default an (wie bisher)
 	let seamarkVisible = $state(true);
 	function handleSeamarkToggle(visible: boolean) {
@@ -138,6 +164,7 @@
 		{#each Object.entries(translations.speciesMap) as [key, value] (key)}
 			{@const symbol = speciesSymbols[key]}
 			{@const total = counts.speciesCounts[key]?.total || 0}
+			{@const visibleCount = counts.speciesCounts[key]?.visible || 0}
 			<div
 				class="hover:bg-base-200 flex items-center gap-3 rounded-lg p-2 transition-colors"
 				data-species-row={key}
@@ -172,7 +199,7 @@
 
 				<div class="flex items-center gap-2">
 					<span class="text-base-content/70 font-mono text-xs">
-						{counts.speciesCounts[key]?.visible || 0}/{total}
+						{visibleCount}/{total}
 					</span>
 					<input
 						type="checkbox"
@@ -180,8 +207,7 @@
 						value={key}
 						checked={speciesVisibility[key] ?? true}
 						onchange={(e) => handleSpeciesToggle(key, (e.target as HTMLInputElement).checked)}
-						aria-label="Sichtbarkeit für {value} umschalten. Aktuell {counts.speciesCounts[key]
-							?.visible || 0} von {total} Sichtungen sichtbar."
+						aria-label={speciesVisibilityAriaLabel(value, visibleCount, total)}
 					/>
 				</div>
 			</div>
@@ -215,7 +241,9 @@
 					value={group.key}
 					checked={colorVisibility[group.key] ?? true}
 					onchange={(e) => handleColorToggle(group.key, (e.target as HTMLInputElement).checked)}
-					aria-label="Sichtungen der Gruppe {group.label} anzeigen/ausblenden"
+					aria-label={m.components_map_panel_legendpanel_aria_label_sichtungen_der_gruppe_label_anzeigen_aus(
+						{ label: group.label }
+					)}
 				/>
 			</div>
 		{/each}
