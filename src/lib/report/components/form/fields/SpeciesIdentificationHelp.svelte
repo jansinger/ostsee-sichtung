@@ -437,12 +437,10 @@
 					</svelte:element>
 					<div class="{styles.body} space-y-1">
 						<p>
-							<strong>Robbe:</strong> Der runde Kopf steht senkrecht aus dem Wasser und bleibt liegen.
-							Augen, Schnauze und Barthaare sind erkennbar. Es gibt keine Rückenflosse.
+							<strong>{m.report_components_form_fields_speciesidentificationhel_text_robbe()}</strong> {m.report_components_form_fields_speciesidentificationhel_text_der_runde_kopf_steht_senkrecht()}
 						</p>
 						<p>
-							<strong>Schweinswal:</strong> Kein Kopf zu sehen, nur ein rollender Rücken mit kleiner dreieckiger
-							Finne. Sichtbar für ein bis zwei Sekunden, danach ist das Tier weg.
+							<strong>{m.report_components_form_fields_speciesidentificationhel_text_schweinswal()}</strong> {m.report_components_form_fields_speciesidentificationhel_text_kein_kopf_zu_sehen_nur()}
 						</p>
 					</div>
 				</div>
@@ -459,16 +457,13 @@
 					</svelte:element>
 					<div class="{styles.body} space-y-1">
 						<p>
-							<strong>Kegelrobbe:</strong> langer Kopf, gerade Linie von der Schnauze zur Stirn; Nasenlöcher
-							parallel, laufen unten nicht zusammen.
+							<strong>{m.report_components_form_fields_speciesidentificationhel_text_kegelrobbe()}</strong> {m.report_components_form_fields_speciesidentificationhel_text_langer_kopf_gerade_linie_von()}
 						</p>
 						<p>
-							<strong>Seehund:</strong> kurze Schnauze mit deutlichem Absatz zur Stirn, Augen weit vorn;
-							Nasenlöcher V-förmig und unten zusammenlaufend.
+							<strong>{m.report_components_form_fields_speciesidentificationhel_text_seehund()}</strong> {m.report_components_form_fields_speciesidentificationhel_text_kurze_schnauze_mit_deutlichem_absatz()}
 						</p>
 						<p>
-							<strong>Ringelrobbe:</strong> kleinste Art, helle Ringe im Fell — in deutschen Gewässern
-							aber praktisch nicht anzutreffen.
+							<strong>{m.report_components_form_fields_speciesidentificationhel_text_ringelrobbe()}</strong> {m.report_components_form_fields_speciesidentificationhel_text_kleinste_art_helle_ringe_im()}
 						</p>
 						<p class="text-base-content/70">
 							Das Kopfprofil ist auch auf 100–200 m mit dem Fernglas erkennbar. Die Nasenlöcher sind

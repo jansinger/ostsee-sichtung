@@ -89,10 +89,7 @@
 		     Die neue Fassung sagt, was tatsächlich passiert, und erklärt die
 		     Ankreuzfelder darunter, statt ihnen zu widersprechen. -->
 		<p class="text-base-content/70 mx-auto max-w-2xl text-sm md:text-base">
-			<strong>Datenschutz:</strong> Ihre Kontaktdaten verwenden wir ausschließlich für Rückfragen zu Ihrer
-			Meldung und geben sie nicht an Dritte weiter. Öffentlich sichtbar werden nur die Sichtungsdaten
-			selbst — Datum, Position, Tierart, Anzahl und Ihre Ortsangaben zum Seegebiet. Ihr Name erscheint
-			nur, wenn Sie das unten ausdrücklich erlauben.
+			<strong>{m.report_components_steps_step4contact_text_datenschutz()}</strong> {m.report_components_steps_step4contact_text_ihre_kontaktdaten_verwenden_wir_ausschli()}
 		</p>
 	</div>
 

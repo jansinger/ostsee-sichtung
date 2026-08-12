@@ -108,10 +108,7 @@
 		<div class="flex items-start gap-2">
 			<Icon icon="lucide:info" class="text-info-strong mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
 			<div>
-				<strong>So lesen Sie die Karte:</strong> Die Ringfarbe zeigt die Tiergruppe, das Symbol die Gruppe
-				als zweites Merkmal. Ab zwei Tieren steht die Anzahl unter dem Marker. Ein schwarzer Ring bedeutet
-				Totfund. Deaktivieren Sie Checkboxen, um Arten oder Gruppengrößen auszublenden — die Zahlen zeigen
-				sichtbare/gesamt Sichtungen.
+				<strong>{m.components_map_panel_legendpanel_text_so_lesen_sie_die_karte()}</strong> {m.components_map_panel_legendpanel_text_die_ringfarbe_zeigt_die_tiergruppe()}
 			</div>
 		</div>
 	</div>

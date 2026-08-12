@@ -106,7 +106,7 @@
 			{m.report_components_sections_media_text_aufnahmen_sind_extrem_wertvoll_fuer()}
 		</p>
 		<ul class="list-inside list-disc space-y-1 text-xs">
-			<li><strong>Artbestimmung:</strong> Auch unscharfe Aufnahmen können helfen</li>
+			<li><strong>{m.report_components_sections_media_text_artbestimmung()}</strong> {m.report_components_sections_media_text_auch_unscharfe_aufnahmen_koennen_helfen()}</li>
 			<!-- Bis zum 2026-08-04 stand hier „Automatische Positionserkennung aus
 			     Fotos". Das löst dieser Schritt nicht ein: Die Dropzone unten läuft mit
 			     `enableGPSExtraction={false}`, und `applyExifPosition` hängt in
@@ -119,7 +119,7 @@
 			     Ankündigung, dass ein beliebiges der zehn Fotos die eigene Eingabe
 			     überschreibt. -->
 			<li>
-				<strong>Metadaten:</strong> GPS-Position und Aufnahmezeit aus dem Foto helfen bei der Einordnung
+				<strong>{m.report_components_sections_media_text_metadaten()}</strong> GPS-Position und Aufnahmezeit aus dem Foto helfen bei der Einordnung
 				— Ihre Angaben aus Schritt 1 bleiben davon unberührt
 			</li>
 			<li>
@@ -128,8 +128,7 @@
 			</li>
 			{#if allowsVideo}
 				<li>
-					<strong>Videos:</strong> Große Videos können über Mobilfunk mehrere Minuten dauern — bitte lassen
-					Sie die Seite so lange geöffnet.
+					<strong>{m.report_components_sections_media_text_videos()}</strong> {m.report_components_sections_media_text_grosse_videos_koennen_ueber_mobilfunk()}
 				</li>
 			{/if}
 		</ul>
