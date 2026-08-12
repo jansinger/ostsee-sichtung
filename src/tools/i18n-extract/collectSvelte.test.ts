@@ -134,6 +134,35 @@ describe('collectSvelteSites — Verweigerungsregeln', () => {
 		expect(result.skipped.map((s) => s.reason)).toEqual(['dynamic-attribute']);
 	});
 
+	// Befund aus dem Review: `aria-label={m.foo()}` ist bereits ersetzte Arbeit
+	// (Welle 1/Schicht A/B haben genau diese Form geschrieben), wurde aber als
+	// `isDynamic` erkannt und fälschlich erneut als offener Fall gemeldet.
+	// Textknoten haben das Problem nicht (ein ersetzter Textknoten ist danach ein
+	// ExpressionTag, der Textknoten-Besucher fasst ihn nie mehr an) — Attribute
+	// bleiben Attribute-Knoten und brauchen dieselbe Erkennung wie meta()/test().
+	it('erkennt ein bereits ersetztes Attribut (attr={m.key()}) als erledigt, nicht als offenen Fall', () => {
+		const result = collect(
+			`<script>\n\timport * as m from '$lib/paraglide/messages';\n</script>\n<input aria-label={m.foo()} />`
+		);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => [s.aspect, s.reason])).toEqual([
+			['aria-label', 'already-translated']
+		]);
+	});
+
+	// Gegentest (eng bleiben): gemischter Inhalt ist WEITERHIN ein offener Fall.
+	// Ohne diesen Test wäre die Erkennung ein Freibrief, jedes dynamische
+	// Attribut zu verschlucken, sobald irgendwo ein `m.`-Aufruf vorkommt.
+	it('bleibt bei einem gemischten Attribut mit m.-Aufruf-Anteil bei dynamic-attribute', () => {
+		const result = collect(
+			`<script>\n\timport * as m from '$lib/paraglide/messages';\n</script>\n<input title="Stand: {m.foo()}" />`
+		);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => [s.aspect, s.reason])).toEqual([
+			['title', 'dynamic-attribute']
+		]);
+	});
+
 	// Die Kommentar-Gegenprobe (Auftrag, Schritt 1): Ein deutscher Satz im
 	// Markup-Kommentar darf nicht gefunden werden — weder als Fund noch als
 	// Übersprungen. `Comment`-Knoten tragen ihren Inhalt in `data`, die

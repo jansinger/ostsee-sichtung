@@ -681,6 +681,44 @@ function isStringRecordDeclaration(
  */
 const SVELTE_TARGET_ATTRIBUTES = new Set(['placeholder', 'title', 'aria-label', 'alt']);
 
+/**
+ * Derselbe Namespace-Import wie `paraglideMessagesNamespace` (oben, für die
+ * TS-Sammler), nur über den rohen Svelte-Quelltext statt über einen
+ * `ts.SourceFile` — `collectSvelteSites` baut keinen TS-AST für die ganze
+ * Datei auf. Ein Regex über `<script>` reicht: Die Importzeile hat immer
+ * dieselbe Form (`import * as m from '$lib/paraglide/messages'`), die
+ * Extraktor-Ausgabe schreibt nichts anderes.
+ */
+function paraglideMessagesNamespaceInSvelte(source: string): string | undefined {
+	const match = /import\s*\*\s*as\s+(\w+)\s+from\s*['"]\$lib\/paraglide\/messages['"]/.exec(source);
+	return match?.[1];
+}
+
+/**
+ * Ist `expression` (das `expression`-Feld eines Svelte-`ExpressionTag`, ein
+ * estree-Knoten aus `svelte/compiler`) ein Aufruf `<messagesNamespace>.<schlüssel>(...)`?
+ * Spiegelt `isParaglideMessageCall` (oben), aber für den estree-Knotentyp der
+ * Svelte-Ausdrücke statt für den TS-AST — die beiden Sammler benutzen
+ * unterschiedliche Parser für ihre Ausdrücke.
+ */
+function isParaglideMessageCallInSvelte(
+	expression: unknown,
+	messagesNamespace: string | undefined
+): boolean {
+	if (messagesNamespace === undefined || !isSvelteNode(expression)) {
+		return false;
+	}
+	if (expression.type !== 'CallExpression') {
+		return false;
+	}
+	const callee = expression.callee;
+	if (!isSvelteNode(callee) || callee.type !== 'MemberExpression') {
+		return false;
+	}
+	const object = callee.object;
+	return isSvelteNode(object) && object.type === 'Identifier' && object.name === messagesNamespace;
+}
+
 /** Mindestens eine Buchstabengruppe — Unicode-bewusst (Umlaute zählen als Buchstaben). */
 const LETTER_GROUP = /\p{L}/u;
 const HAS_DIGIT = /\d/;
@@ -706,6 +744,7 @@ export function collectSvelteSites(
 	taken: Set<string>
 ): CollectResult {
 	const skipped: SkippedSite[] = [];
+	const messagesNamespace = paraglideMessagesNamespaceInSvelte(source);
 
 	// Zweiter Durchgang wie in `collectSchemaSites` (siehe dortiger Kommentar):
 	// Kandidaten sammeln, nach `start` sortieren, dann erst Schlüssel vergeben.
@@ -808,6 +847,28 @@ export function collectSvelteSites(
 				}
 			}
 			if (isDynamic) {
+				// Erledigte Arbeit erkennen, bevor sie als offener Fall gemeldet wird:
+				// `attr={m.key()}` hat genau EINEN Anteil, und der ist ein ExpressionTag,
+				// dessen Ausdruck exakt ein Aufruf des Paraglide-Namespace ist — keine
+				// Text-Anteile drumherum. Nur DIESER enge Fall gilt als erledigt; ein
+				// Attribut mit gemischtem Inhalt (`title="Stand: {m.key()}"`) hat einen
+				// Text-Anteil neben dem ExpressionTag und bleibt unten `dynamic-attribute`.
+				if (
+					parts.length === 1 &&
+					isSvelteNode(parts[0]) &&
+					parts[0].type === 'ExpressionTag' &&
+					isParaglideMessageCallInSvelte(parts[0].expression, messagesNamespace)
+				) {
+					skipped.push({
+						file: relativeFilePath,
+						line: lineOf(start),
+						text: source.slice(start, end),
+						aspect: name,
+						reason: 'already-translated',
+						explanation: `Attribut ${name} ruft bereits eine Paraglide-Botschaftsfunktion auf — schon übersetzt`
+					});
+					continue;
+				}
 				// Enthält mindestens einen `{ausdruck}`-Anteil — `attr={m.key()}` hätte
 				// keinen Platz mehr dafür.
 				skipped.push({
