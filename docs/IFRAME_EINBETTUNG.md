@@ -107,7 +107,7 @@ zuverlässig (`isNotIFrame=false`, Wrapper misst exakt `width: 600`).
 **Wichtig:** Der App-Seitenhintergrund (`bg-base-100`, helles Blaugrau) füllt dabei
 immer die **komplette** iframe-Breite, unabhängig von der 600px-Begrenzung des
 Formulars selbst. Ist das iframe deutlich breiter als 648px, entsteht dadurch sichtbar
-eine „Box in der Box" — heller App-Hintergrund, darin zentriert ein schmaleres
+eine „Box in der Box“ — heller App-Hintergrund, darin zentriert ein schmaleres
 Formular. Das ist kein Fehler, sieht auf einer breiten Museumsseite aber wie ein
 Darstellungsproblem aus und war in einer früheren Testrunde selbst schon Anlass für
 einen Fehlalarm. Deshalb: iframe-Breite fest auf ca. 650–700px begrenzen. Fluid nach
@@ -126,7 +126,7 @@ Gemessen wurde deshalb am 2026-08-12 durch Klicken durch alle vier Formularschri
 
 | Zustand                                             | Höhe       |
 | --------------------------------------------------- | ---------- |
-| Einstiegsseite („Was möchten Sie melden?")          | 436px      |
+| Einstiegsseite („Was möchten Sie melden?“)          | 436px      |
 | Schritt 1 · Position & Zeitpunkt (mit Karte)        | 2266px     |
 | Schritt 1 · mit Validierungsfehlern                 | 2358px     |
 | Schritt 2 · Angaben zum Tier                        | 2167px     |
@@ -135,11 +135,11 @@ Gemessen wurde deshalb am 2026-08-12 durch Klicken durch alle vier Formularschri
 | Schritt 3 · Weitere Informationen                   | 2484px     |
 | Schritt 4 · Kontaktdaten                            | 2981px     |
 | **Schritt 4 · mit allen Validierungsfehlern (Max)** | **3264px** |
-| Erfolgsseite („Vielen Dank!")                       | 2296px     |
+| Erfolgsseite („Vielen Dank!“)                       | 2296px     |
 
 Die Höhe schwankt zwischen 436px und 3264px — Faktor 7,5. Eine einzelne feste Höhe ist
-deshalb immer ein Kompromiss zwischen „oben abgeschnitten" (zu niedrig) und „viel
-Leerraum" (zu hoch, sichtbar z. B. auf der kurzen Einstiegsseite). Entschieden für die
+deshalb immer ein Kompromiss zwischen „oben abgeschnitten“ (zu niedrig) und „viel
+Leerraum“ (zu hoch, sichtbar z. B. auf der kurzen Einstiegsseite). Entschieden für die
 erste Museums-Abstimmung: **feste Höhe von 3350px** (Maximum aus Schritt 4 mit Fehlern
 plus Puffer), mit iframe-internem Scrollen als Fallback für alles Unvorhergesehene
 (z. B. sehr lange Freitexte im Notizfeld).
