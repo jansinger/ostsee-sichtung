@@ -69,10 +69,15 @@ describe('collectSvelteSites — Verweigerungsregeln', () => {
 	it('verweigert ein Satzfragment: Textknoten mit Geschwister-Element', () => {
 		const result = collect(`<p>Vielen Dank für Ihre <strong>Meldung</strong>!</p>`);
 		expect(result.sites).toEqual([]);
+		// "!" ist reine Interpunktion ohne zwei Buchstaben — seit der Umsortierung
+		// in `handleText` (die Buchstabenprüfung läuft jetzt VOR der
+		// Geschwister-Prüfung, siehe `textQualityIssue`) landet es unter
+		// `no-letter-group`, nicht mehr unter `sentence-fragment`: Es trägt keine
+		// Wortstellung, die eine Übersetzung brechen könnte.
 		expect(result.skipped.map((s) => [s.text, s.reason])).toEqual([
 			['Vielen Dank für Ihre', 'sentence-fragment'],
 			['Meldung', 'sentence-fragment'],
-			['!', 'sentence-fragment']
+			['!', 'no-letter-group']
 		]);
 	});
 
@@ -116,8 +121,52 @@ describe('collectSvelteSites — Verweigerungsregeln', () => {
 				text: '—',
 				aspect: 'text',
 				reason: 'no-letter-group',
-				explanation: 'keine Buchstabengruppe — reine Satzzeichen, Symbole oder Zahlen'
+				explanation:
+					'keine Buchstabengruppe (mindestens zwei Buchstaben) — reine Satzzeichen, Symbole, ' +
+					'Zahlen oder ein einzelner Buchstabe (Tastenkürzel, Aufzählungsbuchstabe, Achsenbeschriftung)'
 			}
+		]);
+	});
+
+	// Der Befund, der diesen Test auslöste: `H` (die Tastenbelegung des
+	// Kartenkürzels in LoadingOverlay.svelte) wurde extrahiert, obwohl es
+	// `no-letter-group` bereits gab — `LETTER_GROUP` (`/\p{L}/u`) verlangt nur
+	// EINEN Buchstaben, kein einzelner Buchstabe ist aber in irgendeiner
+	// Sprache ein zu übersetzender Satz (Tastenkürzel, Aufzählungsbuchstabe,
+	// Achsenbeschriftung).
+	it('verweigert einen einzelnen Buchstaben als Textknoten (Tastenkürzel wie „H")', () => {
+		const result = collect(`<kbd>H</kbd>`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => [s.text, s.reason])).toEqual([['H', 'no-letter-group']]);
+	});
+
+	it('verweigert einen einzelnen Buchstaben auch in einem Attribut', () => {
+		const result = collect(`<input placeholder="X" />`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => [s.text, s.reason])).toEqual([['X', 'no-letter-group']]);
+	});
+
+	// Gegentest (eng bleiben): Ohne ihn wäre die Zwei-Buchstaben-Grenze ein
+	// Freibrief, echte kurze Anzeigetexte zu verschlucken — Masseinheiten
+	// (`MB`) und Himmelsrichtungen (`NO`, `SW`) bleiben Botschaften.
+	it('extrahiert weiterhin echte zweibuchstabige Anzeigetexte (Masseinheiten, Himmelsrichtungen)', () => {
+		const result = collect(`<p>MB</p>\n<p>NO</p>\n<p>SW</p>`);
+		expect(result.sites.map((s) => s.text)).toEqual(['MB', 'NO', 'SW']);
+		expect(result.skipped).toEqual([]);
+	});
+
+	// Der zweite Befund derselben Musterarbeit: Reine Satzzeichen neben einem
+	// dynamischen Geschwister (BarChart.svelte:159 `(`/`)`, LegendPanel.svelte:173
+	// `/`) landeten bislang unter `interpolation`, weil die Geschwister-Prüfung
+	// in `handleText` vor der Buchstabenprüfung griff und abbrach. Jetzt prüft
+	// `textQualityIssue` zuerst — Satzzeichen ohne Buchstaben sind unabhängig
+	// vom Geschwister nie eine Botschaft.
+	it('ordnet reine Satzzeichen neben einem dynamischen Geschwister no-letter-group zu, nicht interpolation', () => {
+		const result = collect(`<p>({value})</p>`);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => [s.text, s.reason])).toEqual([
+			['(', 'no-letter-group'],
+			[')', 'no-letter-group']
 		]);
 	});
 
@@ -211,10 +260,12 @@ describe('collectSvelteSites — Fragment nur bei textbehaftetem Geschwister', (
 	it('verweigert weiterhin ein Satzfragment, wenn das Geschwister-Element selbst Text enthält (<strong>)', () => {
 		const result = collect(`<p>Vielen Dank für Ihre <strong>Meldung</strong>!</p>`);
 		expect(result.sites).toEqual([]);
+		// "!" siehe Kommentar beim gleichnamigen Test oben — no-letter-group statt
+		// sentence-fragment seit der Umsortierung in `handleText`.
 		expect(result.skipped.map((s) => [s.text, s.reason])).toEqual([
 			['Vielen Dank für Ihre', 'sentence-fragment'],
 			['Meldung', 'sentence-fragment'],
-			['!', 'sentence-fragment']
+			['!', 'no-letter-group']
 		]);
 	});
 

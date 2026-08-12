@@ -723,6 +723,62 @@ function isParaglideMessageCallInSvelte(
 const LETTER_GROUP = /\p{L}/u;
 const HAS_DIGIT = /\d/;
 
+/**
+ * Zählt, ob `text` mindestens ZWEI Buchstaben enthält — Unicode-bewusst wie
+ * `LETTER_GROUP`.
+ *
+ * `LETTER_GROUP` allein reicht nicht: Der Name suggeriert eine Gruppe, aber
+ * `/\p{L}/u` verlangt nur EINEN Treffer und lässt jeden Einzelbuchstaben
+ * durch. Genau das ließ `H` (die Tastenbelegung des Kartenkürzels in
+ * `LoadingOverlay.svelte`) als Botschaft durchrutschen — ein einzelner
+ * Buchstabe ist in keiner Sprache ein zu übersetzender Satz, egal ob
+ * Tastenkürzel, Aufzählungsbuchstabe oder Achsenbeschriftung. Echte
+ * zweibuchstabige Anzeigetexte (Masseinheiten wie `MB`, Himmelsrichtungen
+ * wie `NO`/`SW`) bleiben Botschaften — die Grenze liegt bei EINEM Buchstaben,
+ * nicht bei zweien.
+ */
+function hasMinimumTwoLetters(text: string): boolean {
+	return (text.match(/\p{L}/gu)?.length ?? 0) >= 2;
+}
+
+/**
+ * Die beiden inhaltlichen Prüfungen, die für JEDEN Text gelten, egal ob er
+ * über einen Attributwert oder einen Textknoten hereinkommt — Ziffer vor
+ * Buchstabenzahl, in dieser Reihenfolge (ein Text wie `"3."` ist zuerst ein
+ * Plural-Kandidat, nicht „zu wenig Buchstaben").
+ *
+ * Für Textknoten (`handleText`) MUSS diese Prüfung VOR der
+ * Geschwister-Prüfung laufen, nicht erst in `addSite` danach: Reine
+ * Satzzeichen neben einem dynamischen Geschwister (`BarChart.svelte:159`
+ * meldet `(` und `)` neben `{value}`, `LegendPanel.svelte:173` meldet `/`)
+ * landeten sonst unter `interpolation` statt unter `no-letter-group` — die
+ * Geschwister-Prüfung griff zuerst und brach ab, bevor die Buchstabenprüfung
+ * je zum Zug kam. Das verstellte den Blick auf die echten
+ * Interpolationsfälle, die Handarbeit brauchen.
+ */
+function textQualityIssue(
+	text: string
+):
+	| { reason: Extract<SkipReason, 'plural-candidate' | 'no-letter-group'>; explanation: string }
+	| undefined {
+	if (HAS_DIGIT.test(text)) {
+		return {
+			reason: 'plural-candidate',
+			explanation:
+				'enthält eine Ziffer — möglicher ICU-Plural, menschliche Entscheidung (Aufgabe 2.4)'
+		};
+	}
+	if (!hasMinimumTwoLetters(text)) {
+		return {
+			reason: 'no-letter-group',
+			explanation:
+				'keine Buchstabengruppe (mindestens zwei Buchstaben) — reine Satzzeichen, Symbole, ' +
+				'Zahlen oder ein einzelner Buchstabe (Tastenkürzel, Aufzählungsbuchstabe, Achsenbeschriftung)'
+		};
+	}
+	return undefined;
+}
+
 interface SvelteAstNode {
 	type?: string;
 	start?: number;
@@ -783,26 +839,15 @@ export function collectSvelteSites(
 		aspect: string,
 		elementName: string
 	): void => {
-		if (HAS_DIGIT.test(text)) {
+		const issue = textQualityIssue(text);
+		if (issue) {
 			skipped.push({
 				file: relativeFilePath,
 				line: lineOf(start),
 				text,
 				aspect,
-				reason: 'plural-candidate',
-				explanation:
-					'enthält eine Ziffer — möglicher ICU-Plural, menschliche Entscheidung (Aufgabe 2.4)'
-			});
-			return;
-		}
-		if (!LETTER_GROUP.test(text)) {
-			skipped.push({
-				file: relativeFilePath,
-				line: lineOf(start),
-				text,
-				aspect,
-				reason: 'no-letter-group',
-				explanation: 'keine Buchstabengruppe — reine Satzzeichen, Symbole oder Zahlen'
+				reason: issue.reason,
+				explanation: issue.explanation
 			});
 			return;
 		}
@@ -1000,6 +1045,26 @@ export function collectSvelteSites(
 		}
 		const start = typeof node.start === 'number' ? node.start : 0;
 		const end = typeof node.end === 'number' ? node.end : 0;
+		const trimmed = data.trim();
+
+		// VOR der Geschwister-Prüfung: Ziffer bzw. zu wenig Buchstaben sind
+		// unabhängig von jedem Geschwister nie eine Botschaft. Reine
+		// Satzzeichen neben einem dynamischen Geschwister (`(` und `)` neben
+		// `{value}` in BarChart.svelte, `/` neben `{max}` in LegendPanel.svelte)
+		// gehören deshalb zu `no-letter-group`, nicht zu `interpolation` — siehe
+		// `textQualityIssue`.
+		const qualityIssue = textQualityIssue(trimmed);
+		if (qualityIssue) {
+			skipped.push({
+				file: relativeFilePath,
+				line: lineOf(start),
+				text: trimmed,
+				aspect: 'text',
+				reason: qualityIssue.reason,
+				explanation: qualityIssue.explanation
+			});
+			return;
+		}
 
 		const others = significantSiblings(siblings, node);
 		// Nur Geschwister, die selbst Text mit Buchstaben tragen oder dynamisch
