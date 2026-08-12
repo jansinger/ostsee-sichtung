@@ -370,11 +370,14 @@ describe('Attribute außerhalb der Extraktor-Liste', () => {
 function scriptBlocksOnly(source: string): string {
 	const blank = source.replace(/[^\n]/g, ' ').split('');
 
-	// `i`-Flag: HTML-Tags sind gross-/kleinschreibungsunabhaengig. Ein
-	// `<SCRIPT>` waere ohne das Flag fuer diesen Zaehler unsichtbar — und ein
-	// Guard, der eine Schreibweise nicht sieht, ist genau das Versagen, gegen
-	// das er gebaut ist (CodeQL js/bad-tag-filter, PR #864).
-	for (const match of source.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)) {
+	// Zwei Schreibweisen, die HTML erlaubt und die dieses Muster zunächst beide
+	// übersehen hat (CodeQL js/bad-tag-filter, PR #864):
+	//   `i`-Flag  — Tags sind groß-/kleinschreibungsunabhängig, `<SCRIPT>` zählt.
+	//   `\s*` vor `>` — `</script >` ist ein gültiges Schluss-Tag.
+	// Beides ist derselbe Fehler: Ein Zähler, der eine gültige Schreibweise
+	// nicht liest, meldet Null und beweist nichts — genau das Versagen, gegen
+	// das er gebaut ist.
+	for (const match of source.matchAll(/<script[^>]*>([\s\S]*?)<\/script\s*>/gi)) {
 		const body = match[1];
 		if (body === undefined) continue;
 		const start = (match.index ?? 0) + (match[0]?.indexOf(body) ?? 0);
@@ -576,6 +579,20 @@ describe('Anzeigetext im <script>-Block', () => {
 			'<SCRIPT LANG="ts">',
 			"\tconst hint = 'Karte wird initialisiert';",
 			'</SCRIPT>'
+		].join('\n');
+
+		expect(findScriptDisplayText(source)).toEqual([
+			{ line: 2, text: "'Karte wird initialisiert'" }
+		]);
+	});
+
+	it('findet den Text auch bei einem Schluss-Tag mit Leerzeichen', () => {
+		// `</script >` ist gültiges HTML. Ohne `\s*` lief das Muster über das
+		// Tag hinweg und der ganze Block fiel aus der Zählung.
+		const source = [
+			'<script lang="ts">',
+			"\tconst hint = 'Karte wird initialisiert';",
+			'</script >'
 		].join('\n');
 
 		expect(findScriptDisplayText(source)).toEqual([
