@@ -1,6 +1,6 @@
 import { render } from 'vitest-browser-svelte';
 import { describe, expect, it } from 'vitest';
-import { UPLOAD_NOTICE } from '$lib/form/consent/uploadNotice';
+import { uploadNotice } from '$lib/form/consent/uploadNotice';
 import UploadNotice from './UploadNotice.svelte';
 
 /**
@@ -54,10 +54,10 @@ describe('UploadNotice', () => {
 	it('zeigt im Dialog den vollständigen Wortlaut', () => {
 		// Vollständig, nicht zusammengefasst: Übertragung beim Ablegen, Zweck,
 		// Löschfrist und die getrennte Entscheidung über die Veröffentlichung
-		// stehen als eine Aussage in `UPLOAD_NOTICE`.
+		// stehen als eine Aussage in `uploadNotice()`.
 		render(UploadNotice);
 
-		expect(dialog().textContent).toContain(UPLOAD_NOTICE);
+		expect(dialog().textContent).toContain(uploadNotice());
 	});
 
 	it('bringt kein eigenes <form> mit', () => {

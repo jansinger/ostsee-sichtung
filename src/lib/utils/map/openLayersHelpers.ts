@@ -1,3 +1,4 @@
+import * as m from '$lib/paraglide/messages';
 import { createLogger } from '$lib/logger';
 import type { Map } from 'ol';
 import type { Coordinate } from 'ol/coordinate';
@@ -35,7 +36,7 @@ export class FormLocationControl extends Control {
 	constructor(onPosition: (position: Coordinate) => void) {
 		const button = document.createElement('button');
 		button.innerHTML = '📍';
-		button.title = 'GPS-Position anzeigen';
+		button.title = m.map_controls_text_gps_position_anzeigen();
 		button.className = 'gps-button';
 		button.setAttribute('aria-pressed', 'false');
 
@@ -57,7 +58,7 @@ export class FormLocationControl extends Control {
 
 	private toggleGeolocation() {
 		if (!navigator.geolocation) {
-			alert('Geolocation wird von Ihrem Browser nicht unterstützt.');
+			alert(m.utils_map_openlayershelpers_text_geolocation_wird_von_ihrem_browser_nicht());
 			return;
 		}
 
@@ -77,7 +78,7 @@ export class FormLocationControl extends Control {
 		// Die Farben stehen in mapStyles.css (.gps-button[aria-pressed='true']);
 		// der Button ist DOM, kein Canvas, und braucht deshalb keine Hex-Werte.
 		this.button.setAttribute('aria-pressed', 'true');
-		this.button.title = 'GPS-Tracking stoppen';
+		this.button.title = m.map_controls_text_gps_tracking_stoppen();
 
 		// Kontinuierliche Positionsverfolgung starten
 		this.watchId = navigator.geolocation.watchPosition(
@@ -114,7 +115,7 @@ export class FormLocationControl extends Control {
 
 		// Button-Erscheinungsbild zurücksetzen
 		this.button.setAttribute('aria-pressed', 'false');
-		this.button.title = 'GPS-Position anzeigen';
+		this.button.title = m.map_controls_text_gps_position_anzeigen();
 	}
 
 	/**

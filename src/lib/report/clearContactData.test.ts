@@ -8,8 +8,8 @@ vi.mock('$lib/stores/toastState.svelte', () => ({ createToast }));
 
 import { USER_CONTACT_FIELDS } from '$lib/report/formConfig';
 import {
-	CLEAR_CONTACT_DATA_CONFIRM_MESSAGE,
-	CLEAR_CONTACT_DATA_SUCCESS_MESSAGE,
+	clearContactDataConfirmMessage,
+	clearContactDataSuccessMessage,
 	confirmAndClearContactData,
 	resetSavedContactData
 } from './clearContactData';
@@ -57,7 +57,7 @@ describe('confirmAndClearContactData', () => {
 
 		confirmAndClearContactData({}, vi.fn());
 
-		expect(confirmSpy).toHaveBeenCalledWith(CLEAR_CONTACT_DATA_CONFIRM_MESSAGE);
+		expect(confirmSpy).toHaveBeenCalledWith(clearContactDataConfirmMessage());
 		vi.unstubAllGlobals();
 	});
 
@@ -70,7 +70,7 @@ describe('confirmAndClearContactData', () => {
 		expect(result).toBe(true);
 		expect(clearUserContactData).toHaveBeenCalledOnce();
 		expect(updateField).toHaveBeenCalledWith('firstName', '');
-		expect(createToast).toHaveBeenCalledWith('success', CLEAR_CONTACT_DATA_SUCCESS_MESSAGE);
+		expect(createToast).toHaveBeenCalledWith('success', clearContactDataSuccessMessage());
 
 		vi.unstubAllGlobals();
 	});

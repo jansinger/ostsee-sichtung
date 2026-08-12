@@ -21,7 +21,7 @@
 	 * eine zweite, abweichende Aussage. Festgehalten in `UploadNotice.svelte.test.ts`.
 	 */
 	import Icon from '$lib/components/Icon.svelte';
-	import { UPLOAD_NOTICE } from '$lib/form/consent/uploadNotice';
+	import { uploadNotice } from '$lib/form/consent/uploadNotice';
 
 	// Die Komponente steht zweimal im Formular (Schritt 1 und Schritt 2). Eine
 	// feste ID wäre im DOM doppelt und machte `aria-labelledby` unbrauchbar.
@@ -67,7 +67,7 @@
 			<Icon icon="lucide:info" width="20" class="text-info-strong shrink-0" aria-hidden="true" />
 			{m.report_components_form_uploadnotice_text_was_mit_ihrer_aufnahme_passiert()}
 		</h3>
-		<p class="mt-3 text-sm">{UPLOAD_NOTICE}</p>
+		<p class="mt-3 text-sm">{uploadNotice()}</p>
 		<div class="modal-action">
 			<button
 				type="button"

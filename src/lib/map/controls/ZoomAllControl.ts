@@ -1,3 +1,4 @@
+import * as m from '$lib/paraglide/messages';
 import { Control } from 'ol/control';
 import type { MapController } from '$lib/map/optimizedMapController';
 
@@ -12,8 +13,8 @@ export class ZoomAllControl extends Control {
 		const button = document.createElement('button');
 		button.type = 'button';
 		button.innerHTML = MAXIMIZE_ICON_SVG;
-		button.title = 'Auf alle Sichtungen zoomen';
-		button.setAttribute('aria-label', 'Auf alle Sichtungen zoomen');
+		button.title = m.map_controls_text_auf_alle_sichtungen_zoomen();
+		button.setAttribute('aria-label', m.map_controls_text_auf_alle_sichtungen_zoomen());
 
 		const element = document.createElement('div');
 		element.className = 'zoom-all-control ol-unselectable ol-control';

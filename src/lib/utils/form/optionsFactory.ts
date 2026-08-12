@@ -1,3 +1,4 @@
+import * as m from '$lib/paraglide/messages';
 /**
  * Generic factory for form options
  * Eliminates duplication across 16+ form option files
@@ -52,7 +53,7 @@ export function createOptionsFactory<T extends Record<string, number>>(
 		 * @returns Display label or 'Unbekannt' if not found
 		 */
 		getLabel(value: number): string {
-			const option = options.find(opt => opt.value === value);
+			const option = options.find((opt) => opt.value === value);
 			return option?.label || 'Unbekannt';
 		},
 
@@ -102,7 +103,10 @@ export function createConsentOptionsFactory(
 ): FormOptionsFactory<{ NO_CONSENT: 0; CONSENT: 1 }> {
 	return createOptionsFactory(
 		{ NO_CONSENT: 0, CONSENT: 1 },
-		{ NO_CONSENT: 'Nicht einverstanden', CONSENT: 'Einverstanden' },
+		{
+			NO_CONSENT: m.utils_form_optionsfactory_text_nicht_einverstanden(),
+			CONSENT: 'Einverstanden'
+		},
 		name,
 		0
 	);
@@ -122,10 +126,13 @@ export function createSimpleOptionsFactory<T extends Record<string, number>>(
 	labelTransform: (key: string) => string = (key) => key.replace(/_/g, ' '),
 	defaultValue: number = 0
 ): FormOptionsFactory<T> {
-	const labels = Object.keys(enumObj).reduce((acc, key) => {
-		acc[key as keyof T] = labelTransform(key);
-		return acc;
-	}, {} as Record<keyof T, string>);
+	const labels = Object.keys(enumObj).reduce(
+		(acc, key) => {
+			acc[key as keyof T] = labelTransform(key);
+			return acc;
+		},
+		{} as Record<keyof T, string>
+	);
 
 	return createOptionsFactory(enumObj, labels, name, defaultValue);
 }

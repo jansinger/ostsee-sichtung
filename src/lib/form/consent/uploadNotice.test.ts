@@ -8,29 +8,29 @@
  */
 import { ORPHAN_RETENTION_HOURS } from '$lib/constants/uploadRetention';
 import { describe, expect, it } from 'vitest';
-import { UPLOAD_NOTICE } from './uploadNotice';
+import { uploadNotice } from './uploadNotice';
 
-describe('UPLOAD_NOTICE', () => {
+describe('uploadNotice()', () => {
 	it('sagt, dass die Aufnahme übertragen wird', () => {
-		expect(UPLOAD_NOTICE.toLowerCase()).toMatch(/übertragen/);
+		expect(uploadNotice().toLowerCase()).toMatch(/übertragen/);
 	});
 
 	it('nennt den Zweck: Prüfung der Meldung', () => {
-		expect(UPLOAD_NOTICE.toLowerCase()).toMatch(/prüfung|prüfen/);
+		expect(uploadNotice().toLowerCase()).toMatch(/prüfung|prüfen/);
 	});
 
 	it('kündigt die Löschung nicht abgeschickter Aufnahmen an', () => {
-		expect(UPLOAD_NOTICE.toLowerCase()).toMatch(/lösch/);
+		expect(uploadNotice().toLowerCase()).toMatch(/lösch/);
 	});
 
 	it('nennt genau die Frist, die der Aufräum-Lauf tatsächlich anwendet', () => {
 		// Verhindert, dass Text und Code auseinanderlaufen: Steht im Hinweis
 		// eine andere Zahl als in ORPHAN_RETENTION_HOURS, ist die Zusage falsch.
-		const numbers = UPLOAD_NOTICE.match(/\d+/g) ?? [];
+		const numbers = uploadNotice().match(/\d+/g) ?? [];
 		expect(numbers).toContain(String(ORPHAN_RETENTION_HOURS));
 	});
 
 	it('verweist die Entscheidung über eine Veröffentlichung an den Melder', () => {
-		expect(UPLOAD_NOTICE.toLowerCase()).toMatch(/veröffentlichung/);
+		expect(uploadNotice().toLowerCase()).toMatch(/veröffentlichung/);
 	});
 });

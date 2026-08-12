@@ -1,3 +1,4 @@
+import * as m from '$lib/paraglide/messages';
 /**
  * @fileoverview Utilities für die barrierefreie Listenansicht der Sichtungskarte
  *
@@ -91,7 +92,9 @@ export function toListEntries(
 		.map((props): SightingListEntry => ({
 			id: props.id,
 			ts: props.ts,
-			speciesName: speciesMap[props.ta.toString()] ?? `Unbekannte Art (${props.ta})`,
+			speciesName:
+				speciesMap[props.ta.toString()] ??
+				m.map_listviewutils_text_unbekannte_art_id({ id: props.ta }),
 			count: props.ct,
 			juveniles: props.jt ?? 0,
 			isDead: props.tf ?? false,

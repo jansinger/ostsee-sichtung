@@ -1,3 +1,4 @@
+import * as m from '$lib/paraglide/messages';
 /** Datum wie es das Formular liefert: "YYYY-MM-DD". */
 const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -21,7 +22,7 @@ export function formatWallClockDateTime(
 ): string {
 	const dateMatch = localDate ? DATE_PATTERN.exec(localDate) : null;
 	if (!dateMatch) {
-		return 'Nicht angegeben';
+		return m.utils_format_datetime_text_nicht_angegeben();
 	}
 
 	const formattedDate = `${dateMatch[3]}.${dateMatch[2]}.${dateMatch[1]}`;
