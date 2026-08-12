@@ -45,19 +45,28 @@ export function applySitesToSource(source: string, sites: ExtractionSite[]): str
  * A/B: In Komponenten gibt es kein `locale`-Argument, Paraglide löst über die
  * aktive Locale auf — eine Komponente rendert immer in der Sprache der
  * Anfrage (Auftrag).
+ *
+ * **Mit Parametern**, wenn `site.params` welche trägt (mechanisierte
+ * dynamische Attribute, Gruppe 2 in `allowlist.ts` bei `dynamic-attribute`):
+ * `m.key({ name: ausdruck, … })` — derselbe JS-Ausdruck, der vorher im
+ * Attribut stand, wandert unverändert als Argumentwert weiter.
  */
-function svelteMessageCall(key: string): string {
-	return `m.${key}()`;
+function svelteMessageCall(key: string, params?: ExtractionSite['params']): string {
+	if (!params || params.length === 0) {
+		return `m.${key}()`;
+	}
+	const args = params.map((p) => `${p.name}: ${p.expression}`).join(', ');
+	return `m.${key}({ ${args} })`;
 }
 
 function svelteReplacement(site: ExtractionSite): string {
 	if (site.aspect === 'text') {
-		return `{${svelteMessageCall(site.key)}}`;
+		return `{${svelteMessageCall(site.key, site.params)}}`;
 	}
 	// Jeder andere Aspekt ist ein Attributname (siehe `SVELTE_TARGET_ATTRIBUTES`
 	// in `collect.ts`) — `site.start`/`site.end` decken bei Attribut-Fundstellen
 	// die GESAMTE Attributzuweisung ab (`name="wert"`), nicht nur den Wert.
-	return `${site.aspect}={${svelteMessageCall(site.key)}}`;
+	return `${site.aspect}={${svelteMessageCall(site.key, site.params)}}`;
 }
 
 const PARAGLIDE_IMPORT = `import * as m from '$lib/paraglide/messages';`;

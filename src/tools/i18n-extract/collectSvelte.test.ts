@@ -170,17 +170,99 @@ describe('collectSvelteSites — Verweigerungsregeln', () => {
 		]);
 	});
 
-	it('verweigert ein dynamisches Attribut', () => {
+	// Gruppe 1 (Stage-2-Review der 44 `dynamic-attribute`-Fundstellen,
+	// 2026-08-12): eine reine Durchreichung ohne einen einzigen statischen
+	// Textteil mit mindestens zwei Buchstaben ist strukturell nichts zu
+	// übersetzen — eigener Grund, kein `dynamic-attribute` mehr.
+	it('meldet ein rein durchgereichtes dynamisches Attribut als attribute-no-static-text, nicht als dynamic-attribute', () => {
 		const result = collect(`<input title={dynamicTitle} />`);
 		expect(result.sites).toEqual([]);
 		expect(result.skipped.map((s) => [s.aspect, s.reason])).toEqual([
-			['title', 'dynamic-attribute']
+			['title', 'attribute-no-static-text']
 		]);
 	});
 
-	it('verweigert ein Attribut mit gemischtem statisch/dynamischem Wert', () => {
+	it('meldet einen Aufruf ohne statischen Text ({String(value)}) ebenfalls als attribute-no-static-text', () => {
+		const result = collect(`<input title={String(value)} />`);
+		expect(result.skipped.map((s) => s.reason)).toEqual(['attribute-no-static-text']);
+	});
+
+	// Gruppe 2 — DIE mechanisierbare: statischer Text UND ein Ausdruck, ohne
+	// Verzweigung, wird zu einer parametrisierten ICU-Botschaft.
+	it('mechanisiert ein Attribut mit gemischtem statisch/dynamischem Wert zu einer parametrisierten Botschaft', () => {
 		const result = collect(`<input title="Hallo {name}" />`);
-		expect(result.skipped.map((s) => s.reason)).toEqual(['dynamic-attribute']);
+		expect(result.skipped).toEqual([]);
+		expect(result.sites.map((s) => [s.aspect, s.text, s.params])).toEqual([
+			['title', 'Hallo {name}', [{ name: 'name', expression: 'name' }]]
+		]);
+	});
+
+	it('mechanisiert ein Attribut mit mehreren Ausdrücken zu einer Botschaft mit mehreren Parametern', () => {
+		const result = collect(
+			`<button aria-label="Filter Jahr {activeFilters.year} entfernen und zum Standard-Jahr {apiDefaultYear} wechseln" />`
+		);
+		const [site] = result.sites;
+		expect(site!.text).toBe(
+			'Filter Jahr {year} entfernen und zum Standard-Jahr {apiDefaultYear} wechseln'
+		);
+		expect(site!.params).toEqual([
+			{ name: 'year', expression: 'activeFilters.year' },
+			{ name: 'apiDefaultYear', expression: 'apiDefaultYear' }
+		]);
+	});
+
+	it('mechanisiert ein JS-Template-Literal in einem einzelnen Ausdrucks-Anteil (`${a} Text`)', () => {
+		const result = collect('<button aria-label={`${file.originalName} öffnen`} />');
+		const [site] = result.sites;
+		expect(site!.text).toBe('{originalName} öffnen');
+		expect(site!.params).toEqual([{ name: 'originalName', expression: 'file.originalName' }]);
+	});
+
+	// Die Namensregel braucht zwei verschiedene Namen für zwei verschiedene
+	// Ausdrücke IN DERSELBEN Botschaft — sonst überschreibt der zweite
+	// Parameter den ersten. `a.label` und `b.label` würden ohne Auflösung
+	// beide `label` heißen.
+	it('löst eine Namenskollision zwischen zwei Ausdrücken in derselben Botschaft auf', () => {
+		const result = collect(`<div title="{a.label} zu {b.label}" />`);
+		const [site] = result.sites;
+		expect(site!.params!.map((p) => p.name)).toEqual(['label', 'bLabel']);
+		expect(site!.text).toBe('{label} zu {bLabel}');
+	});
+
+	// Gruppe 3 — der Gegentest: eine Verzweigung (Ternary) bleibt Handarbeit.
+	// Ohne ihn wäre die Mechanisierung ein Freibrief, jede Ternary in eine
+	// (falsche) einzelne Botschaft zu pressen.
+	it('mechanisiert eine Ternary NICHT — bleibt dynamic-attribute', () => {
+		const result = collect(
+			'<button aria-label={sheetExpanded ? `${title} verkleinern` : `${title} vergrößern`} />'
+		);
+		expect(result.sites).toEqual([]);
+		expect(result.skipped.map((s) => [s.aspect, s.reason])).toEqual([
+			['aria-label', 'dynamic-attribute']
+		]);
+	});
+
+	// Der benannte Sonderfall (Auftrag): `Icon.svelte:277` ist eine
+	// Entwicklermeldung für ein fehlendes Icon, kein Text für Melder — trotz
+	// statischen Textes ("Missing icon: ") NICHT mechanisieren.
+	it('mechanisiert die Entwicklermeldung in Icon.svelte NICHT — attribute-no-static-text statt Botschaft', () => {
+		const result = collectSvelteSites(
+			`<span title="Missing icon: {icon}">?</span>`,
+			'src/lib/components/Icon.svelte',
+			createKeyRegistry()
+		);
+		expect(result.sites.map((s) => s.aspect)).not.toContain('title');
+		expect(result.skipped.map((s) => [s.aspect, s.reason])).toContainEqual([
+			'title',
+			'attribute-no-static-text'
+		]);
+	});
+
+	it('mechanisiert eine in `||` verschachtelte Ternary ebenfalls NICHT', () => {
+		const result = collect(`<input title={title || (a ? 'Foto ersetzen' : 'Foto hochladen')} />`);
+		expect(result.skipped.map((s) => [s.aspect, s.reason])).toEqual([
+			['title', 'dynamic-attribute']
+		]);
 	});
 
 	// Befund aus dem Review: `aria-label={m.foo()}` ist bereits ersetzte Arbeit

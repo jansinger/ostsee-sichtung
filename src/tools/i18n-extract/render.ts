@@ -176,12 +176,24 @@ export function renderDryRunReport(plan: ExtractionPlan): string {
 	// aber nicht mehr einzeln in der Liste, sonst ertränkt eine dreistellige Zahl
 	// von Fehlalarmen die wenigen Stellen, die wirklich von Hand zu prüfen sind.
 	const alreadyTranslated = plan.skipped.filter((s) => s.reason === 'already-translated');
-	const toReview = plan.skipped.filter((s) => s.reason !== 'already-translated');
+	// Genau wie `already-translated`: strukturell nichts zu übersetzen (kein
+	// statischer Textteil mit mindestens zwei Buchstaben, siehe
+	// `allowlist.ts` bei `attribute-no-static-text`) — kein offener Fall, der
+	// den Blick auf die echten verstellen sollte.
+	const noStaticText = plan.skipped.filter((s) => s.reason === 'attribute-no-static-text');
+	const toReview = plan.skipped.filter(
+		(s) => s.reason !== 'already-translated' && s.reason !== 'attribute-no-static-text'
+	);
 
 	lines.push('## Übersprungen — bitte durchsehen');
 	lines.push('');
 	if (alreadyTranslated.length > 0) {
 		lines.push(`- bereits übersetzt: ${alreadyTranslated.length} Stellen (nicht aufgeführt)`);
+	}
+	if (noStaticText.length > 0) {
+		lines.push(
+			`- Attribut ohne statischen Text (reine Durchreichung): ${noStaticText.length} Stellen (nicht aufgeführt)`
+		);
 	}
 	for (const s of toReview) {
 		lines.push(`- ${s.file}:${s.line} (${s.aspect}) \`${s.text}\` — ${s.explanation}`);

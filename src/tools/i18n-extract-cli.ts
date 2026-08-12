@@ -93,6 +93,10 @@ export const WRITE_SOURCES_SCOPE: readonly string[] = [
 	'src/lib/components/map/Panel/DualRangeSlider.svelte',
 	'src/lib/components/map/Panel/FilterPanel.svelte',
 	'src/lib/components/map/Panel/LegendPanel.svelte',
+	// Fehlte bisher trotz Welle 2 „Karte" — hatte in Welle 2 keine Fundstelle
+	// (nur `dynamic-attribute`), bekommt aber im Stage-2-Review 2026-08-12
+	// eine mechanisierte Botschaft (`MapPanel.svelte:139`, `"{title} schließen"`).
+	'src/lib/components/map/Panel/MapPanel.svelte',
 	'src/lib/components/map/SightingsListView.svelte',
 	'src/lib/components/map/SightingsMapView.svelte',
 	// Welle 3 — alles ausser den drei zurückgestellten Inhaltsseiten: die

@@ -89,11 +89,41 @@ export type SkipReason =
 	// Reine Satzzeichen, Symbole oder Zahlen ohne eine einzige Buchstabengruppe
 	// — kein Fließtext, nichts zu übersetzen.
 	| 'no-letter-group'
-	// Ein Attributwert (`placeholder`/`title`/`aria-label`/`alt`) ist kein
-	// reines Literal — enthält mindestens einen dynamischen Anteil
-	// (`{ausdruck}`). Die Ersetzung `attr={m.key()}` ginge sonst kaputt: Der
-	// dynamische Anteil hätte keinen Platz mehr in der Botschaft.
-	| 'dynamic-attribute';
+	// Ein Attributwert (`placeholder`/`title`/`aria-label`/`alt`) mit
+	// mindestens einem dynamischen Anteil (`{ausdruck}`) zerfällt in drei
+	// Fälle (Stage-2-Review der 44 Fundstellen unter diesem Grund,
+	// 2026-08-12) — nur EINER davon bleibt unter diesem Namen:
+	//
+	//  - Reicht der Wert nur durch, ohne einen einzigen statischen Textteil
+	//    mit mindestens zwei Buchstaben (`title={file.name}`,
+	//    `title={String(value)}`)? → `attribute-no-static-text`, kein
+	//    offener Fall (siehe dort).
+	//  - Trägt der Wert statischen Text UND einen oder mehrere Ausdrücke,
+	//    OHNE Verzweigung (`aria-label="Sichtungen der Gruppe {group.label}
+	//    anzeigen/ausblenden"`, `` aria-label={`${file.originalName}
+	//    öffnen`} ``)? Der Extraktor baut daraus mechanisch eine
+	//    parametrisierte ICU-Botschaft — das ist kein `skip` mehr, sondern
+	//    eine normale Fundstelle mit `params` (siehe `ExtractionSite`).
+	//  - Bleibt eine Verzweigung übrig (`aria-label={bedingung ? 'A' :
+	//    'B'}`, auch verschachtelt in `||`)? Zwei (oder mehr) mögliche
+	//    Botschaften plus eine Fallunterscheidung — das bleibt Handarbeit,
+	//    UNTER DIESEM Grund: `dynamic-attribute`.
+	| 'dynamic-attribute'
+	// Ein Attributwert reicht einen Ausdruck nur durch — kein einziger
+	// statischer Textteil mit mindestens zwei Buchstaben, egal ob der
+	// Ausdruck ein Identifier (`file.name`), ein Aufruf (`String(value)`)
+	// oder ein Fallback-Ausdruck (`toast.title || ''`) ist. Es gibt
+	// strukturell nichts zu übersetzen — anders als `dynamic-attribute`
+	// erscheint dieser Grund deshalb nicht mehr einzeln im Abschnitt
+	// „Übersprungen — bitte durchsehen" (render.ts), nur noch als Summe,
+	// genau wie `already-translated`.
+	//
+	// Eine benannte Ausnahme fällt trotz statischen Textes hierher:
+	// `Icon.svelte:277` (`title="Missing icon: {icon}"`) ist eine
+	// Entwicklermeldung für einen fehlenden Icon-Namen — Englisch, nie an
+	// Melder gerichtet. Siehe `NON_USER_FACING_DYNAMIC_ATTRIBUTES` in
+	// `collect.ts`.
+	| 'attribute-no-static-text';
 
 export type MetaDecision =
 	| { kind: 'extract' }

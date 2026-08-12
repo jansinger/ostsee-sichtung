@@ -37,6 +37,13 @@ export interface ExtractionSite {
 	key: string;
 	aspect: string;
 	field: string;
+	/**
+	 * Nur bei mechanisierten dynamischen Attributen (Gruppe 2, siehe
+	 * `allowlist.ts` bei `dynamic-attribute`): die benannten Platzhalter der
+	 * ICU-Botschaft in `text` (`{name}`), mit dem JS-Ausdruck, der beim Aufruf
+	 * an `m.<key>({ name: ausdruck })` übergeben wird (`apply.ts`).
+	 */
+	params?: Array<{ name: string; expression: string }>;
 }
 
 export interface SkippedSite {
@@ -862,6 +869,334 @@ export function collectSvelteSites(
 		});
 	};
 
+	/**
+	 * Bekannte Ausnahme von der Mechanisierung: statischer Text mit
+	 * mindestens zwei Buchstaben, der trotzdem nicht an Melder gerichtet ist.
+	 * `Icon.svelte:277` meldet einen fehlenden Icon-Namen — eine
+	 * Entwicklermeldung auf Englisch, die nur bei einem Tippfehler im
+	 * Icon-Namen während der Entwicklung sichtbar wird, nie im Betrieb für
+	 * Melder. Ohne diese Ausnahme würde `analyzeDynamicAttribute` unten den
+	 * statischen Anteil ("Missing icon: ") als übersetzbaren Text erkennen
+	 * und mechanisch eine (englische) Botschaft daraus bauen.
+	 */
+	const NON_USER_FACING_DYNAMIC_ATTRIBUTES: ReadonlyArray<{
+		readonly file: string;
+		readonly aspect: string;
+		readonly staticTextStartsWith: string;
+	}> = [
+		{
+			file: 'src/lib/components/Icon.svelte',
+			aspect: 'title',
+			staticTextStartsWith: 'Missing icon:'
+		}
+	];
+
+	/**
+	 * Läuft rekursiv über einen estree-Ausdrucksknoten und meldet, ob
+	 * irgendwo darin eine `ConditionalExpression` (Ternary) steckt — auch
+	 * verschachtelt in `||`/`??` (`title || (a ? b : c)`,
+	 * `DropzoneEnhanced.svelte:1035`). Eine Ternary bedeutet: zwei (oder
+	 * mehr) mögliche Botschaften plus eine Fallunterscheidung — Handarbeit,
+	 * kein mechanischer Fall (Gruppe 3, siehe `allowlist.ts`).
+	 *
+	 * Bewusst ein generischer Objekt-Walk statt eine Liste bekannter
+	 * Knotentypen: estree-Ausdrucksbäume aus `svelte/compiler` sind azyklisch
+	 * (keine `parent`-Rückverweise auf Ausdrucksebene), ein Tiefenlimit fängt
+	 * trotzdem jeden Überraschungsfall ab, ohne einen Stack-Overflow zu
+	 * riskieren.
+	 */
+	function containsConditional(node: unknown, depth = 0): boolean {
+		if (depth > 40 || !isSvelteNode(node)) {
+			return false;
+		}
+		if (node.type === 'ConditionalExpression') {
+			return true;
+		}
+		for (const [key, value] of Object.entries(node)) {
+			if (key === 'start' || key === 'end' || key === 'loc' || key === 'type') {
+				continue;
+			}
+			if (Array.isArray(value)) {
+				if (value.some((item) => containsConditional(item, depth + 1))) {
+					return true;
+				}
+			} else if (containsConditional(value, depth + 1)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Läuft wie `containsConditional`, prüft aber auf einen bereits erledigten
+	 * Paraglide-Botschaftsaufruf irgendwo im Ausdruck (`m.foo()`). Mischtext
+	 * mit einem solchen Aufruf bleibt Handarbeit statt mechanisiert zu werden
+	 * (Gegentest `bleibt bei einem gemischten Attribut mit m.-Aufruf-Anteil
+	 * bei dynamic-attribute`, collectSvelte.test.ts): Ein automatisch
+	 * vergebener Parametername (`value`) für einen bereits übersetzten
+	 * Aufruf verschleiert eher, als dass er hilft — ein Mensch soll
+	 * entscheiden, ob die äußere Botschaft den inneren Aufruf überhaupt noch
+	 * braucht.
+	 */
+	function containsParaglideMessageCall(node: unknown, depth = 0): boolean {
+		if (depth > 40 || !isSvelteNode(node)) {
+			return false;
+		}
+		if (isParaglideMessageCallInSvelte(node, messagesNamespace)) {
+			return true;
+		}
+		for (const [key, value] of Object.entries(node)) {
+			if (key === 'start' || key === 'end' || key === 'loc' || key === 'type') {
+				continue;
+			}
+			if (Array.isArray(value)) {
+				if (value.some((item) => containsParaglideMessageCall(item, depth + 1))) {
+					return true;
+				}
+			} else if (containsParaglideMessageCall(value, depth + 1)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** Erstbuchstabe groß — für die Kollisionsauflösung in `uniqueParamName`. */
+	function capitalize(word: string): string {
+		return word.length === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1);
+	}
+
+	/**
+	 * Löst `||`/`??`-Fallbacks und optionales Chaining auf, bis ein Knoten
+	 * übrig bleibt, aus dem sich ein lesbarer Name ableiten lässt — der linke
+	 * Operand trägt die eigentliche Bedeutung (`counts.speciesCounts[key]?.visible
+	 * || 0` soll `visible` heißen, nicht `0`).
+	 */
+	function coreExpressionForNaming(node: SvelteAstNode): SvelteAstNode {
+		if (node.type === 'ChainExpression' && isSvelteNode(node.expression)) {
+			return coreExpressionForNaming(node.expression);
+		}
+		if (
+			node.type === 'LogicalExpression' &&
+			(node.operator === '||' || node.operator === '??') &&
+			isSvelteNode(node.left)
+		) {
+			return coreExpressionForNaming(node.left);
+		}
+		return node;
+	}
+
+	/**
+	 * Die Namensregel (Auftrag: „Leite einen lesbaren, stabilen
+	 * Parameternamen ab"): der letzte bedeutungstragende Teil des Ausdrucks —
+	 *
+	 *  - `Identifier` (`total`, `apiDefaultYear`) → der Bezeichner selbst.
+	 *  - `MemberExpression` mit festem Namen (`group.label`,
+	 *    `activeFilters.year`, `counts.speciesCounts[key]?.visible`) → der
+	 *    letzte Eigenschaftsname (`label`, `year`, `visible`).
+	 *  - `MemberExpression` mit berechnetem, nicht-literalem Schlüssel
+	 *    (`arr[i]`) → fällt auf den Namen des Objekts zurück (`arr`), weil
+	 *    der Schlüssel selbst keinen stabilen Namen liefert.
+	 *  - `CallExpression` mit Bezeichner-Callee (`speciesLabel(speciesId)`,
+	 *    `colorGroupLabel(colorGroup)`) → der Funktionsname, weil er die
+	 *    Bedeutung trägt, nicht das Argument.
+	 *  - alles andere → `value` als sicherer Rückfall.
+	 *
+	 * Stabil, weil sie nur von der Struktur des Ausdrucks abhängt, nicht vom
+	 * umgebenden deutschen Text — ändert sich der Satz drumherum, bleibt der
+	 * Parametername gleich.
+	 */
+	function baseParamName(node: SvelteAstNode): string {
+		const core = coreExpressionForNaming(node);
+		if (core.type === 'Identifier' && typeof core.name === 'string') {
+			return core.name;
+		}
+		if (core.type === 'MemberExpression') {
+			const property = core.property;
+			if (
+				!core.computed &&
+				isSvelteNode(property) &&
+				property.type === 'Identifier' &&
+				typeof property.name === 'string'
+			) {
+				return property.name;
+			}
+			if (
+				core.computed &&
+				isSvelteNode(property) &&
+				property.type === 'Literal' &&
+				typeof property.value === 'string'
+			) {
+				return property.value;
+			}
+			if (isSvelteNode(core.object)) {
+				return baseParamName(core.object);
+			}
+		}
+		if (
+			core.type === 'CallExpression' &&
+			isSvelteNode(core.callee) &&
+			core.callee.type === 'Identifier' &&
+			typeof core.callee.name === 'string'
+		) {
+			return core.callee.name;
+		}
+		return 'value';
+	}
+
+	/**
+	 * Macht `baseParamName` innerhalb EINER Botschaft eindeutig. Zwei
+	 * verschiedene Ausdrücke mit demselben letzten Namensteil (`a.label` und
+	 * `b.label` in derselben Botschaft) bekämen sonst denselben
+	 * Platzhalter — die zweite Ersetzung würde den ersten Parameter
+	 * überschreiben. Erste Stufe: den übergeordneten Namensteil voranstellen
+	 * (`label` → `bLabel`). Bleibt es dabei, ein Zählsuffix.
+	 */
+	function uniqueParamName(node: SvelteAstNode, used: Set<string>): string {
+		const base = baseParamName(node);
+		if (!used.has(base)) {
+			return base;
+		}
+		const core = coreExpressionForNaming(node);
+		if (core.type === 'MemberExpression' && isSvelteNode(core.object)) {
+			const withParent = `${baseParamName(core.object)}${capitalize(base)}`;
+			if (!used.has(withParent)) {
+				return withParent;
+			}
+		}
+		let counter = 2;
+		let candidate = `${base}${counter}`;
+		while (used.has(candidate)) {
+			counter++;
+			candidate = `${base}${counter}`;
+		}
+		return candidate;
+	}
+
+	function exprSource(node: SvelteAstNode): string {
+		const start = typeof node.start === 'number' ? node.start : 0;
+		const end = typeof node.end === 'number' ? node.end : 0;
+		return source.slice(start, end);
+	}
+
+	interface DynamicAttributeAnalysis {
+		kind: 'conditional' | 'passthrough' | 'mixed';
+		icuText?: string;
+		params?: Array<{ name: string; expression: string }>;
+	}
+
+	/**
+	 * Zerlegt einen JS-`TemplateLiteral` (`` `${a} Text ${b}` ``) in
+	 * statischen Text mit `{name}`-Platzhaltern plus die dazugehörigen
+	 * Parameter — dieselbe Zielform wie ein mehrteiliges Svelte-Attribut
+	 * (`"Text {a} mehr {b}"`), nur eine Ebene tiefer im JS-Ausdruck
+	 * verschachtelt (`` aria-label={`${file.originalName} öffnen`} ``,
+	 * `MediaThumbnail.svelte:75`).
+	 */
+	function flattenTemplateLiteral(
+		node: SvelteAstNode,
+		used: Set<string>
+	): { text: string; params: Array<{ name: string; expression: string }> } {
+		const quasis = Array.isArray(node.quasis) ? node.quasis : [];
+		const expressions = Array.isArray(node.expressions) ? node.expressions : [];
+		let text = '';
+		const params: Array<{ name: string; expression: string }> = [];
+		for (let i = 0; i < quasis.length; i++) {
+			const quasi = quasis[i];
+			// `TemplateElement.value` ist `{ raw, cooked }` — ein reines
+			// Datenobjekt ohne eigenes `type`-Feld, `isSvelteNode` (das ein
+			// `type`-Feld verlangt) griffe hier immer daneben.
+			const quasiValue = isSvelteNode(quasi) ? quasi.value : undefined;
+			const cooked =
+				typeof quasiValue === 'object' &&
+				quasiValue !== null &&
+				typeof (quasiValue as { cooked?: unknown }).cooked === 'string'
+					? (quasiValue as { cooked: string }).cooked
+					: '';
+			text += cooked;
+			const expr = expressions[i];
+			if (expr !== undefined && isSvelteNode(expr)) {
+				const paramName = uniqueParamName(expr, used);
+				used.add(paramName);
+				params.push({ name: paramName, expression: exprSource(expr) });
+				text += `{${paramName}}`;
+			}
+		}
+		return { text, params };
+	}
+
+	/**
+	 * Klassifiziert ein dynamisches Attribut in die drei Gruppen aus dem
+	 * Stage-2-Review (allowlist.ts, `dynamic-attribute`/
+	 * `attribute-no-static-text`):
+	 *
+	 *  - `conditional` — irgendwo eine Ternary → Handarbeit, bleibt
+	 *    `dynamic-attribute`.
+	 *  - `passthrough` — kein einziger statischer Textteil mit mindestens
+	 *    zwei Buchstaben → `attribute-no-static-text`, kein offener Fall.
+	 *  - `mixed` — statischer Text UND mindestens ein Ausdruck, ohne
+	 *    Verzweigung → mechanisch zu einer parametrisierten ICU-Botschaft
+	 *    zusammengebaut.
+	 */
+	function analyzeDynamicAttribute(parts: unknown[]): DynamicAttributeAnalysis {
+		// Einzelner ExpressionTag: entweder ein reiner Ausdruck (Identifier,
+		// MemberExpression, CallExpression, …) oder ein JS-Template-Literal
+		// mit eigenen `${…}`-Anteilen — Svelte selbst hat hier nur EINEN
+		// Anteil erkannt, die Zerlegung passiert also im JS-Ausdruck.
+		if (parts.length === 1 && isSvelteNode(parts[0]) && parts[0].type === 'ExpressionTag') {
+			const expression = parts[0].expression;
+			if (!isSvelteNode(expression)) {
+				return { kind: 'passthrough' };
+			}
+			if (containsConditional(expression) || containsParaglideMessageCall(expression)) {
+				return { kind: 'conditional' };
+			}
+			if (expression.type === 'TemplateLiteral') {
+				const used = new Set<string>();
+				const flattened = flattenTemplateLiteral(expression, used);
+				const staticOnly = flattened.text.replace(/\{[^}]+\}/g, '');
+				if (flattened.params.length === 0 || !hasMinimumTwoLetters(staticOnly)) {
+					return { kind: 'passthrough' };
+				}
+				return { kind: 'mixed', icuText: flattened.text, params: flattened.params };
+			}
+			return { kind: 'passthrough' };
+		}
+
+		// Mehrteiliges Svelte-Attribut: Text- und ExpressionTag-Anteile lösen
+		// einander ab (`"Text {a} mehr {b}"`).
+		let icuText = '';
+		const params: Array<{ name: string; expression: string }> = [];
+		const used = new Set<string>();
+		for (const part of parts) {
+			if (!isSvelteNode(part)) {
+				return { kind: 'passthrough' };
+			}
+			if (part.type === 'Text' && typeof part.data === 'string') {
+				icuText += part.data;
+				continue;
+			}
+			if (part.type === 'ExpressionTag') {
+				if (containsConditional(part.expression) || containsParaglideMessageCall(part.expression)) {
+					return { kind: 'conditional' };
+				}
+				if (!isSvelteNode(part.expression)) {
+					return { kind: 'passthrough' };
+				}
+				const paramName = uniqueParamName(part.expression, used);
+				used.add(paramName);
+				params.push({ name: paramName, expression: exprSource(part.expression) });
+				icuText += `{${paramName}}`;
+				continue;
+			}
+			return { kind: 'passthrough' }; // unbekannter Knotentyp — sichere Richtung: nicht mechanisieren
+		}
+		const staticOnly = icuText.replace(/\{[^}]+\}/g, '');
+		if (params.length === 0 || !hasMinimumTwoLetters(staticOnly)) {
+			return { kind: 'passthrough' };
+		}
+		return { kind: 'mixed', icuText, params };
+	}
+
 	/** Attributwerte: `placeholder`/`title`/`aria-label`/`alt`, rein statisch. */
 	function handleAttributes(attributes: unknown, elementName: string): void {
 		if (!Array.isArray(attributes)) {
@@ -914,15 +1249,84 @@ export function collectSvelteSites(
 					});
 					continue;
 				}
-				// Enthält mindestens einen `{ausdruck}`-Anteil — `attr={m.key()}` hätte
-				// keinen Platz mehr dafür.
-				skipped.push({
+				// Bekannte Entwicklermeldung trotz statischen Textes (siehe
+				// `NON_USER_FACING_DYNAMIC_ATTRIBUTES` oben) — vor der
+				// Mechanisierung prüfen, sonst baut `analyzeDynamicAttribute`
+				// daraus eine (englische) Botschaft.
+				const nonUserFacing = NON_USER_FACING_DYNAMIC_ATTRIBUTES.find(
+					(entry) =>
+						entry.file === relativeFilePath &&
+						entry.aspect === name &&
+						text.startsWith(entry.staticTextStartsWith)
+				);
+				if (nonUserFacing) {
+					skipped.push({
+						file: relativeFilePath,
+						line: lineOf(start),
+						text: source.slice(start, end),
+						aspect: name,
+						reason: 'attribute-no-static-text',
+						explanation: `Attribut ${name} enthält zwar statischen Text ("${nonUserFacing.staticTextStartsWith}"), ist aber eine Entwicklermeldung, keine Botschaft für Melder`
+					});
+					continue;
+				}
+
+				const analysis = analyzeDynamicAttribute(parts);
+				if (analysis.kind === 'conditional') {
+					// Verzweigung (Ternary, auch in `||`/`??` verschachtelt) — zwei
+					// oder mehr mögliche Botschaften plus Fallunterscheidung,
+					// Handarbeit (Gruppe 3, allowlist.ts).
+					skipped.push({
+						file: relativeFilePath,
+						line: lineOf(start),
+						text: source.slice(start, end),
+						aspect: name,
+						reason: 'dynamic-attribute',
+						explanation: `Attribut ${name} verzweigt (Ternary) zwischen mindestens zwei möglichen Botschaften — Handarbeit, nicht mechanisierbar`
+					});
+					continue;
+				}
+				if (analysis.kind === 'passthrough') {
+					// Kein einziger statischer Textteil mit mindestens zwei
+					// Buchstaben — strukturell nichts zu übersetzen (Gruppe 1,
+					// allowlist.ts).
+					skipped.push({
+						file: relativeFilePath,
+						line: lineOf(start),
+						text: source.slice(start, end),
+						aspect: name,
+						reason: 'attribute-no-static-text',
+						explanation: `Attribut ${name} reicht einen Ausdruck nur durch — kein statischer Text zum Übersetzen`
+					});
+					continue;
+				}
+				// analysis.kind === 'mixed': statischer Text UND mindestens ein
+				// Ausdruck, ohne Verzweigung — mechanisch zu einer
+				// parametrisierten ICU-Botschaft zusammengebaut (Gruppe 2,
+				// allowlist.ts).
+				const icuText = analysis.icuText ?? '';
+				const staticOnly = icuText.replace(/\{[^}]+\}/g, '').trim();
+				const issue = textQualityIssue(staticOnly);
+				if (issue) {
+					skipped.push({
+						file: relativeFilePath,
+						line: lineOf(start),
+						text: source.slice(start, end),
+						aspect: name,
+						reason: issue.reason,
+						explanation: issue.explanation
+					});
+					continue;
+				}
+				candidates.push({
 					file: relativeFilePath,
 					line: lineOf(start),
-					text: source.slice(start, end),
+					start,
+					end,
+					text: icuText,
 					aspect: name,
-					reason: 'dynamic-attribute',
-					explanation: `Attribut ${name} enthält einen dynamischen Anteil ({ausdruck}) — kein reines Literal`
+					field: elementName,
+					...(analysis.params ? { params: analysis.params } : {})
 				});
 				continue;
 			}
