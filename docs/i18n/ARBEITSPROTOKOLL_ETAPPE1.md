@@ -792,6 +792,87 @@ Zwei fehlende `import * as m`. Meine eigene Import-Prüfung lief über die
 Messung, die die falsche Menge betrachtet, genau wie die Fundstellen-Irrtümer
 weiter oben. Der Typ-Check hat es gefunden, die grünen Unit-Tests nicht.
 
+## Befund C — Anzeigetext in `.ts`-Dateien: die Messung
+
+Erhoben 2026-08-12 mit derselben Regel wie der Schicht-C-Guard
+(`multiWordLiterals`, abzüglich Klassenlisten und Logmeldungen), angewandt
+auf alle `.ts` unter `src/` ohne `paraglide/`, `tools/`, `tests/` und
+Testdateien.
+
+### Die Rohzahl ist unbrauchbar, und das ist die eigentliche Aussage
+
+**981 Kandidaten in 146 Dateien.** Wer damit plant, plant an der Sache
+vorbei: Die Zahl mischt Zielgruppen, die einander ausschliessen — Text, der
+den Melder erreicht, mit Text, der deutsch bleiben MUSS (Legacy-API,
+CSV-Export), mit Admin-Oberfläche, mit Serverinterna. Erst die Aufteilung
+nach **Zielgruppe** ergibt eine Arbeitsgrundlage.
+
+| Bereich                                                     |           Kandidaten | Umgang                                              |
+| ----------------------------------------------------------- | -------------------: | --------------------------------------------------- |
+| **A — öffentlicher Client-Code**                            | **138** (30 Dateien) | zu lokalisieren                                     |
+| **E — `/api` ohne `/api/admin`**                            | **119** (30 Dateien) | je Endpunkt zu entscheiden                          |
+| Serverintern (Mailvorlagen, Konfiguration, Spam)            |                  211 | eigene Frage, Empfänger ist das Museum              |
+| `speciesIdentification.ts`                                  |                  208 | Schicht E, Etappe 4 — bestätigt                     |
+| Admin (Oberfläche und Endpunkte)                            |                  155 | wird nicht lokalisiert                              |
+| Legacy-API (`rest_sichtungen`, `sichtungen`, `legacy-api/`) |                   68 | **deutsch festgenagelt** — drei angebundene Clients |
+| `server/export/`                                            |                   25 | **deutsch festgenagelt** (Locale-Falle)             |
+| `hooks.server.ts`, `+page.server.ts`                        |                   18 | einzeln zu prüfen                                   |
+| Entwicklerflächen                                           |                    5 | nie lokalisiert                                     |
+
+### Drei Rauschklassen, die erst beim Hinsehen auffielen
+
+Die Regel zählte in `.ts` deutlich mehr Fehltreffer als in `.svelte`, weil
+dort andere Literalsorten vorkommen. Ausgeschlossen und benannt:
+**HTML-Vorlagen** (`popupContent.ts` baut sein Popup als Zeichenkette),
+**SQL-Fragmente** (`CASE WHEN …`, `${sightings.…}`) und **HTTP-Kopfwerte**
+(`inline; filename=…`, `public, max-age=…`). Das senkte A von 158 auf 138
+und E von 131 auf 119. `popupContent.ts` fiel dadurch von 22 auf 8 — sein
+sichtbarer Text kommt fast vollständig aus `MapTranslations`, also seit
+Welle 2 aus dem Katalog.
+
+### KORREKTUR zu Welle 5: der Kartenhinweis steht zweimal
+
+`wording.ts:94 mapHint()` erzeugt **denselben** Hinweistext, den ich in
+Welle 5 in `OLMap.svelte` übersetzt habe — mit einem zusätzlichen
+Zweig-Verb (`gefunden haben` / `gesehen haben`). Geprüft, nicht vermutet:
+`PositionPanel.svelte:60` ruft `mapHint(...)` und reicht das Ergebnis über
+`LocationInput` als `hintOverride` an `OLMap` durch (`:304`, `:491`).
+
+**Im Meldeformular gewinnt also immer `wording.ts`.** Was ich in Welle 5
+übersetzt habe, ist der Rückfall für Aufrufer ohne `PositionPanel`. Die
+Aussage „Befund B abgeschlossen" bleibt richtig — sie galt den
+`<script>`-Blöcken —, aber sie bedeutet **nicht**, dass der Melder diesen
+Hinweis auf Englisch sähe. Wer glaubt, die Karte sei fertig, irrt.
+
+### Die dicksten Posten in A, mit Charakter
+
+- `constants/weather.ts` **24** — die Wetterbeschreibungen zum Wettercode
+  („Leichter Nieselregen", „Gewitter mit starkem Hagel"). Alle echt, alle
+  sichtbar, geschlossene Liste. Der sauberste Einzelposten.
+- `report/wording.ts` **16** — die zweigabhängige Wortwahl des
+  Meldeformulars (lebend/Totfund). Echt, sichtbar, und mit dem Verb-Einschub
+  ein Muster-C-Fall: `${verb}` steht MITTEN im Satz.
+- `constants/upload.ts` **9**, `report/formConfig.ts` **7**,
+  `map/controls/locationControlState.ts` **6**, `utils/uploadUtils.ts` **6**.
+
+### E braucht eine Entscheidung, keine Welle
+
+Die 119 in `/api` sind gemischt: deutsche Meldungen an den Melder
+(Validierungsfehler, Ratenbegrenzung) neben englischen Maschinenmeldungen
+(`File not found`, `Internal server error`, `Invalid form submission`).
+Beides in einem Zug zu übersetzen wäre falsch — eine Fehlerantwort an einen
+Client ist kein Anzeigetext. Vorschlag: erst je Endpunkt klären, welche
+Antwort ein Mensch liest, dann lokalisieren; die englischen bleiben.
+
+### Was diese Messung NICHT ist
+
+Kein Guard. Sie liegt als Zahl im Protokoll, nicht im Testlauf — der
+Schicht-C-Guard liest weiterhin nur `.svelte`. Ein Zähler für `.ts` ist erst
+sinnvoll, wenn die Zielgruppen-Aufteilung oben als Regel im Code steht;
+sonst wäre er über 981 Stellen rot und würde abgeschaltet.
+
+---
+
 ### Stand Befund B: abgeschlossen
 
 Kein offener Anzeigetext mehr in den `<script>`-Blöcken der 84 Dateien. Die
