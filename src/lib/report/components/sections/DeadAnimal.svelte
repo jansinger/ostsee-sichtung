@@ -23,9 +23,18 @@
 			{m.report_components_sections_deadanimal_text_totfunde_sind_besonders_wertvoll_fuer()}
 		</p>
 		<ul class="list-inside list-disc space-y-1 text-xs">
-			<li><strong>Todesursachen:</strong> Helfen bei der Identifikation von Bedrohungen</li>
-			<li><strong>Gesundheitszustand:</strong> Wichtig für Populationsanalysen</li>
-			<li><strong>Nicht berühren:</strong> Sicherheitsrisiko und Störung der Untersuchung</li>
+			<li>
+				<strong>{m.report_components_sections_deadanimal_term_todesursachen()}</strong>
+				{m.report_components_sections_deadanimal_gloss_todesursachen()}
+			</li>
+			<li>
+				<strong>{m.report_components_sections_deadanimal_term_gesundheitszustand()}</strong>
+				{m.report_components_sections_deadanimal_gloss_gesundheitszustand()}
+			</li>
+			<li>
+				<strong>{m.report_components_sections_deadanimal_term_nicht_beruehren()}</strong>
+				{m.report_components_sections_deadanimal_gloss_nicht_beruehren()}
+			</li>
 			<li>
 				<strong>Behörden informieren:</strong> Meeresmuseum, Wasserschutzpolizei, Nationalparkamt kontaktieren
 			</li>

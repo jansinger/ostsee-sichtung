@@ -1,5 +1,5 @@
 import { render } from 'vitest-browser-svelte';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest';
 import { page } from 'vitest/browser';
 import UnifiedDropzone from './UnifiedDropzone.svelte';
 import type { ValidationPreset } from '$lib/types';
@@ -226,6 +226,75 @@ describe('UnifiedDropzone', () => {
 			});
 
 			await expect.element(page.getByText('2 Dateien hochgeladen')).toBeVisible();
+		});
+
+		/**
+		 * Muster B (i18n Etappe 2, Aufgabe 2.4): der Plural war vorher deutsche
+		 * Grammatik im Markup ({files.length !== 1 ? 'en' : ''}) — bei 1 Datei
+		 * zufällig richtig, in jeder anderen Sprache falsch, weil "one"/"other"
+		 * nicht an der deutschen Endung "-en" hängt. Ersetzt durch eine
+		 * ICU-Plural-Botschaft (`Intl.PluralRules` über `registry.plural`).
+		 * Diese Suite belegt beide Zahlen (1 und 2) UND beide Sprachen positiv —
+		 * nicht nur, dass sich der Text von 1 zu 2 ändert, sondern welcher Text
+		 * jeweils in welcher Sprache steht.
+		 */
+		describe('Plural folgt der Locale (Muster B)', () => {
+			afterEach(async () => {
+				const { overwriteGetLocale, baseLocale } = await import('$lib/paraglide/runtime');
+				overwriteGetLocale(() => baseLocale);
+			});
+
+			it('zeigt den deutschen Singular bei 1 Datei', async () => {
+				const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
+				overwriteGetLocale(() => 'de');
+
+				render(UnifiedDropzone, {
+					config: mockConfig,
+					files: [makeFile('a.jpg')],
+					showPreview: true
+				});
+
+				await expect.element(page.getByText('1 Datei hochgeladen')).toBeVisible();
+			});
+
+			it('zeigt den deutschen Plural bei 2 Dateien', async () => {
+				const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
+				overwriteGetLocale(() => 'de');
+
+				render(UnifiedDropzone, {
+					config: mockConfig,
+					files: [makeFile('a.jpg'), makeFile('b.jpg')],
+					showPreview: true
+				});
+
+				await expect.element(page.getByText('2 Dateien hochgeladen')).toBeVisible();
+			});
+
+			it('zeigt den englischen Singular bei 1 Datei', async () => {
+				const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
+				overwriteGetLocale(() => 'en');
+
+				render(UnifiedDropzone, {
+					config: mockConfig,
+					files: [makeFile('a.jpg')],
+					showPreview: true
+				});
+
+				await expect.element(page.getByText('1 file uploaded')).toBeVisible();
+			});
+
+			it('zeigt den englischen Plural bei 2 Dateien', async () => {
+				const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
+				overwriteGetLocale(() => 'en');
+
+				render(UnifiedDropzone, {
+					config: mockConfig,
+					files: [makeFile('a.jpg'), makeFile('b.jpg')],
+					showPreview: true
+				});
+
+				await expect.element(page.getByText('2 files uploaded')).toBeVisible();
+			});
 		});
 
 		it('versteckt Vorschau wenn showPreview=false', async () => {

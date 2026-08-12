@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
+	import * as m from '$lib/paraglide/messages';
 
 	/**
 	 * Nur noch `initial`.
@@ -82,8 +83,15 @@
 				{#if type === 'initial'}
 					<div class="text-base-content/60 mt-4 text-center text-sm">
 						<!-- H7: Kürzel wirken nur bei fokussierter Karte (WCAG 2.1.4) -->
-						<p>
-							Tastaturkürzel: Karte fokussieren, dann <kbd class="kbd kbd-xs">H</kbd> drücken
+						<!-- Muster C (i18n Etappe 2, Aufgabe 2.3): `H` stand vorher mitten im
+						     Satz („dann H drücken"); auf Englisch wandert die Taste hinter
+						     das Verb („then press H") — zwei DOM-Positionen, die sich nicht
+						     durch feste Reihenfolge auflösen lassen. Der Satz ist deshalb so
+						     umformuliert, dass er ohne den Tastennamen auskommt und die Taste
+						     als eigenständiges, reihenfolgeunabhängiges Element danebensteht. -->
+						<p class="flex flex-wrap items-center justify-center gap-1">
+							<span>{m.components_map_loadingoverlay_text_tastaturkuerzel_hinweis()}</span>
+							<kbd class="kbd kbd-xs">H</kbd>
 						</p>
 					</div>
 				{/if}

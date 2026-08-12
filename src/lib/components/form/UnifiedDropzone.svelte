@@ -254,7 +254,7 @@
 		<div class="bg-base-200 rounded-lg p-4">
 			<div class="mb-4 flex items-center justify-between">
 				<h3 class="text-sm font-semibold">
-					{files.length} Datei{files.length !== 1 ? 'en' : ''} hochgeladen
+					{m.components_form_unifieddropzone_text_datei_hochgeladen_plural({ count: files.length })}
 				</h3>
 				{#if multiple}
 					<button

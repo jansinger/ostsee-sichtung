@@ -134,8 +134,14 @@
 								Schritt 1: Position & Zeitpunkt
 							</h4>
 							<ul class="space-y-1 text-xs">
-								<li><strong>GPS-Koordinaten:</strong> Am wertvollsten für die Forschung</li>
-								<li><strong>Gewässername:</strong> Falls keine GPS-Daten verfügbar</li>
+								<li>
+									<strong>{m.report_components_formhelp_term_gps_koordinaten()}</strong>
+									{m.report_components_formhelp_gloss_gps_koordinaten()}
+								</li>
+								<li>
+									<strong>{m.report_components_formhelp_term_gewaessername()}</strong>
+									{m.report_components_formhelp_gloss_gewaessername()}
+								</li>
 								<li><strong>Genaue Zeit:</strong> Hilft bei Verhaltensanalysen</li>
 								<li>
 									<strong>Tipp:</strong> Screenshots von Navigations-Apps sind hilfreich
@@ -159,7 +165,10 @@
 									<strong>Tierart:</strong> Bei Unsicherheit „Unbekannte Walart" oder „Unbekannte
 									Robbenart" wählen <SpeciesIdentificationHelp />
 								</li>
-								<li><strong>Anzahl:</strong> Auch Schätzungen sind wertvoll</li>
+								<li>
+									<strong>{m.report_components_formhelp_term_anzahl()}</strong>
+									{m.report_components_formhelp_gloss_anzahl()}
+								</li>
 								<li><strong>Jungtiere:</strong> Wichtig für Populationsstudien</li>
 								<li>
 									<strong>Entfernung:</strong> Hilft bei der Einschätzung der Beobachtung

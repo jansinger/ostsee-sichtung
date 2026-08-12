@@ -576,7 +576,9 @@
 		<div class="bg-base-200 rounded-lg p-4">
 			<div class="mb-4 flex items-center justify-between">
 				<h3 class="text-sm font-semibold">
-					{mediaFiles.length} Datei{mediaFiles.length !== 1 ? 'en' : ''}
+					{m.report_components_form_fields_dropzoneenhanced_text_datei_plural({
+						count: mediaFiles.length
+					})}
 					<!-- {previewFiles.length > 0 ? '(wird verarbeitet...)' : 'hochgeladen'} -->
 				</h3>
 				<!-- `min-h-11` hält das 44-px-Touch-Target, das `btn-sm` sonst

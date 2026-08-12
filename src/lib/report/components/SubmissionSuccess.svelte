@@ -160,8 +160,10 @@
 								{m.report_components_submissionsuccess_text_daten_einsehen()}
 							</h3>
 							<p class="text-base-content/70 text-sm">
-								Ihre Meldung erscheint nach Prüfung auf der
-								<a href={localizeHref('/map')} class="link link-primary">interaktiven Karte</a>
+								{m.report_components_submissionsuccess_text_erscheint_nach_pruefung_auf_der()}
+								<a href={localizeHref('/map')} class="link link-primary"
+									>{m.report_components_submissionsuccess_text_interaktiven_karte()}</a
+								>
 							</p>
 						</div>
 					</div>

@@ -355,6 +355,77 @@ describe('DropzoneEnhanced — Aufnahmezeit folgt der Locale', () => {
 });
 
 /**
+ * Muster B (i18n Etappe 2, Aufgabe 2.4): Der Datei-Zähler der Medien-Listenkarte
+ * (Zeile ~579, `!isPositionStep`-Zweig) baute den Plural vorher aus deutscher
+ * Grammatik ({mediaFiles.length !== 1 ? 'en' : ''}) — bei 1 Datei zufällig
+ * richtig, in jeder anderen Sprache falsch. Ersetzt durch eine
+ * ICU-Plural-Botschaft. Diese Suite belegt 1 und 2 Dateien in beiden Sprachen
+ * positiv, nach demselben Muster wie „Aufnahmezeit folgt der Locale" oben.
+ */
+describe('DropzoneEnhanced — Datei-Zähler folgt der Locale (Muster B)', () => {
+	afterEach(async () => {
+		const { overwriteGetLocale, baseLocale } = await import('$lib/paraglide/runtime');
+		overwriteGetLocale(() => baseLocale);
+	});
+
+	it('zeigt den deutschen Singular bei 1 Datei', async () => {
+		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
+		overwriteGetLocale(() => 'de');
+
+		renderDropzone([uploadedFile('a')], { maxFiles: 10, enableGPSExtraction: false }, [
+			MediaFile.fromUploadedFile(uploadedFile('a'), 'ref-1', false)
+		]);
+
+		await expect.poll(() => document.body.textContent).toContain('1 Datei');
+		expect(document.body.textContent).not.toContain('1 Dateien');
+	});
+
+	it('zeigt den deutschen Plural bei 2 Dateien', async () => {
+		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
+		overwriteGetLocale(() => 'de');
+
+		renderDropzone(
+			[uploadedFile('a'), uploadedFile('b')],
+			{ maxFiles: 10, enableGPSExtraction: false },
+			[
+				MediaFile.fromUploadedFile(uploadedFile('a'), 'ref-1', false),
+				MediaFile.fromUploadedFile(uploadedFile('b'), 'ref-1', false)
+			]
+		);
+
+		await expect.poll(() => document.body.textContent).toContain('2 Dateien');
+	});
+
+	it('zeigt den englischen Singular bei 1 Datei', async () => {
+		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
+		overwriteGetLocale(() => 'en');
+
+		renderDropzone([uploadedFile('a')], { maxFiles: 10, enableGPSExtraction: false }, [
+			MediaFile.fromUploadedFile(uploadedFile('a'), 'ref-1', false)
+		]);
+
+		await expect.poll(() => document.body.textContent).toContain('1 file');
+		expect(document.body.textContent).not.toContain('1 files');
+	});
+
+	it('zeigt den englischen Plural bei 2 Dateien', async () => {
+		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
+		overwriteGetLocale(() => 'en');
+
+		renderDropzone(
+			[uploadedFile('a'), uploadedFile('b')],
+			{ maxFiles: 10, enableGPSExtraction: false },
+			[
+				MediaFile.fromUploadedFile(uploadedFile('a'), 'ref-1', false),
+				MediaFile.fromUploadedFile(uploadedFile('b'), 'ref-1', false)
+			]
+		);
+
+		await expect.poll(() => document.body.textContent).toContain('2 files');
+	});
+});
+
+/**
  * Sichtbarer Auslöser in der Dropzone.
  *
  * Bisher war die gestrichelte Fläche mit „Klicken oder Drag & Drop" der einzige

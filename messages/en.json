@@ -6,6 +6,21 @@
 	"components_connectionbadge_text_wieder_online": "Wieder online",
 	"components_form_unifieddropzone_aria_label_datei_entfernen": "Datei entfernen",
 	"components_form_unifieddropzone_text_alle_loeschen": "Alle löschen",
+	"components_form_unifieddropzone_text_datei_hochgeladen_plural": [
+		{
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
+			"match": {
+				"countPlural=one": "{count} file uploaded",
+				"countPlural=other": "{count} files uploaded"
+			}
+		}
+	],
 	"components_info_datausagenotice_text_wofuer_die_daten_gebraucht_werden": "Wofür die Daten gebraucht werden",
 	"components_info_deadfindingnotice_text_totfunde_besonders_wichtig": "Totfunde – Besonders wichtig!",
 	"components_maintenancebanner_text_aktuelle_nachricht": "Aktuelle Nachricht:",
@@ -14,6 +29,7 @@
 	"components_maintenancebanner_text_wartungsmodus_ist_aktiv": "Wartungsmodus ist aktiv",
 	"components_map_lazymapwrapper_aria_label_karte_neu_laden": "Karte neu laden",
 	"components_map_lazymapwrapper_text_neu_laden": "Neu laden",
+	"components_map_loadingoverlay_text_tastaturkuerzel_hinweis": "Keyboard shortcut: focus the map, then press this key:",
 	"components_map_panel_dualrangeslider_aria_label_zeitraum_ende": "Zeitraum Ende",
 	"components_map_panel_dualrangeslider_aria_label_zeitraum_start": "Zeitraum Start",
 	"components_map_panel_dualrangeslider_aria_label_zeitraum_waehlen": "Zeitraum wählen",
@@ -315,6 +331,21 @@
 	"report_components_form_fields_dropzoneenhanced_text_analysiere_bilddaten": "Analysiere Bilddaten...",
 	"report_components_form_fields_dropzoneenhanced_text_ausserhalb": "Außerhalb",
 	"report_components_form_fields_dropzoneenhanced_text_bitte_waehlen_sie_die_position": "Bitte wählen Sie die Position manuell auf der Karte oder laden Sie ein Foto mit\n\t\t\t\t\t\t\t\t\tGPS-Daten hoch.",
+	"report_components_form_fields_dropzoneenhanced_text_datei_plural": [
+		{
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
+			"match": {
+				"countPlural=one": "{count} file",
+				"countPlural=other": "{count} files"
+			}
+		}
+	],
 	"report_components_form_fields_dropzoneenhanced_text_die_bilddaten_dieses_fotos_konnten": "Die Bilddaten dieses Fotos konnten nicht gelesen werden. Position, Datum und Uhrzeit\n\t\t\t\t\t\tbitte selbst angeben — das Foto bleibt erhalten.",
 	"report_components_form_fields_dropzoneenhanced_text_foto_hochgeladen": "Foto hochgeladen",
 	"report_components_form_fields_dropzoneenhanced_text_gps": "GPS",
@@ -415,6 +446,12 @@
 	"report_components_form_verifylocation_text_die_koordinaten_liegen_ausserhalb_des": "Die Koordinaten liegen außerhalb des gültigen Bereichs oder sind ungültig. Bitte\n\t\t\t\t\t\t\tüberprüfen Sie die Eingabe.",
 	"report_components_form_verifylocation_text_die_koordinaten_liegen_innerhalb_der": "Die Koordinaten liegen innerhalb der Ostsee.",
 	"report_components_form_verifylocation_text_pruefe_position_in_der_ostsee": "Prüfe Position in der Ostsee...",
+	"report_components_formhelp_gloss_anzahl": "Estimates are valuable too",
+	"report_components_formhelp_gloss_gewaessername": "If no GPS data is available",
+	"report_components_formhelp_gloss_gps_koordinaten": "Most valuable for research",
+	"report_components_formhelp_term_anzahl": "Count:",
+	"report_components_formhelp_term_gewaessername": "Body of water:",
+	"report_components_formhelp_term_gps_koordinaten": "GPS coordinates:",
 	"report_components_formhelp_text_beobachter_fuellen_zusatzfelder_aus": "Beobachter füllen Zusatzfelder aus",
 	"report_components_formhelp_text_durch_ihre_fotos_wissenschaftlich_dokume": "durch Ihre Fotos wissenschaftlich dokumentiert",
 	"report_components_formhelp_text_freigegebene_sichtungen": "freigegebene Sichtungen",
@@ -440,6 +477,12 @@
 	"report_components_sections_boatinfo_text_falls_sie_von_einem_boot": "Falls Sie von einem Boot aus beobachtet haben — diese Angaben helfen, die Sichtung\n\t\t\teinzuordnen.",
 	"report_components_sections_boatinfo_title_boot_schiffsinformationen": "Boot-/Schiffsinformationen",
 	"report_components_sections_datetime_title_zeitpunkt_der_sichtung": "Zeitpunkt der Sichtung",
+	"report_components_sections_deadanimal_gloss_gesundheitszustand": "Important for population analyses",
+	"report_components_sections_deadanimal_gloss_nicht_beruehren": "Safety risk and disturbs the examination",
+	"report_components_sections_deadanimal_gloss_todesursachen": "Helps identify threats",
+	"report_components_sections_deadanimal_term_gesundheitszustand": "Physical condition:",
+	"report_components_sections_deadanimal_term_nicht_beruehren": "Do not touch:",
+	"report_components_sections_deadanimal_term_todesursachen": "Cause of death:",
 	"report_components_sections_deadanimal_text_totfunde_sind_besonders_wertvoll_fuer": "Totfunde sind besonders wertvoll für die Wissenschaft!",
 	"report_components_sections_deadanimal_text_zusaetzliche_informationen_fuer_totfund": "Zusätzliche Informationen für Totfund",
 	"report_components_sections_environment_text_sobald_position_und_datum_gesetzt": "Sobald Position und Datum gesetzt sind, werden Wetterdaten automatisch vorgeschlagen.",
@@ -478,11 +521,13 @@
 	"report_components_submissionsuccess_text_daten_einsehen": "Daten einsehen",
 	"report_components_submissionsuccess_text_datum": "Datum:",
 	"report_components_submissionsuccess_text_deutsches_meeresmuseum": "Deutsches Meeresmuseum",
+	"report_components_submissionsuccess_text_erscheint_nach_pruefung_auf_der": "After review, your report will appear on the",
 	"report_components_submissionsuccess_text_folgen_sie_uns_fuer_updates": "Folgen Sie uns für Updates zu Meeresforschung und Naturschutz",
 	"report_components_submissionsuccess_text_fotos_und_videos": "Fotos und Videos",
 	"report_components_submissionsuccess_text_ihre_daten_fliessen_in_die": "Ihre Daten fließen in die Forschung ein und helfen beim Schutz der Meerestiere",
 	"report_components_submissionsuccess_text_ihre_meldung": "Ihre Meldung",
 	"report_components_submissionsuccess_text_ihre_meldung_wurde_erfolgreich_uebermitt": "Ihre Meldung wurde erfolgreich übermittelt",
+	"report_components_submissionsuccess_text_interaktiven_karte": "interactive map",
 	"report_components_submissionsuccess_text_interessiert_an_mehr": "Interessiert an mehr?",
 	"report_components_submissionsuccess_text_position": "Position:",
 	"report_components_submissionsuccess_text_referenz_id": "Referenz-ID:",
