@@ -747,17 +747,70 @@ gar nicht berührt wird, und einer der drei Specs, die dieses Vorhaben
 bereits als lastabhängig verzeichnet hat. Isoliert 2/2 grün (je 4
 passed). `smoke` 229 und `map` 156 grün.
 
-### Stand Befund B
+### Welle 5: der Rest — Befund B ist abgeschlossen
 
-29 Kandidaten in 19 Dateien offen. Die dicksten Posten: je 3 `OLMap`,
-`StepNavigation` und `SubmitStatus`, dann je 2 `ConnectionBadge`,
-`LanguageSwitcher`, `Step4Contact` und `bestimmungshilfe/+page.svelte`.
-Der Rest sind Einzelstellen, darunter die vier bereits begründeten
-technischen (Element-ID, Cache-Schlüssel, Formatkürzel, geworfener
-Entwicklerfehler).
-Nicht alle sind Übersetzungsarbeit — Cookie-Zeichenketten, erzeugte
-Element-IDs, Cache-Schlüssel und geworfene Entwicklerfehler stecken darin und
-werden je Datei einzeln entschieden.
+Commit d1cdf63a. 21 Stellen über 12 Dateien, 19 neue Schlüssel. Der Zähler
+schließt bei **8**, und jede dieser acht Stellen trägt ihre Begründung an
+der eigenen Zeile: zwei Cookie-Zeichenketten, zwei erzeugte Element-IDs,
+ein Cache-Schlüssel, zwei geworfene Entwicklerfehler (die den Programmierer
+erreichen, nie den Melder) und eine Liste von Dateiformat-Kürzeln.
+
+**Bilanz Befund B: 78 Stellen in 25 Dateien → 8 begründete Reste in 7
+Dateien**, über fünf Wellen, jede mit `test:quick` und vollständiger
+E2E-Suite ohne `CI=1`.
+
+### Die ersten von Hand geschriebenen ICU-Plurale
+
+`Step4Contact` („Ihre hochgeladene Aufnahme:" / „Ihre {count} hochgeladenen
+Aufnahmen:") und der Fehler-Toast in `StepNavigation`. Beide waren deutsche
+Grammatik, im Code mit `length === 1 ? … : …` zusammengesetzt — das legt die
+Einzahl-/Mehrzahl-Grenze bei eins fest, und dort liegt sie nicht in jeder
+Sprache. Muster B aus 2.3b, zum ersten Mal angewandt; `StepNavigation`
+braucht dabei **zwei** `input`-Deklarationen (`count` und der Schrittname).
+
+Gegen die kompilierte Ausgabe geprüft, nicht bloß gegen den Katalog:
+`count` 1/3/0 und 1/2 wählen den richtigen Zweig, und der deutsche Wortlaut
+ist zeichengleich das, was der Ternär vorher erzeugt hat — **einschließlich
+`count = 0` → „Ihre 0 hochgeladenen Aufnahmen:"**, dem Verhalten der alten
+`=== 1`-Abfrage.
+
+### Zwei Entscheidungen, die keine Fleißarbeit waren
+
+1. **`OLMap` setzte seinen Hinweis aus `${base} Der GPS-Button …` zusammen.**
+   Aufgelöst in zwei GANZE Sätze statt Fragment plus Anhang: Ein festes
+   Fragment zwingt jede Zielsprache in die deutsche Satzfolge (Muster C).
+   Der erste Satz steht dadurch zweimal im Katalog — bewusst.
+2. **`'Wieder online.'` kollidierte mit der Markup-Botschaft `'Wieder
+online'`** (ohne Punkt, also ein anderer String). Aufgelöst wie im
+   Werkzeug, mit Zählsuffix — nicht durch stilles Zusammenlegen zweier
+   Texte, die zufällig ähnlich aussehen.
+
+### `svelte-check` zum dritten Mal, und diesmal war ich selbst schuld
+
+Zwei fehlende `import * as m`. Meine eigene Import-Prüfung lief über die
+**verbliebenen** Kandidaten-Dateien statt über die **geänderten** — eine
+Messung, die die falsche Menge betrachtet, genau wie die Fundstellen-Irrtümer
+weiter oben. Der Typ-Check hat es gefunden, die grünen Unit-Tests nicht.
+
+### Stand Befund B: abgeschlossen
+
+Kein offener Anzeigetext mehr in den `<script>`-Blöcken der 84 Dateien. Die
+verbliebenen 8 Zähler-Einträge sind namentlich begründet (siehe
+`SCRIPT_TEXT_LEDGER` in `src/lib/i18n/hardcodedMarkupScan.test.ts`) und
+stehen bewusst im Zähler statt auf einer Ausnahmeliste: Eine Ausnahme
+verschwindet aus dem Blick, ein Zähler mit Begründung wird bei jeder
+Änderung an der Datei wieder gelesen.
+
+**Was offen bleibt** (nicht Befund B): Befund A mit 7 Anzeigetexten an
+Komponenten-Props und 20 `content`-Attributen für Aufgabe 2.5, sowie die
+143 Handarbeitsfälle (78 Satzfragmente, 58 Interpolationen, 7
+Attribut-Ternaries).
+
+**Und ein Befund, der aus Welle 2 offen ist:** `popupContent.ts` hartcodiert
+`'Ja'` und `'Unbekannte Art'`. Der Guard liest nur `.svelte`; Anzeigetext in
+`.ts`-Dateien unter `src/lib/map/` und `src/lib/report/` ist bisher von
+niemandem gezählt worden. Das ist dieselbe Bauart blinder Fleck wie Befund B
+selbst — erst messen, dann entscheiden.
 
 ---
 
