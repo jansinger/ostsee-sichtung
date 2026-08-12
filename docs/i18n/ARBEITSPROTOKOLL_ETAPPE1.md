@@ -921,6 +921,51 @@ E2E-Shards im ersten Lauf grün (229 + 94 + 156 = 479).
 
 **Stand A: 98 Kandidaten in 28 Dateien** (vorher 138/30).
 
+### Welle C2: `upload.ts` und `popupContent.ts`
+
+Commit 676cd53d, 17 neue Schlüssel.
+
+#### Verbraucher zuerst, wie immer
+
+`UPLOAD_ERROR_MESSAGES` läuft auf **beiden** Seiten: `UnifiedDropzone` und
+`Media` im Browser, `validateFile` innerhalb von `/api/files/upload`. Die
+Serverseite ist ein Request-Handler — die Locale kommt dort aus der Anfrage,
+ein englischer Melder bekommt eine englische Fehlermeldung. Nichts davon
+wird gespeichert, also **keine** `baseLocale`-Pinnung wie in `weather.ts`.
+`popupContent` baut OpenLayers-Popups, reiner Client.
+
+#### `NO_FILE` und `UPLOAD_FAILED` sind jetzt Getter
+
+Als einfache Felder wären sie beim Modulladen einmal aufgelöst worden und
+hätten die Sprache für die Prozesslebensdauer eingefroren — derselbe Defekt,
+den Entwurf 2.3/4.1 für die Modulkonstanten der Schicht B beschreibt, und
+derselbe Grund, aus dem `weather.ts` Botschafts-Funktionen hält.
+
+#### Das geschützte Leerzeichen gehört IN die Botschaft
+
+`props.ct > 1 ? 'Tiere' : 'Tier'` und `{n} Sichtungen` sind jetzt
+ICU-Plurale. Das `&nbsp;` zwischen Zahl und Substantiv stand vorher als
+HTML-Entität **daneben**; es steht jetzt als echtes U+00A0 **in** der
+Botschaft. Wer die Wortfolge beim Übersetzen umstellt, nimmt es mit. Gegen
+die kompilierte Ausgabe geprüft: 1/3 und 1/4 wählen den richtigen Zweig, das
+U+00A0 überlebt.
+
+#### BUCHFÜHRUNG: 87 statt 81, und der Unterschied ist lehrreich
+
+Nach 98 − 17 wären 81 zu erwarten. Gemessen: **87**. Die Differenz sind
+**sechs Literale, die diese Änderung selbst erzeugt hat**: Eine Vorlage, die
+nur noch `${m.key(...)}` enthält, hat weiterhin Leerzeichen und zwei
+Buchstabengruppen — die Regel zählt sie erneut.
+
+Das ist exakt der Effekt, den der Markup-Extraktor `already-translated`
+nennt. **Ein künftiger `.ts`-Zähler braucht denselben Ausschluss**, sonst
+wächst er bei jeder Übersetzung. Sechs Falsch-Positive, keine verlorene
+Stelle — nachgerechnet, nicht behauptet: Meine erste Commit-Angabe („98 auf
+82") war schlicht falsch und wurde per `--amend` korrigiert.
+
+**Stand A: 87 Kandidaten in 28 Dateien**, davon mindestens 6 selbst erzeugte
+Falsch-Positive.
+
 ### Was diese Messung NICHT ist
 
 Kein Guard. Sie liegt als Zahl im Protokoll, nicht im Testlauf — der
