@@ -680,11 +680,44 @@ Erster Vollauf nach Welle 2: drei Zeitüberschreitungen im Unit-Lauf
 Code**. Der Spec-Name wurde nicht festgehalten — das ist ein Versäumnis der
 Messung, kein Beleg für Harmlosigkeit; festgehalten statt weggeredet.
 
+### Welle 3: `ModernReportForm` 4 → 0, `UnifiedDropzone` 6 → 1
+
+Commit e1abc3cb, 10 neue Schlüssel.
+
+**Eine Stelle bleibt bewusst im Zähler.** Die erzeugte Element-ID
+`dropzone-${Math.random()…}` erfüllt die Zwei-Buchstabengruppen-Regel, ist
+aber kein Anzeigetext. Sie steht mit Begründung als Kommentar an der
+Zähler-Zeile statt auf einer Ausnahmeliste — die soll leer bleiben. Wer die
+Datei das nächste Mal öffnet, sieht sofort, dass die 1 kein Rest ist.
+
+**`dropPrompt` war deutsche Grammatik im Code**:
+`${multiple ? 'Dateien' : 'Datei'} hier ablegen!`. Aufgelöst in zwei ganze
+Botschaften, ausgewählt über den Booleschen Wert — **kein ICU-Plural**:
+`multiple` ist ein Modus, keine Anzahl, und wer übersetzt, braucht beide
+Sätze ganz. (Muster B aus 2.3b gilt für Zählungen, nicht hierfür.)
+
+### `svelte-check` hat wieder gefunden, was vitest nicht sieht — zum dritten Mal
+
+`let submitTitle = $state(m.…())` leitet den Typ aus dem Startwert ab, und
+eine Paraglide-Botschaft liefert die Marke `LocalizedString`. Alle späteren
+Zuweisungen an `submitTitle` (Servermeldung, Fehlertext aus dem Catch) sind
+gewöhnliche Zeichenketten und wurden dadurch abgelehnt — zwei Fehler in
+`ModernReportForm.svelte`. Behoben mit `$state<string>` und Begründung an
+der Deklaration.
+
+Die Lehre aus 2.3a steht damit zum dritten Mal: **Gültige Syntax und grüne
+Unit-Tests sind kein Beleg für richtigen Code; der Typ-Check ist das Gate.**
+Wer in diesem Vorhaben eine Botschaft in einen `$state` legt, annotiert den
+Typ.
+
+Nachweise: `test:quick` grün (4948 + 780), **alle drei E2E-Shards im ersten
+Lauf grün** (229 + 94 + 156 = 479, 0 rot).
+
 ### Stand Befund B
 
-52 Kandidaten in 22 Dateien offen. Die dicksten Posten: `UnifiedDropzone` 6,
-dann je 4 `ModernReportForm`, `ReportKindChoice`, `VerifyLocation`,
-`WeatherDataFetcher` und `Media`.
+43 Kandidaten in 21 Dateien offen. Die dicksten Posten: je 4
+`ReportKindChoice`, `VerifyLocation`, `WeatherDataFetcher` und `Media`,
+dann je 3 `OLMap`, `StepNavigation` und `SubmitStatus`.
 Nicht alle sind Übersetzungsarbeit — Cookie-Zeichenketten, erzeugte
 Element-IDs, Cache-Schlüssel und geworfene Entwicklerfehler stecken darin und
 werden je Datei einzeln entschieden.
