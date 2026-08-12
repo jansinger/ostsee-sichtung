@@ -293,3 +293,50 @@ Ergebnis mit dem Svelte-Compiler neu geparst — null Fehler.
 2.3 Markup-Umbau: 399 mechanische Ersetzungen ueber 84 Dateien, dazu 165
 Satzfragmente + 68 Interpolationen + 11 Plurale als Handarbeit.
 2.4 Plurale (ICU) — 2.5 hreflang und og:locale.
+
+## Aufgabe 2.3a — Markup-Umbau, mechanischer Teil: ABGESCHLOSSEN
+Commits: e29cc6ed (--write-sources), bb910c27 (Welle 1, 9 Dateien/56),
+4e9b70ad (Attribut-Zaehler), d8a5d0f5 (Welle 2, 18 Dateien/167),
+3087599e (Welle 3, 36 Dateien/114), 86e14fca (Welle 4, 3 Inhaltsseiten/62).
+
+ENDSTAND: 102 gescannte Dateien, 0 mechanische Botschaften offen. 821 Schluessel
+in de.json und en.json, identische Schluesselmenge; nur i18n_selbsttest
+unterscheidet sich (bewusst, aus Etappe 0). E2E nach JEDER Welle 479/479 gruen.
+
+### Die Invariante, die das Signal traegt — und meine zwei Fehlversuche davor
+Mein erstes Abnahmekriterium lautete "Uebersprungene bleiben bei 488". Falsch:
+`already-translated` zaehlt bewusst in die Gesamtsumme und waechst mit jeder
+Welle. Die Umsetzung von Welle 2 hat der Vorgabe WIDERSPROCHEN statt die Zahl
+passend zu machen — richtig so.
+Mein zweiter Versuch ("die offenen Kategorien bleiben unveraendert") war auch
+falsch: Sie verschieben sich, weil ein ersetzter Textknoten fuer seine
+Geschwister zu dynamischem Inhalt wird. sentence-fragment fiel 165->147,
+interpolation stieg 68->87.
+Was haelt, ist die SUMME der fuenf offenen Kategorien. Sie stand vor Welle 1 bei
+300 und steht nach Welle 4 bei 300 — dieselben Stellen, anders einsortiert,
+keine verloren.
+
+### Der Beweis aus Aufgabe 2.2 war notwendig, aber nicht hinreichend
+Dort hiess es: "alle 84 Dateien parsen nach der Ersetzung neu, null Fehler".
+Der Live-Lauf von Welle 1 zeigte zwei Fehler, die dieser Beweis nicht sehen
+konnte, weil beide GUELTIGE Syntax erzeugen:
+1. `svelteMessageKey` slugifizierte den Aspekt nicht. `aria-label` ergab
+   `m.foo_aria-label_bar()` — eine SUBTRAKTION, kein Methodenaufruf. Parst
+   einwandfrei, bedeutet etwas anderes.
+2. Der `import * as m from '$lib/paraglide/messages'` wurde nie ergaenzt.
+Gefunden hat beides erst `svelte-check`. LEHRE: Gueltige Syntax ist kein Beleg
+fuer richtigen Code; der Typ-Check ist das eigentliche Gate.
+
+### Fuer Schicht C gibt es kein germanBaseline.json
+In Schicht A/B machte ein einziges geaendertes Zeichen den Schnappschuss rot.
+Fuer Markup traegt nur: die Konstruktion (m.key() liefert den Text aus de.json,
+woertlich aus dem Markup), der Typ-Check, und die E2E-Suite. Deshalb wurde nach
+JEDER Welle die vollstaendige Suite gefahren, und in den Reviews wurden
+Textstellen ZEICHENWEISE verglichen — inklusive Tabs, Entities, Halbgeviertstrich
+und Guillemets.
+
+## OFFEN in Etappe 2
+2.3b Handarbeit: 300 Stellen — 147 Satzfragmente, 87 Interpolationen,
+44 dynamische Attribute, 11 ohne Buchstabengruppe. Jede braucht eine Botschaft
+ueber das ganze Element mit Auszeichnung/Wert als Parameter.
+2.4 Plurale (11 Kandidaten, ICU) — 2.5 hreflang und og:locale.
