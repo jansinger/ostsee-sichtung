@@ -392,3 +392,53 @@ darf diese 11 NICHT als Pluralarbeit einplanen.
 sentence-fragment 130 | interpolation 58 | dynamic-attribute 44 |
 no-letter-group 44 (Struktur, nie uebersetzt) | plural-candidate 11 (falsch-positiv)
 Echte Restarbeit: rund 232, davon ~60 durch die Muster-A-Erkennung mechanisierbar.
+
+## Muster A mechanisiert
+Commits: 7937f43a (Regel), a51c7f88 (Welle), 5d21f1c9 (Formatierung).
+
+Die Regel verlangt DREI Bedingungen zusammen, keine reicht allein:
+  (a) das textbehaftete Geschwister ist das ERSTE Kind des Elternelements
+  (b) sein Text endet mit einem Doppelpunkt
+  (c) die Glosse folgt unmittelbar, danach kommt nichts mehr
+Ohne (a) faellt `<p>Bitte <strong>hier:</strong> klicken</p>` durch — ein echter
+Satz mit Doppelpunkt in der Auszeichnung. Interpolation behaelt Vorrang:
+`<strong>Achtung:</strong> Der Wert {n} ist zu hoch` bleibt Handarbeit.
+
+ERGEBNIS: Satzfragmente 130 -> 78. 45 Botschaften in sechs Dateien.
+Die AST-Regel fand 23 Instanzen gegen 30 aus der Regex-Vorerhebung — die
+strukturelle Pruefung verwirft, was ein `<strong>…:</strong>`-Grep nicht filtern
+kann, weil er die Stellung im Elternelement nicht sieht.
+
+### Die Buchfuehrung, zum vierten Mal praezisiert
+Meine Abnahmekriterien waren dreimal zu grob (erst "uebersprungen bleibt bei
+488", dann "die offenen Kategorien bleiben unveraendert", dann "die Gesamtsumme
+bleibt konstant"). Richtig ist:
+  Nach einer Welle faellt die GESAMTSUMME um genau die Zahl der ersetzten
+  Stellen — ein ersetzter Textknoten ist danach ein Ausdruck und verschwindet
+  aus der Zaehlung. Was halten MUSS, ist die Zahl der Uebersprungenen und jede
+  einzelne Kategorie darin.
+Gemessen: vor der Welle 45 Botschaften + 518 uebersprungen, danach 0 + 518,
+jede Kategorie identisch.
+
+### Zwei eigene Fehler in diesem Abschnitt
+1. Ich habe mit `git stash` gemessen und dabei uebersehen, dass
+   `src/lib/paraglide/` generiert und gitignoriert ist — es wurde nicht
+   mitgestasht und war danach gegen die Kataloge veraltet. Der naechste
+   Testlauf brach in generiertem Code ab. `npm run i18n:compile` behebt es;
+   wer mit stash misst, muss danach neu uebersetzen.
+2. Ich habe unformatierten Code committet, obwohl Prettier acht Dateien
+   angemahnt hatte — genau der Punkt, den ich kurz zuvor einem Umsetzer
+   angestrichen hatte. Nachgezogen in 5d21f1c9, mit dem Beleg, dass sich kein
+   Botschaftswert geaendert hat (Schluesselmenge identisch, null inhaltliche
+   Abweichungen).
+
+### Beobachtung fuer spaeter
+Die Botschaften tragen die Quelltext-Einrueckung als eingebettete Zeilenumbrueche
+und Tabs mit. Fuer die Darstellung folgenlos (HTML kollabiert Leerraum), aber wer
+uebersetzt, sieht `\n\t\t\t\t` mitten im Satz. Kosmetisch, separat zu bereinigen
+— nicht mitten in einer Welle, weil es die deutschen Werte anfasst.
+
+### Stand der Handarbeit
+sentence-fragment 78 | interpolation 58 | dynamic-attribute 44 |
+no-letter-group 44 (Struktur, nie uebersetzt) | plural-candidate 12 (falsch-positiv)
+Echte Restarbeit: rund 180.
