@@ -133,7 +133,14 @@ export const WRITE_SOURCES_SCOPE: readonly string[] = [
 	'src/routes/+layout.svelte',
 	'src/routes/+page.svelte',
 	'src/routes/maintenance/+page.svelte',
-	'src/routes/map/+page.svelte'
+	'src/routes/map/+page.svelte',
+	// Welle 4 — die drei zurückgestellten Inhaltsseiten. Fachlich Schicht E
+	// (Museumstext, englische Übersetzung folgt später als Diff), aber laut
+	// Entscheidung vom 2026-08-11 strukturell jetzt mit derselben Mechanik
+	// umgebaut statt zweimal angefasst.
+	'src/routes/about/+page.svelte',
+	'src/lib/report/components/form/fields/SpeciesIdentificationHelp.svelte',
+	'src/routes/bestimmungshilfe/+page.svelte'
 ];
 
 /**

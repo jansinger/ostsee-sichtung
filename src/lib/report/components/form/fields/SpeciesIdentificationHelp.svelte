@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import Icon from '$lib/components/Icon.svelte';
 	import type { InfoVariant } from '$lib/components/info/variant';
 	import { speciesGroups } from '$lib/report/formOptions/species';
@@ -187,7 +188,7 @@
 		>
 			<Icon icon={isExpanded ? 'lucide:chevron-down' : 'lucide:chevron-right'} width="16" />
 			<Icon icon="lucide:circle-help" width="16" />
-			<span>Hilfe bei der Tiererkennung</span>
+			<span>{m.report_components_form_fields_speciesidentificationhel_text_hilfe_bei_der_tiererkennung()}</span>
 		</button>
 	{/if}
 
@@ -201,11 +202,10 @@
 			{#if !isPage}
 				<div class="mb-4">
 					<h4 class="text-base-content mb-2 text-sm font-semibold">
-						Bestimmungshilfe für Meerestiere
+						{m.report_components_form_fields_speciesidentificationhel_text_bestimmungshilfe_fuer_meerestiere()}
 					</h4>
 					<p class="text-base-content/70 text-xs">
-						Klicken Sie auf eine Tierart, um die Erkennungsmerkmale zu sehen. Merkmale sind danach
-						gekennzeichnet, ob sie bei einer echten Sichtung überhaupt zu erkennen sind.
+						{m.report_components_form_fields_speciesidentificationhel_text_klicken_sie_auf_eine_tierart()}
 					</p>
 				</div>
 			{/if}
@@ -219,12 +219,10 @@
 						class="text-warning-strong shrink-0"
 						aria-hidden="true"
 					/>
-					Im Zweifel nicht raten
+					{m.report_components_form_fields_speciesidentificationhel_text_im_zweifel_nicht_raten()}
 				</svelte:element>
 				<p class={styles.body}>
-					Wählen Sie „Unbekannte Walart" oder „Unbekannte Robbenart" und machen Sie wenn möglich ein
-					Foto — auch ein unscharfes. Eine unsichere Meldung mit Bild ist für die Forschung
-					wertvoller als eine falsch bestimmte.
+					{m.report_components_form_fields_speciesidentificationhel_text_waehlen_sie_unbekannte_walart_oder()}
 				</p>
 			</div>
 
@@ -324,7 +322,7 @@
 													class="text-info-strong shrink-0"
 													aria-hidden="true"
 												/>
-												So sieht es an der Oberfläche aus
+												{m.report_components_form_fields_speciesidentificationhel_text_so_sieht_es_an_der()}
 											</svelte:element>
 											<ul class={styles.list}>
 												{#each species.surfacing as item (item)}
@@ -336,7 +334,7 @@
 										<!-- Erkennungsmerkmale, nach Beobachtbarkeit gruppiert -->
 										<div>
 											<svelte:element this={styles.subTag} class={styles.subHeading}
-												>Erkennungsmerkmale</svelte:element
+												>{m.report_components_form_fields_speciesidentificationhel_text_erkennungsmerkmale()}</svelte:element
 											>
 											<div class="space-y-2">
 												{#each observabilityOrder as level (level)}
@@ -367,7 +365,7 @@
 														class="shrink-0"
 														aria-hidden="true"
 													/>
-													Häufig verwechselt mit
+													{m.report_components_form_fields_speciesidentificationhel_text_haeufig_verwechselt_mit()}
 												</svelte:element>
 												<ul class={styles.list}>
 													{#each species.confusion as item (item)}
@@ -380,7 +378,7 @@
 										<!-- Typisches Verhalten -->
 										<div>
 											<svelte:element this={styles.subTag} class={styles.subHeading}
-												>Typisches Verhalten</svelte:element
+												>{m.report_components_form_fields_speciesidentificationhel_text_typisches_verhalten()}</svelte:element
 											>
 											<ul class={styles.list}>
 												{#each species.behavior as behaviorItem (behaviorItem)}
@@ -400,16 +398,16 @@
 										<div class="border-base-300 border-t pt-2">
 											<div class="{styles.muted} grid grid-cols-1 gap-1">
 												<div>
-													<span class="font-medium">Größe:</span>
+													<span class="font-medium">{m.report_components_form_fields_speciesidentificationhel_text_groesse()}</span>
 													<span class="ml-1">{species.size}</span>
 												</div>
 												<div>
-													<span class="font-medium">Gewicht:</span>
+													<span class="font-medium">{m.report_components_form_fields_speciesidentificationhel_text_gewicht()}</span>
 													<span class="ml-1">{species.weight}</span>
 												</div>
 												{#if species.scientificName !== '—'}
 													<div>
-														<span class="font-medium">Wissenschaftlich:</span>
+														<span class="font-medium">{m.report_components_form_fields_speciesidentificationhel_text_wissenschaftlich()}</span>
 														<span class="ml-1 italic">{species.scientificName}</span>
 													</div>
 												{/if}
@@ -435,7 +433,7 @@
 							class="shrink-0"
 							aria-hidden="true"
 						/>
-						Wal oder Robbe? Die häufigste Verwechslung
+						{m.report_components_form_fields_speciesidentificationhel_text_wal_oder_robbe_die_haeufigste()}
 					</svelte:element>
 					<div class="{styles.body} space-y-1">
 						<p>
@@ -457,7 +455,7 @@
 							class="shrink-0"
 							aria-hidden="true"
 						/>
-						Robben unterscheiden: erst das Kopfprofil, dann die Nasenlöcher
+						{m.report_components_form_fields_speciesidentificationhel_text_robben_unterscheiden_erst_das_kopfprofil()}
 					</svelte:element>
 					<div class="{styles.body} space-y-1">
 						<p>
@@ -487,16 +485,16 @@
 							class="shrink-0"
 							aria-hidden="true"
 						/>
-						Was der Forschung am meisten hilft
+						{m.report_components_form_fields_speciesidentificationhel_text_was_der_forschung_am_meisten()}
 					</svelte:element>
 					<ul class={styles.list}>
-						<li>Ein Foto, auch unscharf — bei Großwalen möglichst die Fluke beim Abtauchen</li>
-						<li>Genaue Position und Uhrzeit</li>
-						<li>Größe im Vergleich zu Ihrem Boot statt einer Meterschätzung</li>
+						<li>{m.report_components_form_fields_speciesidentificationhel_text_ein_foto_auch_unscharf()}</li>
+						<li>{m.report_components_form_fields_speciesidentificationhel_text_genaue_position_und_uhrzeit()}</li>
+						<li>{m.report_components_form_fields_speciesidentificationhel_text_groesse_im_vergleich_zu_ihrem()}</li>
 						<li>
-							Bei Unsicherheit „Unbekannte Wal-" bzw. „Unbekannte Robbenart" statt einer Vermutung
+							{m.report_components_form_fields_speciesidentificationhel_text_bei_unsicherheit_unbekannte_wal_bzw()}
 						</li>
-						<li>Halten Sie Abstand, besonders zu Robben an ihren Liegeplätzen</li>
+						<li>{m.report_components_form_fields_speciesidentificationhel_text_halten_sie_abstand_besonders_zu()}</li>
 					</ul>
 				</div>
 			</div>
@@ -541,7 +539,7 @@
 						type="button"
 						class="btn btn-circle btn-ghost btn-sm"
 						onclick={closeImageModal}
-						aria-label="Schließen"
+						aria-label={m.report_components_form_fields_speciesidentificationhel_aria_label_schliessen()}
 					>
 						<Icon icon="lucide:x" width="24" />
 					</button>
@@ -569,7 +567,7 @@
 				<!-- Modal Footer -->
 				<div class="bg-base-200 p-4 text-center">
 					<p class="text-base-content/70 text-sm">
-						Klicken Sie außerhalb des Bildes oder drücken Sie Escape zum Schließen
+						{m.report_components_form_fields_speciesidentificationhel_text_klicken_sie_ausserhalb_des_bildes()}
 					</p>
 				</div>
 			</div>
@@ -592,7 +590,7 @@
 		onkeydown={(e) => e.key === 'Escape' && closeImageModal()}
 		role="button"
 		tabindex="0"
-		aria-label="Modal schließen"
+		aria-label={m.report_components_form_fields_speciesidentificationhel_aria_label_modal_schliessen()}
 	></div>
 </dialog>
 
