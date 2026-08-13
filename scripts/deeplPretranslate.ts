@@ -38,6 +38,7 @@
  * npx tsx scripts/deeplPretranslate.ts            # Trockenlauf, zeigt den Diff
  * npx tsx scripts/deeplPretranslate.ts --write    # schreibt messages/en.json
  * npx tsx scripts/deeplPretranslate.ts --limit 20 # nur die ersten 20 (Probelauf)
+ * npx tsx scripts/deeplPretranslate.ts --filter routes_about_page  # gezielt
  * ```
  *
  * **Fachbegriffe.** DeepL kennt die Domäne nicht: Im ersten Trockenlauf wurde
@@ -69,6 +70,19 @@ const INCLUDE_PRIVACY = args.includes('--include-privacy');
 const LIMIT = (() => {
 	const i = args.indexOf('--limit');
 	return i >= 0 && args[i + 1] ? Number(args[i + 1]) : Infinity;
+})();
+/**
+ * Teilmenge nach Schlüssel-Präfix, z. B. `--filter routes_about_page`.
+ *
+ * Ohne ihn zeigt `--limit` immer denselben Anfang der alphabetisch sortierten
+ * Liste — das sind die `api_*`-Fehlermeldungen, also vollständige technische
+ * Sätze. Sie sind der EINFACHSTE Fall und taugen nicht zur Qualitätsprüfung.
+ * Die riskanten Segmente sind die Satzfragmente (`routes_about_page_hero_*`,
+ * `*_feature_*`), die DeepL ohne ihr Markup und ohne den Rest des Satzes sieht.
+ */
+const FILTER = (() => {
+	const i = args.indexOf('--filter');
+	return i >= 0 && args[i + 1] ? args[i + 1] : undefined;
 })();
 
 /** Siehe Docblock: rechtlich geprüfter Text, keine Maschinenübersetzung. */
@@ -208,6 +222,7 @@ for (const [key, deWert] of Object.entries(de)) {
 	// vom 2026-08-13 kam sie zufällig unverändert zurück, aber darauf ist kein
 	// Verlass. Jeder `$`-Schlüssel ist Metadaten des Formats, kein Text.
 	if (key.startsWith('$')) continue;
+	if (FILTER && !key.startsWith(FILTER)) continue;
 	if (!INCLUDE_PRIVACY && key.startsWith(PRIVACY_PREFIX)) continue;
 	const enWert = en[key];
 	// Bereits von Hand übersetzt → unangetastet lassen.
