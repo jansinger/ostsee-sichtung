@@ -44,13 +44,21 @@
 		rejected: m.components_map_panel_filterpanel_text_status_abgelehnt()
 	};
 
-	function toggleStatus(status: SightingStatus): void {
+	function toggleStatus(status: SightingStatus, event: Event): void {
 		const next = statuses.includes(status)
 			? statuses.filter((entry: SightingStatus) => entry !== status)
 			: SIGHTING_STATUS_ORDER.filter((entry) => entry === status || statuses.includes(entry));
 		// Leere Auswahl verworfen: Die API antwortet darauf mit 400, und eine
 		// Karte ohne Marker liest sich wie ein Datenverlust.
-		if (next.length === 0) return;
+		if (next.length === 0) {
+			// `checked={statuses.includes(status)}` ist ein One-Way-Binding: Der
+			// Browser hat die Checkbox schon umgestellt, bevor dieser Handler
+			// läuft. Bleibt `statuses` unverändert, feuert Svelte kein Re-Render,
+			// und die Checkbox zeigt einen Zustand, der nie übernommen wurde —
+			// von Hand zurücksetzen ist hier kein überflüssiger Rest.
+			(event.currentTarget as HTMLInputElement).checked = statuses.includes(status);
+			return;
+		}
 		onStatusChange?.([...next]);
 	}
 
@@ -150,7 +158,7 @@
 								type="checkbox"
 								class="checkbox checkbox-primary"
 								checked={statuses.includes(status)}
-								onchange={() => toggleStatus(status)}
+								onchange={(event) => toggleStatus(status, event)}
 							/>
 							<span class="text-sm">{statusLabels[status]}</span>
 						</label>

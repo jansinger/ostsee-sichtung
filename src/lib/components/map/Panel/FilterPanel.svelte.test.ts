@@ -380,5 +380,9 @@ describe('Statusfilter', () => {
 		});
 		await page.getByLabelText('Freigegeben').click();
 		expect(onStatusChange).not.toHaveBeenCalled();
+		// Der Browser stellt die Checkbox schon um, bevor der Handler läuft —
+		// bei einer abgelehnten Auswahl muss sie wieder angehakt sein, sonst
+		// behauptet die Oberfläche eine Auswahl, die nie in Kraft trat.
+		await expect.element(page.getByLabelText('Freigegeben')).toBeChecked();
 	});
 });
