@@ -6,7 +6,7 @@ import { berlinDayRangeUtc } from '$lib/server/datetime/berlinDayRange';
 import { consentGatedNameSearch, containsPattern } from '$lib/server/db/consentGatedSearch';
 import { json } from '@sveltejs/kit';
 import { and, gte, lt, sql } from 'drizzle-orm';
-import { publicMapSightingConditions } from './publicMapConditions';
+import { mapSightingConditions } from './publicMapConditions';
 import type { RequestHandler } from './$types';
 
 const logger = createLogger('api:map:sightings');
@@ -24,7 +24,7 @@ export const GET: RequestHandler = async ({ url }) => {
 			// Ohne den Koordinatenfilter fallen NULL-Koordinaten in
 			// sightingsToGeoJSON auf [0,0] zurück ("Null Island"). Identische
 			// Grundmenge wie /api/map/sightings/years — siehe publicMapConditions.ts.
-			...publicMapSightingConditions()
+			...mapSightingConditions()
 		];
 
 		// Jahr-Filter hinzufügen, wenn vorhanden

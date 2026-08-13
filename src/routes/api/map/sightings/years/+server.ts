@@ -4,7 +4,7 @@ import { sightings as sightingsTable } from '$lib/server/db/schema';
 import { berlinDatePart } from '$lib/server/db/sqlTimeZone';
 import { json } from '@sveltejs/kit';
 import { and, sql } from 'drizzle-orm';
-import { publicMapSightingConditions } from '../publicMapConditions';
+import { mapSightingConditions } from '../publicMapConditions';
 import type { RequestHandler } from './$types';
 
 const logger = createLogger('api:map:sightings:years');
@@ -27,7 +27,7 @@ export const GET: RequestHandler = async () => {
 				count: sql<number | string>`COUNT(*)`
 			})
 			.from(sightingsTable)
-			.where(and(...publicMapSightingConditions()))
+			.where(and(...mapSightingConditions()))
 			.groupBy(yearExpression)
 			.orderBy(sql`${yearExpression} DESC`);
 
