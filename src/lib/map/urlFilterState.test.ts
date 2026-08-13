@@ -255,6 +255,7 @@ describe('buildFilterUrlState', () => {
 			},
 			hiddenSpecies: {},
 			hiddenColors: {},
+			statuses: ['approved'],
 			...overrides
 		};
 	}
@@ -425,5 +426,58 @@ describe('isFullYearRange', () => {
 		};
 
 		expect(isFullYearRange(timeFilter, 2025)).toBe(false);
+	});
+});
+
+describe('Statusauswahl in der URL', () => {
+	it('liest gültige Werte aus dem Parameter st', () => {
+		const state = parseMapFilterParams(new URLSearchParams('st=open,rejected'));
+		expect(state.statuses).toEqual(['open', 'rejected']);
+	});
+
+	it('ignoriert unbekannte Werte feldweise', () => {
+		const state = parseMapFilterParams(new URLSearchParams('st=open,verified'));
+		expect(state.statuses).toEqual(['open']);
+	});
+
+	it('lässt das Feld weg, wenn kein gültiger Wert übrig bleibt', () => {
+		const state = parseMapFilterParams(new URLSearchParams('st=verified'));
+		expect(state.statuses).toBeUndefined();
+	});
+
+	it('serialisiert die Auswahl nach st', () => {
+		expect(serializeMapFilterParams({ statuses: ['open', 'approved'] })).toBe('st=open%2Capproved');
+	});
+
+	it('lässt die öffentliche Auswahl aus der URL weg', () => {
+		const state = buildFilterUrlState({
+			year: 2026,
+			defaultYear: 2026,
+			searchTerm: '',
+			timeFilter: {
+				lower: new Date(2026, 0, 1).getTime(),
+				upper: new Date(2026, 11, 31, 23, 59, 59).getTime()
+			},
+			hiddenSpecies: {},
+			hiddenColors: {},
+			statuses: ['approved']
+		});
+		expect(state.statuses).toBeUndefined();
+	});
+
+	it('nimmt eine abweichende Auswahl in die URL auf', () => {
+		const state = buildFilterUrlState({
+			year: 2026,
+			defaultYear: 2026,
+			searchTerm: '',
+			timeFilter: {
+				lower: new Date(2026, 0, 1).getTime(),
+				upper: new Date(2026, 11, 31, 23, 59, 59).getTime()
+			},
+			hiddenSpecies: {},
+			hiddenColors: {},
+			statuses: ['open', 'approved']
+		});
+		expect(state.statuses).toEqual(['open', 'approved']);
 	});
 });

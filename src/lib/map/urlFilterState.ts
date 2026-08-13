@@ -3,12 +3,15 @@
  * (Befund M4/N6 aus docs/archive/UX_REVIEW_SICHTUNGSKARTE_2026-07-28.md).
  *
  * Query-Params: `year`, `q`, `from`, `to`, `hs` (ausgeblendete Arten-IDs,
- * kommasepariert), `hc` (ausgeblendete Farbgruppen, kommasepariert).
+ * kommasepariert), `hc` (ausgeblendete Farbgruppen, kommasepariert), `st`
+ * (Bearbeitungszustände, kommasepariert).
  *
  * Alle Zeitstempel sind lokale Zeit — Zeitslider und Map-Controller arbeiten
  * in der Browser-Zeitzone (`new Date(year, 0, 1)` usw.), daher darf hier
  * nichts über UTC laufen.
  */
+
+import type { SightingStatus } from '$lib/components/admin/sightingStatus';
 
 export interface MapFilterUrlState {
 	year?: number;
@@ -17,6 +20,7 @@ export interface MapFilterUrlState {
 	to?: string; // ISO-Datum YYYY-MM-DD (lokale Zeit)
 	hiddenSpecies?: string[]; // numerische Arten-IDs
 	hiddenColors?: string[]; // Farbgruppen-Keys wie 'ct0', 'ct1'
+	statuses?: SightingStatus[]; // Bearbeitungszustände, nur für Admins wirksam
 }
 
 /** Plausibilitätsbereich für das Jahr — außerhalb ist es ein Tippfehler/Angriff. */
@@ -26,6 +30,7 @@ const YEAR_MAX = 2100;
 const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 const SPECIES_ID_PATTERN = /^\d+$/;
 const COLOR_GROUP_PATTERN = /^ct\d+$/;
+const STATUS_PATTERN = /^(open|approved|rejected)$/;
 
 const MS_PER_DAY = 86_400_000;
 
@@ -94,6 +99,10 @@ export function parseMapFilterParams(params: URLSearchParams): MapFilterUrlState
 	const hiddenColors = parseListParam(params.get('hc'), COLOR_GROUP_PATTERN);
 	if (hiddenColors.length > 0) state.hiddenColors = hiddenColors;
 
+	// Die Reihenfolge der URL bleibt erhalten; der Server dedupliziert erneut.
+	const statuses = parseListParam(params.get('st'), STATUS_PATTERN) as SightingStatus[];
+	if (statuses.length > 0) state.statuses = statuses;
+
 	return state;
 }
 
@@ -114,6 +123,9 @@ export function serializeMapFilterParams(state: MapFilterUrlState): string {
 	if (state.hiddenColors && state.hiddenColors.length > 0) {
 		params.set('hc', state.hiddenColors.join(','));
 	}
+	if (state.statuses && state.statuses.length > 0) {
+		params.set('st', state.statuses.join(','));
+	}
 
 	return params.toString();
 }
@@ -130,6 +142,7 @@ export function buildFilterUrlState(input: {
 	timeFilter: { lower: number; upper: number };
 	hiddenSpecies: Record<string, boolean>;
 	hiddenColors: Record<string, boolean>;
+	statuses: readonly SightingStatus[];
 }): MapFilterUrlState {
 	const state: MapFilterUrlState = {};
 
@@ -152,6 +165,12 @@ export function buildFilterUrlState(input: {
 		.filter((key) => input.hiddenColors[key])
 		.sort();
 	if (hiddenColors.length > 0) state.hiddenColors = hiddenColors;
+
+	// Die öffentliche Auswahl ist der Default und gehört nicht in die URL —
+	// sonst trägt jede geteilte Karten-URL eines Admins einen Parameter, der
+	// für Empfänger ohne Rechte einen 403 auslöst.
+	const isPublicStatusSelection = input.statuses.length === 1 && input.statuses[0] === 'approved';
+	if (!isPublicStatusSelection) state.statuses = [...input.statuses];
 
 	return state;
 }
