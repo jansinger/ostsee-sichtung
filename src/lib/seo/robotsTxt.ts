@@ -83,10 +83,30 @@ const GESPERRTE_PFADE = [
  */
 const KI_CRAWLER = ['GPTBot', 'ClaudeBot', 'CCBot', 'Google-Extended', 'PerplexityBot'] as const;
 
-/** Vergleicht Hosts unabhängig von Groß-/Kleinschreibung und Port. */
-export function istKanonischerHost(host: string): boolean {
-	const ohnePort = host.toLowerCase().split(':')[0];
-	return KANONISCHE_HOSTS.some((kanonisch) => kanonisch === ohnePort);
+/**
+ * Ob die Anfrage unter einem der kanonischen Hosts kam.
+ *
+ * **Nimmt die URL und nicht den Host-String** — und vergleicht den Port mit,
+ * statt ihn abzuschneiden. Beides ist eine Korrektur an der ersten Fassung, die
+ * `host.split(':')[0]` benutzte:
+ *
+ * Der WHATWG-Parser entfernt den Standard-Port bereits selbst; `url.host` ist
+ * bei `https://ostsee-tiere.de:443` schon `ostsee-tiere.de`. Ein Abschneiden
+ * konnte also gar keinen Standard-Port mehr treffen — wirksam wurde es nur bei
+ * **Nicht**-Standard-Ports, und die durchzulassen war genau falsch herum:
+ * `ostsee-tiere.de:8443` galt als kanonisch, und `url.origin` trug den Port
+ * anschließend in jede `<loc>` der Sitemap und in die `Sitemap:`-Zeile. Die
+ * Freigabe verwies damit auf URLs, die es unter dieser Adresse nicht gibt (am
+ * laufenden Server nachgestellt).
+ *
+ * Ohne das Abschneiden fällt dieser Fall in den `Disallow: /`-Zweig, und die
+ * einzige Stelle, die eine URL ausgibt, kann keine nicht-kanonische mehr
+ * bilden. Die URL statt des Strings zu nehmen macht das zusätzlich
+ * unumgehbar: Ein Aufrufer kann keinen unnormalisierten Host mehr hereinreichen.
+ */
+export function istKanonischerHost(url: URL): boolean {
+	const host = url.host.toLowerCase();
+	return KANONISCHE_HOSTS.some((kanonisch) => kanonisch === host);
 }
 
 /**
@@ -95,7 +115,7 @@ export function istKanonischerHost(host: string): boolean {
  *   wurde — eine absolute URL ist dort vorgeschrieben.
  */
 export function buildRobotsTxt(url: URL): string {
-	if (!istKanonischerHost(url.host)) {
+	if (!istKanonischerHost(url)) {
 		return [
 			'# Diese Instanz ist nicht die öffentliche Fassung von Ostsee-Tiere',
 			'# (Staging, Vorschau oder Direktzugriff auf den Hostnamen).',

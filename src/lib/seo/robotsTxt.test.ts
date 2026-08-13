@@ -4,27 +4,42 @@ import { buildRobotsTxt, istKanonischerHost } from './robotsTxt';
 const KANONISCH = new URL('https://ostsee-tiere.de/robots.txt');
 const STAGING = new URL('https://staging.ostsee-tiere.de/robots.txt');
 
+/** Kürzel: Die Funktion nimmt eine URL, damit kein unnormalisierter Host hineinkommt. */
+const kanonisch = (href: string) => istKanonischerHost(new URL(href));
+
 describe('istKanonischerHost', () => {
 	it('erkennt die Produktionsdomain mit und ohne www', () => {
-		expect(istKanonischerHost('ostsee-tiere.de')).toBe(true);
-		expect(istKanonischerHost('www.ostsee-tiere.de')).toBe(true);
+		expect(kanonisch('https://ostsee-tiere.de/')).toBe(true);
+		expect(kanonisch('https://www.ostsee-tiere.de/')).toBe(true);
 	});
 
-	it('vergleicht ohne Rücksicht auf Groß-/Kleinschreibung und Port', () => {
-		expect(istKanonischerHost('Ostsee-Tiere.DE')).toBe(true);
-		expect(istKanonischerHost('ostsee-tiere.de:443')).toBe(true);
+	it('vergleicht ohne Rücksicht auf Groß-/Kleinschreibung', () => {
+		expect(kanonisch('https://Ostsee-Tiere.DE/')).toBe(true);
+	});
+
+	it('akzeptiert den Standard-Port, weil der Parser ihn ohnehin entfernt', () => {
+		// `new URL('https://ostsee-tiere.de:443').host` ist `ostsee-tiere.de`.
+		expect(kanonisch('https://ostsee-tiere.de:443/')).toBe(true);
+	});
+
+	it('weist einen Nicht-Standard-Port ab', () => {
+		// Der Fall, den die erste Fassung durchließ: Mit `host.split(':')[0]` galt
+		// dieser Host als kanonisch, und `url.origin` trug den Port anschließend in
+		// die `Sitemap:`-Zeile und in jede `<loc>` — eine Freigabe für URLs, die es
+		// unter dieser Adresse nicht gibt.
+		expect(kanonisch('https://ostsee-tiere.de:8443/')).toBe(false);
 	});
 
 	it('weist Staging, Vorschau-Deployments, Rohhostnamen und IPs ab', () => {
-		expect(istKanonischerHost('staging.ostsee-tiere.de')).toBe(false);
-		expect(istKanonischerHost('dmm-prod-ostsee.ha.gecko.de')).toBe(false);
-		expect(istKanonischerHost('localhost:4000')).toBe(false);
-		expect(istKanonischerHost('192.0.2.10')).toBe(false);
+		expect(kanonisch('https://staging.ostsee-tiere.de/')).toBe(false);
+		expect(kanonisch('https://dmm-prod-ostsee.ha.gecko.de/')).toBe(false);
+		expect(kanonisch('https://localhost:4000/')).toBe(false);
+		expect(kanonisch('https://192.0.2.10/')).toBe(false);
 	});
 
 	it('lässt sich nicht durch einen Host täuschen, der die Domain nur enthält', () => {
-		expect(istKanonischerHost('ostsee-tiere.de.angreifer.example')).toBe(false);
-		expect(istKanonischerHost('nicht-ostsee-tiere.de')).toBe(false);
+		expect(kanonisch('https://ostsee-tiere.de.angreifer.example/')).toBe(false);
+		expect(kanonisch('https://nicht-ostsee-tiere.de/')).toBe(false);
 	});
 });
 
@@ -61,7 +76,11 @@ describe('buildRobotsTxt auf der kanonischen Domain', () => {
 		'/rest_sichtungen',
 		'/sichtungen/showreports.json'
 	])('sperrt %s', (pfad) => {
-		expect(txt).toMatch(new RegExp(`^Disallow: ${pfad.replace(/[/.]/g, '\\$&')}$`, 'm'));
+		// Zeilenweiser Vergleich statt eines aus dem Pfad gebauten regulären
+		// Ausdrucks: Das Maskieren war unvollständig (kein Backslash, von CodeQL
+		// gemeldet), und für einen exakten Zeilenvergleich braucht es gar keinen
+		// regulären Ausdruck.
+		expect(txt.split('\n')).toContain(`Disallow: ${pfad}`);
 	});
 
 	it('sperrt die Legacy-Endpunkte auch unter ihrem CakePHP-Sprachpräfix', () => {

@@ -14,7 +14,7 @@ import type { RequestHandler } from './$types';
 export const prerender = false;
 
 export const GET: RequestHandler = ({ url }) => {
-	if (!istKanonischerHost(url.host)) {
+	if (!istKanonischerHost(url)) {
 		error(404, 'Not found');
 	}
 

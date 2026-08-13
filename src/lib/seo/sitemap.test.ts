@@ -42,10 +42,13 @@ describe('buildSitemapXml', () => {
 		expect(mitSchraegstrich).toEqual(['https://ostsee-tiere.de/']);
 	});
 
-	it('nimmt nur absolute URLs auf', () => {
+	it('nimmt nur absolute URLs mit unserem Origin auf', () => {
+		// Über den Origin verglichen und nicht per `startsWith`: Letzteres hielte
+		// auch `https://ostsee-tiere.de.angreifer.example/` für unsere Domain
+		// (von CodeQL als unvollständige URL-Prüfung gemeldet).
 		const urls = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1] ?? '');
 		for (const url of urls) {
-			expect(url.startsWith('https://ostsee-tiere.de')).toBe(true);
+			expect(new URL(url).origin).toBe('https://ostsee-tiere.de');
 		}
 	});
 
