@@ -23,7 +23,7 @@
 		serializeMapFilterParams,
 		type MapFilterUrlState
 	} from '$lib/map/urlFilterState';
-	import type { SightingStatus } from '$lib/components/admin/sightingStatus';
+	import { SIGHTING_STATUS_ORDER, type SightingStatus } from '$lib/components/admin/sightingStatus';
 	import { DEFAULT_MAP_STATUSES, isPublicStatusSelection } from '$lib/map/statusRequestParams';
 	import { createYearsRequestSequencer, resolveYearsUpdate } from '$lib/map/yearsRequestSequencer';
 	import { reconcileDisplayedYear } from '$lib/map/yearDisplayReconciliation';
@@ -532,6 +532,30 @@
 		});
 	}
 
+	/* Pre-Merge-Review (Finding 2): Beschriftungen aus Paraglide, identisch zu
+	   FilterPanel.svelte — dieselben Message-Keys, denn eine Komponente ist
+	   die Fläche der Karte, die andere ihr Panel, aber der Wortlaut pro
+	   Bearbeitungsstand ist derselbe. */
+	const statusLabels: Record<SightingStatus, string> = {
+		open: m.components_map_panel_filterpanel_text_status_offen(),
+		approved: m.components_map_panel_filterpanel_text_status_freigegeben(),
+		rejected: m.components_map_panel_filterpanel_text_status_abgelehnt()
+	};
+
+	/**
+	 * Chip-Beschriftung des Bearbeitungsstand-Filters — nennt die gewählten
+	 * Zustände statt nur "Bearbeitungsstand" zu zeigen (Pre-Merge-Review,
+	 * Finding 2): "Offen + Freigegeben" und "nur Abgelehnt" sahen als Chip
+	 * bisher identisch aus, dabei ist dieser Chip auf der Karte selbst der
+	 * einzige Hinweis, dass unveröffentlichte Meldungen zu sehen sind.
+	 * Feste Reihenfolge über SIGHTING_STATUS_ORDER statt der Auswahlreihenfolge.
+	 */
+	function statusFilterLabel(): string {
+		return SIGHTING_STATUS_ORDER.filter((status) => statuses.includes(status))
+			.map((status) => statusLabels[status])
+			.join(', ');
+	}
+
 	/** ISO-Datum (YYYY-MM-DD) → kompakte deutsche Anzeige „TT.MM." */
 	function formatChipDate(iso: string): string {
 		const [, month, day] = iso.split('-');
@@ -874,9 +898,18 @@
 				</button>
 			{/each}
 			{#if !isPublicStatusSelection(statuses)}
-				<button class={chipClass} onclick={resetStatusFilter}>
+				<button
+					type="button"
+					class={chipClass}
+					onclick={resetStatusFilter}
+					aria-label={m.components_map_sightingsmapview_aria_label_bearbeitungsstand_labels_entfernen_und(
+						{ labels: statusFilterLabel() }
+					)}
+				>
 					<Icon icon="lucide:inbox" width="14" height="14" aria-hidden="true" />
-					{m.components_map_panel_filterpanel_text_status()}
+					{m.components_map_sightingsmapview_text_bearbeitungsstand_labels({
+						labels: statusFilterLabel()
+					})}
 					<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
 				</button>
 			{/if}
