@@ -83,11 +83,32 @@ export const TOTFUND_RING_COLOR = '#000000';
  * Artgruppe und darf hier nicht mitbelegt werden. Strichmuster statt Farbe:
  * Es bleibt bei Farbfehlsichtigkeit unterscheidbar, und die Legende erklärt es.
  * `undefined` = durchgezogen, wie bisher.
+ *
+ * `rejected` stand zunächst auf `[1, 4]` mit dem Standard-Linienende. Am
+ * gerenderten Marker (Radius 14, Strichbreite 3) war das kein gepunkteter Ring,
+ * sondern ein Strahlenkranz: Ein Segment der Länge 1 bei Breite 3 steht quer
+ * zur Kurve, also als radiale Zacke. Die Kreiskontur verschwand dabei, und mit
+ * ~20 % Strichdeckung war die Begrenzung deutlich schwächer als bei den anderen
+ * beiden Zuständen — WCAG 1.4.11 verlangt für grafische Objekte 3:1.
+ * `[2, 5]` mit rundem Linienende ergibt echte Punkte auf der Kreislinie, bleibt
+ * gegen `[6, 4]` klar unterscheidbar und hält die Kontur. Verglichen wurden
+ * `[1, 4]` (butt), `[2, 5]` und `[1, 7]` (beide round) am gerenderten Bild.
  */
 const STATUS_LINE_DASH: Record<SightingStatus, number[] | undefined> = {
 	approved: undefined,
 	open: [6, 4],
-	rejected: [1, 4]
+	rejected: [2, 5]
+};
+
+/**
+ * Rundes Linienende nur für die gepunktete Variante — bei `[6, 4]` würde es die
+ * Striche an beiden Enden verlängern und den Unterschied zu `rejected`
+ * verkleinern, genau den Kanal also schwächen, um den es hier geht.
+ */
+const STATUS_LINE_CAP: Record<SightingStatus, 'butt' | 'round'> = {
+	approved: 'butt',
+	open: 'butt',
+	rejected: 'round'
 };
 
 /**
@@ -198,7 +219,8 @@ function getMarkerBaseStyle(speciesId: string, isDead: boolean, status: Sighting
 			stroke: new Stroke({
 				color: ringColor,
 				width: 3,
-				lineDash: STATUS_LINE_DASH[status]
+				lineDash: STATUS_LINE_DASH[status],
+				lineCap: STATUS_LINE_CAP[status]
 			})
 		}),
 		text: new Text({

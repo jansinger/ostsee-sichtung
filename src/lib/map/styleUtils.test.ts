@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('ol/style', () => {
 	class Stroke {
-		private opts: { color?: string; width?: number; lineDash?: number[] };
-		constructor(opts?: { color?: string; width?: number; lineDash?: number[] }) {
+		private opts: { color?: string; width?: number; lineDash?: number[]; lineCap?: string };
+		constructor(opts?: { color?: string; width?: number; lineDash?: number[]; lineCap?: string }) {
 			this.opts = opts ?? {};
 		}
 		getColor() {
@@ -13,6 +13,9 @@ vi.mock('ol/style', () => {
 		}
 		getLineDash() {
 			return this.opts.lineDash ?? null;
+		}
+		getLineCap() {
+			return this.opts.lineCap;
 		}
 	}
 	class Fill {
@@ -427,13 +430,20 @@ describe('Marker-Optik je Bearbeitungszustand', () => {
 	const timeFilter = { lower: 0, upper: Number.MAX_SAFE_INTEGER };
 
 	function strokeDashOf(st: string | undefined): number[] | undefined {
+		return strokeOf(st).getLineDash() ?? undefined;
+	}
+
+	function strokeOf(st: string | undefined): {
+		getLineDash: () => number[] | null;
+		getLineCap: () => string | undefined;
+	} {
 		const feature = new Feature();
 		feature.setProperties({ ta: 1, ct: 1, tf: false, ts: 1_750_000_000, st });
 		const styles = createFeatureStyle(feature, {}, {}, timeFilter);
 		const image = styles?.[0]!.getImage() as unknown as {
-			getStroke: () => { getLineDash: () => number[] | null };
+			getStroke: () => { getLineDash: () => number[] | null; getLineCap: () => string | undefined };
 		};
-		return image.getStroke().getLineDash() ?? undefined;
+		return image.getStroke();
 	}
 
 	it('zeichnet freigegebene Marker durchgezogen', () => {
@@ -451,7 +461,17 @@ describe('Marker-Optik je Bearbeitungszustand', () => {
 	});
 
 	it('zeichnet abgelehnte Marker gepunktet', () => {
-		expect(strokeDashOf('rejected')).toEqual([1, 4]);
+		expect(strokeDashOf('rejected')).toEqual([2, 5]);
+	});
+
+	it('gibt der gepunkteten Variante runde Linienenden, den anderen nicht', () => {
+		/* Ohne `round` rendert ein kurzes Segment bei Strichbreite 3 als radiale
+		   Zacke statt als Punkt — am gerenderten Marker war das ein Strahlenkranz
+		   ohne erkennbare Kreiskontur. Bei `open` würde `round` die Striche
+		   verlängern und den Abstand zu `rejected` verkleinern. */
+		expect(strokeOf('rejected').getLineCap()).toBe('round');
+		expect(strokeOf('open').getLineCap()).toBe('butt');
+		expect(strokeOf('approved').getLineCap()).toBe('butt');
 	});
 
 	it('cacht Marker je Status getrennt', () => {
