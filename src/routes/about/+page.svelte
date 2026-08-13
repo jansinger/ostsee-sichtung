@@ -461,7 +461,7 @@
 		</p>
 		<!-- Freiwilliger Transparenzhinweis, keine Pflicht: Quellcode ist von der
 		     Kennzeichnungspflicht des Art. 50 KI-VO ausgenommen, und die Texte
-		     stehen unter redaktioneller Verantwortung des DMM. Bewertung mit
+		     stehen unter redaktioneller Verantwortung des Deutschen Meeresmuseums. Bewertung mit
 		     Quellen: docs/EU_AI_ACT_BEWERTUNG.md — vor dem Entfernen oder
 		     Ausweiten dort nachlesen. -->
 		<p class="text-base-content/70 text-support mx-auto mt-4 max-w-3xl text-center">

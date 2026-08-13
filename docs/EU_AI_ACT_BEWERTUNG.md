@@ -1,6 +1,6 @@
 # EU-KI-Verordnung (AI Act) — Bewertung für Ostsee-Tiere
 
-Stand: 2026-08-13. Bezugsrahmen: VO (EU) 2024/1689 („AI Act"), insbesondere die
+Stand: 2026-08-13. Bezugsrahmen: VO (EU) 2024/1689 („AI Act“), insbesondere die
 Transparenzpflichten aus **Art. 50**, in Kraft seit dem **02.08.2026**, sowie die
 finalen Leitlinien und FAQ der EU-Kommission dazu (Links unten).
 
@@ -17,7 +17,7 @@ für dieses Projekt.** Der freiwillige Transparenzhinweis auf der Über-uns-Seit
    am öffentlichen Repository ohnehin sichtbar (`.claude/`-Konfiguration,
    PR-Historie). Die Kommissions-Leitlinien zu Art. 50 nehmen **Quellcode
    ausdrücklich von der Markierungspflicht aus**. Software, die mit KI-Hilfe
-   _entwickelt_ wurde, ist kein „KI-generierter Inhalt" im Sinne der Verordnung.
+   _entwickelt_ wurde, ist kein „KI-generierter Inhalt“ im Sinne der Verordnung.
 
 2. **Die Anwendung betreibt selbst kein KI-System.** Zur Laufzeit gibt es
    keinen Chatbot, keine LLM-Aufrufe und keine ML-Modelle; die Spam-Erkennung
