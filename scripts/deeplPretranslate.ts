@@ -40,6 +40,17 @@
  * npx tsx scripts/deeplPretranslate.ts --limit 20 # nur die ersten 20 (Probelauf)
  * ```
  *
+ * **Fachbegriffe.** DeepL kennt die Domäne nicht: Im ersten Trockenlauf wurde
+ * „Sichtung" zu *review* und „Meldung" zu *message* — beides falsch und im
+ * Widerspruch zu den von Hand übersetzten Botschaften. Ein DeepL-Glossar
+ * (`GLOSSAR` unten) erzwingt die richtigen Begriffe; es wird pro Lauf angelegt
+ * und danach wieder gelöscht.
+ *
+ * **Was das Skript NICHT abfängt** (im Diff selbst zu prüfen): DeepL setzt gern
+ * typografische Anführungszeichen um Bezeichner (`latitude` → `‚latitude'`) und
+ * ersetzt Bindestriche durch Halbgeviertstriche. Beides ist zulässiges Englisch
+ * und maschinell nicht sicher von gewollter Zeichensetzung zu trennen.
+ *
  * Nach `--write` gehört zwingend gefahren: `npm run i18n:compile`,
  * `npm run check`, `npm run test:quick`. Und dann gelesen — Stichproben im
  * Diff, besonders bei kurzen Segmenten, die Teil eines größeren Satzes sind.
@@ -73,6 +84,72 @@ const endpoint = apiKey.endsWith(':fx')
 	? 'https://api-free.deepl.com/v2/translate'
 	: 'https://api.deepl.com/v2/translate';
 
+/**
+ * Fachbegriffe, die DeepL ohne Kontext falsch trifft — belegt am Trockenlauf
+ * vom 2026-08-13: „Sichtung" wurde zu *review*, „Meldung" zu *message*. Beides
+ * ist in dieser Domäne falsch und weicht von den ~170 bereits von Hand
+ * übersetzten Botschaften ab (dort durchgängig *sighting* und *report*).
+ *
+ * Ein Glossar erzwingt die Ersetzung — deshalb stehen hier nur Begriffe, die im
+ * Projekt **eindeutig** sind. „Aufnahme" etwa fehlt bewusst: mal Foto/Video,
+ * mal die Tonaufnahme-Bedeutung; eine erzwungene Ersetzung träfe hier daneben.
+ * Wer erweitert, prüft die Eindeutigkeit an den bestehenden Übersetzungen.
+ */
+const GLOSSAR: Record<string, string> = {
+	Meldung: 'report',
+	Meldungen: 'reports',
+	Sichtung: 'sighting',
+	Sichtungen: 'sightings',
+	Melder: 'reporter',
+	Tierart: 'species',
+	Schweinswal: 'harbour porpoise',
+	Kegelrobbe: 'grey seal',
+	Seehund: 'harbour seal',
+	Robbe: 'seal',
+	Robben: 'seals',
+	Totfund: 'dead animal find',
+	Meeresmuseum: 'Oceanographic Museum'
+};
+
+/**
+ * Legt ein temporäres DeepL-Glossar an und gibt seine Id zurück.
+ *
+ * Bewusst pro Lauf neu statt einmal dauerhaft: Ein dauerhaftes Glossar wäre
+ * Zustand außerhalb des Repos, der still von `GLOSSAR` hier abweichen kann.
+ * Es wird am Ende wieder gelöscht (`finally`).
+ */
+async function erzeugeGlossar(): Promise<string> {
+	const basis = endpoint.replace('/v2/translate', '/v2/glossaries');
+	const response = await fetch(basis, {
+		method: 'POST',
+		headers: {
+			Authorization: `DeepL-Auth-Key ${apiKey}`,
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({
+			name: `ostsee-tiere-${Date.now()}`,
+			source_lang: 'de',
+			target_lang: 'en',
+			entries: Object.entries(GLOSSAR)
+				.map(([de_, en_]) => `${de_}\t${en_}`)
+				.join('\n'),
+			entries_format: 'tsv'
+		})
+	});
+	if (!response.ok) {
+		throw new Error(`DeepL-Glossar ${response.status}: ${await response.text()}`);
+	}
+	return ((await response.json()) as { glossary_id: string }).glossary_id;
+}
+
+async function loescheGlossar(id: string): Promise<void> {
+	const basis = endpoint.replace('/v2/translate', '/v2/glossaries');
+	await fetch(`${basis}/${id}`, {
+		method: 'DELETE',
+		headers: { Authorization: `DeepL-Auth-Key ${apiKey}` }
+	});
+}
+
 const PLACEHOLDER = /\{[^}]+\}/g;
 
 function schuetzePlatzhalter(text: string): string {
@@ -84,6 +161,10 @@ function entferneSchutz(text: string): string {
 function platzhalterMenge(text: string): string[] {
 	return (text.match(PLACEHOLDER) ?? []).sort();
 }
+
+/* Wird unten vor dem ersten `uebersetze`-Aufruf gesetzt. Die Deklaration steht
+   hier, weil `uebersetze` sie liest — der Aufruf erfolgt erst danach. */
+let glossarId: string | undefined; // eslint-disable-line prefer-const
 
 /** Übersetzt einen Stapel Texte; Reihenfolge der Antwort entspricht der Anfrage. */
 async function uebersetze(texte: string[]): Promise<string[]> {
@@ -98,7 +179,8 @@ async function uebersetze(texte: string[]): Promise<string[]> {
 			source_lang: 'DE',
 			target_lang: 'EN-GB', // en-GB, wie in Aufgabe 2.1 entschieden
 			tag_handling: 'xml',
-			ignore_tags: ['x']
+			ignore_tags: ['x'],
+			...(glossarId ? { glossary_id: glossarId } : {})
 		})
 	});
 	if (!response.ok) {
@@ -121,6 +203,11 @@ const en = JSON.parse(readFileSync(EN_PATH, 'utf-8')) as Record<string, MessageV
 
 const auftraege: Auftrag[] = [];
 for (const [key, deWert] of Object.entries(de)) {
+	// `$schema` ist der JSON-Schema-Verweis der Datei, keine Botschaft. Ohne
+	// diese Zeile schickt das Skript die Schema-URL an DeepL — im Trockenlauf
+	// vom 2026-08-13 kam sie zufällig unverändert zurück, aber darauf ist kein
+	// Verlass. Jeder `$`-Schlüssel ist Metadaten des Formats, kein Text.
+	if (key.startsWith('$')) continue;
 	if (!INCLUDE_PRIVACY && key.startsWith(PRIVACY_PREFIX)) continue;
 	const enWert = en[key];
 	// Bereits von Hand übersetzt → unangetastet lassen.
@@ -149,39 +236,47 @@ const BATCH = 50; // DeepL erlaubt bis 50 `text`-Felder pro Anfrage
 const verworfen: { key: string; grund: string }[] = [];
 let geschrieben = 0;
 
-for (let i = 0; i < zuTun.length; i += BATCH) {
-	const stapel = zuTun.slice(i, i + BATCH);
-	const ergebnisse = await uebersetze(stapel.map((a) => a.quelle));
+glossarId = await erzeugeGlossar();
+console.log(`Glossar aktiv (${Object.keys(GLOSSAR).length} Begriffe): ${glossarId}\n`);
 
-	stapel.forEach((auftrag, index) => {
-		const uebersetzt = ergebnisse[index];
-		if (uebersetzt === undefined) {
-			verworfen.push({ key: auftrag.key, grund: 'keine Antwort von DeepL' });
-			return;
-		}
-		// Gegenprobe: dieselben Platzhalter, sonst ist die Botschaft kaputt.
-		const vorher = platzhalterMenge(auftrag.quelle);
-		const nachher = platzhalterMenge(uebersetzt);
-		if (JSON.stringify(vorher) !== JSON.stringify(nachher)) {
-			verworfen.push({
-				key: auftrag.key,
-				grund: `Platzhalter verändert: ${vorher.join(',')} → ${nachher.join(',')}`
-			});
-			return;
-		}
+try {
+	for (let i = 0; i < zuTun.length; i += BATCH) {
+		const stapel = zuTun.slice(i, i + BATCH);
+		const ergebnisse = await uebersetze(stapel.map((a) => a.quelle));
 
-		if (auftrag.matchKey === undefined) {
-			en[auftrag.key] = uebersetzt;
-		} else {
-			const variante = (en[auftrag.key] as { match: Record<string, string> }[])[0];
-			variante.match[auftrag.matchKey] = uebersetzt;
-		}
-		geschrieben += 1;
-		console.log(`  ${auftrag.key}${auftrag.matchKey ? ` [${auftrag.matchKey}]` : ''}`);
-		console.log(`    DE: ${auftrag.quelle}`);
-		console.log(`    EN: ${uebersetzt}`);
-	});
-	console.log(`— ${Math.min(i + BATCH, zuTun.length)}/${zuTun.length} —`);
+		stapel.forEach((auftrag, index) => {
+			const uebersetzt = ergebnisse[index];
+			if (uebersetzt === undefined) {
+				verworfen.push({ key: auftrag.key, grund: 'keine Antwort von DeepL' });
+				return;
+			}
+			// Gegenprobe: dieselben Platzhalter, sonst ist die Botschaft kaputt.
+			const vorher = platzhalterMenge(auftrag.quelle);
+			const nachher = platzhalterMenge(uebersetzt);
+			if (JSON.stringify(vorher) !== JSON.stringify(nachher)) {
+				verworfen.push({
+					key: auftrag.key,
+					grund: `Platzhalter verändert: ${vorher.join(',')} → ${nachher.join(',')}`
+				});
+				return;
+			}
+
+			if (auftrag.matchKey === undefined) {
+				en[auftrag.key] = uebersetzt;
+			} else {
+				const variante = (en[auftrag.key] as { match: Record<string, string> }[])[0];
+				variante.match[auftrag.matchKey] = uebersetzt;
+			}
+			geschrieben += 1;
+			console.log(`  ${auftrag.key}${auftrag.matchKey ? ` [${auftrag.matchKey}]` : ''}`);
+			console.log(`    DE: ${auftrag.quelle}`);
+			console.log(`    EN: ${uebersetzt}`);
+		});
+		console.log(`— ${Math.min(i + BATCH, zuTun.length)}/${zuTun.length} —`);
+	}
+} finally {
+	// Auch nach einem Abbruch: kein verwaistes Glossar im DeepL-Konto.
+	await loescheGlossar(glossarId);
 }
 
 if (verworfen.length > 0) {

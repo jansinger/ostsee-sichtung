@@ -2068,3 +2068,38 @@ und weiß nicht, dass es Teil eines zusammengesetzten Satzes ist.
   überwiegend Logzeilen und Admin-Bereich. **Eine belastbare Zahl gibt es
   nicht** — die bräuchte dieselbe Zielgruppen-Trennung wie Befund C, und die
   geht nur Zeile für Zeile.
+
+## Erster DeepL-Trockenlauf: ein Skript-Bug und zwei Fachfehler (2026-08-13)
+
+Der Trockenlauf über 20 Segmente hat drei Dinge gezeigt — und damit gerechtfertigt,
+dass das Skript per Default nichts schreibt.
+
+**1. Bug im Skript: `$schema` wurde als Botschaft behandelt.** `messages/de.json`
+trägt als ersten Eintrag den JSON-Schema-Verweis. Das Skript iterierte über alle
+Schlüssel und schickte die Schema-URL an DeepL; sie kam zufällig unverändert
+zurück, aber darauf ist kein Verlass — mit `--write` hätte das die Datei
+beschädigen können. Behoben: Jeder `$`-Schlüssel ist Format-Metadaten und wird
+übersprungen (1121 → 1120 Segmente).
+
+**2. DeepL trifft die Fachbegriffe nicht.** Ohne Kontext wurde
+
+| Deutsch | DeepL | im Projekt |
+| --- | --- | --- |
+| „einer **Sichtung** zugeordnet" | assigned to a *review* | *sighting* |
+| „Die **Meldung** enthält bereits {used} MB" | The *message* already contains | *report* |
+
+Beides weicht von den rund 170 von Hand übersetzten Botschaften ab. Behoben über
+ein **DeepL-Glossar**, das pro Lauf angelegt und danach wieder gelöscht wird
+(kein dauerhafter Zustand außerhalb des Repos, der still abweichen könnte). Es
+enthält nur Begriffe, die im Projekt eindeutig sind — „Aufnahme" fehlt bewusst,
+weil es je nach Stelle Foto oder Video meint.
+
+**3. Zeichensetzung, bewusst nicht automatisiert.** DeepL setzt typografische
+Anführungszeichen um Bezeichner (`latitude` → `‚latitude'`) und macht aus
+Bindestrichen Halbgeviertstriche. Beides ist zulässiges Englisch und maschinell
+nicht sicher von gewollter Zeichensetzung zu unterscheiden — gehört im Diff
+gelesen, nicht per Nachbearbeitung geglättet.
+
+**Konsequenz für die Bewertung des Werkzeugs:** Von 20 Segmenten waren zwei
+fachlich falsch — 10 %, und zwar an Begriffen, die im ganzen Bestand
+wiederkehren. Das Glossar senkt das, ersetzt aber die Durchsicht nicht.
