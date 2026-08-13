@@ -269,27 +269,20 @@ test.describe('TopBar — Struktur und Umbruchfreiheit', () => {
 	});
 
 	/**
-	 * Der Sprachumschalter (`LanguageSwitcher.svelte`) ist bewusst aus der
-	 * Navbar entfernt, solange keine einzige Zeichenkette übersetzt ist —
-	 * Begründung und Entfernungsbedingung stehen bei `TRANSLATION_ROLLOUT_COMPLETE`
-	 * (`$lib/i18n/translationRolloutStage.ts`). Dieser Test nagelt die
-	 * Abwesenheit fest: Ohne ihn wäre die Einbindung in `PublicNavbar.svelte`
-	 * beim nächsten Umbau unbemerkt wieder herstellbar — die Komponente selbst
-	 * bleibt ja funktionsfähig und ihre eigenen Tests blieben grün.
+	 * Der Sprachumschalter (`LanguageSwitcher.svelte`) ist seit
+	 * `TRANSLATION_ROLLOUT_COMPLETE = true` (2026-08-13,
+	 * `$lib/i18n/translationRolloutStage.ts`) in der Navbar eingebunden. Bis
+	 * dahin prüfte dieser Test das Gegenteil (Abwesenheit) — siehe Git-Historie
+	 * für den vorherigen Wortlaut und den damaligen Mutationsnachweis.
 	 *
 	 * Erkennung über `[hreflang]`, das einzige Attribut, das ausschließlich der
 	 * Umschalter im Header trägt (siehe `LanguageSwitcher.svelte`) — derselbe
 	 * Selektor, den `i18n-link-sweep.spec.ts` zum Ausschließen des Umschalters
 	 * aus dem Verweis-Sweep verwendet.
-	 *
-	 * Mutationsnachweis (2026-08-11): `{#if TRANSLATION_ROLLOUT_COMPLETE && ...}`
-	 * in `PublicNavbar.svelte` probeweise auf `{#if true}` gesetzt — dieser Test
-	 * schlug daraufhin fehl (`expect(count).toBe(0)` erhielt `1`), alle übrigen
-	 * Navbar-Tests blieben unverändert grün. Änderung danach zurückgenommen.
 	 */
-	test('der Sprachumschalter ist nicht in der Navbar eingebunden', async ({ page }) => {
+	test('der Sprachumschalter ist in der Navbar eingebunden', async ({ page }) => {
 		await page.goto('/?meldung=lebend');
 		await expect(page.locator('header')).toBeVisible();
-		await expect(page.locator('header a[hreflang]')).toHaveCount(0);
+		await expect(page.locator('header a[hreflang]')).toHaveCount(1);
 	});
 });

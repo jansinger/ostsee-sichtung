@@ -25,15 +25,23 @@ async function runHandler(pathname: string): Promise<Response> {
 	});
 }
 
+/**
+ * Seit `TRANSLATION_ROLLOUT_COMPLETE = true` (2026-08-13,
+ * `$lib/i18n/translationRolloutStage.ts`) setzt die Middleware den Header nie
+ * mehr — die Bedingung `!TRANSLATION_ROLLOUT_COMPLETE` greift nie. Diese
+ * Suite prüfte vorher das Gegenteil (Header gesetzt); siehe Git-Historie für
+ * den vorherigen Wortlaut. Die Middleware selbst bleibt für einen möglichen
+ * Rückschritt bestehen (siehe Docblock der Konstante).
+ */
 describe('noindexEnglishPages', () => {
-	it('setzt X-Robots-Tag auf /en', async () => {
+	it('setzt X-Robots-Tag NICHT mehr auf /en', async () => {
 		const response = await runHandler('/en');
-		expect(response.headers.get('X-Robots-Tag')).toBe('noindex, follow');
+		expect(response.headers.get('X-Robots-Tag')).toBeNull();
 	});
 
-	it('setzt X-Robots-Tag auf /en/map', async () => {
+	it('setzt X-Robots-Tag NICHT mehr auf /en/map', async () => {
 		const response = await runHandler('/en/map');
-		expect(response.headers.get('X-Robots-Tag')).toBe('noindex, follow');
+		expect(response.headers.get('X-Robots-Tag')).toBeNull();
 	});
 
 	it('setzt X-Robots-Tag NICHT auf /', async () => {
@@ -48,19 +56,16 @@ describe('noindexEnglishPages', () => {
 
 	// Der Legacy-Client (siehe CLAUDE.md, Legacy-REST-API) ruft weiterhin
 	// `/en/rest_sichtungen/...` — byte-identisch zur deutschen Antwort, reine
-	// Routenkosmetik der abgelösten CakePHP-Anwendung. Der Riegel unterscheidet
-	// hier bewusst NICHT nach Content-Type: Die Erkennung hängt einzig am ersten
-	// Pfadsegment, wie in der Aufgabenstellung verlangt, und eine mobile App
-	// interessiert sich ohnehin nicht für Indexierungs-Header. Eine Ausnahme für
-	// Legacy-Pfade wäre zusätzliche, gegen nichts geprüfte Komplexität.
-	it('setzt X-Robots-Tag auch auf Legacy-Pfade unter /en/', async () => {
+	// Routenkosmetik der abgelösten CakePHP-Anwendung. Trug den Header vorher
+	// aus demselben Grund wie /en/map, jetzt ebenfalls nicht mehr.
+	it('setzt X-Robots-Tag NICHT mehr auf Legacy-Pfade unter /en/', async () => {
 		const response = await runHandler('/en/rest_sichtungen/antworten.json');
-		expect(response.headers.get('X-Robots-Tag')).toBe('noindex, follow');
+		expect(response.headers.get('X-Robots-Tag')).toBeNull();
 	});
 
-	it('erkennt das Sprachpräfix case-insensitiv wie toLocale()', async () => {
+	it('setzt X-Robots-Tag NICHT mehr, auch nicht bei /EN/map (Sprachpräfix case-insensitiv)', async () => {
 		const response = await runHandler('/EN/map');
-		expect(response.headers.get('X-Robots-Tag')).toBe('noindex, follow');
+		expect(response.headers.get('X-Robots-Tag')).toBeNull();
 	});
 
 	it('behält vorhandene Antwort-Header bei', async () => {
@@ -71,6 +76,6 @@ describe('noindexEnglishPages', () => {
 			resolve: resolve as Parameters<Handle>[0]['resolve']
 		});
 		expect(response.headers.get('X-Test')).toBe('wert');
-		expect(response.headers.get('X-Robots-Tag')).toBe('noindex, follow');
+		expect(response.headers.get('X-Robots-Tag')).toBeNull();
 	});
 });

@@ -121,20 +121,16 @@
 					<ConnectionBadge compact />
 
 					<!--
-						Ausgeblendet, bis die Übersetzung ausgeliefert ist
-						(`TRANSLATION_ROLLOUT_COMPLETE`, `$lib/i18n/translationRolloutStage.ts`):
-						Aktuell ist keine einzige Zeichenkette übersetzt, der Umschalter
-						führte also nur auf eine Seite, die genauso deutsch ist wie die,
-						von der man kommt — ein Bedienelement ohne erkennbare Wirkung.
-						Komponente, Tests und Logik bleiben erhalten; nur die Einbindung
-						hier ruht. `e2e/navbar-i18n-hidden.spec.ts` nagelt die Abwesenheit
-						fest, damit sie sich nicht unbemerkt zurückschleicht.
+						Eingebunden seit `TRANSLATION_ROLLOUT_COMPLETE = true` (2026-08-13,
+						`$lib/i18n/translationRolloutStage.ts`) — dort auch die eine bekannte
+						Ausnahme (Datenschutz-Abschnitt auf `/about` bleibt deutsch).
 
-						Die `connection.isOffline`-Bedingung bleibt im Code erhalten
-						(Commit 4098b962: Umschalter + Offline-Abzeichen liefen bei 320px
-						gemeinsam über, 231px Inhalt gegen 320px verfügbare Breite) — sie
-						greift nur zurzeit nicht, weil die äußere Bedingung sie ohnehin nie
-						erreichen lässt. Beim Wiedereinschalten NICHT entfernen.
+						`!connection.isOffline` bleibt zusätzlich zur äußeren Bedingung
+						bestehen (Commit 4098b962: Umschalter + Offline-Abzeichen liefen bei
+						320px gemeinsam über, 231px Inhalt gegen 320px verfügbare Breite) —
+						beide Bedienelemente konkurrieren dadurch nie gleichzeitig um Platz.
+						`e2e/navbar-structure.spec.ts` prüft die Einbindung positiv,
+						`e2e/submit-offline.spec.ts` die Platz-Aufteilung online/offline.
 					-->
 					{#if TRANSLATION_ROLLOUT_COMPLETE && !connection.isOffline}
 						<LanguageSwitcher />

@@ -1852,3 +1852,60 @@ Befund A vollständig (27 Fälle: 20 SEO-Attribute + 7 Komponenten-Props).
 Offen bleibt ausschließlich die **fachliche/rechtliche Prüfung** der
 Datenschutz-Entwurfsübersetzung gegen die DMM-Erklärung, bevor
 `TRANSLATION_ROLLOUT_COMPLETE` auf `true` gehen kann.
+
+---
+
+# Rollout-Abschluss: `TRANSLATION_ROLLOUT_COMPLETE = true` (2026-08-13)
+
+**Entscheidung Jan:** Die sieben Datenschutz-Entwurfstexte in `messages/en.json`
+(`routes_about_page_privacy_*`) zurück auf Deutsch gesetzt — keine ungeprüfte
+Rechtsübersetzung ausliefern — und den Rollout trotzdem abgeschlossen. Diese
+eine bekannte Lücke (Datenschutz-Abschnitt auf `/about` bleibt unter `/en`
+deutsch) ist bewusst akzeptiert, nicht übersehen; Begründung im Code-Kommentar
+dort und in `translationRolloutStage.ts`.
+
+## Umsetzung — alle drei Riegel aus `translationRolloutStage.ts`
+
+1. **Sprachumschalter** — keine Code-Änderung nötig, `PublicNavbar.svelte`
+   band ihn bereits bedingt auf die Konstante ein
+   (`{#if TRANSLATION_ROLLOUT_COMPLETE && !connection.isOffline}`). Stale
+   gewordene Kommentare dort aktualisiert.
+2. **`noindex`-Header** — `noindexEnglishPages.ts` liest dieselbe Konstante,
+   keine Code-Änderung nötig.
+3. **`hreflang`/`og:locale`** — bereits seit Aufgabe 2.5 fertig, zeigt jetzt
+   auf eine tatsächlich indexierbare `/en`-Fassung statt auf eine mit
+   `noindex`.
+
+Reine Konstanten-Änderung in `src/lib/i18n/translationRolloutStage.ts`
+(`false` → `true`), mit vollständig neu geschriebenem Docblock — der
+vorherige beschrieb den Zustand VOR dem Umschalten, nicht danach.
+
+## Tests auf die neue Erwartung gezogen
+
+- `e2e/navbar-structure.spec.ts` — „Sprachumschalter nicht eingebunden"
+  (Count 0) → „eingebunden" (Count 1).
+- `e2e/submit-offline.spec.ts` — Navbar-Flex-Item-Zählung online 2 → 3
+  (Menü + Dropdown + Umschalter); die Offline-Variante bleibt unverändert,
+  weil `!connection.isOffline` den Umschalter dort weiterhin ausblendet.
+- `e2e/noindex-english-pages.spec.ts` — komplett umgedreht: prüft jetzt die
+  **Abwesenheit** des `X-Robots-Tag`-Headers auf `/en`, `/en/map` und dem
+  Legacy-Pfad `/en/rest_sichtungen/antworten.json`.
+
+## Nachweise
+
+`svelte-check` 0 Fehler. Isoliert:
+`e2e/navbar-structure.spec.ts e2e/submit-offline.spec.ts
+e2e/noindex-english-pages.spec.ts e2e/i18n-link-sweep.spec.ts
+e2e/i18n-routing.spec.ts` — 41/41 grün. Da die Navbar auf **jeder** öffentlichen
+Seite ein zusätzliches Element bekommt, zusätzlich alle drei Shards komplett
+gefahren (ohne `CI=1`): `form` 94/94, `map` 156/156, `smoke` 229/229 — alle
+grün im ersten Lauf, kein Überlauf-Befund bei 320px durch das dritte
+Flex-Item.
+
+## Verbleibende bekannte Lücke
+
+Der Datenschutz-Abschnitt auf `/about`/`/en/about` zeigt weiterhin deutschen
+Text unter `/en` — einzige Stelle im gesamten Bestand. Sobald das Museum eine
+gegen die eigene Datenschutzerklärung geprüfte englische Fassung liefert,
+gehört sie in `messages/en.json` unter den `routes_about_page_privacy_*`-
+Schlüsseln eingepflegt; keine weitere Code-Änderung nötig.

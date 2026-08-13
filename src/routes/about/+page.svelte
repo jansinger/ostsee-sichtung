@@ -335,16 +335,21 @@
 	     Sobald das Museum eine Löschfrist festgelegt hat, gehört sie hierher
 	     zurück — dann aber mit der Frist im Text, nicht als Verweis. -->
 	<!--
-	     ACHTUNG — englische Fassung dieses Abschnitts ist ein ENTWURF
-	     (Entscheidung 2026-08-13, siehe docs/i18n/ARBEITSPROTOKOLL_ETAPPE1.md,
-	     Aufgabe 2.3b-Anhang). Die deutschen Formulierungen hier wurden bereits
-	     mehrfach gegen die offizielle Datenschutzerklärung des Deutschen
-	     Meeresmuseums korrigiert (siehe Kommentar oben,
-	     docs/DATENSCHUTZ_ABGLEICH_DMM_2026-08-02.md) — die englische Fassung
-	     in messages/en.json ist eine Rohübersetzung DIESES bereits korrigierten
-	     deutschen Standes, aber selbst noch NICHT gegen die DMM-Erklärung
-	     abgeglichen. Vor dem Entfernen des noindex-Riegels (`TRANSLATION_ROLLOUT_COMPLETE`)
-	     hier fachlich/rechtlich gegenprüfen, nicht nur sprachlich. -->
+	     ACHTUNG — `messages/en.json` trägt für diesen Abschnitt bewusst noch den
+	     DEUTSCHEN Wortlaut, obwohl `TRANSLATION_ROLLOUT_COMPLETE` seit
+	     2026-08-13 `true` ist (Entscheidung Jan, siehe
+	     docs/i18n/ARBEITSPROTOKOLL_ETAPPE1.md, Aufgabe 2.3b-Anhang). Grund: Die
+	     deutschen Formulierungen hier wurden bereits mehrfach gegen die
+	     offizielle Datenschutzerklärung des Deutschen Meeresmuseums korrigiert
+	     (siehe Kommentar oben, docs/DATENSCHUTZ_ABGLEICH_DMM_2026-08-02.md) —
+	     eine unabhängig übersetzte englische Fassung ungeprüft auszuliefern
+	     wäre dasselbe Fehlermuster auf Englisch. Eine frühere, ungeprüfte
+	     Entwurfsübersetzung stand hier kurzzeitig in `en.json` und wurde
+	     bewusst wieder auf Deutsch zurückgesetzt.
+	     Sobald das Museum eine geprüfte englische Fassung liefert (derselbe
+	     Weg wie für die übrige Schicht-E-Inhaltsarbeit), gehört sie hier
+	     eingepflegt — dieser Abschnitt ist die einzige verbliebene Stelle im
+	     gesamten Bestand, an der `/en` noch deutschen Text zeigt. -->
 	<div class="mb-16">
 		<h2 class="text-title mb-8 flex items-center justify-center gap-3 text-center font-bold">
 			<Icon icon="lucide:shield-check" width="30" class="text-success-strong" />
