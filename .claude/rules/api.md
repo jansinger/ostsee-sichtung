@@ -62,6 +62,35 @@ Ausdruck zweier Arbeitsschritte, sondern zwei Felder desselben Vorgangs:
   `freigegeben_am` vertraglich gebunden, und zwei verschiedene Spalten als Filter
   für zwei öffentliche Flächen laufen zwangsläufig auseinander.
 
+### Der Statusfilter der Karte ist die eine Ausnahme — und keine am Grundsatz
+
+Seit 2026-08 nehmen `GET /api/map/sightings` und `GET /api/map/sightings/years`
+einen optionalen Parameter `status` (`open`, `approved`, `rejected`,
+kommasepariert). **Ohne den Parameter ist die Antwort unverändert die
+öffentliche Grundmenge** — gleiche Bedingungen, gleiche Header, gleiche Form.
+
+Der Satz oben gilt also weiter für alles, was ohne Anmeldung erreichbar ist. Was
+hinzukommt, ist eine **angemeldete** Sicht: Jeder gesendete Wert verlangt eine
+Admin-Session, sonst `403` — und zwar auch `status=approved`. Geprüft wird, _ob_
+gefiltert werden darf, nicht _was_ angefragt wurde; die Unterscheidung nach Wert
+erzeugte einen zweiten, stillen Codepfad durch die Autorisierung.
+
+Drei Punkte, die beim Anfassen leicht verloren gehen:
+
+- **Beide Routen teilen `mapSightingConditions(statuses)`** (`publicMapConditions.ts`).
+  Zählen Feature- und Jahres-Endpunkt verschiedene Mengen, zeigt das
+  Jahres-Dropdown Zahlen, die auf der Karte fehlen.
+- **Die Prädikate kommen aus `approvalFilter.ts`** (`approvedOnly`, `openOnly`,
+  `rejectedOnly`) — es entsteht kein neues Freigabe-Prädikat, und der Scan in
+  `approvalPredicateScan.test.ts` bleibt scharf.
+- **Antworten mit nicht freigegebenen Daten tragen `Cache-Control: private, no-store`**,
+  beide Endpunkte zusätzlich `Vary: Cookie` — dieselbe Vorsorge wie in
+  `showreports.json`, wo der Kommentar das Membership-Orakel benennt.
+
+Es entsteht dabei **kein dritter Veröffentlichungszustand**: Die drei Werte sind
+die abgeleiteten Bearbeitungszustände aus
+`src/lib/components/admin/sightingStatus.ts`, gespeichert wird nichts Neues.
+
 ### Hintergrund
 
 Bis 2025-11 pflegte das Altsystem (schweinswalsichtung.de, gleiche Datenbank)

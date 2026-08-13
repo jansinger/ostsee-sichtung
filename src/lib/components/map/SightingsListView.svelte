@@ -1,10 +1,27 @@
 <script lang="ts">
 	import * as m from '$lib/paraglide/messages';
 	import { formatEntryDate, type SightingListEntry } from '$lib/map/listViewUtils';
+	import {
+		SIGHTING_STATUS_PRESENTATION,
+		type SightingStatus
+	} from '$lib/components/admin/sightingStatus';
 
 	// Barrierefreie Tabellen-Alternative zur Kartendarstellung (Befund K3).
 	// Zeigt exakt die aktuell auf der Karte sichtbaren Sichtungen.
-	let { entries, year }: { entries: SightingListEntry[]; year: number } = $props();
+	let {
+		entries,
+		year,
+		showStatus = false
+	}: { entries: SightingListEntry[]; year: number; showStatus?: boolean } = $props();
+
+	// Beschriftungen aus Paraglide statt SIGHTING_STATUS_PRESENTATION.label — jene
+	// Literale sind für die deutsche Admin-Oberfläche, die Karte ist eine
+	// übersetzte Fläche.
+	const statusLabels: Record<SightingStatus, string> = {
+		open: m.components_map_panel_filterpanel_text_status_offen(),
+		approved: m.components_map_panel_filterpanel_text_status_freigegeben(),
+		rejected: m.components_map_panel_filterpanel_text_status_abgelehnt()
+	};
 </script>
 
 {#if entries.length === 0}
@@ -27,6 +44,9 @@
 					<th scope="col">{m.components_map_sightingslistview_text_anzahl()}</th>
 					<th scope="col">{m.components_map_sightingslistview_text_totfund()}</th>
 					<th scope="col">{m.components_map_sightingslistview_text_fahrwasser()}</th>
+					{#if showStatus}
+						<th scope="col">{m.components_map_sightingslistview_text_bearbeitungsstand()}</th>
+					{/if}
 				</tr>
 			</thead>
 			<tbody>
@@ -41,6 +61,13 @@
 						</td>
 						<td>{entry.isDead ? 'Ja' : 'Nein'}</td>
 						<td>{entry.waterway ?? '–'}</td>
+						{#if showStatus}
+							<td>
+								<span class="badge {SIGHTING_STATUS_PRESENTATION[entry.status].badgeClass}">
+									{statusLabels[entry.status]}
+								</span>
+							</td>
+						{/if}
 					</tr>
 				{/each}
 			</tbody>

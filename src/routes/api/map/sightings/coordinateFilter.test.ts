@@ -54,7 +54,11 @@ type Condition = { op: string; column: string; value?: string };
 
 async function queryConditions(): Promise<Condition[]> {
 	const url = new URL('http://localhost/api/map/sightings');
-	await GET({ url } as Parameters<typeof GET>[0]);
+	await GET({
+		url,
+		locals: { user: null },
+		setHeaders: vi.fn()
+	} as unknown as Parameters<typeof GET>[0]);
 
 	return mockWhere.mock.calls.at(-1)?.[0] as Condition[];
 }

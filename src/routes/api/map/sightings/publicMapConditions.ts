@@ -12,23 +12,59 @@
  * NULL-Koordinaten auf `[0, 0]` zurück ("Null Island"). Dieser Serverfilter
  * macht den Fallback für die Karte unerreichbar, ohne die Funktion selbst
  * anzufassen — andere Aufrufer von `sightingsToGeoJSON` bleiben unverändert.
+ *
+ * Seit 2026-08 nimmt die Funktion die Bearbeitungszustände entgegen, damit
+ * Admins auf der Karte auch offene und abgelehnte Meldungen sehen können.
+ * Beide Routen müssen denselben Wert übergeben — sonst zählt das
+ * Jahres-Dropdown eine andere Menge, als die Karte zeigt. Genau dafür liegt
+ * die Bedingungsliste hier und nicht doppelt in den Routen.
  */
 
-import { approvedOnly } from '$lib/server/db/approvalFilter';
+import { approvedOnly, openOnly, rejectedOnly } from '$lib/server/db/approvalFilter';
+import type { SightingStatus } from '$lib/components/admin/sightingStatus';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
 import { BALTIC_SEA_BBOX } from '$lib/utils/geo/checkBalticSea';
-import { gte, isNotNull, lte, type SQL } from 'drizzle-orm';
+import { gte, isNotNull, lte, or, type SQL } from 'drizzle-orm';
+import { PUBLIC_MAP_STATUSES } from './statusFilter';
 
 /**
- * Bedingungen für die öffentliche Grundmenge der Sichtungskarte: freigegeben
- * und mit plausiblen Ostsee-Koordinaten (Bounding Box aus `checkBalticSea.ts`,
- * nicht dupliziert).
- *
- * Wird per `...publicMapSightingConditions()` in ein `and(...)` gespreizt.
+ * Die drei Bearbeitungszustände sind disjunkt und vollständig: `approvedAt`
+ * und `rejectedAt` sind nie gleichzeitig gesetzt (`.claude/rules/api.md`),
+ * „offen" ist der Fall, in dem beide `NULL` sind. Eine Disjunktion kann
+ * deshalb keine Zeile doppelt liefern.
  */
-export function publicMapSightingConditions(): SQL[] {
+function statusCondition(statuses: readonly SightingStatus[]): SQL {
+	const effective = statuses.length > 0 ? statuses : PUBLIC_MAP_STATUSES;
+	const parts = effective.map((status) => {
+		if (status === 'approved') return approvedOnly();
+		if (status === 'rejected') return rejectedOnly();
+		return openOnly();
+	});
+
+	// `effective` ist nie leer (Fallback oben), `parts` also mindestens ein
+	// Element — das `!` ist damit ein Laufzeit-Fakt, keine Behauptung. Und
+	// `or(...parts)` mit mindestens einem Argument liefert nie `undefined`
+	// (siehe drizzle-orm-Quelle), der `SQL`-Cast betrifft also nur diesen
+	// einen, dokumentierten Fall — nicht `parts[0]`, das steht ohnehin fest.
+	return parts.length === 1 ? parts[0]! : (or(...parts) as SQL);
+}
+
+/**
+ * Bedingungen für die Grundmenge der Sichtungskarte: gewählter
+ * Bearbeitungszustand und plausible Ostsee-Koordinaten (Bounding Box aus
+ * `checkBalticSea.ts`, nicht dupliziert).
+ *
+ * Ohne Argument entsteht exakt die öffentliche Grundmenge von vorher —
+ * jeder abweichende Aufruf setzt eine bestandene Admin-Prüfung voraus
+ * (`resolveMapStatuses` in `statusFilter.ts`).
+ *
+ * Wird per `...mapSightingConditions(statuses)` in ein `and(...)` gespreizt.
+ */
+export function mapSightingConditions(
+	statuses: readonly SightingStatus[] = PUBLIC_MAP_STATUSES
+): SQL[] {
 	return [
-		approvedOnly(),
+		statusCondition(statuses),
 		isNotNull(sightingsTable.latitude),
 		isNotNull(sightingsTable.longitude),
 		gte(sightingsTable.latitude, BALTIC_SEA_BBOX.minLatitude.toString()),

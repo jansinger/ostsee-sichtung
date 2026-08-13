@@ -53,7 +53,11 @@ type Condition = { op: string; column: string; value?: Date };
 
 async function yearRange(year: string): Promise<{ start: Date; endExclusive: Date }> {
 	const url = new URL(`http://localhost/api/map/sightings?year=${year}`);
-	await GET({ url } as Parameters<typeof GET>[0]);
+	await GET({
+		url,
+		locals: { user: null },
+		setHeaders: vi.fn()
+	} as unknown as Parameters<typeof GET>[0]);
 
 	const conditions = mockWhere.mock.calls.at(-1)?.[0] as Condition[];
 	const onDate = conditions.filter((condition) => condition.column === 'sightingDate');
@@ -79,8 +83,10 @@ describe('GET /api/map/sightings — Jahresfilter meint Berliner Kalenderjahre',
 		const { between, gte, lte, lt } = vi.mocked(await import('drizzle-orm'));
 
 		await GET({
-			url: new URL('http://localhost/api/map/sightings?year=2024')
-		} as Parameters<typeof GET>[0]);
+			url: new URL('http://localhost/api/map/sightings?year=2024'),
+			locals: { user: null },
+			setHeaders: vi.fn()
+		} as unknown as Parameters<typeof GET>[0]);
 
 		expect(between).not.toHaveBeenCalled();
 		// 1x sightingDate-Jahresgrenze + 2x Ostsee-Bounding-Box (Lat/Lon) — QW1
@@ -118,8 +124,10 @@ describe('GET /api/map/sightings — Jahresfilter meint Berliner Kalenderjahre',
 
 	it('filtert ohne Jahresparameter nicht auf das Sichtungsdatum', async () => {
 		await GET({
-			url: new URL('http://localhost/api/map/sightings')
-		} as Parameters<typeof GET>[0]);
+			url: new URL('http://localhost/api/map/sightings'),
+			locals: { user: null },
+			setHeaders: vi.fn()
+		} as unknown as Parameters<typeof GET>[0]);
 
 		const conditions = mockWhere.mock.calls.at(-1)?.[0] as Condition[];
 		expect(conditions.some((condition) => condition.column === 'sightingDate')).toBe(false);

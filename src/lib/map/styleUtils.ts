@@ -2,6 +2,7 @@ import * as m from '$lib/paraglide/messages';
 import { Stroke, Fill, Style, Circle, Text } from 'ol/style';
 import type { Feature } from 'ol';
 import type { Geometry } from 'ol/geom';
+import type { SightingStatus } from '$lib/components/admin/sightingStatus';
 
 /**
  * Prüft ob ein Wert zwischen zwei Grenzen liegt (inklusiv).
@@ -19,6 +20,7 @@ export interface SightingProperties {
 	ct: number; // Count
 	tf: boolean; // Totfund (dead)
 	ts: number; // Timestamp
+	st?: SightingStatus; // Bearbeitungszustand (nur in der Admin-Ansicht ungleich 'approved')
 	[key: string]: unknown; // Weitere Eigenschaften
 }
 
@@ -50,6 +52,8 @@ const defaultRadius = 8;
  * - Emoji-Symbol = zweiter, redundanter Kanal für die Artgruppe
  * - Anzahl der Tiere = Zahl unter dem Marker (ab 2 Tieren)
  * - Schwarzer Ring = Totfund (Zustands-Kanal, überschreibt die Gruppenfarbe)
+ * - Strichmuster des Rings = Bearbeitungszustand (nur in der Admin-Ansicht
+ *   ungleich „freigegeben": gestrichelt = offen, gepunktet = abgelehnt)
  * Legende (LegendPanel.svelte) rendert aus genau diesen Konstanten.
  */
 export type SpeciesCategory = 'kleinwal' | 'grosswal' | 'robbe' | 'unbekannt';
@@ -73,6 +77,39 @@ export const MARKER_BACKGROUND_COLOR = '#FFFFFF';
 
 /** Totfund überschreibt die Gruppenfarbe des Rings */
 export const TOTFUND_RING_COLOR = '#000000';
+
+/**
+ * Zweiter Kanal für den Bearbeitungszustand — die Ringfarbe trägt bereits die
+ * Artgruppe und darf hier nicht mitbelegt werden. Strichmuster statt Farbe:
+ * Es bleibt bei Farbfehlsichtigkeit unterscheidbar, und die Legende erklärt es.
+ * `undefined` = durchgezogen, wie bisher.
+ *
+ * `rejected` stand zunächst auf `[1, 4]` mit dem Standard-Linienende. Am
+ * gerenderten Marker (Radius 14, Strichbreite 3) war das kein gepunkteter Ring,
+ * sondern ein Strahlenkranz: Ein Segment der Länge 1 bei Breite 3 steht quer
+ * zur Kurve, also als radiale Zacke. Die Kreiskontur verschwand dabei, und mit
+ * ~20 % Strichdeckung war die Begrenzung deutlich schwächer als bei den anderen
+ * beiden Zuständen — WCAG 1.4.11 verlangt für grafische Objekte 3:1.
+ * `[2, 5]` mit rundem Linienende ergibt echte Punkte auf der Kreislinie, bleibt
+ * gegen `[6, 4]` klar unterscheidbar und hält die Kontur. Verglichen wurden
+ * `[1, 4]` (butt), `[2, 5]` und `[1, 7]` (beide round) am gerenderten Bild.
+ */
+const STATUS_LINE_DASH: Record<SightingStatus, number[] | undefined> = {
+	approved: undefined,
+	open: [6, 4],
+	rejected: [2, 5]
+};
+
+/**
+ * Rundes Linienende nur für die gepunktete Variante — bei `[6, 4]` würde es die
+ * Striche an beiden Enden verlängern und den Unterschied zu `rejected`
+ * verkleinern, genau den Kanal also schwächen, um den es hier geht.
+ */
+const STATUS_LINE_CAP: Record<SightingStatus, 'butt' | 'round'> = {
+	approved: 'butt',
+	open: 'butt',
+	rejected: 'round'
+};
 
 /**
  * Symbol-Definition einer Tierart — Farbe und Symbol kommen immer aus der Gruppe
@@ -165,8 +202,8 @@ function markerRadius(speciesSymbol: SpeciesSymbol): number {
  * Marker-Basisstyle (weißer Kreis, Gruppenfarben-Ring, Emoji) — hängt nur von
  * Art und Totfund-Status ab und wird deshalb unabhängig von der Anzahl gecacht.
  */
-function getMarkerBaseStyle(speciesId: string, isDead: boolean): Style {
-	const key = `markerBase_${speciesId}#${isDead}`;
+function getMarkerBaseStyle(speciesId: string, isDead: boolean, status: SightingStatus): Style {
+	const key = `markerBase_${speciesId}#${isDead}#${status}`;
 	if (styleCache[key]) {
 		return styleCache[key] as Style;
 	}
@@ -179,7 +216,12 @@ function getMarkerBaseStyle(speciesId: string, isDead: boolean): Style {
 		image: new Circle({
 			radius: markerRadius(speciesSymbol),
 			fill: new Fill({ color: MARKER_BACKGROUND_COLOR + 'E6' }), // 90% Deckung
-			stroke: new Stroke({ color: ringColor, width: 3 })
+			stroke: new Stroke({
+				color: ringColor,
+				width: 3,
+				lineDash: STATUS_LINE_DASH[status],
+				lineCap: STATUS_LINE_CAP[status]
+			})
 		}),
 		text: new Text({
 			text: speciesSymbol.symbol,
@@ -247,7 +289,8 @@ export function createFeatureStyle(
 
 	// Totfund-Regel kommt aus legendGroups.ct0 — colorGroup ist bereits berechnet
 	const isDead = colorGroup === 'ct0';
-	const key = `marker_${speciesId}#${properties.ct}#${isDead}`;
+	const status = properties.st ?? 'approved';
+	const key = `marker_${speciesId}#${properties.ct}#${isDead}#${status}`;
 
 	if (styleCache[key]) {
 		return styleCache[key] as Style[];
@@ -256,7 +299,7 @@ export function createFeatureStyle(
 	// Basis- und Anzahl-Style werden separat gecacht und hier nur kombiniert —
 	// so entsteht pro Anzahl kein neuer Ring/Emoji-Style
 	const speciesSymbol = speciesSymbols[speciesId] ?? speciesEntry('unbekannt');
-	const base = getMarkerBaseStyle(speciesId, isDead);
+	const base = getMarkerBaseStyle(speciesId, isDead, status);
 	const styles =
 		properties.ct > 1
 			? [base, getCountTextStyle(properties.ct, markerRadius(speciesSymbol) + 9)]

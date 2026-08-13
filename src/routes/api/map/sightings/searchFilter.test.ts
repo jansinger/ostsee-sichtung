@@ -48,7 +48,11 @@ async function queryFor(search?: string): Promise<{ text: string; params: unknow
 	const url = new URL('http://localhost/api/map/sightings');
 	if (search !== undefined) url.searchParams.set('search', search);
 
-	await GET({ url } as Parameters<typeof GET>[0]);
+	await GET({
+		url,
+		locals: { user: null },
+		setHeaders: vi.fn()
+	} as unknown as Parameters<typeof GET>[0]);
 
 	if (!captured.where) {
 		throw new Error('Keine WHERE-Bedingung erfasst — wurde die Query ausgeführt?');

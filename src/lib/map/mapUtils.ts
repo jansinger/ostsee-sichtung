@@ -14,6 +14,8 @@
  * @since 1.0.0
  */
 
+import { getSightingStatus, type SightingStatus } from '$lib/components/admin/sightingStatus';
+
 /**
  * Übersetzungsschnittstelle für Kartenbeschriftungen
  *
@@ -60,6 +62,7 @@ export interface SightingFeature {
 		ct: number; // Gesamtanzahl der Tiere
 		jt: number; // Anzahl Jungtiere/Kälber
 		tf: boolean; // Totfund ja/nein
+		st: SightingStatus; // Bearbeitungszustand — öffentlich immer 'approved'
 		// Optionale Eigenschaften (nur bei Einwilligung/Verfügbarkeit)
 		name?: string | undefined; // Nachname des Beobachters
 		firstname?: string | undefined; // Vorname des Beobachters
@@ -102,6 +105,8 @@ export interface DBSighting {
 	shipNameConsent: boolean; // Einwilligung zur Schiffsnamen-Nennung
 	waterway?: string; // Gewässername (optional)
 	seaMark?: string; // Seezeichen (optional)
+	approvedAt?: Date | string | null; // Freigabezeitpunkt (freigegeben_am)
+	rejectedAt?: Date | string | null; // Ablehnungszeitpunkt (abgelehnt_am)
 	[key: string]: unknown; // Weitere Felder für Flexibilität
 }
 
@@ -160,6 +165,12 @@ export function sightingsToGeoJSON(sightingsFromDB: DBSighting[]): GeoJSONRespon
 				ct: dbSighting.totalCount, // Anzahl Tiere
 				jt: dbSighting.juvenileCount, // Anzahl Jungtiere
 				tf: dbSighting.isDead, // Totfund-Flag
+				// Bearbeitungszustand aus denselben zwei Spalten wie im Admin
+				// abgeleitet (sightingStatus.ts), nicht hier neu entschieden.
+				st: getSightingStatus({
+					approvedAt: dbSighting.approvedAt,
+					rejectedAt: dbSighting.rejectedAt
+				}),
 				// Datenschutz-konforme Namensanzeige
 				name: dbSighting.nameConsent ? dbSighting.lastName : undefined,
 				firstname: dbSighting.nameConsent ? dbSighting.firstName : undefined,

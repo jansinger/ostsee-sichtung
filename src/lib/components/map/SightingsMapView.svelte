@@ -23,6 +23,10 @@
 		serializeMapFilterParams,
 		type MapFilterUrlState
 	} from '$lib/map/urlFilterState';
+	import { SIGHTING_STATUS_ORDER, type SightingStatus } from '$lib/components/admin/sightingStatus';
+	import { DEFAULT_MAP_STATUSES, isPublicStatusSelection } from '$lib/map/statusRequestParams';
+	import { createYearsRequestSequencer, resolveYearsUpdate } from '$lib/map/yearsRequestSequencer';
+	import { reconcileDisplayedYear } from '$lib/map/yearDisplayReconciliation';
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	// Kein `import 'ol/ol.css'` hier: die Datei kommt global aus app.css, und zwar
@@ -108,6 +112,17 @@
 	// window/page.url sind hier also verfügbar.
 	const urlFilterState = parseMapFilterParams(page.url.searchParams);
 
+	/* Das Admin-Flag kommt aus dem Root-Layout (`+layout.server.ts`), das es
+	   serverseitig aus den Rollen berechnet — `PublicUser` trägt die Rollen
+	   bewusst nicht. Superadmins tragen zusätzlich die Rolle `admin`, `showAdminMenu`
+	   deckt damit beide Gruppen ab. Das Flag steuert nur die Sichtbarkeit; die
+	   Sicherheitsgrenze liegt in der API (statusFilter.ts). */
+	let isAdmin = $derived(page.data.showAdminMenu === true);
+
+	/* Nicht-Admins bekommen die URL-Auswahl gar nicht erst zu sehen — sonst
+	   liefe eine geteilte Admin-URL bei ihnen in einen 403 und die Karte bliebe leer. */
+	let statuses = $state<SightingStatus[]>([...DEFAULT_MAP_STATUSES]);
+
 	// Bisheriges Fallback-Jahr, synchron verfügbar für den allerersten Render
 	// (bevor GET /api/map/sightings/years geladen ist). Als Konstante erfasst,
 	// damit die beiden $state-Deklarationen unten nicht voneinander abhängen.
@@ -179,7 +194,8 @@
 			activeFilters.query !== undefined ||
 			activeFilters.from !== undefined ||
 			(activeFilters.hiddenSpecies?.length ?? 0) > 0 ||
-			(activeFilters.hiddenColors?.length ?? 0) > 0
+			(activeFilters.hiddenColors?.length ?? 0) > 0 ||
+			!isPublicStatusSelection(statuses)
 	);
 
 	/**
@@ -258,29 +274,67 @@
 	// Event Handler für Cleanup
 	let keyboardHandler: ((event: KeyboardEvent) => void) | null = null;
 
+	// Renn-Guard für loadAvailableYears (Review-Befund 1/T7.2): loadSightings im
+	// Controller ist per AbortController gegen Überholen abgesichert, dieser
+	// Aufruf hier bislang nicht — siehe Docblock in yearsRequestSequencer.ts für
+	// die zwei konkreten Fehler (Rapid Toggling, stiller Fehlerpfad), gegen die
+	// er absichert.
+	const yearsRequestSequencer = createYearsRequestSequencer();
+
 	/**
 	 * Lädt die verfügbaren Jahre (QW2a-Endpoint) und ermittelt daraus das
 	 * Default-Jahr (QW2b). Fehlerpfad: stiller Fallback auf das bisherige
 	 * Verhalten (getDefaultSightingYear()) — kein Fehler-Toast dafür, da es
 	 * sich um eine reine Komfort-Optimierung handelt.
+	 *
+	 * `availableYearsData` wird nur geschrieben, wenn diese Anfrage sowohl
+	 * noch aktuell ist (kein Überholen durch einen zweiten Statuswechsel) ALS
+	 * AUCH erfolgreich war — ein Fehlschlag lässt die vorher geladene Liste
+	 * unangetastet. Für den allerersten Aufruf ist die „vorherige Liste"
+	 * bereits leer, der stille Fallback oben bleibt also unverändert.
 	 */
 	async function loadAvailableYears(): Promise<number> {
+		const requestId = yearsRequestSequencer.begin();
 		let fetchedYears: YearWithCount[] = [];
+		let succeeded = false;
 		try {
-			const response = await fetch('/api/map/sightings/years');
+			const query =
+				statuses.length > 0 && !isPublicStatusSelection(statuses)
+					? `?status=${statuses.join(',')}`
+					: '';
+			const response = await fetch(`/api/map/sightings/years${query}`);
 			if (response.ok) {
+				succeeded = true;
 				const data = await response.json();
 				if (Array.isArray(data?.years)) {
 					fetchedYears = data.years;
 				}
+			} else {
+				console.warn(
+					`Konnte verfügbare Jahre nicht laden (HTTP ${response.status}), behalte bisherige Liste:`
+				);
 			}
 		} catch (err) {
-			console.warn('Konnte verfügbare Jahre nicht laden, nutze Standard-Jahr:', err);
+			console.warn('Konnte verfügbare Jahre nicht laden, behalte bisherige Liste:', err);
 		}
 
-		availableYearsData = fetchedYears;
+		const update = resolveYearsUpdate(
+			yearsRequestSequencer.isCurrent(requestId),
+			succeeded ? { ok: true, years: fetchedYears } : { ok: false }
+		);
+		if (update !== null) {
+			availableYearsData = update;
+		}
 
-		return pickDefaultYear(fetchedYears, initialFallbackYear);
+		/* Das Default-Jahr muss aus der Liste kommen, die tatsächlich gilt, nicht
+		   aus `fetchedYears`: Bei einem überholten oder fehlgeschlagenen Abruf
+		   bleibt `availableYearsData` bewusst stehen — ein Default aus der
+		   verworfenen Antwort ginge an genau der Liste vorbei, die wir eben
+		   behalten haben, und `reconcileDisplayedYear` würde damit auf ein Jahr
+		   schalten, das zur angezeigten Auswahl nicht gehört (Review PR #872).
+		   Nach der Zuweisung oben ist `availableYearsData` in beiden Fällen die
+		   wirksame Liste. */
+		return pickDefaultYear(availableYearsData, initialFallbackYear);
 	}
 
 	/**
@@ -357,7 +411,8 @@
 			searchTerm: mapInstance.getSearchTerm(),
 			timeFilter: mapInstance.getTimeFilter(),
 			hiddenSpecies: hidden.species,
-			hiddenColors: hidden.colors
+			hiddenColors: hidden.colors,
+			statuses
 		});
 	}
 
@@ -405,9 +460,67 @@
 		countManager.setColorVisibility(colorGroup, true);
 	}
 
+	/** Wechselt die Bearbeitungszustände: Karte neu laden und Jahreszahlen nachziehen. */
+	async function handleStatusChange(next: SightingStatus[]): Promise<void> {
+		const previous = statuses;
+		statuses = next;
+		if (!mapInstance) return;
+		const result = await mapInstance.setStatuses(next);
+		/* Ein neuerer Wechsel hat übernommen: Der ist jetzt für Jahresliste, URL
+		   und Chip zuständig. Hier nichts weiter tun und vor allem NICHT
+		   zurückrollen — das überschriebe die neuere Auswahl. */
+		if (result === 'superseded') return;
+		/* Fehlgeschlagen (z. B. abgelaufene Session): Die Karte zeigt weiterhin
+		   den alten Bestand. Ohne diesen Rückbau behaupteten Kästchen, Chip und
+		   URL eine Auswahl, die nirgends gilt — der Fehler-Toast erklärt den
+		   Rückbau (Review PR #872). */
+		if (result === 'failed') {
+			statuses = previous;
+			return;
+		}
+		// Die Jahres-Zahlen zählen dieselbe Grundmenge — ohne diesen zweiten
+		// Aufruf zeigt das Dropdown Zahlen, die auf der Karte nicht auftauchen.
+		const loadedDefaultYear = await loadAvailableYears();
+		// Pre-Merge-Review (zweimal unabhängig gefunden): Die neu geladene
+		// Jahresliste kann das bisher angezeigte Jahr nicht mehr enthalten (z. B.
+		// 2024 hat unter „Offen" keine Treffer und fällt aus `years`) — ohne
+		// diesen Abgleich zeigt das Dropdown dann kommentarlos ein anderes Jahr
+		// als die Karte tatsächlich lädt, weil keine `<option>` mehr `selected`
+		// trägt (siehe FilterPanel.svelte). `years` ist zu diesem Zeitpunkt
+		// bereits auf `availableYearsData` neu abgeleitet (derselbe `$derived`,
+		// synchron gelesen). Über `switchToYear()` — denselben Pfad wie jeder
+		// andere Jahreswechsel —, damit es nicht einen zweiten Code-Pfad gibt,
+		// der Dropdown und Karte auseinanderlaufen lassen könnte.
+		const targetYear = reconcileDisplayedYear(
+			mapInstance.getDisplayedYear(),
+			years,
+			loadedDefaultYear
+		);
+		if (targetYear !== null) {
+			switchToYear(targetYear);
+		}
+		countManager.updateCounts();
+		syncFiltersToUrl(readCurrentFilterState());
+	}
+
+	/** Setzt die Auswahl auf die öffentliche Grundmenge zurück (Chip-Aktion). */
+	function resetStatusFilter(): void {
+		void handleStatusChange([...DEFAULT_MAP_STATUSES]);
+	}
+
 	/**
 	 * N6: Stellt Default-Jahr, leere Suche, vollen Zeitraum und alle
 	 * Sichtbarkeiten wieder her.
+	 *
+	 * Der Bearbeitungszustand gehört seit der Produktentscheidung vom
+	 * 2026-08-13 dazu: Das Bedienelement sitzt im Filter-Panel und erzeugt
+	 * einen Filter-Chip wie jeder andere — es ist damit ein Filter, kein
+	 * Ansichtsmodus, und "Alle Filter zurücksetzen" muss einen Admin auf die
+	 * Ansicht zurückführen, die auch ein Besucher sieht. Über
+	 * `resetStatusFilter()`/`handleStatusChange()`, nicht per direkter
+	 * `statuses`-Zuweisung: Nur dieser Pfad lädt Karte UND Jahres-Zahlen im
+	 * Gleichschritt neu (siehe `yearsRequestSequencer.ts`) — eine direkte
+	 * Zuweisung ließe das Jahres-Dropdown auf der alten Auswahl stehen.
 	 */
 	function resetAllFilters(): void {
 		clearSearchFilter();
@@ -418,6 +531,11 @@
 		[...(activeFilters.hiddenColors ?? [])].forEach(showColorGroup);
 		if (mapInstance && mapInstance.getDisplayedYear() !== apiDefaultYear) {
 			switchToYear(apiDefaultYear);
+		}
+		// Nur bei abweichender Auswahl neu laden — sonst löst der Reset-Knopf
+		// bei bereits öffentlicher Auswahl einen überflüssigen Round-Trip aus.
+		if (!isPublicStatusSelection(statuses)) {
+			resetStatusFilter();
 		}
 	}
 
@@ -433,6 +551,30 @@
 		return m.components_map_sightingsmapview_text_anzahl_name({
 			name: legendGroups[colorGroup]?.name ?? colorGroup
 		});
+	}
+
+	/* Pre-Merge-Review (Finding 2): Beschriftungen aus Paraglide, identisch zu
+	   FilterPanel.svelte — dieselben Message-Keys, denn eine Komponente ist
+	   die Fläche der Karte, die andere ihr Panel, aber der Wortlaut pro
+	   Bearbeitungsstand ist derselbe. */
+	const statusLabels: Record<SightingStatus, string> = {
+		open: m.components_map_panel_filterpanel_text_status_offen(),
+		approved: m.components_map_panel_filterpanel_text_status_freigegeben(),
+		rejected: m.components_map_panel_filterpanel_text_status_abgelehnt()
+	};
+
+	/**
+	 * Chip-Beschriftung des Bearbeitungsstand-Filters — nennt die gewählten
+	 * Zustände statt nur "Bearbeitungsstand" zu zeigen (Pre-Merge-Review,
+	 * Finding 2): "Offen + Freigegeben" und "nur Abgelehnt" sahen als Chip
+	 * bisher identisch aus, dabei ist dieser Chip auf der Karte selbst der
+	 * einzige Hinweis, dass unveröffentlichte Meldungen zu sehen sind.
+	 * Feste Reihenfolge über SIGHTING_STATUS_ORDER statt der Auswahlreihenfolge.
+	 */
+	function statusFilterLabel(): string {
+		return SIGHTING_STATUS_ORDER.filter((status) => statuses.includes(status))
+			.map((status) => statusLabels[status])
+			.join(', ');
 	}
 
 	/** ISO-Datum (YYYY-MM-DD) → kompakte deutsche Anzeige „TT.MM." */
@@ -456,6 +598,10 @@
 			// QW2b: Verfügbare Jahre vor Karteninitialisierung laden, damit die
 			// Karte direkt mit einem Jahr startet, das tatsächlich Daten hat.
 			// M4: Ein Jahr aus der URL hat Vorrang vor dem ermittelten Default.
+			// URL-Auswahl nur für Admins übernehmen (siehe oben).
+			if (isAdmin && urlFilterState.statuses?.length) {
+				statuses = [...urlFilterState.statuses];
+			}
 			const loadedDefaultYear = await loadAvailableYears();
 			if (cancelled) return;
 
@@ -480,6 +626,7 @@
 				enableLocationControl: true,
 				initialYear,
 				initialSearchTerm: urlFilterState.query ?? '',
+				initialStatuses: statuses,
 				onLoading: (loading) => {
 					isLoadingData = loading;
 					if (loading) {
@@ -771,6 +918,22 @@
 					<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
 				</button>
 			{/each}
+			{#if !isPublicStatusSelection(statuses)}
+				<button
+					type="button"
+					class={chipClass}
+					onclick={resetStatusFilter}
+					aria-label={m.components_map_sightingsmapview_aria_label_bearbeitungsstand_labels_entfernen_und(
+						{ labels: statusFilterLabel() }
+					)}
+				>
+					<Icon icon="lucide:inbox" width="14" height="14" aria-hidden="true" />
+					{m.components_map_sightingsmapview_text_bearbeitungsstand_labels({
+						labels: statusFilterLabel()
+					})}
+					<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
+				</button>
+			{/if}
 			<button type="button" class="{chipClass} btn-outline" onclick={resetAllFilters}>
 				{m.components_map_sightingsmapview_text_alle_filter_zuruecksetzen()}
 			</button>
@@ -909,7 +1072,11 @@
 				aria-label={m.components_map_sightingsmapview_aria_label_listenansicht_der_sichtungen()}
 			>
 				<div class="mx-auto max-w-3xl px-4">
-					<SightingsListView entries={listEntries} year={currentDisplayedYear} />
+					<SightingsListView
+						entries={listEntries}
+						year={currentDisplayedYear}
+						showStatus={isAdmin}
+					/>
 				</div>
 			</section>
 		{/if}
@@ -955,6 +1122,9 @@
 		isLoading={isLoadingData}
 		initialSearch={urlFilterState.query ?? ''}
 		toggleHidden={filterOpen || legendOpen}
+		showStatusFilter={isAdmin}
+		{statuses}
+		onStatusChange={(next) => void handleStatusChange(next)}
 		bind:isOpen={filterOpen}
 	/>
 
@@ -967,6 +1137,7 @@
 		bind:speciesVisibility
 		bind:colorVisibility
 		onSeamarkToggle={(visible) => mapInstance?.setSeamarkVisibility(visible)}
+		showStatusLegend={isAdmin}
 	/>
 
 	<!-- Tastatur-Hilfe Button -->

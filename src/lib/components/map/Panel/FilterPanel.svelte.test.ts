@@ -331,3 +331,115 @@ describe('FilterPanel als Bottom-Sheet (H6)', () => {
 		expect(rect.width).toBeGreaterThanOrEqual(44);
 	});
 });
+
+describe('Statusfilter', () => {
+	afterEach(() => {
+		document.body.innerHTML = '';
+	});
+
+	it('zeigt die Statusauswahl ohne Admin-Flag nicht', async () => {
+		render(FilterPanel, { years: YEARS, isOpen: true });
+		expect(document.querySelector('input[type="checkbox"]')).toBeNull();
+	});
+
+	it('zeigt drei Auswahlfelder für Admins', async () => {
+		render(FilterPanel, {
+			years: YEARS,
+			isOpen: true,
+			showStatusFilter: true,
+			statuses: ['approved']
+		});
+		await expect.element(page.getByLabelText('Offen')).toBeInTheDocument();
+		await expect.element(page.getByLabelText('Freigegeben')).toBeChecked();
+		await expect.element(page.getByLabelText('Abgelehnt')).toBeInTheDocument();
+	});
+
+	it('meldet die neue Auswahl beim Umschalten', async () => {
+		const onStatusChange = vi.fn();
+		render(FilterPanel, {
+			years: YEARS,
+			isOpen: true,
+			showStatusFilter: true,
+			statuses: ['approved'],
+			onStatusChange
+		});
+		await page.getByLabelText('Offen').click();
+		expect(onStatusChange).toHaveBeenCalledWith(['open', 'approved']);
+	});
+
+	it('lässt das Abwählen des letzten Status nicht zu', async () => {
+		// Eine leere Auswahl beantwortet die API mit 400 (statusFilter.ts) und
+		// sähe auf der Karte wie ein Datenverlust aus.
+		const onStatusChange = vi.fn();
+		render(FilterPanel, {
+			years: YEARS,
+			isOpen: true,
+			showStatusFilter: true,
+			statuses: ['approved'],
+			onStatusChange
+		});
+		await page.getByLabelText('Freigegeben').click();
+		expect(onStatusChange).not.toHaveBeenCalled();
+		// Der Browser stellt die Checkbox schon um, bevor der Handler läuft —
+		// bei einer abgelehnten Auswahl muss sie wieder angehakt sein, sonst
+		// behauptet die Oberfläche eine Auswahl, die nie in Kraft trat.
+		await expect.element(page.getByLabelText('Freigegeben')).toBeChecked();
+	});
+
+	// Finding 3 (Pre-Merge-Review): Die refuste Abwahl blieb bisher stumm — die
+	// Checkbox flippt und flippt zurück, ohne dass irgendwo etwas gesagt wird.
+	// Das liest sich wie ein kaputtes Bedienelement, obwohl der Nutzer die
+	// Sperre auflösen kann (erst einen anderen Status anhaken).
+	it('zeigt beim Abwählen des letzten Status eine Meldung im fieldset', async () => {
+		render(FilterPanel, {
+			years: YEARS,
+			isOpen: true,
+			showStatusFilter: true,
+			statuses: ['approved']
+		});
+
+		const fieldset = document.querySelector('fieldset');
+		expect(fieldset?.querySelector('[role="status"]')).toBeNull();
+
+		await page.getByLabelText('Freigegeben').click();
+
+		const status = fieldset?.querySelector('[role="status"]');
+		expect(status).not.toBeNull();
+		expect(status?.getAttribute('aria-live')).toBe('polite');
+		expect(status?.textContent).toContain(
+			'Mindestens ein Bearbeitungsstand muss ausgewählt bleiben.'
+		);
+		expect(fieldset?.getAttribute('aria-describedby')).toBe(status?.id);
+	});
+
+	it('meldet nicht role="alert" für die Refusal-Meldung (kein unterbrechender Fehler)', async () => {
+		render(FilterPanel, {
+			years: YEARS,
+			isOpen: true,
+			showStatusFilter: true,
+			statuses: ['approved']
+		});
+
+		await page.getByLabelText('Freigegeben').click();
+
+		expect(document.querySelector('fieldset [role="alert"]')).toBeNull();
+	});
+
+	it('löscht die Refusal-Meldung nach einer erfolgreichen Statusänderung', async () => {
+		render(FilterPanel, {
+			years: YEARS,
+			isOpen: true,
+			showStatusFilter: true,
+			statuses: ['approved']
+		});
+
+		await page.getByLabelText('Freigegeben').click();
+		expect(document.querySelector('fieldset [role="status"]')).not.toBeNull();
+
+		await page.getByLabelText('Offen').click();
+
+		await vi.waitFor(() => {
+			expect(document.querySelector('fieldset [role="status"]')).toBeNull();
+		});
+	});
+});

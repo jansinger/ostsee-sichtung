@@ -206,6 +206,32 @@ describe('LegendPanel', () => {
 		expect(document.body.textContent).toContain('je dunkler');
 	});
 
+	it('zeigt den Bearbeitungsstand-Abschnitt nicht, wenn showStatusLegend fehlt (Default: öffentliche Karte)', async () => {
+		render(LegendPanel, { translations, counts });
+
+		await page.getByRole('button', { name: /^Legende$/i }).click();
+
+		// Beweis, dass das Panel tatsächlich gerendert hat — sonst wäre die
+		// Abwesenheit unten trivial wahr, weil gar nichts gerendert wurde.
+		expect(document.body.textContent).toContain('Cluster');
+		// Die Bearbeitungsstand-Überschrift ist das einzige <h3> im Panel
+		// (siehe Test unten) — seine Abwesenheit ist damit ein präziserer
+		// Beweis als eine Textsuche, die auch durch Umformulierung träfe.
+		expect(document.querySelector('h3')).toBeNull();
+		expect(document.body.textContent).not.toContain('Bearbeitungsstand');
+	});
+
+	it('zeigt den Bearbeitungsstand-Abschnitt mit beiden Erklärungen, wenn showStatusLegend gesetzt ist (Admin)', async () => {
+		render(LegendPanel, { translations, counts, showStatusLegend: true });
+
+		await page.getByRole('button', { name: /^Legende$/i }).click();
+
+		const heading = document.querySelector('h3');
+		expect(heading?.textContent).toContain('Bearbeitungsstand');
+		expect(document.body.textContent).toContain('Gestrichelt: offen, noch nicht bearbeitet');
+		expect(document.body.textContent).toContain('Gepunktet: abgelehnt, nicht veröffentlicht');
+	});
+
 	it('bietet einen Seezeichen-Toggle (OpenSeaMap), Default an (M3)', async () => {
 		render(LegendPanel, { translations, counts });
 

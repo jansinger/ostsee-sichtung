@@ -19,6 +19,7 @@ vi.mock('$lib/server/db/schema', () => ({
 	sightings: {
 		sightingDate: 'sightingDate',
 		approvedAt: 'approvedAt',
+		rejectedAt: 'rejectedAt',
 		latitude: 'latitude',
 		longitude: 'longitude'
 	}
@@ -30,9 +31,11 @@ vi.mock('$lib/server/db/schema', () => ({
 // berlinDatePart() aus sqlTimeZone.ts nutzt genau dieses Verhalten.
 vi.mock('drizzle-orm', () => ({
 	and: vi.fn((...conditions) => conditions),
+	or: vi.fn((...conditions) => ({ op: 'or', conditions })),
 	gte: vi.fn((column, value) => ({ op: 'gte', column, value })),
 	lte: vi.fn((column, value) => ({ op: 'lte', column, value })),
 	isNotNull: vi.fn((column) => ({ op: 'isNotNull', column })),
+	isNull: vi.fn((column) => ({ op: 'isNull', column })),
 	sql: Object.assign(
 		vi.fn((strings: TemplateStringsArray, ...values: unknown[]) => ({
 			op: 'sql',
@@ -48,8 +51,22 @@ vi.mock('$lib/logger.server', () => ({
 }));
 
 import { GET } from './+server';
+import { mockAdminUser } from '../../../../../tests/contract/helpers/createEvent';
 
 type Condition = { op: string; column: string };
+
+function makeEvent(
+	options: { status?: string; user?: unknown; setHeaders?: ReturnType<typeof vi.fn> } = {}
+): Parameters<typeof GET>[0] {
+	const url = new URL('http://localhost/api/map/sightings/years');
+	if (options.status !== undefined) url.searchParams.set('status', options.status);
+
+	return {
+		url,
+		locals: { user: options.user ?? null },
+		setHeaders: options.setHeaders ?? vi.fn()
+	} as unknown as Parameters<typeof GET>[0];
+}
 
 describe('GET /api/map/sightings/years', () => {
 	beforeEach(() => {
@@ -60,7 +77,7 @@ describe('GET /api/map/sightings/years', () => {
 	});
 
 	it('nutzt dieselbe Grundmenge wie die Karte (Freigabe + Koordinatenfilter)', async () => {
-		await GET({} as Parameters<typeof GET>[0]);
+		await GET(makeEvent());
 
 		const conditions = mockWhere.mock.calls.at(-1)?.[0] as Condition[];
 		const notNullColumns = conditions
@@ -79,7 +96,7 @@ describe('GET /api/map/sightings/years', () => {
 			{ year: 2023, count: 7 }
 		]);
 
-		const response = await GET({} as Parameters<typeof GET>[0]);
+		const response = await GET(makeEvent());
 		const body = await response.json();
 
 		expect(body).toEqual({
@@ -93,7 +110,7 @@ describe('GET /api/map/sightings/years', () => {
 	it('wandelt String-Werte (bigint/numeric aus Postgres) in Zahlen um', async () => {
 		mockOrderBy.mockResolvedValueOnce([{ year: '2025', count: '42' }]);
 
-		const response = await GET({} as Parameters<typeof GET>[0]);
+		const response = await GET(makeEvent());
 		const body = await response.json();
 
 		expect(body).toEqual({ years: [{ year: 2025, count: 42 }] });
@@ -102,7 +119,7 @@ describe('GET /api/map/sightings/years', () => {
 	it('liefert ein leeres Array, wenn keine Sichtungen vorhanden sind', async () => {
 		mockOrderBy.mockResolvedValueOnce([]);
 
-		const response = await GET({} as Parameters<typeof GET>[0]);
+		const response = await GET(makeEvent());
 		const body = await response.json();
 
 		expect(body).toEqual({ years: [] });
@@ -111,11 +128,70 @@ describe('GET /api/map/sightings/years', () => {
 	it('fängt DB-Fehler ab und liefert 500 ohne interne Details', async () => {
 		mockOrderBy.mockRejectedValueOnce(new Error('boom - interne Details'));
 
-		const response = await GET({} as Parameters<typeof GET>[0]);
+		const response = await GET(makeEvent());
 
 		expect(response.status).toBe(500);
 		const body = await response.json();
 		expect(body).toEqual({ error: expect.any(String) });
 		expect(JSON.stringify(body)).not.toContain('boom');
+	});
+});
+
+describe('GET /api/map/sightings/years — Statusfilter', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mockWhere.mockReturnValue({ groupBy: mockGroupBy });
+		mockGroupBy.mockReturnValue({ orderBy: mockOrderBy });
+		mockOrderBy.mockResolvedValue([]);
+	});
+
+	it('antwortet ohne Anmeldung mit 403, sobald status gesetzt ist', async () => {
+		const response = await GET(makeEvent({ status: 'open' }));
+
+		expect(response.status).toBe(403);
+		expect(mockWhere).not.toHaveBeenCalled();
+	});
+
+	it('antwortet für Admins mit 200', async () => {
+		const response = await GET(makeEvent({ status: 'open,rejected', user: mockAdminUser }));
+
+		expect(response.status).toBe(200);
+		expect(mockWhere).toHaveBeenCalled();
+	});
+
+	it('antwortet für Admins mit 400 bei unbekanntem Status', async () => {
+		const response = await GET(makeEvent({ status: 'verified', user: mockAdminUser }));
+
+		expect(response.status).toBe(400);
+		expect(mockWhere).not.toHaveBeenCalled();
+	});
+
+	it('setzt für den Admin-Fall einen privaten Cache-Header', async () => {
+		const setHeaders = vi.fn();
+		await GET(makeEvent({ status: 'open', user: mockAdminUser, setHeaders }));
+
+		expect(setHeaders).toHaveBeenCalledWith({ 'Cache-Control': 'private, no-store' });
+	});
+
+	it('setzt ohne Statusparameter keinen Cache-Control-Header, aber Vary: Cookie', async () => {
+		// Finding 4 (Pre-Merge-Review): dieselbe Begründung wie bei GET /api/map/sightings —
+		// die Antwort hängt vom Session-Cookie ab, ein Shared Cache muss das über Vary
+		// wissen. Der öffentliche Fall bleibt ohne Cache-Control unverändert.
+		const setHeaders = vi.fn();
+		await GET(makeEvent({ setHeaders }));
+
+		expect(setHeaders).toHaveBeenCalledWith({ Vary: 'Cookie' });
+		expect(setHeaders).not.toHaveBeenCalledWith(
+			expect.objectContaining({ 'Cache-Control': expect.anything() })
+		);
+	});
+
+	it('setzt auf dem 403-Pfad Vary: Cookie und einen privaten Cache-Header', async () => {
+		const setHeaders = vi.fn();
+		const response = await GET(makeEvent({ status: 'open', setHeaders }));
+
+		expect(response.status).toBe(403);
+		expect(setHeaders).toHaveBeenCalledWith({ Vary: 'Cookie' });
+		expect(setHeaders).toHaveBeenCalledWith({ 'Cache-Control': 'private, no-store' });
 	});
 });

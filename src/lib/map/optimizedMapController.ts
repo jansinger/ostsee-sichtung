@@ -42,12 +42,21 @@ import {
 	createSightingPopupContent,
 	type SightingPopupProperties as SightingProperties
 } from './popupContent';
+import type { SightingStatus } from '$lib/components/admin/sightingStatus';
+import { buildSightingsQuery, DEFAULT_MAP_STATUSES } from './statusRequestParams';
 
 const logger = createLogger('map:optimized-controller');
 
 /**
  * Optionen für die Map-Klasse
  */
+/**
+ * Ausgang eines Statuswechsels. `superseded` ist kein Fehler, sondern der
+ * Normalfall bei schnellem Umschalten: Ein neuerer Aufruf hat den laufenden
+ * Request abgebrochen und ist ab dann zuständig.
+ */
+export type StatusChangeResult = 'applied' | 'superseded' | 'failed';
+
 export interface MapOptions {
 	translations: MapTranslations;
 	target: string;
@@ -69,6 +78,11 @@ export interface MapOptions {
 	 * nach dem Initial-Load einen zweiten Request auszulösen.
 	 */
 	initialSearchTerm?: string;
+	/**
+	 * Bearbeitungszustände, die geladen werden. Nur Admins dürfen davon
+	 * abweichen — die API antwortet sonst mit 403.
+	 */
+	initialStatuses?: readonly SightingStatus[];
 	onLoading?: (isLoading: boolean) => void;
 	onError?: (error: Error) => void;
 	/**
@@ -108,6 +122,7 @@ export class SichtungenMap {
 	private hiddenColors: Record<string, boolean> = {};
 	private displayedYear: number;
 	private searchTerm: string = '';
+	private statuses: readonly SightingStatus[] = DEFAULT_MAP_STATUSES;
 	private legendUpdateCallback?: () => void;
 	private yearChangeCallback?: (year: number) => void;
 	private loadingCallback?: (isLoading: boolean) => void;
@@ -241,6 +256,7 @@ export class SichtungenMap {
 		// Initialize the timeFilter with sensible defaults (zeige das ganze Jahr)
 		this.displayedYear = options.initialYear ?? getDefaultSightingYear();
 		this.searchTerm = options.initialSearchTerm ?? '';
+		this.statuses = options.initialStatuses ?? DEFAULT_MAP_STATUSES;
 		const yearStart = new Date(this.displayedYear, 0, 1).getTime();
 		const yearEnd = new Date(this.displayedYear, 11, 31, 23, 59, 59).getTime();
 		this.timeFilter = {
@@ -656,6 +672,54 @@ export class SichtungenMap {
 		}
 	}
 
+	/**
+	 * Wechselt die geladenen Bearbeitungszustände und lädt neu. Analog zu
+	 * setYear(): Der Zeitfilter bleibt unberührt, die Legende aktualisiert der
+	 * Aufrufer über den CountManager.
+	 *
+	 * Anders als setYear() wird ein Fehler hier nicht weitergeworfen, sondern
+	 * ausschließlich über errorCallback gemeldet: Der Aufrufer ist ein
+	 * Event-Handler ohne eigenes catch, ein Rethrow würde dort als unhandled
+	 * promise rejection auflaufen statt den Fehler nutzbar zu machen.
+	 *
+	 * Der Rückgabewert sagt dem Aufrufer trotzdem, was passiert ist — ohne ihn
+	 * zog die Oberfläche Chip und URL auf eine Auswahl, die die Karte gar nicht
+	 * geladen hatte (Review PR #872). Die drei Fälle sind bewusst getrennt:
+	 * `superseded` heißt, ein neuerer Wechsel hat übernommen und ist jetzt
+	 * zuständig — dort darf der Aufrufer NICHT zurückrollen, sonst überschriebe
+	 * er die neuere Auswahl.
+	 */
+	public async setStatuses(statuses: readonly SightingStatus[]): Promise<StatusChangeResult> {
+		this.closePopup();
+		const previous = this.statuses;
+		this.statuses = statuses;
+		this.loadingCallback?.(true);
+		try {
+			await this.loadSightings(this.displayedYear, this.searchTerm);
+			this.reportsLayer.changed();
+			this.legendUpdateCallback?.();
+			this.loadingCallback?.(false);
+			return 'applied';
+		} catch (error) {
+			/* Abbruch: Der neuere Aufruf besitzt jetzt sowohl den Ladezustand als
+			   auch `this.statuses` — hier weder den Spinner ausschalten noch
+			   zurückrollen. */
+			if (error instanceof DOMException && error.name === 'AbortError') return 'superseded';
+			/* Fehlschlag: `loadSightings` leert `reportsSource` erst nach der
+			   Antwort, die Karte zeigt also weiterhin den alten Bestand. Damit
+			   `getStatuses()` nicht etwas anderes behauptet als zu sehen ist,
+			   wird die Auswahl mit zurückgenommen. */
+			this.statuses = previous;
+			this.loadingCallback?.(false);
+			this.errorCallback?.(error instanceof Error ? error : new Error(String(error)));
+			return 'failed';
+		}
+	}
+
+	public getStatuses(): readonly SightingStatus[] {
+		return this.statuses;
+	}
+
 	private async loadSightings(year: number, searchTerm?: string): Promise<void> {
 		// Vorherigen laufenden Request abbrechen (verhindert Race Conditions bei schnellem Wechsel)
 		if (this.activeAbortController) {
@@ -664,10 +728,9 @@ export class SichtungenMap {
 		const abortController = new AbortController();
 		this.activeAbortController = abortController;
 
-		const params = new URLSearchParams({ year: year.toString() });
-		if (searchTerm) params.set('search', searchTerm);
+		const query = buildSightingsQuery(year, searchTerm ?? '', this.statuses);
 
-		const response = await fetch(`/api/map/sightings?${params}`, {
+		const response = await fetch(`/api/map/sightings?${query}`, {
 			signal: abortController.signal
 		});
 		if (!response.ok) {

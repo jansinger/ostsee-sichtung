@@ -14,6 +14,7 @@ import * as m from '$lib/paraglide/messages';
 
 import { getLocale } from '$lib/paraglide/runtime';
 import { resolveDisplayLocale } from '$lib/utils/format/dateTime';
+import type { SightingStatus } from '$lib/components/admin/sightingStatus';
 import { getFeatureColorGroup, isBetween } from './styleUtils';
 
 /**
@@ -28,6 +29,7 @@ export interface SightingListProperties {
 	jt?: number; // Anzahl Jungtiere
 	tf?: boolean; // Totfund
 	waterway?: string; // Fahrwasser
+	st?: SightingStatus; // Bearbeitungszustand
 }
 
 /**
@@ -51,6 +53,7 @@ export interface SightingListEntry {
 	juveniles: number;
 	isDead: boolean;
 	waterway: string | null;
+	status: SightingStatus;
 }
 
 /**
@@ -100,7 +103,10 @@ export function toListEntries(
 			isDead: props.tf ?? false,
 			// || statt ??: die API liefert bei fehlendem Fahrwasser teils '' —
 			// die Tabelle soll dann den Gedankenstrich zeigen, keine leere Zelle
-			waterway: props.waterway || null
+			waterway: props.waterway || null,
+			// Öffentlich liefert die API immer 'approved'; der Fallback hält alte
+			// zwischengespeicherte Features konsistent.
+			status: props.st ?? 'approved'
 		}))
 		.sort((a, b) => b.ts - a.ts);
 }

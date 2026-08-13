@@ -280,6 +280,48 @@ describe('mapUtils', () => {
 	});
 });
 
+describe('sightingsToGeoJSON — Bearbeitungszustand', () => {
+	const base = {
+		id: 1,
+		sightingDate: new Date('2026-06-01T10:00:00Z'),
+		longitude: 12.5,
+		latitude: 54.5,
+		species: 1,
+		totalCount: 2,
+		juvenileCount: 0,
+		isDead: false,
+		nameConsent: false,
+		shipNameConsent: false
+	};
+
+	it('markiert freigegebene Sichtungen als approved', () => {
+		const result = sightingsToGeoJSON([
+			{ ...base, approvedAt: new Date('2026-06-02T08:00:00Z'), rejectedAt: null }
+		] as never);
+		expect(result.features[0].properties.st).toBe('approved');
+	});
+
+	it('markiert abgelehnte Sichtungen als rejected', () => {
+		const result = sightingsToGeoJSON([
+			{ ...base, approvedAt: null, rejectedAt: new Date('2026-06-02T08:00:00Z') }
+		] as never);
+		expect(result.features[0].properties.st).toBe('rejected');
+	});
+
+	it('markiert unbearbeitete Sichtungen als open', () => {
+		const result = sightingsToGeoJSON([{ ...base, approvedAt: null, rejectedAt: null }] as never);
+		expect(result.features[0].properties.st).toBe('open');
+	});
+
+	it('behandelt fehlende Spalten wie offen, nicht wie freigegeben', () => {
+		// Eine Projektion ohne die beiden Spalten darf nicht versehentlich als
+		// "öffentlich" durchgehen — gleiche verweigernde Richtung wie
+		// isSightingApproved() in approvalFilter.ts.
+		const result = sightingsToGeoJSON([base] as never);
+		expect(result.features[0].properties.st).toBe('open');
+	});
+});
+
 describe('areExtentsColocated', () => {
 	it('gibt false zurück bei weniger als 2 Extents', () => {
 		expect(areExtentsColocated([])).toBe(false);

@@ -287,9 +287,14 @@ export async function GET() {
 			isDead: sightingsTable.isDead
 		})
 		.from(sightingsTable)
-		// Öffentliche Grundmenge: geprüft heißt veröffentlicht. Immer auf
-		// approvedAt filtern, nie auf verified — siehe .claude/rules/api.md
-		.where(isNotNull(sightingsTable.approvedAt))
+		// Grundmenge NICHT hier zusammenbauen: mapSightingConditions() aus
+		// publicMapConditions.ts liefert sie, und der Jahres-Endpunkt benutzt
+		// dieselbe Funktion. Zwei eigene Filter laufen auseinander, und dann
+		// zeigt das Jahres-Dropdown Zahlen, die auf der Karte fehlen.
+		// Ohne Argument ist das die öffentliche Menge (approvedAt IS NOT NULL);
+		// mit Argument die Admin-Sicht — siehe .claude/rules/api.md,
+		// Abschnitt „Der Statusfilter der Karte".
+		.where(and(...mapSightingConditions()))
 		.orderBy(sightingsTable.sightingDate);
 
 	return json(sightingsToGeoJSON(sightingsFromDB));
