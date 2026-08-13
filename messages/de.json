@@ -1026,6 +1026,7 @@
 	"routes_about_page_privacy_ohne_zustimmung": "Ohne Zustimmung bleiben sie bei uns.",
 	"routes_about_page_privacy_server_und_datenbank": "Server und Datenbank stehen bei",
 	"routes_about_page_tech_die_plattform_ist_quelloffen": "Die Plattform ist quelloffen und steht unter der",
+	"routes_about_page_tech_ki_hinweis": "Diese Anwendung wurde mit Unterstützung von KI-Werkzeugen entwickelt. Alle Inhalte werden redaktionell vom Deutschen Meeresmuseum geprüft und verantwortet.",
 	"routes_about_page_tech_mit_lizenz": "MIT-Lizenz",
 	"routes_about_page_tech_sie_laeuft_auf_sveltekit": ". Sie läuft auf SvelteKit, einer PostgreSQL-Datenbank mit PostGIS für die Geodaten und OpenLayers für die Karte. Quellcode, Lizenztext und die Möglichkeit, einen Fehler zu melden, finden Sie im Repository.",
 	"routes_about_page_tech_version": "Version",

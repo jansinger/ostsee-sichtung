@@ -459,6 +459,14 @@
 			<strong>{m.routes_about_page_tech_mit_lizenz()}</strong
 			>{m.routes_about_page_tech_sie_laeuft_auf_sveltekit()}
 		</p>
+		<!-- Freiwilliger Transparenzhinweis, keine Pflicht: Quellcode ist von der
+		     Kennzeichnungspflicht des Art. 50 KI-VO ausgenommen, und die Texte
+		     stehen unter redaktioneller Verantwortung des DMM. Bewertung mit
+		     Quellen: docs/EU_AI_ACT_BEWERTUNG.md — vor dem Entfernen oder
+		     Ausweiten dort nachlesen. -->
+		<p class="text-base-content/70 text-support mx-auto mt-4 max-w-3xl text-center">
+			{m.routes_about_page_tech_ki_hinweis()}
+		</p>
 		<div class="mt-6 flex flex-wrap justify-center gap-3">
 			<a
 				href="https://github.com/jansinger/ostsee-tiere"

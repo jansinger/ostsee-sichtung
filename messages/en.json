@@ -1026,6 +1026,7 @@
 	"routes_about_page_privacy_ohne_zustimmung": "Ohne Zustimmung bleiben sie bei uns.",
 	"routes_about_page_privacy_server_und_datenbank": "Server und Datenbank stehen bei",
 	"routes_about_page_tech_die_plattform_ist_quelloffen": "The platform is open source and is licensed under the",
+	"routes_about_page_tech_ki_hinweis": "This application was developed with the support of AI tools. All content is editorially reviewed by the German Oceanographic Museum, which takes responsibility for it.",
 	"routes_about_page_tech_mit_lizenz": "MIT license",
 	"routes_about_page_tech_sie_laeuft_auf_sveltekit": ". It runs on SvelteKit, a PostgreSQL database with PostGIS for geodata, and OpenLayers for the map. You can find the source code, license text and the option to report a bug in the repository.",
 	"routes_about_page_tech_version": "Version",
