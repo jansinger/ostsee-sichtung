@@ -25,6 +25,7 @@
 	} from '$lib/map/urlFilterState';
 	import type { SightingStatus } from '$lib/components/admin/sightingStatus';
 	import { DEFAULT_MAP_STATUSES, isPublicStatusSelection } from '$lib/map/statusRequestParams';
+	import { createYearsRequestSequencer, resolveYearsUpdate } from '$lib/map/yearsRequestSequencer';
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	// Kein `import 'ol/ol.css'` hier: die Datei kommt global aus app.css, und zwar
@@ -272,14 +273,29 @@
 	// Event Handler für Cleanup
 	let keyboardHandler: ((event: KeyboardEvent) => void) | null = null;
 
+	// Renn-Guard für loadAvailableYears (Review-Befund 1/T7.2): loadSightings im
+	// Controller ist per AbortController gegen Überholen abgesichert, dieser
+	// Aufruf hier bislang nicht — siehe Docblock in yearsRequestSequencer.ts für
+	// die zwei konkreten Fehler (Rapid Toggling, stiller Fehlerpfad), gegen die
+	// er absichert.
+	const yearsRequestSequencer = createYearsRequestSequencer();
+
 	/**
 	 * Lädt die verfügbaren Jahre (QW2a-Endpoint) und ermittelt daraus das
 	 * Default-Jahr (QW2b). Fehlerpfad: stiller Fallback auf das bisherige
 	 * Verhalten (getDefaultSightingYear()) — kein Fehler-Toast dafür, da es
 	 * sich um eine reine Komfort-Optimierung handelt.
+	 *
+	 * `availableYearsData` wird nur geschrieben, wenn diese Anfrage sowohl
+	 * noch aktuell ist (kein Überholen durch einen zweiten Statuswechsel) ALS
+	 * AUCH erfolgreich war — ein Fehlschlag lässt die vorher geladene Liste
+	 * unangetastet. Für den allerersten Aufruf ist die „vorherige Liste"
+	 * bereits leer, der stille Fallback oben bleibt also unverändert.
 	 */
 	async function loadAvailableYears(): Promise<number> {
+		const requestId = yearsRequestSequencer.begin();
 		let fetchedYears: YearWithCount[] = [];
+		let succeeded = false;
 		try {
 			const query =
 				statuses.length > 0 && !isPublicStatusSelection(statuses)
@@ -287,16 +303,27 @@
 					: '';
 			const response = await fetch(`/api/map/sightings/years${query}`);
 			if (response.ok) {
+				succeeded = true;
 				const data = await response.json();
 				if (Array.isArray(data?.years)) {
 					fetchedYears = data.years;
 				}
+			} else {
+				console.warn(
+					`Konnte verfügbare Jahre nicht laden (HTTP ${response.status}), behalte bisherige Liste:`
+				);
 			}
 		} catch (err) {
-			console.warn('Konnte verfügbare Jahre nicht laden, nutze Standard-Jahr:', err);
+			console.warn('Konnte verfügbare Jahre nicht laden, behalte bisherige Liste:', err);
 		}
 
-		availableYearsData = fetchedYears;
+		const update = resolveYearsUpdate(
+			yearsRequestSequencer.isCurrent(requestId),
+			succeeded ? { ok: true, years: fetchedYears } : { ok: false }
+		);
+		if (update !== null) {
+			availableYearsData = update;
+		}
 
 		return pickDefaultYear(fetchedYears, initialFallbackYear);
 	}
