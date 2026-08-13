@@ -4,27 +4,42 @@ import { db } from '$lib/server/db';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
 import { berlinDayRangeUtc } from '$lib/server/datetime/berlinDayRange';
 import { consentGatedNameSearch, containsPattern } from '$lib/server/db/consentGatedSearch';
+import { isAdminUser } from '$lib/server/auth/auth';
 import { json } from '@sveltejs/kit';
 import { and, gte, lt, sql } from 'drizzle-orm';
 import { mapSightingConditions } from './publicMapConditions';
+import { resolveMapStatuses } from './statusFilter';
 import type { RequestHandler } from './$types';
 
 const logger = createLogger('api:map:sightings');
 
-export const GET: RequestHandler = async ({ url }) => {
+export const GET: RequestHandler = async ({ url, locals, setHeaders }) => {
 	// Filter-Parameter aus der URL extrahieren
 	const year = url.searchParams.get('year');
 	const search = url.searchParams.get('search');
 
+	// Statusfilter: ohne Parameter bleibt es die öffentliche Grundmenge, jeder
+	// gesetzte Parameter verlangt eine Admin-Anmeldung. Die Entscheidung liegt
+	// in statusFilter.ts, damit sie ohne Route testbar ist.
+	const selection = resolveMapStatuses(url.searchParams.get('status'), isAdminUser(locals.user));
+	if (!selection.ok) {
+		return json({ error: selection.message }, { status: selection.status });
+	}
+
+	if (!selection.isPublicDefault) {
+		// Nicht freigegebene Meldungen dürfen nicht in einem geteilten Cache
+		// landen — sonst liefert ein Proxy sie an Besucher aus.
+		setHeaders({ 'Cache-Control': 'private, no-store' });
+	}
+
 	try {
 		// Erstellen der Abfrage-Bedingungen
 		const conditions = [
-			// Geprüft heißt veröffentlicht (dieselbe Grundmenge wie die Legacy-API,
-			// /sichtungen/showreports.json) UND plausible Ostsee-Koordinaten.
-			// Ohne den Koordinatenfilter fallen NULL-Koordinaten in
-			// sightingsToGeoJSON auf [0,0] zurück ("Null Island"). Identische
+			// Grundmenge: gewählter Bearbeitungszustand UND plausible
+			// Ostsee-Koordinaten. Ohne den Koordinatenfilter fallen NULL-Koordinaten
+			// in sightingsToGeoJSON auf [0,0] zurück ("Null Island"). Identische
 			// Grundmenge wie /api/map/sightings/years — siehe publicMapConditions.ts.
-			...mapSightingConditions()
+			...mapSightingConditions(selection.statuses)
 		];
 
 		// Jahr-Filter hinzufügen, wenn vorhanden
@@ -66,6 +81,9 @@ export const GET: RequestHandler = async ({ url }) => {
 				totalCount: sightingsTable.totalCount,
 				juvenileCount: sightingsTable.juvenileCount,
 				isDead: sightingsTable.isDead,
+				// Bearbeitungszustand — sightingsToGeoJSON leitet daraus `st` ab
+				approvedAt: sightingsTable.approvedAt,
+				rejectedAt: sightingsTable.rejectedAt,
 				// Personenbezogene Daten mit Consent-Flags
 				firstName: sightingsTable.firstName,
 				lastName: sightingsTable.lastName,

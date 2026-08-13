@@ -51,6 +51,14 @@ import { GET } from './+server';
 
 type Condition = { op: string; column: string };
 
+function makeEvent(): Parameters<typeof GET>[0] {
+	return {
+		url: new URL('http://localhost/api/map/sightings/years'),
+		locals: { user: null },
+		setHeaders: vi.fn()
+	} as unknown as Parameters<typeof GET>[0];
+}
+
 describe('GET /api/map/sightings/years', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -60,7 +68,7 @@ describe('GET /api/map/sightings/years', () => {
 	});
 
 	it('nutzt dieselbe Grundmenge wie die Karte (Freigabe + Koordinatenfilter)', async () => {
-		await GET({} as Parameters<typeof GET>[0]);
+		await GET(makeEvent());
 
 		const conditions = mockWhere.mock.calls.at(-1)?.[0] as Condition[];
 		const notNullColumns = conditions
@@ -79,7 +87,7 @@ describe('GET /api/map/sightings/years', () => {
 			{ year: 2023, count: 7 }
 		]);
 
-		const response = await GET({} as Parameters<typeof GET>[0]);
+		const response = await GET(makeEvent());
 		const body = await response.json();
 
 		expect(body).toEqual({
@@ -93,7 +101,7 @@ describe('GET /api/map/sightings/years', () => {
 	it('wandelt String-Werte (bigint/numeric aus Postgres) in Zahlen um', async () => {
 		mockOrderBy.mockResolvedValueOnce([{ year: '2025', count: '42' }]);
 
-		const response = await GET({} as Parameters<typeof GET>[0]);
+		const response = await GET(makeEvent());
 		const body = await response.json();
 
 		expect(body).toEqual({ years: [{ year: 2025, count: 42 }] });
@@ -102,7 +110,7 @@ describe('GET /api/map/sightings/years', () => {
 	it('liefert ein leeres Array, wenn keine Sichtungen vorhanden sind', async () => {
 		mockOrderBy.mockResolvedValueOnce([]);
 
-		const response = await GET({} as Parameters<typeof GET>[0]);
+		const response = await GET(makeEvent());
 		const body = await response.json();
 
 		expect(body).toEqual({ years: [] });
@@ -111,7 +119,7 @@ describe('GET /api/map/sightings/years', () => {
 	it('fängt DB-Fehler ab und liefert 500 ohne interne Details', async () => {
 		mockOrderBy.mockRejectedValueOnce(new Error('boom - interne Details'));
 
-		const response = await GET({} as Parameters<typeof GET>[0]);
+		const response = await GET(makeEvent());
 
 		expect(response.status).toBe(500);
 		const body = await response.json();

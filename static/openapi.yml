@@ -1900,7 +1900,20 @@ paths:
         Sichtungen mit fehlenden oder unplausiblen Koordinaten werden serverseitig
         ausgeschlossen, damit keine "Null Island"-Marker ([0,0]) auf der Karte
         erscheinen.
+
+        Mit `status` (nur Admin) lassen sich zusätzlich offene und abgelehnte
+        Meldungen einbeziehen — die öffentliche Antwort bleibt unverändert.
       parameters:
+        - name: status
+          in: query
+          description: |
+            Bearbeitungszustände, kommasepariert (`open`, `approved`, `rejected`).
+            **Nur mit angemeldeter Admin-Session.** Ohne diesen Parameter liefert
+            der Endpunkt unverändert nur freigegebene Sichtungen; mit dem
+            Parameter und ohne Admin-Rechte antwortet er mit 403.
+          schema:
+            type: string
+            example: "open,rejected"
         - name: bbox
           in: query
           description: Bounding Box (minLon,minLat,maxLon,maxLat)
@@ -1951,7 +1964,9 @@ paths:
                     items:
                       $ref: '#/components/schemas/SightingGeoFeature'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          description: Unbekannter oder leerer Statuswert
+        '403':
+          description: Statusfilter ohne Admin-Anmeldung angefragt
         '500':
           description: >-
             Interner Serverfehler. Es wird ausschließlich eine generische
@@ -1984,6 +1999,20 @@ paths:
         Koordinatenfilter identisch), damit Jahres-Dropdown und Kartendaten nie
         auseinanderlaufen. Das Kalenderjahr wird in deutscher Ortszeit gebildet
         (Europe/Berlin), nicht UTC.
+
+        Mit `status` (nur Admin) lassen sich zusätzlich offene und abgelehnte
+        Meldungen einbeziehen — die öffentliche Antwort bleibt unverändert.
+      parameters:
+        - name: status
+          in: query
+          description: |
+            Bearbeitungszustände, kommasepariert (`open`, `approved`, `rejected`).
+            **Nur mit angemeldeter Admin-Session.** Ohne diesen Parameter liefert
+            der Endpunkt unverändert nur freigegebene Sichtungen; mit dem
+            Parameter und ohne Admin-Rechte antwortet er mit 403.
+          schema:
+            type: string
+            example: "open,rejected"
       responses:
         '200':
           description: Verfügbare Jahre mit Anzahl der Sichtungen
@@ -2014,6 +2043,10 @@ paths:
                     count: 817
                   - year: 2024
                     count: 632
+        '400':
+          description: Unbekannter oder leerer Statuswert
+        '403':
+          description: Statusfilter ohne Admin-Anmeldung angefragt
         '500':
           description: >-
             Interner Serverfehler. Es wird ausschließlich eine generische

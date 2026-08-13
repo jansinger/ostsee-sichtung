@@ -2,9 +2,11 @@ import { createLogger } from '$lib/logger.server';
 import { db } from '$lib/server/db';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
 import { berlinDatePart } from '$lib/server/db/sqlTimeZone';
+import { isAdminUser } from '$lib/server/auth/auth';
 import { json } from '@sveltejs/kit';
 import { and, sql } from 'drizzle-orm';
 import { mapSightingConditions } from '../publicMapConditions';
+import { resolveMapStatuses } from '../statusFilter';
 import type { RequestHandler } from './$types';
 
 const logger = createLogger('api:map:sightings:years');
@@ -17,7 +19,18 @@ const logger = createLogger('api:map:sightings:years');
  * `berlinDatePart('year', ...)` gebildet — derselbe Ausdruck wie überall sonst
  * im Projekt, damit der vorhandene Ausdrucksindex (`idx_year_sichtungen`) greift.
  */
-export const GET: RequestHandler = async () => {
+export const GET: RequestHandler = async ({ url, locals, setHeaders }) => {
+	// Muss denselben Statusfilter fahren wie GET /api/map/sightings — sonst
+	// zeigt das Jahres-Dropdown Zahlen, die auf der Karte nicht auftauchen.
+	const selection = resolveMapStatuses(url.searchParams.get('status'), isAdminUser(locals.user));
+	if (!selection.ok) {
+		return json({ error: selection.message }, { status: selection.status });
+	}
+
+	if (!selection.isPublicDefault) {
+		setHeaders({ 'Cache-Control': 'private, no-store' });
+	}
+
 	try {
 		const yearExpression = berlinDatePart('year', sightingsTable.sightingDate);
 
@@ -27,7 +40,7 @@ export const GET: RequestHandler = async () => {
 				count: sql<number | string>`COUNT(*)`
 			})
 			.from(sightingsTable)
-			.where(and(...mapSightingConditions()))
+			.where(and(...mapSightingConditions(selection.statuses)))
 			.groupBy(yearExpression)
 			.orderBy(sql`${yearExpression} DESC`);
 

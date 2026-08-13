@@ -29,6 +29,7 @@ vi.mock('$lib/server/db/schema', async () => {
 			sightingDate: 'sightingDate',
 			verified: 'verified',
 			approvedAt: 'approvedAt',
+			rejectedAt: 'rejectedAt',
 			firstName: 'firstName',
 			lastName: 'lastName',
 			nameConsent: 'nameConsent',
@@ -56,6 +57,8 @@ vi.mock('drizzle-orm', async () => {
 		lt: vi.fn((a, b) => ({ a, b })),
 		eq: vi.fn((a, b) => ({ a, b })),
 		isNotNull: vi.fn((a) => ({ isNotNull: a })),
+		or: vi.fn((...args) => ({ or: args })),
+		isNull: vi.fn((a) => ({ isNull: a })),
 		sql: Object.assign(
 			vi.fn((strings: TemplateStringsArray) => String(strings.raw[0])),
 			{
@@ -134,5 +137,56 @@ describe('Contract: GET /api/map/sightings', () => {
 		// öffentliche Flächen können auseinanderlaufen — deshalb hier nur eine.
 		expect(isNotNull).toHaveBeenCalledWith('approvedAt');
 		expect(eq).not.toHaveBeenCalledWith('verified', 1);
+	});
+});
+
+describe('GET /api/map/sightings — Statusfilter', () => {
+	beforeEach(() => {
+		mockWhere.mockClear();
+	});
+
+	it('antwortet ohne Anmeldung mit 403, sobald status gesetzt ist', async () => {
+		const response = await GET(
+			createEvent('/api/map/sightings', { searchParams: { status: 'open' } })
+		);
+		expect(response.status).toBe(403);
+		expect(mockWhere).not.toHaveBeenCalled();
+	});
+
+	it('antwortet für Admins mit 200', async () => {
+		const response = await GET(
+			createEvent('/api/map/sightings', {
+				searchParams: { status: 'open,rejected' },
+				locals: { user: mockAdminUser }
+			})
+		);
+		expect(response.status).toBe(200);
+		expect(mockWhere).toHaveBeenCalled();
+	});
+
+	it('antwortet für Admins mit 400 bei unbekanntem Status', async () => {
+		const response = await GET(
+			createEvent('/api/map/sightings', {
+				searchParams: { status: 'verified' },
+				locals: { user: mockAdminUser }
+			})
+		);
+		expect(response.status).toBe(400);
+		expect(mockWhere).not.toHaveBeenCalled();
+	});
+
+	it('setzt für den Admin-Fall einen privaten Cache-Header', async () => {
+		const event = createEvent('/api/map/sightings', {
+			searchParams: { status: 'open' },
+			locals: { user: mockAdminUser }
+		});
+		await GET(event);
+		expect(event.setHeaders).toHaveBeenCalledWith({ 'Cache-Control': 'private, no-store' });
+	});
+
+	it('setzt ohne Statusparameter keinen Cache-Header', async () => {
+		const event = createEvent('/api/map/sightings');
+		await GET(event);
+		expect(event.setHeaders).not.toHaveBeenCalled();
 	});
 });
