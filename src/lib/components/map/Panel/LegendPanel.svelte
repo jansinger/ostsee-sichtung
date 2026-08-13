@@ -299,6 +299,13 @@
 			<p class="text-base-content/70 text-xs">
 				{m.components_map_panel_legendpanel_text_status_abgelehnt_erklaerung()}
 			</p>
+			<!-- Ein Cluster ist eine Menge, kein Einzelfall: Der durchgezogene Ring
+			     sagt „alle hier sind freigegeben", nicht „die meisten". Ohne diesen
+			     Satz liest sich ein gestrichelter Cluster als „diese Sichtungen sind
+			     offen" — bei 659 offenen unter 19.289 wäre das fast immer falsch. -->
+			<p class="text-base-content/70 text-xs">
+				{m.components_map_panel_legendpanel_text_status_cluster_erklaerung()}
+			</p>
 		</div>
 	{/if}
 </MapPanel>

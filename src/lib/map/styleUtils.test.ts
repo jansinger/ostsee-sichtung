@@ -68,7 +68,9 @@ vi.mock('ol/style', () => {
 
 import { Feature } from 'ol';
 import type { Geometry } from 'ol/geom';
+import type { SightingStatus } from '$lib/components/admin/sightingStatus';
 import {
+	aggregateClusterStatus,
 	clearStyleCache,
 	clusterStyleSteps,
 	createClusterStyle,
@@ -479,5 +481,77 @@ describe('Marker-Optik je Bearbeitungszustand', () => {
 		// ersten — der Fehler wäre auf der Karte nur zufällig sichtbar.
 		expect(strokeDashOf('open')).toEqual([6, 4]);
 		expect(strokeDashOf('approved')).toBeUndefined();
+	});
+});
+
+describe('aggregateClusterStatus (Bearbeitungsstand eines Clusters)', () => {
+	it('freigegeben nur, wenn jede enthaltene Sichtung freigegeben ist', () => {
+		expect(aggregateClusterStatus(['approved', 'approved'])).toBe('approved');
+	});
+
+	it('ein leerer Cluster gilt als freigegeben', () => {
+		// Kommt auf der Karte nicht vor (createFilteredClusterStyle steigt bei
+		// visibleCount === 0 vorher aus), darf aber nicht undefined liefern.
+		expect(aggregateClusterStatus([])).toBe('approved');
+	});
+
+	it('offen, sobald eine offene Sichtung enthalten ist', () => {
+		expect(aggregateClusterStatus(['approved', 'open'])).toBe('open');
+		expect(aggregateClusterStatus(['rejected', 'open'])).toBe('open');
+	});
+
+	it('abgelehnt, wenn neben Freigaben nur Ablehnungen enthalten sind', () => {
+		/* „Offen" schlägt „abgelehnt": Offen ist der Zustand, der noch Arbeit
+		   verlangt — er darf von der selteneren Ablehnung nicht verdeckt werden
+		   (im Bestand 659 offene gegen 5 abgelehnte). */
+		expect(aggregateClusterStatus(['approved', 'rejected'])).toBe('rejected');
+		expect(aggregateClusterStatus(['rejected'])).toBe('rejected');
+	});
+});
+
+describe('createClusterStyle — Bearbeitungsstand am Ring', () => {
+	function clusterStroke(status?: SightingStatus) {
+		clearStyleCache();
+		const style = createClusterStyle(7, status);
+		const image = (style as unknown as { getImage(): unknown }).getImage() as {
+			getStroke: () => { getLineDash: () => number[] | null; getLineCap: () => string | undefined };
+		};
+		return image.getStroke();
+	}
+
+	it('zeichnet einen rein freigegebenen Cluster durchgezogen', () => {
+		expect(clusterStroke('approved').getLineDash()).toBeNull();
+	});
+
+	it('zeichnet einen Cluster ohne Statusangabe durchgezogen', () => {
+		// Die öffentliche Karte kennt keinen Status — die Optik dort bleibt gleich.
+		expect(clusterStroke(undefined).getLineDash()).toBeNull();
+	});
+
+	it('nutzt dieselben Strichmuster wie der Einzelmarker', () => {
+		/* Eine Quelle für beide Ebenen: Wer am Marker das Muster ändert, ändert es
+		   am Cluster mit — sonst driften die zwei Aussagen derselben Legende. */
+		expect(clusterStroke('open').getLineDash()).toEqual([6, 4]);
+		expect(clusterStroke('rejected').getLineDash()).toEqual([2, 5]);
+		expect(clusterStroke('rejected').getLineCap()).toBe('round');
+		expect(clusterStroke('open').getLineCap()).toBe('butt');
+	});
+
+	it('cacht Cluster je Status getrennt', () => {
+		/* Der Cache-Schlüssel lief bis hierher nur über die Größe. Ohne den Status
+		   darin erbte jeder spätere Cluster derselben Größe die Optik des ersten —
+		   ein Fehler, der nur bei gemischten Daten sichtbar wird. */
+		clearStyleCache();
+		const offen = createClusterStyle(7, 'open');
+		const freigegeben = createClusterStyle(7, 'approved');
+		expect(freigegeben).not.toBe(offen);
+		const dashOf = (s: typeof offen) =>
+			(
+				(s as unknown as { getImage(): { getStroke(): { getLineDash(): number[] | null } } })
+					.getImage()
+					.getStroke() as { getLineDash(): number[] | null }
+			).getLineDash();
+		expect(dashOf(offen)).toEqual([6, 4]);
+		expect(dashOf(freigegeben)).toBeNull();
 	});
 });

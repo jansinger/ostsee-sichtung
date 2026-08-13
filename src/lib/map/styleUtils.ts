@@ -53,7 +53,8 @@ const defaultRadius = 8;
  * - Anzahl der Tiere = Zahl unter dem Marker (ab 2 Tieren)
  * - Schwarzer Ring = Totfund (Zustands-Kanal, überschreibt die Gruppenfarbe)
  * - Strichmuster des Rings = Bearbeitungszustand (nur in der Admin-Ansicht
- *   ungleich „freigegeben": gestrichelt = offen, gepunktet = abgelehnt)
+ *   ungleich „freigegeben": gestrichelt = offen, gepunktet = abgelehnt) —
+ *   am Einzelmarker wie am Cluster-Ring, siehe `aggregateClusterStatus`
  * Legende (LegendPanel.svelte) rendert aus genau diesen Konstanten.
  */
 export type SpeciesCategory = 'kleinwal' | 'grosswal' | 'robbe' | 'unbekannt';
@@ -341,10 +342,41 @@ export function getClusterStyleStep(size: number): ClusterStyleStep {
 }
 
 /**
- * Erstellt einen Style für ein Cluster mit der angegebenen Anzahl sichtbarer Sichtungen
+ * Bearbeitungsstand eines ganzen Clusters — aggregiert aus den enthaltenen
+ * Sichtungen. Die Aussage ist dieselbe wie am Einzelmarker, nur über eine Menge:
+ * durchgezogen heißt „alle hier sind freigegeben", nicht „die meisten".
+ *
+ * Die Rangfolge ist `open` > `rejected` > `approved` und nicht die Mehrheit.
+ * Eine Mehrheitsregel hätte bei 19.289 freigegebenen gegen 659 offene und
+ * 5 abgelehnte (Stand 2026-08-13) praktisch jeden Cluster als „freigegeben"
+ * ausgewiesen — also genau die Falschaussage bestätigt, gegen die dieser Kanal
+ * angelegt wurde. `open` schlägt `rejected`, weil offen der Zustand ist, der
+ * noch Arbeit verlangt; die seltenere Ablehnung darf ihn nicht verdecken.
+ *
+ * Der Preis dieser Regel ist bekannt und gewollt: Mit dem Statusfilter auf
+ * „alle" ist auf kleinen Zoomstufen kaum ein Cluster rein freigegeben, das
+ * Muster ist dort also wenig trennscharf. Trennscharf wird es über den
+ * Statusfilter — und wahr ist es in beiden Fällen.
  */
-export function createClusterStyle(size: number): Style {
-	const clusterKey = `cluster_${size}`;
+export function aggregateClusterStatus(statuses: Iterable<SightingStatus>): SightingStatus {
+	let hasRejected = false;
+	for (const status of statuses) {
+		if (status === 'open') return 'open';
+		if (status === 'rejected') hasRejected = true;
+	}
+	return hasRejected ? 'rejected' : 'approved';
+}
+
+/**
+ * Erstellt einen Style für ein Cluster mit der angegebenen Anzahl sichtbarer
+ * Sichtungen. `status` kommt aus `aggregateClusterStatus` und ist außerhalb der
+ * Admin-Ansicht immer `approved` — die öffentliche Karte sieht damit dieselbe
+ * Optik wie bisher.
+ */
+export function createClusterStyle(size: number, status: SightingStatus = 'approved'): Style {
+	// Der Status gehört in den Schlüssel: Ohne ihn erbte jeder spätere Cluster
+	// derselben Größe die Optik des ersten (Test „cacht Cluster je Status getrennt").
+	const clusterKey = `cluster_${size}#${status}`;
 
 	if (styleCache[clusterKey]) {
 		return styleCache[clusterKey] as Style;
@@ -356,7 +388,15 @@ export function createClusterStyle(size: number): Style {
 		image: new Circle({
 			radius: step.radius,
 			fill: new Fill({ color: step.color + 'E6' }), // 90% Deckung
-			stroke: new Stroke({ color: '#FFFFFF', width: 2 })
+			stroke: new Stroke({
+				color: '#FFFFFF',
+				width: 2,
+				// Dieselben Konstanten wie am Einzelmarker — eine Quelle, eine Legende.
+				// Bei Strichbreite 2 und Radius 18–35 gerendert geprüft: beide Muster
+				// bleiben gegeneinander und gegen „durchgezogen" unterscheidbar.
+				lineDash: STATUS_LINE_DASH[status],
+				lineCap: STATUS_LINE_CAP[status]
+			})
 		}),
 		text: new Text({
 			text: size.toString(),

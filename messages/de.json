@@ -114,6 +114,7 @@
 	"components_map_panel_legendpanel_text_seezeichen_tonnen_openseamap": "Seezeichen & Tonnen (OpenSeaMap)",
 	"components_map_panel_legendpanel_text_so_lesen_sie_die_karte": "So lesen Sie die Karte:",
 	"components_map_panel_legendpanel_text_status_abgelehnt_erklaerung": "Gepunktet: abgelehnt, nicht veröffentlicht",
+	"components_map_panel_legendpanel_text_status_cluster_erklaerung": "Ein Cluster trägt das Muster, sobald nicht alle enthaltenen Sichtungen freigegeben sind — durchgezogen heißt also \u201ealle freigegeben\u201c, nicht \u201edie meisten\u201c.",
 	"components_map_panel_legendpanel_text_status_offen_erklaerung": "Gestrichelt: offen, noch nicht bearbeitet",
 	"components_map_panel_legendpanel_title_legende": "Legende",
 	"components_map_panel_mappanel_aria_label_title_schliessen": "{title} schließen",
