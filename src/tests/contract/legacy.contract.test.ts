@@ -1,6 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createEvent } from './helpers/createEvent';
 import { asApiResponse } from './helpers/asApiResponse';
+/*
+ * Die vier Routen-Module bewusst statisch am Dateikopf, nicht per
+ * `await import()` im Testkörper — gleiche Begründung wie in
+ * `src/routes/sichtungen/showreports.json/localePinning.test.ts`: Der Modulgraph
+ * zieht über die formOptions den kompletten Paraglide-Barrel
+ * (`$lib/paraglide/messages` → 1.306 Einzelmodule) nach. Dessen Transform kostet
+ * im vollen `test:quick`-Lauf ~5 s, weil 340 Testdateien parallel um dieselben
+ * Kerne konkurrieren, und lief damit im Testkörper in Vitests 5000-ms-Grenze pro
+ * Test. Am Dateikopf zählt derselbe Aufwand zur Collect-Phase, für die keine
+ * Test-Zeitgrenze gilt. `vi.mock` wird über alle Importe gehoben, die Attrappen
+ * oben greifen also unverändert.
+ */
+import { POST } from '../../routes/rest_sichtungen/+server';
+import { GET as getAntworten } from '../../routes/rest_sichtungen/antworten.json/+server';
+import { GET as getInBaltic } from '../../routes/rest_sichtungen/inBaltic.json/+server';
+import { GET as getShowreports } from '../../routes/sichtungen/showreports.json/+server';
 
 // ─── Shared hoisted mocks ───────────────────────────────────────────────────
 
@@ -20,7 +36,6 @@ vi.mock('$lib/server/db/sightingRepository', () => ({
 	saveSighting: mockSaveSighting,
 	countRecentDuplicateSignals: vi.fn().mockResolvedValue({ sameEmail: 0, sameNotes: 0 })
 }));
-
 
 // Spam-Detektor mocken: verhindert echte MX-DNS-Lookups im Contract-Test.
 vi.mock('$lib/server/spam/spamDetector', () => ({
@@ -175,7 +190,6 @@ describe('Contract: POST /rest_sichtungen', () => {
 	});
 
 	it('returns 201 and satisfies the OpenAPI spec', async () => {
-		const { POST } = await import('../../routes/rest_sichtungen/+server');
 		const event = createEvent('/rest_sichtungen', {
 			method: 'POST',
 			body: {
@@ -200,7 +214,6 @@ describe('Contract: POST /rest_sichtungen', () => {
 			errors: { anzahl_gesamt: ['Dieses Feld kann nicht leer gelassen werden.'] }
 		});
 
-		const { POST } = await import('../../routes/rest_sichtungen/+server');
 		const event = createEvent('/rest_sichtungen', {
 			method: 'POST',
 			body: {}
@@ -215,7 +228,6 @@ describe('Contract: POST /rest_sichtungen', () => {
 		enforceRateLimit.mockImplementationOnce(() => {
 			throw { status: 429, body: { message: 'Too many requests' } };
 		});
-		const { POST } = await import('../../routes/rest_sichtungen/+server');
 		const event = createEvent('/rest_sichtungen', {
 			method: 'POST',
 			body: {
@@ -237,9 +249,8 @@ describe('Contract: POST /rest_sichtungen', () => {
 
 describe('Contract: GET /rest_sichtungen/antworten.json', () => {
 	it('returns 200 and satisfies the OpenAPI spec', async () => {
-		const { GET } = await import('../../routes/rest_sichtungen/antworten.json/+server');
 		const event = createEvent('/rest_sichtungen/antworten.json');
-		const res = await GET(event);
+		const res = await getAntworten(event);
 		const apiRes = await asApiResponse(res, event);
 
 		expect(apiRes.status).toBe(200);
@@ -247,9 +258,8 @@ describe('Contract: GET /rest_sichtungen/antworten.json', () => {
 	});
 
 	it('returns all required option groups', async () => {
-		const { GET } = await import('../../routes/rest_sichtungen/antworten.json/+server');
 		const event = createEvent('/rest_sichtungen/antworten.json');
-		const res = await GET(event);
+		const res = await getAntworten(event);
 		const body = await res.json();
 
 		const required = [
@@ -275,11 +285,10 @@ describe('Contract: GET /rest_sichtungen/antworten.json', () => {
 
 describe('Contract: GET /rest_sichtungen/inBaltic.json', () => {
 	it('returns 200 with valid location and satisfies the OpenAPI spec', async () => {
-		const { GET } = await import('../../routes/rest_sichtungen/inBaltic.json/+server');
 		const event = createEvent('/rest_sichtungen/inBaltic.json', {
 			searchParams: { location: '54.3233,13.0814' }
 		});
-		const res = await GET(event);
+		const res = await getInBaltic(event);
 		const apiRes = await asApiResponse(res, event);
 
 		expect(apiRes.status).toBe(200);
@@ -287,9 +296,8 @@ describe('Contract: GET /rest_sichtungen/inBaltic.json', () => {
 	});
 
 	it('returns 400 when location parameter is missing', async () => {
-		const { GET } = await import('../../routes/rest_sichtungen/inBaltic.json/+server');
 		const event = createEvent('/rest_sichtungen/inBaltic.json');
-		const res = await GET(event);
+		const res = await getInBaltic(event);
 
 		expect(res.status).toBe(400);
 	});
@@ -302,9 +310,8 @@ describe('Contract: GET /sichtungen/showreports.json', () => {
 	});
 
 	it('returns 200 empty array and satisfies the OpenAPI spec', async () => {
-		const { GET } = await import('../../routes/sichtungen/showreports.json/+server');
 		const event = createEvent('/sichtungen/showreports.json');
-		const res = await GET(event);
+		const res = await getShowreports(event);
 		const apiRes = await asApiResponse(res, event);
 
 		expect(apiRes.status).toBe(200);
@@ -332,9 +339,8 @@ describe('Contract: GET /sichtungen/showreports.json', () => {
 			}
 		]);
 
-		const { GET } = await import('../../routes/sichtungen/showreports.json/+server');
 		const event = createEvent('/sichtungen/showreports.json');
-		const res = await GET(event);
+		const res = await getShowreports(event);
 		const apiRes = await asApiResponse(res, event);
 
 		expect(apiRes.status).toBe(200);
@@ -362,9 +368,8 @@ describe('Contract: GET /sichtungen/showreports.json', () => {
 			}
 		]);
 
-		const { GET } = await import('../../routes/sichtungen/showreports.json/+server');
 		const event = createEvent('/sichtungen/showreports.json');
-		const res = await GET(event);
+		const res = await getShowreports(event);
 		const body = await res.json();
 
 		expect(typeof body[0].lat).toBe('string');

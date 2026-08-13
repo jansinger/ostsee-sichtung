@@ -14,6 +14,24 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { RequestEvent } from '@sveltejs/kit';
+/*
+ * `./+server` und die Paraglide-Runtime bewusst statisch am Dateikopf, nicht per
+ * `await import()` im Testkörper: Der Modulgraph hinter `+server.ts` zieht über
+ * `formOptions/species.ts` den kompletten Paraglide-Barrel
+ * (`$lib/paraglide/messages` → 1.306 Einzelmodule) nach. Dessen Transform kostet
+ * hier isoliert ~2,3 s und im vollen `test:quick`-Lauf 4,6–5,2 s, weil 340
+ * Testdateien parallel um dieselben Kerne konkurrieren. Im Testkörper fällt das
+ * unter Vitests 5000-ms-Grenze pro Test — der Test lief damit unter Last
+ * zuverlässig in einen Timeout, ohne dass am Endpunkt irgendetwas kaputt war.
+ * Am Dateikopf zählt derselbe Aufwand zur Collect-Phase, für die keine
+ * Test-Zeitgrenze gilt (so macht es auch `showreports.test.ts` nebenan).
+ *
+ * Die Reihenfolge ist dabei unkritisch: `+server.ts` pinnt die Locale erst beim
+ * Aufruf (`getSpeciesLabel(..., baseLocale)`), nicht beim Import. Der Test bleibt
+ * also scharf — `vi.mock` wird ohnehin über alle Importe gehoben.
+ */
+import { baseLocale, overwriteGetLocale } from '$lib/paraglide/runtime';
+import { GET } from './+server';
 
 const DIVERGED_EN_LABEL = 'TEST-ONLY-DIVERGED-ENGLISH-LABEL';
 
@@ -74,19 +92,16 @@ function createMockRequestEvent(): RequestEvent {
 }
 
 describe('GET /sichtungen/showreports.json — Locale-Pinnung', () => {
-	afterEach(async () => {
+	afterEach(() => {
 		// overwriteGetLocale() überschreibt die Modul-Funktion dauerhaft ohne
 		// eingebauten Reset — auf den echten Default zurückschalten, damit
 		// andere Tests im selben Prozess nicht die englische Locale erben.
-		const { overwriteGetLocale, baseLocale } = await import('$lib/paraglide/runtime');
 		overwriteGetLocale(() => baseLocale);
 	});
 
 	it('liefert die deutsche Artbezeichnung (ta), obwohl die aktive Locale Englisch ist und die englische Botschaft nachweislich abweicht', async () => {
-		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
 		overwriteGetLocale(() => 'en');
 
-		const { GET } = await import('./+server');
 		const response = await GET(createMockRequestEvent());
 		const body = await response.json();
 
