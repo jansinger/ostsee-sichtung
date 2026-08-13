@@ -10,6 +10,13 @@
  * Was es NICHT anfasst:
  *  - Schlüssel, deren englischer Wert bereits vom deutschen abweicht — die sind
  *    von Hand übersetzt und dürfen nicht überschrieben werden.
+ *  - Schlüssel aus `BEWUSST_GLEICH` (`scripts/deeplIdentical.ts`). Sie brauchen
+ *    diesen zweiten Schutz, weil die Regel darüber sie nicht erfassen KANN: Ihre
+ *    englische Fassung stimmt absichtlich mit der deutschen überein, gilt damit
+ *    bei jedem Lauf wieder als offen und wurde am 2026-08-13 viermal neu
+ *    „übersetzt" — `Land` zu „Country", die Domain `Meeresmuseum.de` zu
+ *    „Oceanographic Museum.de". Eine Korrektur, die beide Sprachen gleichsetzt,
+ *    gehört deshalb ins Register, sonst hält sie nur bis zum nächsten Lauf.
  *  - `messages/de.json` (die Quelle) und `germanBaseline.json`.
  *  - Den Datenschutz-Abschnitt auf `/about` (`routes_about_page_privacy_*`).
  *    Diese Sätze wurden mehrfach gegen die Datenschutzerklärung des Museums
@@ -81,6 +88,7 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import * as prettier from 'prettier';
+import { BEWUSST_GLEICH } from './deeplIdentical';
 import { entferneSchutz, schuetzePlatzhalter } from './deeplXml';
 
 const DE_PATH = 'messages/de.json';
@@ -275,6 +283,9 @@ for (const [key, deWert] of Object.entries(de)) {
 	if (key.startsWith('$')) continue;
 	if (FILTER && !key.startsWith(FILTER)) continue;
 	if (!INCLUDE_PRIVACY && key.startsWith(PRIVACY_PREFIX)) continue;
+	// Bewusst in beiden Sprachen gleich → der Vergleich unten kann diese
+	// Schlüssel nicht schützen, siehe `deeplIdentical.ts`.
+	if (BEWUSST_GLEICH.has(key)) continue;
 	const enWert = en[key];
 	// Bereits von Hand übersetzt → unangetastet lassen.
 	if (JSON.stringify(deWert) !== JSON.stringify(enWert)) continue;
