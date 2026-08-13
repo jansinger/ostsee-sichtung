@@ -669,8 +669,14 @@ export class SichtungenMap {
 	 * Wechselt die geladenen Bearbeitungszustände und lädt neu. Analog zu
 	 * setYear(): Der Zeitfilter bleibt unberührt, die Legende aktualisiert der
 	 * Aufrufer über den CountManager.
+	 *
+	 * Anders als setYear() wird ein Fehler hier nicht weitergeworfen, sondern
+	 * ausschließlich über errorCallback gemeldet: Der Aufrufer ist ein
+	 * Event-Handler ohne eigenes catch, ein Rethrow würde dort als unhandled
+	 * promise rejection auflaufen statt den Fehler nutzbar zu machen.
 	 */
 	public async setStatuses(statuses: readonly SightingStatus[]): Promise<void> {
+		this.closePopup();
 		this.statuses = statuses;
 		this.loadingCallback?.(true);
 		try {
