@@ -113,8 +113,9 @@
 	"components_map_panel_legendpanel_text_kartenebenen": "Map layers",
 	"components_map_panel_legendpanel_text_seezeichen_tonnen_openseamap": "Navigation marks & buoys (OpenSeaMap)",
 	"components_map_panel_legendpanel_text_so_lesen_sie_die_karte": "How to read the map:",
-	"components_map_panel_legendpanel_text_status_abgelehnt_erklaerung": "Dotted: rejected, not published",
-	"components_map_panel_legendpanel_text_status_offen_erklaerung": "Dashed: open, not yet processed",
+	"components_map_panel_legendpanel_text_status_abgelehnt_erklaerung": "not published",
+	"components_map_panel_legendpanel_text_status_freigegeben_erklaerung": "publicly visible",
+	"components_map_panel_legendpanel_text_status_offen_erklaerung": "not yet processed",
 	"components_map_panel_legendpanel_title_legende": "Legend",
 	"components_map_panel_mappanel_aria_label_title_schliessen": "Close {title}",
 	"components_map_panel_mappanel_aria_label_title_vergroessern": "Expand {title}",
@@ -518,6 +519,7 @@
 	"map_optimizedmapcontroller_text_fehler_beim_laden_der_sichtungen": "Error loading sightings",
 	"map_optimizedmapcontroller_text_popup_schliessen": "Close pop-up",
 	"map_popupcontent_text_art_id": "Species {id}",
+	"map_popupcontent_text_bearbeitungsstand": "Processing state",
 	"map_popupcontent_text_sichtungen_an_diesem_ort": "{sichtungen} at this location",
 	"map_popupcontent_text_sichtungen_plural": [
 		{

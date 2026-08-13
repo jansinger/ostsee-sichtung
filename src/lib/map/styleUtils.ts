@@ -94,7 +94,7 @@ export const TOTFUND_RING_COLOR = '#000000';
  * gegen `[6, 4]` klar unterscheidbar und hält die Kontur. Verglichen wurden
  * `[1, 4]` (butt), `[2, 5]` und `[1, 7]` (beide round) am gerenderten Bild.
  */
-const STATUS_LINE_DASH: Record<SightingStatus, number[] | undefined> = {
+export const STATUS_LINE_DASH: Record<SightingStatus, number[] | undefined> = {
 	approved: undefined,
 	open: [6, 4],
 	rejected: [2, 5]
@@ -105,7 +105,7 @@ const STATUS_LINE_DASH: Record<SightingStatus, number[] | undefined> = {
  * Striche an beiden Enden verlängern und den Unterschied zu `rejected`
  * verkleinern, genau den Kanal also schwächen, um den es hier geht.
  */
-const STATUS_LINE_CAP: Record<SightingStatus, 'butt' | 'round'> = {
+export const STATUS_LINE_CAP: Record<SightingStatus, 'butt' | 'round'> = {
 	approved: 'butt',
 	open: 'butt',
 	rejected: 'round'

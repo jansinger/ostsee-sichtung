@@ -10,6 +10,10 @@ import * as m from '$lib/paraglide/messages';
 import { getLocale } from '$lib/paraglide/runtime';
 import { sanitizeText } from '$lib/utils/sanitize';
 import { resolveDisplayLocale } from '$lib/utils/format/dateTime';
+import {
+	SIGHTING_STATUS_PRESENTATION,
+	type SightingStatus
+} from '$lib/components/admin/sightingStatus';
 import type { MapTranslations } from './mapUtils';
 
 /** Feature-Properties einer Sichtung, wie sie im GeoJSON ankommen. */
@@ -19,10 +23,42 @@ export interface SightingPopupProperties {
 	jt?: number; // Jungtiere
 	ts?: number; // Timestamp (Unix-Sekunden)
 	tf?: boolean; // Totfund
+	st?: SightingStatus; // Bearbeitungszustand (öffentlich immer 'approved')
 	shipname?: string;
 	waterway?: string;
 	name?: string;
 	firstname?: string;
+}
+
+/**
+ * Wort zum Bearbeitungsstand — `null` für freigegebene Sichtungen.
+ *
+ * Der Ring codiert den Zustand über sein Strichmuster (`STATUS_LINE_DASH`);
+ * ohne Wort im Popup lässt sich ein gestrichelter Ring nirgends verifizieren.
+ * Für Nicht-Admins ist `st` immer `'approved'` — dass genau dieser Zustand
+ * kein Wort trägt, hält die öffentliche Karte damit unverändert, ohne dass die
+ * Popup-Builder einen Admin-Kontext kennen müssten.
+ *
+ * Die Beschriftung kommt aus den Botschaften und **nicht** aus
+ * `SIGHTING_STATUS_PRESENTATION[...].label`: Das sind deutsche Literale fürs
+ * Backoffice. Die `badgeClass` von dort ist dagegen genau die eine Quelle für
+ * die Farbe und wird übernommen.
+ */
+const STATUS_LABELS: Record<SightingStatus, () => string> = {
+	open: m.components_map_panel_filterpanel_text_status_offen,
+	approved: m.components_map_panel_filterpanel_text_status_freigegeben,
+	rejected: m.components_map_panel_filterpanel_text_status_abgelehnt
+};
+
+function statusLabel(status: SightingStatus | undefined): string | null {
+	if (!status || status === 'approved') return null;
+	return STATUS_LABELS[status]();
+}
+
+function statusBadge(status: SightingStatus | undefined): string {
+	const label = statusLabel(status);
+	if (!label || !status) return '';
+	return `<span class="badge badge-sm ${SIGHTING_STATUS_PRESENTATION[status].badgeClass}">${sanitizeText(label)}</span>`;
 }
 
 // M5: timeZone explizit setzen, sonst bestimmt die Browser-Zone das Datum
@@ -84,6 +120,15 @@ export function createSightingPopupContent(
 			</div>
 	`;
 
+	const status = statusBadge(props.st);
+	if (status) {
+		content += `
+			<div class="popup-row">
+				<strong>${m.map_popupcontent_text_bearbeitungsstand()}:</strong> ${status}
+			</div>
+		`;
+	}
+
 	if (props.waterway) {
 		content += `
 			<div class="popup-row">
@@ -135,6 +180,11 @@ export function createClusterListContent(
 		// Sprache bei eins, und das geschützte Leerzeichen steht als Zeichen IN der
 		// Botschaft statt als HTML-Entität daneben.
 		const tiere = m.map_popupcontent_text_tiere_plural({ count: props.ct });
+		// In der Liste ist der Ring nicht mehr zu sehen — der Bearbeitungsstand
+		// wäre hier sonst vollständig verloren. Auch im aria-label, sonst hört
+		// die Sprachausgabe die Unterscheidung nicht, die das Auge sieht.
+		const statusName = statusLabel(props.st);
+		const status = statusBadge(props.st);
 
 		items += `
 			<li>
@@ -142,11 +192,12 @@ export function createClusterListContent(
 					type="button"
 					data-cluster-index="${index}"
 					class="cluster-list-item"
-					aria-label="${name}, ${tiere}, ${date}"
+					aria-label="${name}, ${tiere}, ${date}${statusName ? `, ${sanitizeText(statusName)}` : ''}"
 				>
 					<span class="cluster-item-species">${name}${deadBadge}</span>
 					<span class="cluster-item-count">${tiere}</span>
 					<span class="cluster-item-date">${date}</span>
+					${status}
 				</button>
 			</li>
 		`;
