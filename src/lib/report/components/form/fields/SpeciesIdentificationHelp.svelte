@@ -257,9 +257,17 @@
 										<span class={currentValue == species.enum ? 'text-primary font-semibold' : ''}>
 											{species.name}
 										</span>
-										<span class="badge badge-xs {frequencyBadge[species.frequency.level]}">
-											{getFrequencyLabels()[species.frequency.level]}
-										</span>
+										<!-- Ohne Häufigkeitsstufe kein Abzeichen: Die beiden Platzhalter
+										     („Unbekannte Walart"/„Unbekannte Robbenart") trugen sonst
+										     dasselbe „Heimisch" wie der Schweinswal — eine Einordnung,
+										     die niemand vornehmen kann, der die Art nicht bestimmt hat
+										     (Anmerkung des Meeresmuseums). Der erklärende Text darunter
+										     bleibt. -->
+										{#if species.frequency.level}
+											<span class="badge badge-xs {frequencyBadge[species.frequency.level]}">
+												{getFrequencyLabels()[species.frequency.level]}
+											</span>
+										{/if}
 									</div>
 								</summary>
 								<div class="collapse-content px-4 pb-3">

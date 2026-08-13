@@ -104,7 +104,14 @@ export interface SpeciesIdentificationEntry {
 	scientificName: string;
 	size: string;
 	weight: string;
-	frequency: { level: FrequencyLevel; text: string };
+	/**
+	 * `level` fehlt bei den beiden Platzhaltern („Unbekannte Walart",
+	 * „Unbekannte Robbenart"): Wer die Art nicht bestimmen konnte, weiß auch
+	 * nicht, ob sie hier heimisch ist — das Abzeichen behauptete es trotzdem
+	 * (Anmerkung des Meeresmuseums, 2026-08-13). Der `text` bleibt in beiden
+	 * Fällen und erklärt, wann der Platzhalter zu wählen ist.
+	 */
+	frequency: { level?: FrequencyLevel; text: string };
 	/** Was bei einer typischen Sichtung tatsächlich zu sehen ist. */
 	surfacing: string[];
 	distinguishing: IdentificationFeature[];
@@ -642,7 +649,7 @@ export const speciesIdentification: Record<SpeciesEnum, SpeciesIdentificationEnt
 		size: 'Vergleichen Sie die Länge mit Ihrem Boot statt in Metern zu schätzen',
 		weight: 'Keine Angabe nötig',
 		frequency: {
-			level: 'resident',
+			// Kein `level`: siehe `SpeciesIdentificationEntry.frequency`.
 			text: 'Bitte wählen, wenn Sie sich nicht sicher sind. Eine unsichere Meldung mit Foto ist wertvoller als gar keine Meldung — raten Sie nicht.'
 		},
 		surfacing: [
@@ -680,7 +687,7 @@ export const speciesIdentification: Record<SpeciesEnum, SpeciesIdentificationEnt
 		size: 'Größe im Wasser zuverlässig zu schätzen ist kaum möglich',
 		weight: 'Keine Angabe nötig',
 		frequency: {
-			level: 'resident',
+			// Kein `level`: siehe `SpeciesIdentificationEntry.frequency`.
 			text: 'Bitte wählen, wenn Sie sich nicht sicher sind. Gerade junge Kegelrobben und Seehunde sind im Wasser kaum zu trennen.'
 		},
 		surfacing: [
