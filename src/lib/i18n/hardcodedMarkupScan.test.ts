@@ -99,7 +99,7 @@ const REMEDIATION = [
 /**
  * Der Extraktions-Plan, einmal je Testlauf.
  *
- * `planExtraction` liest 102 Dateien und parst 84 davon mit dem
+ * `planExtraction` liest 104 Dateien und parst 86 davon mit dem
  * Svelte-Compiler; drei Zusicherungen mit je eigenem Lauf wären dreimal
  * dieselbe Arbeit.
  */
@@ -125,12 +125,17 @@ describe('Mechanisch — der Extraktor findet in Schicht C nichts mehr', () => {
 
 	/* Selbsttest. Ein Guard, der über eine leere Dateimenge läuft, ist grün und
 	   beweist nichts — das war der „stille Nullbefund" aus Aufgabe 1. */
-	it('scannt die 85 Markup-Dateien im Umfang', () => {
+	it('scannt die 86 Markup-Dateien im Umfang', () => {
 		// 84 seit Aufgabe 2.3a, +1 seit Aufgabe 2.5: `HreflangHead.svelte`
 		// (`src/lib/components/seo/`) ist neuer, in-scope Code ohne eigenen
 		// Anzeigetext — der Zuwachs bestätigt, dass der Scan sie mitzählt,
 		// nicht dass sie etwas Neues zu übersetzen hätte.
-		expect(svelteFiles()).toHaveLength(85);
+		//
+		// +1 seit dem 2026-08-13: `ReportHeading.svelte` — der gemeinsame Kopf
+		// von Einstiegsseite und Formular. Auch dort ist der Zuwachs nur ein
+		// Umzug: Beide Texte hingen vorher an `ModernReportForm.svelte` und
+		// stehen unverändert in beiden Sprachdateien.
+		expect(svelteFiles()).toHaveLength(86);
 	});
 });
 
