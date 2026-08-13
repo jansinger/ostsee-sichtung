@@ -5,8 +5,15 @@
  * **Auf `true` seit 2026-08-13 (Entscheidung Jan).** Die drei Riegel, die
  * diese Konstante bündelt, sind damit gelöst:
  *
- *  1. Der Sprachumschalter ist wieder in `PublicNavbar.svelte` eingebunden
- *     (`{#if TRANSLATION_ROLLOUT_COMPLETE && !connection.isOffline}`).
+ *  1. Der Sprachumschalter ist wieder eingebunden — allerdings nicht mehr in
+ *     `PublicNavbar.svelte`, sondern im Profilmenü (`UserMenu.svelte` und
+ *     `UserMenuMobile.svelte`). In der Navbar konkurrierte er bei 320px mit
+ *     dem Offline-Abzeichen um den Platz; im Profilmenü ist diese Konkurrenz
+ *     strukturell aufgelöst (`e2e/submit-offline.spec.ts` hält beides fest).
+ *     Sichtbar ist er zusätzlich nur für Superadmins — das entscheidet
+ *     serverseitig `showLanguageSwitcher` in `+layout.server.ts`, nicht diese
+ *     Konstante. Wer den Umschalter allgemein freigeben will, ändert dort das
+ *     Prädikat; diese Konstante hier bleibt davon unberührt.
  *  2. `/en`-Antworten tragen den `X-Robots-Tag: noindex, follow`-Header aus
  *     `noindexEnglishPages.ts` nicht mehr — die Bedingung dort greift nur
  *     bei `false`.

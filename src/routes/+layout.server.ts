@@ -21,14 +21,16 @@ export const load = (async ({ locals }) => {
 
 	// Security: Only send minimal user data to frontend
 	// Remove sensitive role information
-	const publicUser: PublicUser | null = locals.user ? {
-		sub: locals.user.sub,
-		email: locals.user.email,
-		name: locals.user.name,
-		picture: locals.user.picture,
-		nickname: locals.user.nickname,
-		// REMOVED: roles - this prevents frontend manipulation
-	} : null;
+	const publicUser: PublicUser | null = locals.user
+		? {
+				sub: locals.user.sub,
+				email: locals.user.email,
+				name: locals.user.name,
+				picture: locals.user.picture,
+				nickname: locals.user.nickname
+				// REMOVED: roles - this prevents frontend manipulation
+			}
+		: null;
 
 	return {
 		user: publicUser,
@@ -38,10 +40,13 @@ export const load = (async ({ locals }) => {
 		// Server-side computed admin status for UI rendering
 		showAdminMenu: isAdmin,
 		/* Der Sprachumschalter ist vorerst nur für Superadmins sichtbar
-		   (Entscheidung Jan, 2026-08-13): Die englische Fassung ist erst zu
-		   ~13 % übersetzt, soll aber im Betrieb prüfbar sein. Serverseitig
-		   berechnet wie `showAdminMenu` — `PublicUser` trägt die Rollen
-		   bewusst nicht, sie sind aus dem Frontend-Typ herausgefiltert. */
+		   (Entscheidung Jan, 2026-08-13): Die englische Fassung ist weitgehend
+		   vorübersetzt, aber nicht muttersprachlich abgenommen — sie soll im
+		   Betrieb prüfbar sein, ohne sie schon allen Besuchern anzubieten.
+		   Bewusst ohne Prozentzahl: Der Stand ändert sich, die Begründung
+		   nicht. Serverseitig berechnet wie `showAdminMenu` — `PublicUser`
+		   trägt die Rollen bewusst nicht, sie sind aus dem Frontend-Typ
+		   herausgefiltert. */
 		showLanguageSwitcher: isSuperAdminUser(locals.user),
 		maintenanceConfig
 	};
