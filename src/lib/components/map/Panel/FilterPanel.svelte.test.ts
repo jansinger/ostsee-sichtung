@@ -385,4 +385,61 @@ describe('Statusfilter', () => {
 		// behauptet die Oberfläche eine Auswahl, die nie in Kraft trat.
 		await expect.element(page.getByLabelText('Freigegeben')).toBeChecked();
 	});
+
+	// Finding 3 (Pre-Merge-Review): Die refuste Abwahl blieb bisher stumm — die
+	// Checkbox flippt und flippt zurück, ohne dass irgendwo etwas gesagt wird.
+	// Das liest sich wie ein kaputtes Bedienelement, obwohl der Nutzer die
+	// Sperre auflösen kann (erst einen anderen Status anhaken).
+	it('zeigt beim Abwählen des letzten Status eine Meldung im fieldset', async () => {
+		render(FilterPanel, {
+			years: YEARS,
+			isOpen: true,
+			showStatusFilter: true,
+			statuses: ['approved']
+		});
+
+		const fieldset = document.querySelector('fieldset');
+		expect(fieldset?.querySelector('[role="status"]')).toBeNull();
+
+		await page.getByLabelText('Freigegeben').click();
+
+		const status = fieldset?.querySelector('[role="status"]');
+		expect(status).not.toBeNull();
+		expect(status?.getAttribute('aria-live')).toBe('polite');
+		expect(status?.textContent).toContain(
+			'Mindestens ein Bearbeitungsstand muss ausgewählt bleiben.'
+		);
+		expect(fieldset?.getAttribute('aria-describedby')).toBe(status?.id);
+	});
+
+	it('meldet nicht role="alert" für die Refusal-Meldung (kein unterbrechender Fehler)', async () => {
+		render(FilterPanel, {
+			years: YEARS,
+			isOpen: true,
+			showStatusFilter: true,
+			statuses: ['approved']
+		});
+
+		await page.getByLabelText('Freigegeben').click();
+
+		expect(document.querySelector('fieldset [role="alert"]')).toBeNull();
+	});
+
+	it('löscht die Refusal-Meldung nach einer erfolgreichen Statusänderung', async () => {
+		render(FilterPanel, {
+			years: YEARS,
+			isOpen: true,
+			showStatusFilter: true,
+			statuses: ['approved']
+		});
+
+		await page.getByLabelText('Freigegeben').click();
+		expect(document.querySelector('fieldset [role="status"]')).not.toBeNull();
+
+		await page.getByLabelText('Offen').click();
+
+		await vi.waitFor(() => {
+			expect(document.querySelector('fieldset [role="status"]')).toBeNull();
+		});
+	});
 });

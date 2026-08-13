@@ -96,6 +96,7 @@
 	"components_map_panel_filterpanel_text_status_abgelehnt": "Abgelehnt",
 	"components_map_panel_filterpanel_text_status_freigegeben": "Freigegeben",
 	"components_map_panel_filterpanel_text_status_hinweis": "Nur für angemeldete Admins sichtbar",
+	"components_map_panel_filterpanel_text_status_mindestens_ein_muss_ausgewaehlt": "Mindestens ein Bearbeitungsstand muss ausgewählt bleiben.",
 	"components_map_panel_filterpanel_text_status_offen": "Offen",
 	"components_map_panel_filterpanel_text_suchen": "Suchen",
 	"components_map_panel_filterpanel_text_zeitraum": "Zeitraum",

@@ -96,6 +96,7 @@
 	"components_map_panel_filterpanel_text_status_abgelehnt": "Rejected",
 	"components_map_panel_filterpanel_text_status_freigegeben": "Approved",
 	"components_map_panel_filterpanel_text_status_hinweis": "Visible to signed-in admins only",
+	"components_map_panel_filterpanel_text_status_mindestens_ein_muss_ausgewaehlt": "At least one processing state must remain selected.",
 	"components_map_panel_filterpanel_text_status_offen": "Open",
 	"components_map_panel_filterpanel_text_suchen": "Search",
 	"components_map_panel_filterpanel_text_zeitraum": "Period",

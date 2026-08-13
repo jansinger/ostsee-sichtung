@@ -44,6 +44,15 @@
 		rejected: m.components_map_panel_filterpanel_text_status_abgelehnt()
 	};
 
+	// Finding 3 (Pre-Merge-Review): Eine refuste Abwahl war bisher stumm — die
+	// Checkbox flippt und flippt zurück, ohne dass etwas gesagt wird. Das liest
+	// sich wie ein kaputtes Bedienelement, obwohl die Sperre auflösbar ist
+	// (erst einen anderen Status anhaken) — nach `.claude/rules/design-system.md`
+	// ("Wo die Sperre eine fehlende Eingabe meint, ist eine Fehlermeldung die
+	// richtige Form") gehört hier eine Meldung hin, kein stummes Zurückspringen.
+	let statusRefusalMessage: string | null = $state(null);
+	const statusRefusalId = 'status-filter-refusal';
+
 	function toggleStatus(status: SightingStatus, event: Event): void {
 		const next = statuses.includes(status)
 			? statuses.filter((entry: SightingStatus) => entry !== status)
@@ -57,8 +66,11 @@
 			// und die Checkbox zeigt einen Zustand, der nie übernommen wurde —
 			// von Hand zurücksetzen ist hier kein überflüssiger Rest.
 			(event.currentTarget as HTMLInputElement).checked = statuses.includes(status);
+			statusRefusalMessage =
+				m.components_map_panel_filterpanel_text_status_mindestens_ein_muss_ausgewaehlt();
 			return;
 		}
+		statusRefusalMessage = null;
 		onStatusChange?.([...next]);
 	}
 
@@ -146,7 +158,10 @@
 		</div>
 
 		{#if showStatusFilter}
-			<fieldset class="fieldset w-full">
+			<fieldset
+				class="fieldset w-full"
+				aria-describedby={statusRefusalMessage ? statusRefusalId : undefined}
+			>
 				<legend class="label py-1">
 					<span class="text-sm font-medium">{m.components_map_panel_filterpanel_text_status()}</span
 					>
@@ -172,6 +187,16 @@
 						{m.components_map_panel_filterpanel_text_status_hinweis()}
 					</span>
 				</div>
+				<!-- Finding 3: role="status" statt role="alert" — eine refuste Abwahl
+				     ist kein unterbrechender Fehlerzustand, sondern eine auflösbare
+				     Sperre. Kein Toast: der sitzt auf z-overlay über der Karte, während
+				     dieses Panel auf Mobile ein Bottom-Sheet ist und genau den Bereich
+				     verdeckte, den man gerade bedient hat. -->
+				{#if statusRefusalMessage}
+					<div class="label py-0" id={statusRefusalId} role="status" aria-live="polite">
+						<span class="text-error text-xs">{statusRefusalMessage}</span>
+					</div>
+				{/if}
 			</fieldset>
 		{/if}
 
