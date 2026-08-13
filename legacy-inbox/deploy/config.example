@@ -15,6 +15,14 @@ DATEN_DIR="/var/www/vhosts/schweinswalsichtung.de/legacy-inbox-data"
 # Node-Laufzeit. Plesk liefert mehrere mit; gebraucht wird >= 18 wegen fetch.
 NODE="/opt/plesk/node/24/bin/node"
 
+# Systembenutzer der Domain, unter dem der Sync laufen soll. Plesk vergibt ihn
+# beim Anlegen des Abonnements; nach einer Migration heißt er anders. Steht er
+# hier statt fest im Skript, meldet sich sync-root.sh mit einer brauchbaren
+# Anleitung, statt still liegenzubleiben.
+#
+#   plesk bin subscription --info <domain> | grep -i "system user"
+SYNC_USER="beispiel._abcdefghijk"
+
 # Verzeichnis der Werkzeuge im deployten Repo. Das Sync-Werkzeug kommt von
 # dort, damit es mit dem Repo aktuell bleibt statt als Kopie zu driften.
 REPO_TOOLS="/var/www/vhosts/schweinswalsichtung.de/repo/src/tools"

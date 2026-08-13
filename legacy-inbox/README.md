@@ -382,23 +382,42 @@ ssh hawking "sudo -n grep 'to=<…>' /var/log/maillog | tail -2"
 
 ### Einrichtung auf dem Server
 
-Die Skripte liegen unter `legacy-inbox/deploy/` und werden mit dem Repo
-deployt. Auf dem Server liegen daneben nur zwei Dinge, die dort hingehören:
+Zwei Orte, und die Unterscheidung ist der häufigste Stolperstein:
 
-| Datei                                                     | Herkunft                        | Eigentümer                                   |
-| --------------------------------------------------------- | ------------------------------- | -------------------------------------------- |
-| `sync.sh`, `sync-root.sh`, `client-report.sh`, `melde.sh` | Repo (`deploy/`)                | Domain-Benutzer, außer `sync-root.sh` (root) |
-| `config`                                                  | aus `config.example` abgeleitet | Domain-Benutzer                              |
+| Ort                                     | Inhalt           | Herkunft                                  |
+| --------------------------------------- | ---------------- | ----------------------------------------- |
+| `…/repo/legacy-inbox/deploy/`           | die vier Skripte | Repo, kommt mit `plesk ext git --deploy`  |
+| `…/schweinswalsichtung.de/legacy-sync/` | nur `config`     | von Hand, aus `config.example` abgeleitet |
 
-`config` bleibt bewusst außerhalb des Repos: Sie nennt die Empfängeradresse
-der Störungsmeldungen.
+Die Skripte werden **aus dem Repo-Verzeichnis** aufgerufen; der Plesk-Zeitplan
+zeigt auf `…/repo/legacy-inbox/deploy/sync-root.sh`. Die `config` bleibt
+außerhalb, weil sie die Empfängeradresse der Störungsmeldungen nennt und
+deshalb nicht ins öffentliche Repo gehört. Ihr Pfad steht fest in den Skripten
+und lässt sich über die Umgebungsvariable `LEGACY_SYNC_CONFIG` überschreiben —
+das ist zugleich der Weg, das Ganze woanders zu betreiben.
+
+Deshalb tauchen in den Beispielen oben beide Pfade auf: `legacy-sync/…` überall
+dort, wo es um die Konfiguration geht, `deploy/…` beim Aufruf.
+
+Rechte, an denen es beim Einrichten scheiterte:
+
+- `config` und `melde.sh` müssen für den **Domain-Benutzer** lesbar sein —
+  `sync.sh` läuft unter ihm, nicht als root.
+- `sync-root.sh` läuft als root und gibt die Rechte selbst ab.
 
 Beide Zeitpläne sind serverweite Plesk-Aufgaben als `root` — **nicht** auf
 Abonnement-Ebene. Der Grund: Plesk führt Abonnement-Aufgaben in einer
 chroot-Umgebung aus, in deren `passwd` der Domain-Benutzer nicht steht, weil
 seine Shell auf `/bin/false` gesetzt ist. Das zu ändern hieße, SSH-Zugang zu
-öffnen — ein zu hoher Preis für einen Zeitplan. `sync-root.sh` gibt die Rechte
-stattdessen sofort per `runuser` ab.
+öffnen — ein zu hoher Preis für einen Zeitplan.
+
+Der Systembenutzer selbst steht in der `config` (`SYNC_USER`) und nicht im
+Skript. Plesk vergibt ihn beim Anlegen des Abonnements; nach einer Migration
+heißt er anders. Stünde er fest im Code, liefe der Zeitplan als root weiter,
+`runuser` fiele auf die Nase, und weil `melde.sh` erst in `sync.sh` eingebunden
+würde, käme darüber nie eine Meldung — der Sync stünde still, ohne dass es
+jemand erfährt. `sync-root.sh` prüft deshalb selbst und meldet mit dem Befehl,
+der den aktuellen Namen liefert.
 
 ## Tests
 

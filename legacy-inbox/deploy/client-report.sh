@@ -26,7 +26,22 @@
 set -u
 
 VERZEICHNIS=$(dirname "$0")
-. "$VERZEICHNIS/config"
+KONFIG="${LEGACY_SYNC_CONFIG:-/var/www/vhosts/schweinswalsichtung.de/legacy-sync/config}"
+
+# Fehlende oder unlesbare Bausteine ausdrücklich abfangen. Ohne diese Prüfung
+# scheitert der Lauf zwar auch, aber an einer Folgewirkung: `set -u` meldet
+# dann eine nicht gesetzte Variable, und im Cron-Protokoll steht ein Fehler,
+# der nichts mit der Ursache zu tun hat. Genau dieser Fall trat beim
+# Einrichten auf, als melde.sh root-eigen mit Modus 640 lag.
+for BAUSTEIN in "$KONFIG" "$VERZEICHNIS/melde.sh"; do
+	if [ ! -r "$BAUSTEIN" ]; then
+		echo "Nicht lesbar: $BAUSTEIN"
+		echo "Prüfen: existiert die Datei, und gehört sie dem ausführenden Benutzer?"
+		exit 1
+	fi
+done
+
+. "$KONFIG"
 . "$VERZEICHNIS/melde.sh"
 
 LOGS=/var/www/vhosts/system/schweinswalsichtung.de/logs
