@@ -52,6 +52,23 @@
  * ersetzt Bindestriche durch Halbgeviertstriche. Beides ist zulässiges Englisch
  * und maschinell nicht sicher von gewollter Zeichensetzung zu trennen.
  *
+ * **Blockweise arbeiten — `--limit` gilt auch für `--write`.** Ein `--filter x
+ * --write` schreibt ALLE Segmente der Klasse, auch die ungesehenen. Weil ein
+ * geschriebener Schlüssel beim nächsten Lauf nicht mehr als unübersetzt gilt
+ * (EN weicht dann von DE ab), lässt sich die Liste sicher in Blöcken abarbeiten:
+ *
+ * ```bash
+ * … --filter sighting_ --limit 15          # Block ansehen
+ * … --filter sighting_ --limit 15 --write  # genau diesen Block schreiben
+ * … --filter sighting_ --limit 15          # der nächste Block rückt nach
+ * ```
+ *
+ * **Pro Feldgruppe prüfen, nicht pro Segment.** Der teuerste Befund dieses
+ * Werkzeugs (2026-08-13) war eine Terminologie-Spaltung über vier Segmente
+ * hinweg — jedes für sich vertretbar übersetzt, zusammen zwei Begriffe für
+ * dieselbe Sache im selben Formularfeld. Eine Stichprobe, die Segmente einzeln
+ * bewertet, findet das nicht.
+ *
  * Nach `--write` gehört zwingend gefahren: `npm run i18n:compile`,
  * `npm run check`, `npm run test:quick`. Und dann gelesen — Stichproben im
  * Diff, besonders bei kurzen Segmenten, die Teil eines größeren Satzes sind.
