@@ -91,7 +91,7 @@
 										variant="failed"
 										announce="status"
 										title={m.report_components_formhelp_title_statistiken_konnten_nicht_geladen_werden()}
-										description="Das Formular funktioniert vollständig — nur die Zahlen in diesem Hilfetext fehlen."
+										description={m.report_components_formhelp_description_das_formular_funktioniert_voll()}
 									/>
 								{:else}
 									<div class="grid grid-cols-2 gap-4 text-center text-sm">
@@ -131,7 +131,7 @@
 						<div class="card bg-base-100 p-4">
 							<h4 class="mb-2 flex items-center gap-2 font-semibold">
 								<Icon icon="lucide:map-pin" width="16" class="text-primary" />
-								Schritt 1: Position & Zeitpunkt
+								{m.report_components_formhelp_text_schritt_1_position_zeitpunkt()}
 							</h4>
 							<ul class="space-y-1 text-xs">
 								<li>
@@ -156,7 +156,7 @@
 						<div class="card bg-base-100 p-4">
 							<h4 class="mb-2 flex items-center gap-2 font-semibold">
 								<Icon icon="lucide:binoculars" width="16" class="text-primary" />
-								Schritt 2: Angaben zum Tier
+								{m.report_components_formhelp_text_schritt_2_angaben_zum_tier()}
 							</h4>
 							<ul class="space-y-1 text-xs">
 								<li>
@@ -166,8 +166,9 @@
 									     eigenständige Seite. Für die Mehrheit der Nutzer ist sie so nicht
 									     erreichbar, der iframe bleibt (Museum, 2026-08-04).
 									     Belege: docs/IFRAME_EINBETTUNG.md -->
-									<strong>Tierart:</strong> Bei Unsicherheit „Unbekannte Walart" oder „Unbekannte
-									Robbenart" wählen <SpeciesIdentificationHelp />
+									<strong>{m.report_components_formhelp_text_tierart_term()}</strong>
+									{m.report_components_formhelp_text_bei_unsicherheit_unbekannte_walart_oder()}
+									<SpeciesIdentificationHelp />
 								</li>
 								<li>
 									<strong>{m.report_components_formhelp_term_anzahl()}</strong>
@@ -187,7 +188,7 @@
 						<div class="card bg-base-100 p-4">
 							<h4 class="mb-2 flex items-center gap-2 font-semibold">
 								<Icon icon="lucide:eye" width="16" class="text-primary" />
-								Schritt 3: Weitere Informationen
+								{m.report_components_formhelp_text_schritt_3_weitere_informationen()}
 							</h4>
 							<ul class="space-y-1 text-xs">
 								<li>
@@ -217,7 +218,8 @@
 										{:else}
 											–
 										{/if}
-									</strong> der Beobachter füllen Zusatzfelder aus - Sie helfen bei Populationsmodellen
+									</strong>
+									{m.report_components_formhelp_text_der_beobachter_fuellen_zusatzfelder_aus()}
 								</div>
 							</div>
 						</div>
@@ -225,7 +227,7 @@
 						<div class="card bg-base-100 p-4">
 							<h4 class="mb-2 flex items-center gap-2 font-semibold">
 								<Icon icon="lucide:mail" width="16" class="text-primary" />
-								Schritt 4: Kontaktdaten
+								{m.report_components_formhelp_text_schritt_4_kontaktdaten()}
 							</h4>
 							<ul class="space-y-1 text-xs">
 								<li>
@@ -273,7 +275,8 @@
 									</div>
 									<div class="text-base-content/70 mt-1 text-xs">
 										{#if !loading && statistics && statistics.uniqueUsers > 0}
-											{statistics.uniqueUsers.toLocaleString(zahlenLocale)} Personen haben bereits gemeldet
+											{statistics.uniqueUsers.toLocaleString(zahlenLocale)}
+											{m.report_components_formhelp_text_personen_haben_bereits_gemeldet()}
 										{:else}
 											{m.report_components_formhelp_text_viele_beobachtende_melden_bereits_regelm()}
 										{/if}
@@ -296,8 +299,8 @@
 									</div>
 									<div class="text-base-content/70 mt-1 text-xs">
 										{#if !loading && statistics}
-											{statistics.sightingsWithMedia.toLocaleString(zahlenLocale)} freigegebene Sichtungen
-											mit Medien dokumentiert
+											{statistics.sightingsWithMedia.toLocaleString(zahlenLocale)}
+											{m.report_components_formhelp_text_freigegebene_sichtungen_mit_medien()}
 										{:else}
 											{m.report_components_formhelp_text_durch_ihre_fotos_wissenschaftlich_dokume()}
 										{/if}

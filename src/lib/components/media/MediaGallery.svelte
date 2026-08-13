@@ -52,7 +52,7 @@
 		{#if showTitle}
 			<div class="mb-4 flex items-center gap-2">
 				<Icon icon="lucide:images" width="20" class="text-primary" />
-				<h4 class="text-lg font-semibold">Medien ({files.length})</h4>
+				<h4 class="text-lg font-semibold">{m.components_media_mediagallery_text_medien()} ({files.length})</h4>
 			</div>
 		{/if}
 
@@ -62,7 +62,7 @@
 				<div class="mb-2 flex items-center gap-2">
 					<Icon icon="lucide:images" width="16" class="text-secondary-strong" />
 					<h5 class="text-base-content/70 text-sm font-medium">
-						Bilder ({imageFiles.length})
+						{m.components_media_mediagallery_text_bilder()} ({imageFiles.length})
 					</h5>
 				</div>
 				<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -79,7 +79,7 @@
 				<div class="mb-2 flex items-center gap-2">
 					<Icon icon="lucide:video" width="16" class="text-secondary-strong" />
 					<h5 class="text-base-content/70 text-sm font-medium">
-						Videos ({videoFiles.length})
+						{m.components_media_mediagallery_text_videos()} ({videoFiles.length})
 					</h5>
 				</div>
 				<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -96,7 +96,7 @@
 				<div class="mb-2 flex items-center gap-2">
 					<Icon icon="lucide:file-text" width="16" class="text-secondary-strong" />
 					<h5 class="text-base-content/70 text-sm font-medium">
-						Andere Dateien ({otherFiles.length})
+						{m.components_media_mediagallery_text_andere_dateien()} ({otherFiles.length})
 					</h5>
 				</div>
 				<div class="space-y-2">
@@ -108,7 +108,7 @@
 									{file.originalName}
 								</p>
 								<p class="text-base-content/60 text-xs">
-									{(file.size / 1024).toFixed(1)} KB
+									{(file.size / 1024).toFixed(1)} {m.components_media_mediagallery_text_kb()}
 								</p>
 							</div>
 							<a

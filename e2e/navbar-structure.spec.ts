@@ -269,27 +269,65 @@ test.describe('TopBar — Struktur und Umbruchfreiheit', () => {
 	});
 
 	/**
-	 * Der Sprachumschalter (`LanguageSwitcher.svelte`) ist bewusst aus der
-	 * Navbar entfernt, solange keine einzige Zeichenkette übersetzt ist —
-	 * Begründung und Entfernungsbedingung stehen bei `TRANSLATION_ROLLOUT_COMPLETE`
-	 * (`$lib/i18n/translationRolloutStage.ts`). Dieser Test nagelt die
-	 * Abwesenheit fest: Ohne ihn wäre die Einbindung in `PublicNavbar.svelte`
-	 * beim nächsten Umbau unbemerkt wieder herstellbar — die Komponente selbst
-	 * bleibt ja funktionsfähig und ihre eigenen Tests blieben grün.
+	 * Der Sprachumschalter (`LanguageSwitcher.svelte`) sitzt seit dem 2026-08-13
+	 * NICHT mehr als eigener Knopf in der Navbar-Zeile, sondern als Eintrag im
+	 * Profilmenü (`UserMenu`/`UserMenuMobile`) — und dort nur für Superadmins
+	 * (`showLanguageSwitcher` aus `+layout.server.ts`).
+	 *
+	 * Für einen anonymen Besucher ist er damit gar nicht im DOM: Das Profilmenü
+	 * rendert ohne `user` nichts, und das Flag wäre ohnehin `false`. Genau das
+	 * prüft dieser Test — er hält fest, dass der Umschalter nicht versehentlich
+	 * in die öffentliche Navigationszeile zurückwandert.
 	 *
 	 * Erkennung über `[hreflang]`, das einzige Attribut, das ausschließlich der
-	 * Umschalter im Header trägt (siehe `LanguageSwitcher.svelte`) — derselbe
-	 * Selektor, den `i18n-link-sweep.spec.ts` zum Ausschließen des Umschalters
-	 * aus dem Verweis-Sweep verwendet.
-	 *
-	 * Mutationsnachweis (2026-08-11): `{#if TRANSLATION_ROLLOUT_COMPLETE && ...}`
-	 * in `PublicNavbar.svelte` probeweise auf `{#if true}` gesetzt — dieser Test
-	 * schlug daraufhin fehl (`expect(count).toBe(0)` erhielt `1`), alle übrigen
-	 * Navbar-Tests blieben unverändert grün. Änderung danach zurückgenommen.
+	 * Umschalter trägt — derselbe Selektor, den `i18n-link-sweep.spec.ts` zum
+	 * Ausschließen des Umschalters aus dem Verweis-Sweep verwendet.
 	 */
-	test('der Sprachumschalter ist nicht in der Navbar eingebunden', async ({ page }) => {
+	test('der Sprachumschalter steht nicht in der öffentlichen Navbar-Zeile', async ({ page }) => {
 		await page.goto('/?meldung=lebend');
 		await expect(page.locator('header')).toBeVisible();
 		await expect(page.locator('header a[hreflang]')).toHaveCount(0);
+	});
+
+	/**
+	 * Die Gegenprobe zum Test darüber — und zwar die, auf die es ankommt: Dass
+	 * der Umschalter nirgends auftaucht, wäre auch dann grün, wenn er versehentlich
+	 * ganz aus dem Markup gefallen ist. Dieser Test belegt, dass er für einen
+	 * Superadmin tatsächlich erscheint, und zwar im Profilmenü statt in der
+	 * Navigationszeile.
+	 *
+	 * `roles` wird überschrieben — `seedAdminSession` sieht genau dafür einen
+	 * dritten Parameter vor.
+	 */
+	test('für Superadmins steht der Umschalter im Profilmenü, nicht in der Zeile', async ({
+		browser,
+		baseURL
+	}) => {
+		if (!baseURL) throw new Error('baseURL fehlt — playwright.config.ts setzt sie normalerweise');
+
+		const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+		await seedAdminSession(context, baseURL, ['admin', 'superadmin']);
+		const page = await context.newPage();
+
+		try {
+			await page.goto('/?meldung=lebend');
+			/* Über das aria-label des <summary> statt getByRole: Playwright bildet
+			   ein <summary> nicht auf role=button ab, der Filter liefe ins Leere. */
+			const profilmenue = page.locator(
+				'header details:has(summary[aria-label="Benutzer-Menü"])'
+			);
+
+			// Zugeklappt ist der Umschalter zwar im DOM, aber nicht sichtbar — er
+			// liegt im Dropdown und nicht als eigenes Element in der Zeile.
+			await expect(profilmenue.locator('a[hreflang]')).toBeHidden();
+
+			await profilmenue.locator('summary').click();
+			const umschalter = profilmenue.locator('a[hreflang]');
+			await expect(umschalter).toBeVisible();
+			await expect(umschalter).toHaveAttribute('hreflang', 'en');
+			await expect(umschalter).toHaveAttribute('href', '/en/?meldung=lebend');
+		} finally {
+			await context.close();
+		}
 	});
 });

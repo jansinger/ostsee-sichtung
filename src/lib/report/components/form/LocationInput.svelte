@@ -265,9 +265,9 @@
 			>{m.report_components_form_locationinput_text_gps_eingabeformat()}</label
 		>
 		<select id="gps-format" class="select w-full min-w-0 md:ml-auto md:w-auto" bind:value={mode}>
-			<option value="dd">Dezimalgrad (z.B. 54.5042° N)</option>
-			<option value="dm">Grad, Dezimalminute (z.B. 54° 30.25' N)</option>
-			<option value="dms">Grad, Minute, Sekunde (z.B. 54° 30' 15" N)</option>
+			<option value="dd">{m.report_components_form_locationinput_text_dezimalgrad()}</option>
+			<option value="dm">{m.report_components_form_locationinput_text_grad_dezimalminute()}</option>
+			<option value="dms">{m.report_components_form_locationinput_text_grad_minute_sekunde()}</option>
 		</select>
 	</div>
 

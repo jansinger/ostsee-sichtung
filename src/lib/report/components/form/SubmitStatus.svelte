@@ -134,9 +134,12 @@
 				{m.report_components_form_submitstatus_text_keine_internetverbindung()}
 			</p>
 			<p class="text-base-content mt-1 text-sm">
-				Die Meldung kann gerade nicht abgeschickt werden.
-				<strong>Ihre Eingaben bleiben vollständig gespeichert</strong> — auch wenn Sie diese Seite schließen.
-				Sobald Sie wieder Empfang haben, können Sie hier absenden.
+				{m.report_components_form_submitstatus_text_die_meldung_kann_gerade_nicht_abgeschickt()}
+				<strong
+					>{m.report_components_form_submitstatus_text_ihre_eingaben_bleiben_vollstaendig()}</strong
+				>
+				{m.report_components_form_submitstatus_text_auch_wenn_sie_diese_seite_schliessen()}
+				{m.report_components_form_submitstatus_text_sobald_sie_wieder_empfang_haben()}
 			</p>
 			{#if onRetry}
 				<!--
@@ -163,16 +166,18 @@
 		<div>
 			<p class="text-base-content font-bold">{title}</p>
 			<p class="text-base-content mt-1 text-sm">
-				<strong>Ihre Eingaben sind nicht verloren.</strong>
+				<strong
+					>{m.report_components_form_submitstatus_text_ihre_eingaben_sind_nicht_verloren()}</strong
+				>
 				{#if showAttemptCounter}
 					{attemptLabel}
 				{/if}
 				{#if showReference}
-					Bitte geben Sie bei einer Rückfrage die unten stehende Referenz an.
+					{m.report_components_form_submitstatus_text_bitte_geben_sie_bei_einer_rueckfrage()}
 				{/if}
-				Bei anhaltenden Problemen erreichen Sie uns über die
+				{m.report_components_form_submitstatus_text_bei_anhaltenden_problemen_erreichen()}
 				<a class="link" href={CONTACT_URL} target="_blank" rel="noopener noreferrer">
-					Kontaktseite des Museums
+					{m.report_components_form_submitstatus_text_kontaktseite_des_museums()}
 				</a>.
 			</p>
 			<div class="mt-3 flex flex-wrap items-center gap-2">
@@ -187,7 +192,8 @@
 						class="text-base-content/70 font-mono text-sm"
 						data-testid="submit-status-reference"
 					>
-						Referenz: {referenceId}
+						{m.report_components_form_submitstatus_text_referenz()}
+						{referenceId}
 					</span>
 				{/if}
 			</div>
@@ -231,8 +237,9 @@
 				{/if}
 			</p>
 			<p class="text-base-content mt-1 text-sm">
-				Ihre Aufnahme liegt bereits bei uns. Wir löschen sie automatisch, wenn die Meldung nicht
-				innerhalb von {ORPHAN_RETENTION_HOURS} Stunden ankommt.
+				{m.report_components_form_submitstatus_text_ihre_aufnahme_liegt_bereits_bei_uns({
+					hours: ORPHAN_RETENTION_HOURS
+				})}
 			</p>
 			<div class="mt-3 flex flex-wrap items-center gap-2">
 				{#if onRetry}
@@ -242,7 +249,9 @@
 					</button>
 				{/if}
 				{#if showReference}
-					<span class="text-base-content/70 font-mono text-sm">Referenz: {referenceId}</span>
+					<span class="text-base-content/70 font-mono text-sm"
+						>{m.report_components_form_submitstatus_text_referenz()} {referenceId}</span
+					>
 				{/if}
 			</div>
 		</div>

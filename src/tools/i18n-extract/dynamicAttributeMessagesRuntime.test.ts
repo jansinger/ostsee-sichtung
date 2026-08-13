@@ -6,12 +6,16 @@
  * kompiliert, über den echten Paraglide-Runtime-Pfad, in BEIDEN Sprachen.
  *
  * Positiv formuliert (nicht „bleibt deutsch"): jede Assertion prüft, dass der
- * erwartete, interpolierte Text ankommt — für `de` UND für `en`. Etappe 1
- * liefert dieselbe deutsche Formulierung in beiden Katalogen (Mechanik, keine
- * Übersetzung, siehe `docs/i18n/PLAN_ETAPPE2.md`); englisch bleibt deshalb
- * textgleich zu deutsch, aber der Test läuft trotzdem über den `locale: 'en'`-
- * Codepfad — das ist der Unterschied zu einem Test, der nur `de` aufruft und
- * stillschweigend hofft, dass `en` genauso funktioniert.
+ * erwartete, interpolierte Text ankommt — für `de` UND für `en`.
+ *
+ * Bis zum 2026-08-13 stand auf beiden Seiten derselbe deutsche Text: Etappe 1
+ * hatte den englischen Katalog nur mechanisch befüllt. Das ist seit der
+ * DeepL-Vorübersetzung nicht mehr so, und die Erwartungen sind entsprechend
+ * nachgezogen. Der Zweck des Tests ändert sich dadurch nicht — geprüft wird,
+ * dass die Parameter in BEIDEN Sprachen an ihren jeweils richtigen Stellen
+ * landen. Genau das ist hier die Aussage: Die englischen Sätze stellen die
+ * Platzhalter teils um (`{originalName} öffnen` → `Open {originalName}`), ein
+ * Test nur gegen `de` würde diese Umstellung nie anfassen.
  */
 import { describe, expect, it } from 'vitest';
 import * as m from '$lib/paraglide/messages';
@@ -28,28 +32,30 @@ describe('mechanisierte dynamic-attribute-Botschaften — Laufzeit, beide Sprach
 			m.components_map_sightingsmapview_aria_label_suchfilter_query_entfernen(params, {
 				locale: 'en'
 			})
-		).toBe('Suchfilter Schweinswal entfernen');
+		).toBe('Remove the ‘Schweinswal’ search filter');
 	});
 
 	it('setzt zwei Parameter an ihren jeweils richtigen Stellen ein (Filter Jahr {year} … {apiDefaultYear})', () => {
 		const params = { year: '2024', apiDefaultYear: '2026' };
-		const expected = 'Filter Jahr 2024 entfernen und zum Standard-Jahr 2026 wechseln';
+		const erwartetDe = 'Filter Jahr 2024 entfernen und zum Standard-Jahr 2026 wechseln';
+		const erwartetEn = 'Remove the ‘Year 2024’ filter and switch to the default ‘Year 2026’';
 		expect(
 			m.components_map_sightingsmapview_aria_label_filter_jahr_year_entfernen_und(params, {
 				locale: 'de'
 			})
-		).toBe(expected);
+		).toBe(erwartetDe);
 		expect(
 			m.components_map_sightingsmapview_aria_label_filter_jahr_year_entfernen_und(params, {
 				locale: 'en'
 			})
-		).toBe(expected);
+		).toBe(erwartetEn);
 	});
 
 	it('setzt drei Parameter aus dem naming-Kollisionsfall korrekt ein (Sichtbarkeit für {value} …)', () => {
 		const params = { value: 'Schweinswal', visible: 3, total: 7 };
-		const expected =
+		const erwartetDe =
 			'Sichtbarkeit für Schweinswal umschalten. Aktuell 3 von 7 Sichtungen sichtbar.';
+		const erwartetEn = 'Toggle visibility for Schweinswal. Currently 3 of 7 sightings are visible.';
 		expect(
 			m.components_map_panel_legendpanel_aria_label_sichtbarkeit_fuer_value_umschalten_aktue(
 				params,
@@ -57,7 +63,7 @@ describe('mechanisierte dynamic-attribute-Botschaften — Laufzeit, beide Sprach
 					locale: 'de'
 				}
 			)
-		).toBe(expected);
+		).toBe(erwartetDe);
 		expect(
 			m.components_map_panel_legendpanel_aria_label_sichtbarkeit_fuer_value_umschalten_aktue(
 				params,
@@ -65,7 +71,7 @@ describe('mechanisierte dynamic-attribute-Botschaften — Laufzeit, beide Sprach
 					locale: 'en'
 				}
 			)
-		).toBe(expected);
+		).toBe(erwartetEn);
 	});
 
 	it('setzt den aus einem JS-Template-Literal mechanisierten Parameter korrekt ein ({originalName} öffnen)', () => {
@@ -75,6 +81,6 @@ describe('mechanisierte dynamic-attribute-Botschaften — Laufzeit, beide Sprach
 		).toBe('strand-foto.jpg öffnen');
 		expect(
 			m.components_media_mediathumbnail_aria_label_originalname_oeffnen(params, { locale: 'en' })
-		).toBe('strand-foto.jpg öffnen');
+		).toBe('Open strand-foto.jpg');
 	});
 });

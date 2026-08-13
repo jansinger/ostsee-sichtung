@@ -8,6 +8,22 @@ import type { Page, Locator } from '@playwright/test';
  * elements by FieldRenderer.svelte (not on a wrapper div). Use `[data-testid="field-X"]`
  * directly to target the field.
  *
+ * Note on visible text: this page object is used by the `/en` specs
+ * (`i18n-*.spec.ts`) as well as the German ones, so ANY selector matching
+ * user-visible text needs both languages. A German-only pattern does not fail
+ * when it is written — it fails later, on the day that string gets translated,
+ * and it fails in the `/en` spec rather than where the pattern lives. That has
+ * now happened twice: first for `Nächster Schritt`/`Formular absenden`, then
+ * for `Schritt überspringen` when the pretranslation reached step 3. Prefer
+ * `data-testid` or a role; where the text is the only handle, write
+ * `/deutsch|english/i`.
+ *
+ * `MapPage.ts` still carries three German-only patterns (filter, legend and
+ * error-message close buttons). They are not broken today because no `/en`
+ * spec drives the map — deliberately left alone rather than changed without a
+ * test that would catch a typo. Whoever writes the first English map spec
+ * starts there.
+ *
  * Note on the active step: since PR 3 the step state stands TWICE in the DOM —
  * the written out stepper (`FormSteps.svelte`, `md` and up) and the compact one
  * in the fixed bar (`StepProgressCompact.svelte`, below `md`). Both carry
@@ -45,19 +61,30 @@ export class FormPage {
 	// ── Step Navigation ──────────────────────────────────────────────────────
 
 	async clickNext() {
-		await this.page.getByRole('button', { name: /Nächster Schritt/i }).click();
+		await this.page.getByRole('button', { name: /Nächster Schritt|Next step/i }).click();
 	}
 
 	async clickSubmit() {
-		await this.page.getByRole('button', { name: /Formular absenden/i }).click();
+		await this.page.getByRole('button', { name: /Formular absenden|Submit form/i }).click();
 	}
 
 	async clickPrevious() {
-		await this.page.getByRole('button', { name: /Vorheriger Schritt/i }).click();
+		await this.page.getByRole('button', { name: /Vorheriger Schritt|Previous step/i }).click();
 	}
 
+	/**
+	 * Der Knopf trägt ein `aria-label`, und das schlägt seinen sichtbaren Text
+	 * als barrierefreien Namen. Deutsch fiel das nie auf: „Schritt
+	 * überspringen" ist zufällig Teilkette von „Diesen optionalen Schritt
+	 * überspringen". Englisch trennen sich die beiden („Skip this step" gegen
+	 * „Skip this optional step"), und ein Muster nach dem sichtbaren Text
+	 * findet nichts. Deshalb hier das `optional` als optionale Gruppe — das
+	 * Muster trifft beide Fassungen, egal welche gerade den Namen stellt.
+	 */
 	async skipStep() {
-		await this.page.getByRole('button', { name: /Schritt überspringen/i }).click();
+		await this.page
+			.getByRole('button', { name: /Schritt überspringen|Skip this( optional)? step/i })
+			.click();
 	}
 
 	// ── Step 1: Position & Zeitpunkt ───────────────────────────────────────────────
@@ -184,16 +211,18 @@ export class FormPage {
 	}
 
 	async isNextDisabled(): Promise<boolean> {
-		const btn = this.page.getByRole('button', { name: /Nächster Schritt/i });
+		const btn = this.page.getByRole('button', { name: /Nächster Schritt|Next step/i });
 		return btn.isDisabled();
 	}
 
 	getSuccessAlert(): Locator {
-		return this.page.getByRole('alert').filter({ hasText: /erfolgreich|bestätigung/i });
+		return this.page
+			.getByRole('alert')
+			.filter({ hasText: /erfolgreich|bestätigung|successfully|confirmation/i });
 	}
 
 	getErrorAlert(): Locator {
-		return this.page.getByRole('alert').filter({ hasText: /fehler/i });
+		return this.page.getByRole('alert').filter({ hasText: /fehler|error/i });
 	}
 
 	getForm(): Locator {

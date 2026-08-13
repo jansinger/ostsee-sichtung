@@ -155,9 +155,12 @@
 
 			<div class="text-base-content/60 mt-2 space-y-1 text-xs">
 				<p>
-					Quelle: {weatherData._metadata?.source || 'Open-Meteo Weather API'}
+					{m.components_weather_weatherdatafetcher_text_quelle()}
+					{weatherData._metadata?.source || 'Open-Meteo Weather API'}
 					{#if weatherData._metadata?.cached}
-						<span class="badge badge-xs badge-info ml-2">aus Cache</span>
+						<span class="badge badge-xs badge-info ml-2"
+							>{m.components_weather_weatherdatafetcher_text_aus_cache()}</span
+						>
 					{/if}
 				</p>
 			</div>
@@ -172,7 +175,7 @@
 				<StatusBlock
 					variant="partial"
 					title={m.components_weather_weatherdatafetcher_title_prognosedaten_fuer_die_heutige_sichtung()}
-					description="Für heute liegen noch keine gemessenen Werte vor. Die Vorhersage aktualisiert sich mehrmals täglich."
+					description={m.components_weather_weatherdatafetcher_description_fuer_heute_liegen_noch()}
 				/>
 			{/if}
 		</div>

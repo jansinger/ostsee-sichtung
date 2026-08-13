@@ -350,12 +350,14 @@
 				type="button"
 				onclick={jumpToFirstError}
 				class="btn btn-ghost btn-sm text-error gap-1 md:hidden"
-				aria-label={stepErrorCount === 1
-					? 'Zum fehlerhaften Feld springen'
-					: `Zu den ${stepErrorCount} fehlerhaften Feldern springen`}
+				aria-label={m.report_components_form_stepnavigation_aria_label_zu_den_fehlerhaften_plural({
+					count: stepErrorCount
+				})}
 			>
 				<Icon icon="lucide:triangle-alert" width="16" class="shrink-0" aria-hidden="true" />
-				{stepErrorCount} Fehler
+				{m.report_components_form_stepnavigation_text_steperrorcount_fehler_plural({
+					count: stepErrorCount
+				})}
 			</button>
 		{/if}
 
@@ -381,7 +383,9 @@
 			onclick={nextStep}
 			disabled={$isSubmitting}
 			class="btn btn-primary"
-			aria-label={isLastStep ? 'Formular absenden' : 'Nächster Schritt'}
+			aria-label={isLastStep
+				? m.report_components_form_stepnavigation_aria_label_formular_absenden()
+				: m.report_components_form_stepnavigation_aria_label_naechster_schritt()}
 			aria-describedby={isSubmitBlocked ? SUBMIT_STATUS_OFFLINE_ID : undefined}
 		>
 			{#if $isSubmitting}

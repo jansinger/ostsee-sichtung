@@ -2,6 +2,7 @@
 	import * as m from '$lib/paraglide/messages';
 	import type { PublicUser } from '$lib/types/User';
 	import Icon from '$lib/components/Icon.svelte';
+	import LanguageSwitcher from './LanguageSwitcher.svelte';
 
 	/* `isAdmin` ist hier bewusst weggefallen: Das Menü führte einen Eintrag
 	   „Admin-Bereich" auf /admin, den die TopBar seit 2026-08-03 als Gruppe
@@ -13,7 +14,10 @@
 	   `position` ebenso: Der Default war 'right', die einzige Aufrufstelle
 	   setzte genau das noch einmal explizit. Eine Wahlmöglichkeit, die nie
 	   jemand gewählt hat. */
-	let { user }: { user: PublicUser | null } = $props();
+	let {
+		user,
+		showLanguageSwitcher = false
+	}: { user: PublicUser | null; showLanguageSwitcher?: boolean } = $props();
 
 	let detailsElement = $state<HTMLDetailsElement | null>(null);
 
@@ -102,6 +106,16 @@
 
 			<!-- Menu Items -->
 			<div class="py-2">
+				<!-- Der Sprachumschalter steht hier statt in der Navbar-Zeile: dort passte
+				     er optisch nicht und stritt bei 320px mit dem Offline-Abzeichen um
+				     Platz (`submit-offline.spec.ts`). Im Dropdown entfällt beides, die
+				     frühere `!connection.isOffline`-Bedingung wird damit gegenstandslos.
+				     Vorerst nur für Superadmins — siehe `+layout.server.ts`. -->
+				{#if showLanguageSwitcher}
+					<LanguageSwitcher
+						class="hover:bg-base-200 flex items-center gap-2 rounded px-4 py-2"
+					/>
+				{/if}
 				<a
 					href="/api/auth/logout"
 					class="text-error hover:bg-error/10 flex items-center gap-2 rounded px-4 py-2"

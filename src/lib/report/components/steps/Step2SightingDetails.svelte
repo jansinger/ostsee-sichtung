@@ -32,9 +32,10 @@
 		     `$lib/report/wording`, damit sie beim Bau der getrennten Formulare
 		     nicht an drei Stellen auseinanderläuft. -->
 		<p class="text-base-content/70 mx-auto max-w-2xl text-sm md:text-base">
-			<strong>{question}</strong> Bitte geben Sie
-			<strong>Tierart und Anzahl</strong>
-			an.
+			<strong>{question}</strong>
+			{m.report_components_steps_step2sightingdetails_text_bitte_geben_sie()}
+			<strong>{m.report_components_steps_step2sightingdetails_text_tierart_und_anzahl()}</strong>
+			{m.report_components_steps_step2sightingdetails_text_an()}
 		</p>
 	</div>
 

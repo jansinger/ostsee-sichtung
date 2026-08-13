@@ -77,11 +77,11 @@
 								{m.report_components_submissionsuccess_text_rueckfragen_zu_ihrer_meldung()}
 							</h3>
 							<p class="text-base-content/70 text-sm">
-								Eine automatische Bestätigungsmail versenden wir nicht. Falls zu Ihrer Meldung etwas
-								offen bleibt, melden wir uns bei Ihnen — per E-Mail an <strong
+								{m.report_components_submissionsuccess_text_eine_automatische_bestaetigungsmail()}
+								<strong
 									>{submittedData?.email ? maskEmail(submittedData.email) : '***@***.***'}</strong
 								>{#if submittedData?.phone}
-									oder telefonisch{/if}.
+									{m.report_components_submissionsuccess_text_oder_telefonisch()}{/if}.
 							</p>
 						</div>
 					</div>
@@ -118,11 +118,11 @@
 							</h3>
 							<p class="text-base-content/70 text-sm">
 								{#if submittedData?.mediaUpload}
-									Ihre Aufnahmen wurden übermittelt und werden gemeinsam mit Ihrer Meldung geprüft.
+									{m.report_components_submissionsuccess_text_ihre_aufnahmen_wurden_uebermittelt()}
 								{/if}
-								Waren Aufnahmen zu groß für den Upload, senden Sie sie bitte an
-								<a class="link" href="mailto:{MEDIA_FALLBACK_EMAIL}">{MEDIA_FALLBACK_EMAIL}</a> — mit
-								Datum und Uhrzeit Ihrer Beobachtung, damit wir sie zuordnen können.
+								{m.report_components_submissionsuccess_text_waren_aufnahmen_zu_gross_fuer_den()}
+								<a class="link" href="mailto:{MEDIA_FALLBACK_EMAIL}">{MEDIA_FALLBACK_EMAIL}</a>
+								{m.report_components_submissionsuccess_text_mit_datum_und_uhrzeit_ihrer()}
 							</p>
 						</div>
 					</div>
@@ -196,8 +196,10 @@
 							{getSpeciesLabel(submittedData.species)}
 						</div>
 						<div>
-							<span class="font-medium">Anzahl:</span>
-							{submittedData.totalCount} Tier{submittedData.totalCount > 1 ? 'e' : ''}
+							<span class="font-medium">{m.report_components_submissionsuccess_text_anzahl()}</span>
+							{m.report_components_submissionsuccess_text_totalcount_tier_plural({
+								count: submittedData.totalCount
+							})}
 						</div>
 						<div>
 							<span class="font-medium">{m.report_components_submissionsuccess_text_datum()}</span>

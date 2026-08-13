@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as m from '$lib/paraglide/messages';
 	import Icon from '$lib/components/Icon.svelte';
+	import HreflangHead from '$lib/components/seo/HreflangHead.svelte';
 	import OstseeTiereLogo from '$lib/components/OstseeTiereLogo.svelte';
 	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
 	import { resolveDisplayLocale } from '$lib/utils/format/dateTime';
@@ -15,31 +16,20 @@
 
 <svelte:head>
 	<title>{m.routes_about_page_text_ueber_uns_ostsee_tiere()}</title>
-	<meta
-		name="description"
-		content="Erfahren Sie mehr über die Ostsee-Tiere Plattform. Unterstützen Sie die Meeresforschung durch das Melden von Walsichtungen und anderen Meerestier-Beobachtungen in der Ostsee."
-	/>
-	<meta
-		name="keywords"
-		content="Über uns, Ostsee-Tiere, Meeresforschung, Citizen Science, Deutsches Meeresmuseum, Stralsund, Naturschutz"
-	/>
+	<meta name="description" content={m.routes_about_page_meta_description()} />
+	<meta name="keywords" content={m.routes_about_page_meta_keywords()} />
 
 	<!-- Open Graph -->
-	<meta property="og:title" content="Über uns - Ostsee-Tiere" />
-	<meta
-		property="og:description"
-		content="Erfahren Sie mehr über die Ostsee-Tiere Plattform und unsere Mission für den Meeresschutz"
-	/>
+	<meta property="og:title" content={m.routes_about_page_meta_og_title()} />
+	<meta property="og:description" content={m.routes_about_page_meta_og_description()} />
 	<meta property="og:type" content="website" />
 
 	<!-- Twitter Card -->
 	<meta name="twitter:card" content="summary" />
-	<meta name="twitter:title" content="Über uns - Ostsee-Tiere" />
-	<meta
-		name="twitter:description"
-		content="Erfahren Sie mehr über die Ostsee-Tiere Plattform und unsere Mission für den Meeresschutz"
-	/>
+	<meta name="twitter:title" content={m.routes_about_page_meta_og_title()} />
+	<meta name="twitter:description" content={m.routes_about_page_meta_og_description()} />
 </svelte:head>
+<HreflangHead />
 
 <!-- Innenabstand schaltet bei `md` (Breakpoint-Vertrag in
      .claude/rules/design-system.md). Bei 320px zählt das: die Seite stapelt drei
@@ -65,12 +55,14 @@
 		</h1>
 		<div class="mx-auto max-w-4xl">
 			<p class="text-base-content/80 mb-6 text-2xl leading-relaxed">
-				Die Ostsee-Tiere Plattform ermöglicht es <strong class="text-primary"
-					>Bürgern, Forschern und Naturbeobachtern</strong
-				>, ihre Sichtungen von Walen, Robben und anderen Meerestieren zu melden.
+				{m.routes_about_page_hero_die_ostsee_tiere_plattform_ermoeglicht()}
+				<strong class="text-primary"
+					>{m.routes_about_page_hero_buergern_forschern_und_natur()}</strong
+				>{m.routes_about_page_hero_ihre_sichtungen_von_walen_robben()}
 			</p>
 			<p class="text-base-content/70 text-lg">
-				Gemeinsam schaffen wir wertvolle Daten für die <em>Meeresforschung und den Naturschutz</em>.
+				{m.routes_about_page_hero_gemeinsam_schaffen_wir_wertvolle()}
+				<em>{m.routes_about_page_hero_meeresforschung_und_den_naturschutz()}</em>.
 			</p>
 		</div>
 	</div>
@@ -85,9 +77,9 @@
 				</h2>
 				<div class="space-y-4">
 					<p class="text-base-content/80 text-lg leading-relaxed">
-						Wir glauben, dass <strong>jeder einen Beitrag</strong> zum Schutz der Meeresumwelt leisten
-						kann. Durch das Sammeln und Teilen von Sichtungsdaten schaffen wir eine umfassende Wissensbasis
-						über die Meerestiere der Ostsee.
+						{m.routes_about_page_mission_wir_glauben_dass()}
+						<strong>{m.routes_about_page_mission_jeder_einen_beitrag()}</strong>
+						{m.routes_about_page_mission_zum_schutz_der_meeresumwelt()}
 					</p>
 					<!-- Vorher: „helfen Wissenschaftlern dabei, Wanderungsmuster zu verstehen,
 					     Populationen zu überwachen und Schutzmaßnahmen zu entwickeln" — richtig,
@@ -97,10 +89,11 @@
 					     HELCOM und ASCOBANS sind benannte Gremien. Genau das fehlte hier. -->
 					<div class="border-primary/30 bg-primary/5 rounded-r-lg border-l-4 px-6 py-3 pl-4">
 						<p class="text-base-content text-base leading-relaxed font-medium">
-							Ihre Meldung wird vom Deutschen Meeresmuseum wissenschaftlich ausgewertet und an die
-							internationalen Gremien für den Schutz der Ostsee-Schweinswale weitergegeben: an
-							<strong>HELCOM</strong>, die Helsinki-Kommission zum Schutz der Ostsee, und an
-							<strong>ASCOBANS</strong>, das Abkommen zum Schutz der Kleinwale.
+							{m.routes_about_page_mission_ihre_meldung_wird_vom_deutschen()}
+							<strong>{m.components_info_datausagenotice_text_helcom()}</strong
+							>{m.routes_about_page_mission_die_helsinki_kommission_zum()}
+							<strong>{m.components_info_datausagenotice_text_ascobans()}</strong
+							>{m.routes_about_page_mission_das_abkommen_zum_schutz()}
 						</p>
 					</div>
 				</div>
@@ -116,8 +109,9 @@
 						{m.routes_about_page_text_citizen_science()}
 					</h3>
 					<p class="text-base-content/70 text-lg leading-relaxed">
-						Bürgerwissenschaft macht <strong>jeden zum Forscher</strong> und trägt zu wichtigen wissenschaftlichen
-						Erkenntnissen bei.
+						{m.routes_about_page_citizen_buergerwissenschaft_macht()}
+						<strong>{m.routes_about_page_citizen_jeden_zum_forscher()}</strong>
+						{m.routes_about_page_citizen_und_traegt_zu_wichtigen()}
 					</p>
 					<!-- Jahreszahl kommt aus der Datenbank (älteste freigegebene Sichtung),
 					     nicht aus dem Template — Begründung in +page.server.ts. -->
@@ -168,8 +162,9 @@
 						{m.routes_about_page_text_einfaches_melden()}
 					</h3>
 					<p class="text-base-content/80 text-base leading-relaxed">
-						<strong>Intuitive Formulare</strong> führen Sie Schritt für Schritt durch die Erfassung
-						Ihrer Sichtung mit <em>GPS-genauer Lokalisierung</em>.
+						<strong>{m.routes_about_page_feature_intuitive_formulare()}</strong>
+						{m.routes_about_page_feature_fuehren_sie_schritt_fuer()}
+						<em>{m.routes_about_page_feature_gps_genauer_lokalisierung()}</em>.
 					</p>
 					<div class="mt-4">
 						<div class="badge badge-primary badge-outline">
@@ -194,8 +189,10 @@
 					<!-- „alle Sichtungen" traf nicht zu: die Karte zeigt ausschließlich
 					     freigegebene Meldungen und filtert dabei auf ein Jahr. -->
 					<p class="text-base-content/80 text-base leading-relaxed">
-						Sehen Sie die <strong>freigegebenen Sichtungen</strong> jahrweise auf einer
-						detaillierten Karte der Ostsee und entdecken Sie <em>Muster und Hotspots</em>.
+						{m.routes_about_page_feature_sehen_sie_die()}
+						<strong>{m.routes_about_page_feature_freigegebenen_sichtungen()}</strong>
+						{m.routes_about_page_feature_jahrweise_auf_einer()}
+						<em>{m.routes_about_page_feature_muster_und_hotspots()}</em>.
 					</p>
 					<div class="mt-4">
 						<div class="badge badge-secondary badge-outline">
@@ -224,8 +221,11 @@
 					     abrufbar sind die freigegebenen Sichtungen über die dokumentierte
 					     API — das steht hier jetzt statt des weitergehenden Versprechens. -->
 					<p class="text-base-content/80 text-base leading-relaxed">
-						Die freigegebenen Sichtungen sind über eine <strong>offene API</strong> abrufbar und
-						damit für <em>Forschung und Lehre</em> nutzbar.
+						{m.routes_about_page_feature_die_freigegebenen_sichtungen_sind()}
+						<strong>{m.routes_about_page_feature_offene_api()}</strong>
+						{m.routes_about_page_feature_abrufbar_und_damit_fuer()}
+						<em>{m.routes_about_page_feature_forschung_und_lehre()}</em>
+						{m.routes_about_page_feature_nutzbar()}
 					</p>
 					<div class="mt-4">
 						<div class="badge badge-accent badge-outline">
@@ -246,9 +246,7 @@
 				class="mx-auto mb-4 w-64 p-4"
 			/>
 			<p class="text-primary-content mx-auto mb-4 max-w-2xl leading-relaxed">
-				Diese Plattform wird vom Deutschen Meeresmuseum in Stralsund betrieben, einem der führenden
-				Zentren für Meeresforschung und -bildung in Deutschland. Seit über 70 Jahren widmen wir uns
-				der Erforschung und dem Schutz der marinen Lebensräume.
+				{m.routes_about_page_partnership_diese_plattform_wird_vom()}
 			</p>
 			<!-- `flex-wrap` ist hier nicht Kosmetik, sondern der Grund für einen
 			     Überlauf der ganzen Seite: Buttons tragen `white-space: nowrap`, zwei
@@ -336,6 +334,22 @@
 
 	     Sobald das Museum eine Löschfrist festgelegt hat, gehört sie hierher
 	     zurück — dann aber mit der Frist im Text, nicht als Verweis. -->
+	<!--
+	     ACHTUNG — `messages/en.json` trägt für diesen Abschnitt bewusst noch den
+	     DEUTSCHEN Wortlaut, obwohl `TRANSLATION_ROLLOUT_COMPLETE` seit
+	     2026-08-13 `true` ist (Entscheidung Jan, siehe
+	     docs/i18n/ARBEITSPROTOKOLL_ETAPPE1.md, Aufgabe 2.3b-Anhang). Grund: Die
+	     deutschen Formulierungen hier wurden bereits mehrfach gegen die
+	     offizielle Datenschutzerklärung des Deutschen Meeresmuseums korrigiert
+	     (siehe Kommentar oben, docs/DATENSCHUTZ_ABGLEICH_DMM_2026-08-02.md) —
+	     eine unabhängig übersetzte englische Fassung ungeprüft auszuliefern
+	     wäre dasselbe Fehlermuster auf Englisch. Eine frühere, ungeprüfte
+	     Entwurfsübersetzung stand hier kurzzeitig in `en.json` und wurde
+	     bewusst wieder auf Deutsch zurückgesetzt.
+	     Sobald das Museum eine geprüfte englische Fassung liefert (derselbe
+	     Weg wie für die übrige Schicht-E-Inhaltsarbeit), gehört sie hier
+	     eingepflegt — dieser Abschnitt ist die einzige verbliebene Stelle im
+	     gesamten Bestand, an der `/en` noch deutschen Text zeigt. -->
 	<div class="mb-16">
 		<h2 class="text-title mb-8 flex items-center justify-center gap-3 text-center font-bold">
 			<Icon icon="lucide:shield-check" width="30" class="text-success-strong" />
@@ -356,8 +370,8 @@
 							aria-hidden="true"
 						/>
 						<span>
-							Für Rückfragen zu Ihrer Meldung brauchen wir Name und E-Mail.
-							<strong>Anschrift und Telefonnummer sind freiwillig.</strong>
+							{m.routes_about_page_privacy_fuer_rueckfragen()}
+							<strong>{m.routes_about_page_privacy_anschrift_und_telefonnummer()}</strong>
 						</span>
 					</li>
 					<li class="flex items-start gap-2">
@@ -368,11 +382,8 @@
 							aria-hidden="true"
 						/>
 						<span>
-							<strong
-								>Name und Schiffsname erscheinen nur öffentlich, wenn Sie dem im Formular
-								ausdrücklich zustimmen.</strong
-							>
-							Ohne Zustimmung bleiben sie bei uns.
+							<strong>{m.routes_about_page_privacy_name_und_schiffsname()}</strong>
+							{m.routes_about_page_privacy_ohne_zustimmung()}
 						</span>
 					</li>
 					<li class="flex items-start gap-2">
@@ -392,8 +403,9 @@
 							aria-hidden="true"
 						/>
 						<span>
-							Server und Datenbank stehen bei <strong>GECKO in Rostock</strong>, also in
-							Deutschland.
+							{m.routes_about_page_privacy_server_und_datenbank()}
+							<strong>{m.routes_about_page_privacy_gecko_in_rostock()}</strong
+							>{m.routes_about_page_privacy_also_in_deutschland()}
 						</span>
 					</li>
 				</ul>
@@ -439,14 +451,13 @@
 				{m.routes_about_page_text_technik()}
 			</h2>
 			<div class="badge badge-neutral badge-lg font-mono">
-				Version {data.version}
+				{`${m.routes_about_page_tech_version()} ${data.version}`}
 			</div>
 		</div>
 		<p class="text-base-content/80 mx-auto max-w-3xl text-center">
-			Die Plattform ist quelloffen und steht unter der
-			<strong>MIT-Lizenz</strong>. Sie läuft auf SvelteKit, einer PostgreSQL-Datenbank mit PostGIS
-			für die Geodaten und OpenLayers für die Karte. Quellcode, Lizenztext und die Möglichkeit,
-			einen Fehler zu melden, finden Sie im Repository.
+			{m.routes_about_page_tech_die_plattform_ist_quelloffen()}
+			<strong>{m.routes_about_page_tech_mit_lizenz()}</strong
+			>{m.routes_about_page_tech_sie_laeuft_auf_sveltekit()}
 		</p>
 		<div class="mt-6 flex flex-wrap justify-center gap-3">
 			<a
@@ -502,8 +513,10 @@
 						{m.routes_about_page_text_werden_sie_teil_der_bewegung()}
 					</h2>
 					<p class="text-base-content/80 mb-8 text-xl leading-relaxed">
-						<strong>Jede Sichtung zählt!</strong> Helfen Sie uns dabei, die Geheimnisse der Ostsee
-						zu entschlüsseln und ihre <em>einzigartigen Bewohner</em> zu schützen.
+						<strong>{m.routes_about_page_cta_jede_sichtung_zaehlt()}</strong>
+						{m.routes_about_page_cta_helfen_sie_uns_dabei()}
+						<em>{m.routes_about_page_cta_einzigartigen_bewohner()}</em>
+						{m.routes_about_page_cta_zu_schuetzen()}
 					</p>
 				</div>
 

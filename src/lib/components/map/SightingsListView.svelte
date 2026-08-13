@@ -15,8 +15,10 @@
 	<div class="overflow-x-auto">
 		<table class="table-zebra table">
 			<caption class="text-base-content p-3 text-left text-sm font-semibold">
-				Sichtungen {year} – {entries.length}
-				{entries.length === 1 ? 'Eintrag' : 'Einträge'}
+				{m.components_map_sightingslistview_text_sichtungen_jahr_plural({
+					year,
+					count: entries.length
+				})}
 			</caption>
 			<thead>
 				<tr>

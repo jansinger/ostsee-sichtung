@@ -20,11 +20,11 @@
 			{m.components_info_datausagenotice_text_wofuer_die_daten_gebraucht_werden()}
 		</svelte:element>
 		<p class={styles.bodyClass}>
-			Ihre Meldung wird vom Deutschen Meeresmuseum wissenschaftlich ausgewertet und direkt an die
-			internationalen Gremien für den Schutz der Ostsee-Schweinswale weitergegeben: an
-			<strong>HELCOM</strong>, die Helsinki-Kommission zum Schutz der Ostsee, und an
-			<strong>ASCOBANS</strong>, das internationale Abkommen zum Schutz der Kleinwale. So trägt Ihre
-			Beobachtung zum Bild von Verbreitung und Vorkommen der Tiere bei.
+			{m.components_info_datausagenotice_text_ihre_meldung_wird_vom_deutschen()}
+			<strong>{m.components_info_datausagenotice_text_helcom()}</strong>
+			{m.components_info_datausagenotice_text_die_helsinki_kommission_zum_schutz()}
+			<strong>{m.components_info_datausagenotice_text_ascobans()}</strong>
+			{m.components_info_datausagenotice_text_das_internationale_abkommen_zum()}
 		</p>
 	</div>
 </div>

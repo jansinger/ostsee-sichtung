@@ -61,6 +61,7 @@
 	import LoaderPinwheel from '~icons/lucide/loader-pinwheel';
 	import Lock from '~icons/lucide/lock';
 	import LogOut from '~icons/lucide/log-out';
+	import Languages from '~icons/lucide/languages';
 	import Mail from '~icons/lucide/mail';
 	import Map from '~icons/lucide/map';
 	import MapPin from '~icons/lucide/map-pin';
@@ -152,6 +153,7 @@
 		'lucide:crosshair': Crosshair,
 		'lucide:user': User,
 		'lucide:log-out': LogOut,
+		'lucide:languages': Languages,
 		'lucide:github': Github,
 		'lucide:upload': Upload,
 		'lucide:loader-2': Loader2,

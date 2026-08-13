@@ -170,7 +170,12 @@ test.describe('Sweep: interne Verweise tragen das /en-Präfix', () => {
 		await fillStep4(formPage);
 		await formPage.clickSubmit();
 
-		await expect(page.getByRole('heading', { name: /Vielen Dank/i })).toBeVisible({
+		// Bewusst die ENGLISCHE Überschrift, nicht ein zweisprachiges Muster: Der
+		// Test steht auf `/en`, dort ist „Vielen Dank" schlicht falsch. Bis zur
+		// Vorübersetzung stand hier die deutsche Fassung und bestand — weil die
+		// Erfolgsseite noch gar nicht übersetzt war. Die Zusicherung prüft damit
+		// jetzt zusätzlich, dass die Seite überhaupt auf Englisch ankommt.
+		await expect(page.getByRole('heading', { name: /Thank you/i })).toBeVisible({
 			timeout: 10000
 		});
 

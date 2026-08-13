@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
 	import { getFormContext } from '$lib/report/formContext';
 	import { BoatDriveEnum, getPublicBoatDriveOptions } from '$lib/report/formOptions/boatDrive';
 	import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
@@ -140,7 +141,7 @@
 				     steht bereits im `valueText`-Tooltip desselben Feldes. -->
 				<FormField
 					name="boatDrive"
-					label="Lief während der Sichtung ein Motor?"
+					label={m.report_components_sections_sightingdetails_label_lief_waehrend_der_sichtung()}
 					type="radio"
 					options={getPublicBoatDriveOptions()}
 					helpText={null}

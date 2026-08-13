@@ -36,7 +36,11 @@
 		innerhalb der Box würde er auf `/map` dauerhaft ~130px Kartenfläche kosten.
 	-->
 	<div class="flex min-h-dvh flex-col">
-		<PublicNavbar user={data.user} isAdmin={data.showAdminMenu} />
+		<PublicNavbar
+			user={data.user}
+			isAdmin={data.showAdminMenu}
+			showLanguageSwitcher={data.showLanguageSwitcher}
+		/>
 
 		<!-- Maintenance Mode Banner for Admins -->
 		{#if data.maintenanceConfig?.enabled && data.showAdminMenu && isNotIFrame}

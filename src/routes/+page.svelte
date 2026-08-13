@@ -9,6 +9,7 @@
 	import { pushState, replaceState } from '$app/navigation';
 	import { tick } from 'svelte';
 	import { createLogger } from '$lib/logger';
+	import HreflangHead from '$lib/components/seo/HreflangHead.svelte';
 	import ModernReportForm from '$lib/report/components/ModernReportForm.svelte';
 	import ReportKindChoice from '$lib/report/components/ReportKindChoice.svelte';
 	import SubmissionSuccess from '$lib/report/components/SubmissionSuccess.svelte';
@@ -334,31 +335,20 @@
 
 <svelte:head>
 	<title>{m.routes_page_text_ostsee_tiere_meerestiere_melden()}</title>
-	<meta
-		name="description"
-		content="Ostsee-Tiere - Melden Sie Ihre Meerestier-Sichtung in der Ostsee. Unterstützen Sie die Meeresforschung mit Ihren Beobachtungen."
-	/>
-	<meta
-		name="keywords"
-		content="Meerestiere, Sichtung, Ostsee, Schweinswal, Robben, Melden, Forschung, Naturbeobachtung"
-	/>
+	<meta name="description" content={m.routes_page_meta_description()} />
+	<meta name="keywords" content={m.routes_page_meta_keywords()} />
 
 	<!-- Open Graph -->
-	<meta property="og:title" content="Ostsee-Tiere - Meerestiere melden" />
-	<meta
-		property="og:description"
-		content="Melden Sie Ihre Meerestier-Sichtung in der Ostsee. Unterstützen Sie die Meeresforschung mit Ihren Beobachtungen."
-	/>
+	<meta property="og:title" content={m.routes_page_meta_og_title()} />
+	<meta property="og:description" content={m.routes_page_meta_og_description()} />
 	<meta property="og:type" content="website" />
 
 	<!-- Twitter Card -->
 	<meta name="twitter:card" content="summary" />
-	<meta name="twitter:title" content="Ostsee-Tiere - Meerestiere melden" />
-	<meta
-		name="twitter:description"
-		content="Melden Sie Ihre Meerestier-Sichtung in der Ostsee. Unterstützen Sie die Meeresforschung mit Ihren Beobachtungen."
-	/>
+	<meta name="twitter:title" content={m.routes_page_meta_og_title()} />
+	<meta name="twitter:description" content={m.routes_page_meta_og_description()} />
 </svelte:head>
+<HreflangHead />
 
 <div
 	class="bg-base-100 mx-auto p-6"

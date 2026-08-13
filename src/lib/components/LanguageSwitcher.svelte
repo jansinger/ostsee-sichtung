@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import Icon from '$lib/components/Icon.svelte';
 	import { LOCALE_COOKIE } from '$lib/i18n/localeCookie';
 	import { istAusgeschlossen } from '$lib/legacy-api/languagePrefix';
 	import {
@@ -9,6 +10,12 @@
 		getLocale,
 		localizeHref
 	} from '$lib/paraglide/runtime';
+
+	/* Das Styling bestimmt die Aufrufstelle: Der Umschalter sitzt seit dem
+	   2026-08-13 als Eintrag im Profilmenü (`UserMenu`/`UserMenuMobile`) und
+	   nicht mehr als eigener Knopf in der Navbar-Zeile — dort passte er
+	   optisch nicht und konkurrierte bei 320px mit dem Offline-Abzeichen. */
+	let { class: className = 'btn btn-ghost btn-sm' }: { class?: string } = $props();
 
 	const andere = $derived(getLocale() === 'de' ? 'en' : 'de');
 	const beschriftung = $derived(andere === 'en' ? 'English' : 'Deutsch');
@@ -106,8 +113,9 @@
 		data-sveltekit-reload
 		onclick={sprachePersistieren}
 		onauxclick={sprachePersistieren}
-		class="btn btn-ghost btn-sm"
+		class={className}
 	>
+		<Icon icon="lucide:languages" width="16" class="h-4 w-4 shrink-0" aria-hidden="true" />
 		{beschriftung}
 	</a>
 {/if}

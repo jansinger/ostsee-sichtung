@@ -125,8 +125,12 @@ describe('Mechanisch — der Extraktor findet in Schicht C nichts mehr', () => {
 
 	/* Selbsttest. Ein Guard, der über eine leere Dateimenge läuft, ist grün und
 	   beweist nichts — das war der „stille Nullbefund" aus Aufgabe 1. */
-	it('scannt die 84 Markup-Dateien im Umfang', () => {
-		expect(svelteFiles()).toHaveLength(84);
+	it('scannt die 85 Markup-Dateien im Umfang', () => {
+		// 84 seit Aufgabe 2.3a, +1 seit Aufgabe 2.5: `HreflangHead.svelte`
+		// (`src/lib/components/seo/`) ist neuer, in-scope Code ohne eigenen
+		// Anzeigetext — der Zuwachs bestätigt, dass der Scan sie mitzählt,
+		// nicht dass sie etwas Neues zu übersetzen hätte.
+		expect(svelteFiles()).toHaveLength(85);
 	});
 });
 
@@ -143,17 +147,50 @@ describe('Mechanisch — der Extraktor findet in Schicht C nichts mehr', () => {
  * und nur die. Sinkt eine Zahl, ohne dass die Welle sie gelöst hat, ist eine
  * Stelle verschwunden statt übersetzt worden.
  */
+/**
+ * `sentence-fragment`, `interpolation` und `plural-candidate` stehen bewusst
+ * NICHT mehr hier — alle drei sind abgearbeitet (2026-08-13). Aus demselben
+ * Grund, aus dem `already-translated` oben nie hier stand: `openSkipCounts()`
+ * trägt nur Gründe ein, die tatsächlich auftreten; ein Eintrag mit `0` fände
+ * im gemessenen Objekt nie eine Entsprechung. Taucht einer künftig wieder auf,
+ * meldet der Test das von selbst (Soll-Objekt ohne den Schlüssel, Ist-Objekt
+ * mit einem) — kein `0`-Eintrag nötig, um das abzusichern.
+ *
+ * **`plural-candidate` war dabei die Falle.** Der Grund heißt so, weil der
+ * Extraktor Ziffern im Text findet; eine frühere Fassung dieses Ledgers hat
+ * ihn als „falsch-positiv" abgehakt und damit wie erledigt behandelt. Kein
+ * Plural — das stimmte. Aber die zehn Fundstellen waren durchweg **sichtbarer,
+ * unübersetzter Anzeigetext** (vier Überschriften „Schritt N: …" in `FormHelp`,
+ * die drei GPS-Format-Optionen in `LocationInput`, die Fußzeile, zwei
+ * Erklärabsätze). „Kein Plural" heißt eben nicht „nichts zu tun" — die
+ * Kategorie war eine Zurückstellung, keine Erledigung.
+ */
 const OPEN_SKIP_LEDGER: Readonly<Record<string, number>> = {
-	/** Textknoten neben einem textbehafteten Geschwister — Muster A/C, Aufgabe 2.3b. */
-	'sentence-fragment': 78,
-	/** Textknoten neben einem dynamischen Ausdruck — braucht eine ICU-Botschaft mit Parameter. */
-	interpolation: 58,
-	/** Attributwert mit Ternary — die letzte Gruppe der Dreiteilung aus Aufgabe 2.3c. */
-	'dynamic-attribute': 7,
+	/**
+	 * Attributwert mit Ternary. Bleibt auch NACH der Übersetzung stehen, weil der
+	 * Sammler nur ein reines `attr={m.key()}` als erledigt erkennt
+	 * (`already-translated`); eine `ConditionalExpression` meldet er unabhängig
+	 * von ihrem Inhalt weiter (`collectSvelte.test.ts`, „Gruppe 3", bewusst so
+	 * gebaut — sonst wäre es ein Freibrief, jede Ternary in eine falsche
+	 * Einzelbotschaft zu pressen).
+	 *
+	 * **Diese Zahl allein sagt daher NICHTS darüber, ob die Zweige übersetzt
+	 * sind** — genau darauf ist eine frühere Fassung dieses Kommentars
+	 * hereingefallen: Sie behauptete pauschal „beide Zweige übersetzt", während
+	 * vier der sechs Stellen noch hartcodiertes Deutsch trugen (`OLMap`,
+	 * `MapPanel`, `FormSteps`, `DropzoneEnhanced`). Der Schluss war von den zwei
+	 * selbst angefassten Fällen auf alle sechs verallgemeinert. Seit dem
+	 * 2026-08-13 sind alle sechs verifiziert übersetzt (Gegenprobe: kein roher
+	 * String mehr in einem Zweig) — wer die Zahl prüft, prüft trotzdem die
+	 * Zweige mit, nicht nur den Zähler.
+	 *
+	 * Die Zahl sinkt nur, wenn eine Ternary durch eine EINZELNE Botschaft
+	 * ersetzt wird (Beispiel: `StepNavigation`s Fehler-Zähler-Ternary wurde ein
+	 * ICU-Plural).
+	 */
+	'dynamic-attribute': 6,
 	/** Reine Satzzeichen, Symbole, Zahlen — Struktur, wird nie übersetzt. */
-	'no-letter-group': 44,
-	/** Ziffern-Treffer; als Pluralarbeit falsch-positiv (Protokoll, Korrektur zu 2.3b). */
-	'plural-candidate': 12,
+	'no-letter-group': 45,
 	/** Attributwert ohne jeden statischen Text (`title={file.name}`) — nie Übersetzungsarbeit. */
 	'attribute-no-static-text': 24
 };
@@ -270,30 +307,25 @@ export function findStaticTextAttributes(source: string): SourceHit[] {
  * Statischer Anzeigetext in Attributen außerhalb der Extraktor-Liste, je Datei
  * — erhoben am 2026-08-12, zusammen mit diesem Guard.
  *
- * Zwei Gruppen, beide bewusst noch offen:
+ * **SEO-Metadaten (Aufgabe 2.5, abgeschlossen am 2026-08-13).** Titel,
+ * Beschreibung, Schlagwörter und og:/twitter:-Tags der vier lokalisierten
+ * öffentlichen Seiten (`/`, `/map`, `/about`, `/bestimmungshilfe`) sind jetzt
+ * Botschaften; `HreflangHead.svelte` liefert dazu `hreflang`- und
+ * `og:locale`-Angaben je Route.
  *
- * **SEO-Metadaten (20× `content` in `<svelte:head>`).** Titel, Beschreibung
- * und Schlagwörter der fünf öffentlichen Seiten, dazu `noindex, nofollow` auf
- * der Wartungsseite (technisch, kein Text). Sie gehören zu Aufgabe 2.5
- * (`hreflang` und `og:locale`) — dort wird der Kopfbereich ohnehin je Route
- * angefasst, und eine übersetzte Beschreibung ohne `hreflang` bringt nichts.
+ * **Befund A, Komponenten-Props (abgeschlossen am 2026-08-13).** `description`,
+ * `label`, `coordinatesHint`, `actionLabel` — sieben echte Schicht-C-Fundstellen,
+ * die der Extraktor nie gezählt hat, weil er diese Attributnamen nicht kennt.
+ * Alle sieben sind jetzt Botschaften.
  *
- * **Anzeigetext an Komponenten-Props (7×).** `description`, `label`,
- * `coordinatesHint`, `actionLabel` — echte Schicht-C-Fundstellen, die diese
- * Etappe nie gezählt hat, weil der Extraktor diese Attributnamen nicht kennt.
- * Sie sind Arbeit für die nächste Welle, nicht für 2.5.
+ * Einzig verbliebener Eintrag: `src/routes/maintenance/+page.svelte` —
+ * `content="noindex, nofollow"` ist eine robots-Direktive, kein Text, und die
+ * Seite ist von der Lokalisierung ausgeschlossen (`languagePrefix.ts`). Bleibt
+ * bewusst stehen statt auf einer Ausnahmeliste, aus demselben Grund wie die
+ * `SCRIPT_TEXT_LEDGER`-Einträge oben.
  */
 const ATTRIBUTE_LEDGER: Readonly<Record<string, number>> = {
-	'src/lib/components/map/SightingsMapView.svelte': 2,
-	'src/lib/components/weather/WeatherDataFetcher.svelte': 1,
-	'src/lib/report/components/FormHelp.svelte': 1,
-	'src/lib/report/components/form/position/PositionPanel.svelte': 2,
-	'src/lib/report/components/sections/SightingDetails.svelte': 1,
-	'src/routes/+page.svelte': 6,
-	'src/routes/about/+page.svelte': 6,
-	'src/routes/bestimmungshilfe/+page.svelte': 1,
-	'src/routes/maintenance/+page.svelte': 1,
-	'src/routes/map/+page.svelte': 6
+	'src/routes/maintenance/+page.svelte': 1
 };
 
 describe('Attribute außerhalb der Extraktor-Liste', () => {

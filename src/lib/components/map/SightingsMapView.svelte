@@ -708,7 +708,7 @@
 						apiDefaultYear: apiDefaultYear
 					})}
 				>
-					Jahr {activeFilters.year}
+					{m.components_map_sightingsmapview_text_jahr_year({ year: activeFilters.year })}
 					<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
 				</button>
 			{/if}
@@ -721,7 +721,11 @@
 						query: activeFilters.query
 					})}
 				>
-					<span class="truncate">Suche „{activeFilters.query}"</span>
+					<span class="truncate"
+						>{m.components_map_sightingsmapview_text_suche_query({
+							query: activeFilters.query
+						})}</span
+					>
 					<Icon icon="lucide:x" width="14" height="14" class="shrink-0" aria-hidden="true" />
 				</button>
 			{/if}
@@ -732,7 +736,10 @@
 					onclick={resetTimeFilter}
 					aria-label={m.components_map_sightingsmapview_aria_label_zeitraum_filter_entfernen_und_volles_jah()}
 				>
-					Zeitraum {formatChipDate(activeFilters.from)}–{formatChipDate(activeFilters.to)}
+					{m.components_map_sightingsmapview_text_zeitraum_from_bis_to({
+						from: formatChipDate(activeFilters.from),
+						to: formatChipDate(activeFilters.to)
+					})}
 					<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
 				</button>
 			{/if}
@@ -745,7 +752,7 @@
 						speciesLabel: speciesLabel(speciesId)
 					})}
 				>
-					Ohne {speciesLabel(speciesId)}
+					{m.components_map_sightingsmapview_text_ohne_label({ label: speciesLabel(speciesId) })}
 					<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
 				</button>
 			{/each}
@@ -758,7 +765,9 @@
 						{ colorGroupLabel: colorGroupLabel(colorGroup) }
 					)}
 				>
-					Ohne {colorGroupLabel(colorGroup)}
+					{m.components_map_sightingsmapview_text_ohne_label({
+						label: colorGroupLabel(colorGroup)
+					})}
 					<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
 				</button>
 			{/each}
@@ -829,7 +838,7 @@
 					title={m.components_map_sightingsmapview_title_keine_sichtungen_fuer_currentdisplayedye({
 						currentDisplayedYear: currentDisplayedYear
 					})}
-					description="Für dieses Jahr liegen keine freigegebenen Meldungen vor."
+					description={m.components_map_sightingsmapview_description_fuer_dieses_jahr_liegen()}
 					action={latestYearWithData !== undefined && latestYearWithData !== currentDisplayedYear
 						? {
 								label: `Sichtungen ${latestYearWithData} anzeigen`,
@@ -850,7 +859,7 @@
 				<StatusBlock
 					variant="empty"
 					title={m.components_map_sightingsmapview_title_keine_sichtungen_fuer_den_aktuellen()}
-					description="Passen Sie den Zeitraum oder die Tierart-Filter an."
+					description={m.components_map_sightingsmapview_description_passen_sie_den_zeitraum()}
 				/>
 			</div>
 		{/if}

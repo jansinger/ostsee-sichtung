@@ -44,9 +44,13 @@ export async function fillStep4(formPage: FormPage) {
 
 /** Wait for the active step indicator to show a specific step name */
 export async function expectCurrentStep(page: Page, pattern: RegExp) {
-	await expect(page.locator('[aria-current="step"]:visible')).toHaveAttribute('aria-label', pattern, {
-		timeout: 5000
-	});
+	await expect(page.locator('[aria-current="step"]:visible')).toHaveAttribute(
+		'aria-label',
+		pattern,
+		{
+			timeout: 5000
+		}
+	);
 }
 
 /**
@@ -62,7 +66,7 @@ export async function expectCurrentStep(page: Page, pattern: RegExp) {
  * `expectCurrentStep()` after `clickNext()`.
  */
 export async function waitForNextEnabled(page: Page) {
-	await expect(page.getByRole('button', { name: /Nächster Schritt/i })).toBeEnabled({
+	await expect(page.getByRole('button', { name: /Nächster Schritt|Next step/i })).toBeEnabled({
 		timeout: 3000
 	});
 }

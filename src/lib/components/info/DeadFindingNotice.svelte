@@ -38,9 +38,9 @@
 			{m.components_info_deadfindingnotice_text_totfunde_besonders_wichtig()}
 		</svelte:element>
 		<p class={styles.bodyClass}>
-			Tote Tiere liefern wichtige Erkenntnisse über Todesursachen und Gesundheit der Population.
-			<strong>Bitte nicht berühren!</strong> Melden Sie den Fund auch an die örtlichen Behörden (Wasserschutzpolizei,
-			Nationalparkamt).
+			{m.components_info_deadfindingnotice_text_tote_tiere_liefern_wichtige()}
+			<strong>{m.components_info_deadfindingnotice_text_bitte_nicht_beruehren()}</strong>
+			{m.components_info_deadfindingnotice_text_melden_sie_den_fund_auch_an()}
 		</p>
 		{@render children?.()}
 	</div>

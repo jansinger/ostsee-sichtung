@@ -97,7 +97,7 @@
 </script>
 
 <svelte:head>
-	<title>Fehler {status} - Ostsee-Tiere</title>
+	<title>{m.routes_error_title_fehler_status_ostsee_tiere({ status })}</title>
 	<meta name="description" content="Ein Fehler ist aufgetreten - {errorMessage.title}" />
 </svelte:head>
 

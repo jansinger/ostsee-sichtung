@@ -115,8 +115,7 @@
 		<div class="border-base-300 border-t">
 			<div class="container mx-auto px-6 py-4 sm:px-8">
 				<p class="text-base-content/70 text-support">
-					© 2025–2026 Deutsches Meeresmuseum, Stralsund, Deutschland · Meldeplattform für
-					Meerestiere in der Ostsee
+					{m.components_publicfooter_text_copyright_meldeplattform()}
 				</p>
 			</div>
 		</div>
