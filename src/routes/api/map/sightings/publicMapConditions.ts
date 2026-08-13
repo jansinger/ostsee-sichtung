@@ -41,7 +41,12 @@ function statusCondition(statuses: readonly SightingStatus[]): SQL {
 		return openOnly();
 	});
 
-	return (parts.length === 1 ? parts[0] : or(...parts)) as SQL;
+	// `effective` ist nie leer (Fallback oben), `parts` also mindestens ein
+	// Element — das `!` ist damit ein Laufzeit-Fakt, keine Behauptung. Und
+	// `or(...parts)` mit mindestens einem Argument liefert nie `undefined`
+	// (siehe drizzle-orm-Quelle), der `SQL`-Cast betrifft also nur diesen
+	// einen, dokumentierten Fall — nicht `parts[0]`, das steht ohnehin fest.
+	return parts.length === 1 ? parts[0]! : (or(...parts) as SQL);
 }
 
 /**
