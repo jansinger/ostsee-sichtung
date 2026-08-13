@@ -1,15 +1,18 @@
 // ol/style wird auf Modulebene instanziiert (new Stroke(), new Fill()).
 // Mock muss vor dem Import aktiv sein — vi.mock() wird von Vitest automatisch gehoisted.
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('ol/style', () => {
 	class Stroke {
-		private opts: { color?: string; width?: number };
-		constructor(opts?: { color?: string; width?: number }) {
+		private opts: { color?: string; width?: number; lineDash?: number[] };
+		constructor(opts?: { color?: string; width?: number; lineDash?: number[] }) {
 			this.opts = opts ?? {};
 		}
 		getColor() {
 			return this.opts.color ?? 'black';
+		}
+		getLineDash() {
+			return this.opts.lineDash ?? null;
 		}
 	}
 	class Fill {
@@ -60,7 +63,7 @@ vi.mock('ol/style', () => {
 	return { Stroke, Fill, Style, Circle, RegularShape, Text };
 });
 
-import type { Feature } from 'ol';
+import { Feature } from 'ol';
 import type { Geometry } from 'ol/geom';
 import {
 	clearStyleCache,
@@ -413,5 +416,48 @@ describe('styleUtils', () => {
 				clearStyleCache();
 			}).not.toThrow();
 		});
+	});
+});
+
+describe('Marker-Optik je Bearbeitungszustand', () => {
+	beforeEach(() => {
+		clearStyleCache();
+	});
+
+	const timeFilter = { lower: 0, upper: Number.MAX_SAFE_INTEGER };
+
+	function strokeDashOf(st: string | undefined): number[] | undefined {
+		const feature = new Feature();
+		feature.setProperties({ ta: 1, ct: 1, tf: false, ts: 1_750_000_000, st });
+		const styles = createFeatureStyle(feature, {}, {}, timeFilter);
+		const image = styles?.[0]!.getImage() as unknown as {
+			getStroke: () => { getLineDash: () => number[] | null };
+		};
+		return image.getStroke().getLineDash() ?? undefined;
+	}
+
+	it('zeichnet freigegebene Marker durchgezogen', () => {
+		expect(strokeDashOf('approved')).toBeUndefined();
+	});
+
+	it('zeichnet Marker ohne Statusangabe durchgezogen', () => {
+		// Die öffentliche Karte liefert immer 'approved'; ein fehlendes Feld darf
+		// die bestehende Darstellung nicht verändern.
+		expect(strokeDashOf(undefined)).toBeUndefined();
+	});
+
+	it('zeichnet offene Marker gestrichelt', () => {
+		expect(strokeDashOf('open')).toEqual([6, 4]);
+	});
+
+	it('zeichnet abgelehnte Marker gepunktet', () => {
+		expect(strokeDashOf('rejected')).toEqual([1, 4]);
+	});
+
+	it('cacht Marker je Status getrennt', () => {
+		// Ohne den Status im Cache-Schlüssel bekäme die zweite Art die Optik der
+		// ersten — der Fehler wäre auf der Karte nur zufällig sichtbar.
+		expect(strokeDashOf('open')).toEqual([6, 4]);
+		expect(strokeDashOf('approved')).toBeUndefined();
 	});
 });

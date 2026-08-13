@@ -1018,6 +1018,7 @@
 		bind:speciesVisibility
 		bind:colorVisibility
 		onSeamarkToggle={(visible) => mapInstance?.setSeamarkVisibility(visible)}
+		showStatusLegend={isAdmin}
 	/>
 
 	<!-- Tastatur-Hilfe Button -->

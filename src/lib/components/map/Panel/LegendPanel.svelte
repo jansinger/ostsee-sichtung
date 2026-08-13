@@ -29,7 +29,10 @@
 		colorVisibility = $bindable({}),
 		// M3: Seezeichen-Ebene (OpenSeaMap) umschaltbar — der Parent reicht die
 		// Sichtbarkeit an den Map-Controller weiter.
-		onSeamarkToggle = undefined
+		onSeamarkToggle = undefined,
+		// Task 8: nur im Admin-Kontext gesetzt — die öffentliche Karte kennt keine
+		// Bearbeitungszustände und zeigt diesen Abschnitt deshalb nie.
+		showStatusLegend = false
 	} = $props<{
 		translations: MapTranslations;
 		counts: CountData;
@@ -38,6 +41,7 @@
 		speciesVisibility?: Record<string, boolean>;
 		colorVisibility?: Record<string, boolean>;
 		onSeamarkToggle?: (visible: boolean) => void;
+		showStatusLegend?: boolean;
 	}>();
 
 	// CountManager via typisiertem Svelte Context (Symbol-Key, siehe mapContext.ts)
@@ -283,4 +287,18 @@
 			{m.components_map_panel_legendpanel_text_blaue_kreise_fassen_mehrere_sichtungen()}
 		</p>
 	</div>
+
+	{#if showStatusLegend}
+		<div class="space-y-1">
+			<h3 class="text-sm font-medium">
+				{m.components_map_panel_legendpanel_text_bearbeitungsstand()}
+			</h3>
+			<p class="text-base-content/70 text-xs">
+				{m.components_map_panel_legendpanel_text_status_offen_erklaerung()}
+			</p>
+			<p class="text-base-content/70 text-xs">
+				{m.components_map_panel_legendpanel_text_status_abgelehnt_erklaerung()}
+			</p>
+		</div>
+	{/if}
 </MapPanel>
