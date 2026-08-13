@@ -45,11 +45,11 @@ export class FormPage {
 	// ── Step Navigation ──────────────────────────────────────────────────────
 
 	async clickNext() {
-		await this.page.getByRole('button', { name: /Nächster Schritt/i }).click();
+		await this.page.getByRole('button', { name: /Nächster Schritt|Next step/i }).click();
 	}
 
 	async clickSubmit() {
-		await this.page.getByRole('button', { name: /Formular absenden/i }).click();
+		await this.page.getByRole('button', { name: /Formular absenden|Submit form/i }).click();
 	}
 
 	async clickPrevious() {
@@ -184,7 +184,7 @@ export class FormPage {
 	}
 
 	async isNextDisabled(): Promise<boolean> {
-		const btn = this.page.getByRole('button', { name: /Nächster Schritt/i });
+		const btn = this.page.getByRole('button', { name: /Nächster Schritt|Next step/i });
 		return btn.isDisabled();
 	}
 
