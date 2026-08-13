@@ -11,6 +11,13 @@ const allSpecies = Object.values(SpeciesEnum).filter(
 	(v): v is SpeciesEnum => typeof v === 'number'
 );
 
+/**
+ * „Unbekannte Walart" und „Unbekannte Robbenart" sind keine Arten, sondern das
+ * Eingeständnis, keine bestimmt zu haben. Mehrere Zusicherungen unten nehmen
+ * sie deshalb aus — die Liste steht hier einmal statt in jedem Test neu.
+ */
+const PLACEHOLDERS: SpeciesEnum[] = [SpeciesEnum.UNKNOWN_WHALE, SpeciesEnum.UNKNOWN_SEAL];
+
 describe('speciesIdentification', () => {
 	it('deckt jede Tierart des Formulars ab', () => {
 		for (const species of allSpecies) {
@@ -48,8 +55,7 @@ describe('Merkmale', () => {
 	});
 
 	it('nennt für jede real bestimmbare Art mindestens ein auf Distanz erkennbares Merkmal', () => {
-		const placeholders: SpeciesEnum[] = [SpeciesEnum.UNKNOWN_WHALE, SpeciesEnum.UNKNOWN_SEAL];
-		for (const species of allSpecies.filter((s) => !placeholders.includes(s))) {
+		for (const species of allSpecies.filter((s) => !PLACEHOLDERS.includes(s))) {
 			const onDistance = speciesIdentification[species].distinguishing.filter(
 				(f) => f.observability === 'distance'
 			);
@@ -65,10 +71,33 @@ describe('Merkmale', () => {
 		}
 	});
 
-	it('ordnet jede Art nach Häufigkeit ein', () => {
-		for (const species of allSpecies) {
+	/**
+	 * Die beiden Platzhalter sind ausgenommen — dieselbe Ausnahme wie beim
+	 * Fernmerkmal-Test darüber, und aus demselben Grund: Sie bezeichnen keine
+	 * Art, sondern deren Abwesenheit.
+	 *
+	 * Das Meeresmuseum hat das am 2026-08-13 angemerkt: „Unbekannte Walart"
+	 * trug in der Bestimmungshilfe dasselbe grüne Abzeichen **Heimisch** wie
+	 * der Schweinswal. Wer nicht weiß, welche Art er gesehen hat, weiß erst
+	 * recht nicht, ob sie hier heimisch ist.
+	 *
+	 * Bewusst KEINE neue Stufe „unbekannt": Auch die wäre eine Einordnung, wo
+	 * es keine gibt. Der erklärende Text (`frequency.text`) bleibt und trägt
+	 * die Aussage weiterhin.
+	 */
+	it('ordnet jede real bestimmbare Art nach Häufigkeit ein', () => {
+		for (const species of allSpecies.filter((s) => !PLACEHOLDERS.includes(s))) {
 			const { level, text } = speciesIdentification[species].frequency;
 			expect(Object.keys(getFrequencyLabels())).toContain(level);
+			expect(text.trim().length).toBeGreaterThan(0);
+		}
+	});
+
+	it('ordnet die beiden Platzhalter NICHT nach Häufigkeit ein', () => {
+		for (const species of PLACEHOLDERS) {
+			const { level, text } = speciesIdentification[species].frequency;
+			expect(level, `${getSpeciesLabel(species)} trägt eine Häufigkeitsstufe`).toBeUndefined();
+			// Der Hinweistext bleibt: Er erklärt, wann man den Platzhalter wählt.
 			expect(text.trim().length).toBeGreaterThan(0);
 		}
 	});

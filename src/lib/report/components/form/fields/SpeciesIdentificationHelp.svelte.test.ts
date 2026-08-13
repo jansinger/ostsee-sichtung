@@ -217,4 +217,38 @@ describe('SpeciesIdentificationHelp', () => {
 		expect(accordions.length).toBeGreaterThan(0);
 		expect(accordions.every((d) => !d.open)).toBe(true);
 	});
+
+	/**
+	 * Anmerkung des Meeresmuseums (2026-08-13): Neben „Unbekannte Walart" stand
+	 * dasselbe grüne „Heimisch" wie neben dem Schweinswal. Wer die Art nicht
+	 * bestimmen konnte, kann sie erst recht nicht einordnen.
+	 *
+	 * Welcher Datensatz eine Stufe trägt, prüft `speciesIdentification.test.ts`.
+	 * Hier zählt die Strecke ins Markup: dass eine fehlende Stufe auch wirklich
+	 * kein Abzeichen erzeugt — und die Gegenprobe, dass die übrigen Arten ihres
+	 * behalten. Ohne sie wäre ein Grün auch dann zu haben, wenn das Abzeichen
+	 * überall verschwände.
+	 */
+	describe('Häufigkeits-Abzeichen', () => {
+		function badgeTextOf(artname: string): string | undefined {
+			const zeile = Array.from(root().querySelectorAll('summary.collapse-title')).find((element) =>
+				element.textContent?.includes(artname)
+			);
+			expect(zeile, `Zeile „${artname}" nicht gefunden`).toBeDefined();
+			return zeile?.querySelector('.badge')?.textContent?.trim();
+		}
+
+		it('trägt es bei einer bestimmbaren Art', () => {
+			render(SpeciesIdentificationHelp, { variant: 'page' });
+
+			expect(badgeTextOf('Schweinswal')).toBe('Heimisch');
+		});
+
+		it('lässt es bei den beiden Platzhaltern weg', () => {
+			render(SpeciesIdentificationHelp, { variant: 'page' });
+
+			expect(badgeTextOf('Unbekannte Walart')).toBeUndefined();
+			expect(badgeTextOf('Unbekannte Robbenart')).toBeUndefined();
+		});
+	});
 });

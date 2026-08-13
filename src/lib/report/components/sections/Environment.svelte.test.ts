@@ -76,3 +76,34 @@ describe('sections/Environment — Feldreihenfolge in der Karte', () => {
 		expect(fieldOrder()).toEqual(['seaState', 'visibility', 'windForce', 'windDirection']);
 	});
 });
+
+/**
+ * Wunsch des Meeresmuseums (2026-08-13): Beim Totfund beeinflussen Wetter und
+ * Seegang weder die Sichtbarkeit noch das Verhalten des Tieres, sondern seinen
+ * Zustand. Welcher Satz zu welchem Zweig gehört, entscheidet `environmentIntro`
+ * in `wording.ts` — und wird dort getestet.
+ *
+ * Hier zählt die Strecke dorthin: dass die Karte den Zweig überhaupt ausliest.
+ * Ein Test an der Funktion allein bemerkt nicht, wenn die Komponente aufhört,
+ * `$form.isDead` durchzureichen (dieselbe Begründung wie bei den
+ * `hasError`/`isValid`-Props in `FieldRenderer.svelte.test.ts`).
+ */
+describe('sections/Environment — Einleitungssatz je Zweig', () => {
+	const sichtung =
+		'Wetter- und Seebedingungen beeinflussen sowohl die Sichtbarkeit als auch das Tierverhalten';
+	const totfund = 'Wetter- und Seebedingungen können den Zustand des Tieres beeinflussen';
+
+	it('nennt bei einer Sichtung Sichtbarkeit und Tierverhalten', () => {
+		renderWithFormContext(Environment, { overrides: { isDead: false } });
+
+		expect(document.body.textContent).toContain(sichtung);
+		expect(document.body.textContent).not.toContain(totfund);
+	});
+
+	it('nennt beim Totfund den Zustand des Tieres', () => {
+		renderWithFormContext(Environment, { overrides: { isDead: true } });
+
+		expect(document.body.textContent).toContain(totfund);
+		expect(document.body.textContent).not.toContain(sichtung);
+	});
+});

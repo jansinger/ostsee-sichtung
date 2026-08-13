@@ -226,8 +226,12 @@ describe('ReportKindChoice — Fokus beim Rücksprung aus dem Formular (B7)', ()
  * Politur (Abschlussreview, nicht blockierend): `ModernReportForm.svelte`
  * unterdrückt seine `<h1>` bewusst im iframe (die Museumsseite trägt ihre
  * eigene Überschrift) — die Einstiegsseite tat das bisher nicht. Der
- * eingebettete Besucher sah „Meerestier melden" doppelt, und nach der Auswahl
- * verschwand der Titel wieder, was den Höhensprung im iframe vergrößerte.
+ * eingebettete Besucher sah den Titel doppelt, und nach der Auswahl verschwand
+ * er wieder, was den Höhensprung im iframe vergrößerte.
+ *
+ * Seit dem 2026-08-13 ist es derselbe Kopf wie über dem Formular
+ * (`ReportHeading.svelte`, Wunsch des Meeresmuseums) — die Bedingung hier
+ * bleibt davon unberührt, sie steht weiterhin an dieser Aufrufstelle.
  *
  * `window.top !== window` in dieser Testumgebung (Vitest Browser Mode rendert
  * jede Testdatei in einem eigenen iframe) — `isNotIFrame` ist hier immer
@@ -236,7 +240,7 @@ describe('ReportKindChoice — Fokus beim Rücksprung aus dem Formular (B7)', ()
  * Top-Fenster") ebenfalls nicht unit-testet.
  */
 describe('ReportKindChoice — Seitentitel im iframe unterdrückt (Politur)', () => {
-	it('rendert die H1 „Meerestier melden" in dieser (iframe-artigen) Testumgebung nicht', () => {
+	it('rendert die Seiten-H1 in dieser (iframe-artigen) Testumgebung nicht', () => {
 		render(ReportKindChoice, { onchoose: vi.fn() });
 
 		expect(document.querySelector('h1')).toBeNull();

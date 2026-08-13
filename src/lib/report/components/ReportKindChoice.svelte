@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as m from '$lib/paraglide/messages';
 	import Icon from '$lib/components/Icon.svelte';
+	import ReportHeading from './ReportHeading.svelte';
 	import { REPORT_KIND_PARAM, reportKindToParam, type ReportKind } from '$lib/report/reportKind';
 	import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
 	import { scrollToElement } from '$lib/utils/fieldNavigation';
@@ -90,14 +91,17 @@
 <div class="mx-auto max-w-2xl px-4 py-8" data-testid="report-kind-choice">
 	{#if isNotIFrame}
 		<!-- Nur außerhalb des meeresmuseum.de-iframe: Die Museumsseite trägt dort
-		     ihre eigene Überschrift „Meerestier melden" — dieselbe Bedingung wie
-		     an der (bewusst unterdrückten) Formular-Überschrift in
-		     `ModernReportForm.svelte`. Ohne sie sah ein eingebetteter Besucher den
-		     Titel doppelt, und der Höhensprung beim Wechsel zu Schritt 1 (dort
-		     bereits unterdrückt) fiel größer aus (Abschlussreview, Politur). -->
-		<h1 class="text-display mb-2">
-			{m.report_components_reportkindchoice_text_meerestier_melden()}
-		</h1>
+		     ihre eigene Überschrift — dieselbe Bedingung wie an der (bewusst
+		     unterdrückten) Formular-Überschrift in `ModernReportForm.svelte`.
+		     Ohne sie sah ein eingebetteter Besucher den Titel doppelt, und der
+		     Höhensprung beim Wechsel zu Schritt 1 (dort bereits unterdrückt) fiel
+		     größer aus (Abschlussreview, Politur).
+
+		     Seit dem 2026-08-13 steht hier derselbe Kopf wie über dem Formular
+		     (Wunsch des Deutschen Meeresmuseums) — vorher wechselte der Titel bei
+		     der Zweigwahl von „Meerestier melden" auf „Sichtung von
+		     Meeressäugetieren melden". -->
+		<ReportHeading />
 	{/if}
 	<!-- Beantwortet die naheliegende Frage „warum werde ich das gefragt?" genau
 	     dort, wo sie anfällt. -->
