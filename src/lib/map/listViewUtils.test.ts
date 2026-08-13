@@ -164,7 +164,8 @@ describe('toListEntries', () => {
 			count: 4,
 			juveniles: 2,
 			isDead: true,
-			waterway: 'Kieler Förde'
+			waterway: 'Kieler Förde',
+			status: 'approved'
 		});
 	});
 
@@ -201,6 +202,30 @@ describe('toListEntries', () => {
 		const filters = makeFilters({ hiddenSpecies: { '0': true } });
 
 		expect(toListEntries(propsList, filters, SPECIES_MAP)).toEqual([]);
+	});
+});
+
+describe('toListEntries — Bearbeitungszustand', () => {
+	const filters = {
+		hiddenSpecies: {},
+		hiddenColors: {},
+		timeFilter: { lower: 0, upper: Number.MAX_SAFE_INTEGER }
+	};
+
+	it('übernimmt den Status aus den Feature-Properties', () => {
+		const entries = toListEntries(
+			[{ id: 1, ts: 1_750_000_000, ta: 1, ct: 1, st: 'open' }],
+			filters,
+			{ '1': 'Schweinswal' }
+		);
+		expect(entries[0]?.status).toBe('open');
+	});
+
+	it('nimmt ohne Statusangabe approved an', () => {
+		const entries = toListEntries([{ id: 1, ts: 1_750_000_000, ta: 1, ct: 1 }], filters, {
+			'1': 'Schweinswal'
+		});
+		expect(entries[0]?.status).toBe('approved');
 	});
 });
 

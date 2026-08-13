@@ -957,7 +957,11 @@
 				aria-label={m.components_map_sightingsmapview_aria_label_listenansicht_der_sichtungen()}
 			>
 				<div class="mx-auto max-w-3xl px-4">
-					<SightingsListView entries={listEntries} year={currentDisplayedYear} />
+					<SightingsListView
+						entries={listEntries}
+						year={currentDisplayedYear}
+						showStatus={isAdmin}
+					/>
 				</div>
 			</section>
 		{/if}

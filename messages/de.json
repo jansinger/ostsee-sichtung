@@ -119,6 +119,7 @@
 	"components_map_panel_mappanel_aria_label_title_vergroessern": "{title} vergrößern",
 	"components_map_panel_mappanel_aria_label_title_verkleinern": "{title} verkleinern",
 	"components_map_sightingslistview_text_anzahl": "Anzahl",
+	"components_map_sightingslistview_text_bearbeitungsstand": "Bearbeitungsstand",
 	"components_map_sightingslistview_text_datum": "Datum",
 	"components_map_sightingslistview_text_fahrwasser": "Fahrwasser",
 	"components_map_sightingslistview_text_keine_sichtungen_fuer_die_aktuelle": "Keine Sichtungen für die aktuelle Auswahl vorhanden.",

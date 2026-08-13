@@ -119,6 +119,7 @@
 	"components_map_panel_mappanel_aria_label_title_vergroessern": "Expand {title}",
 	"components_map_panel_mappanel_aria_label_title_verkleinern": "Collapse {title}",
 	"components_map_sightingslistview_text_anzahl": "Number",
+	"components_map_sightingslistview_text_bearbeitungsstand": "Processing state",
 	"components_map_sightingslistview_text_datum": "Date",
 	"components_map_sightingslistview_text_fahrwasser": "Fairway",
 	"components_map_sightingslistview_text_keine_sichtungen_fuer_die_aktuelle": "There are no sightings available for the current selection.",

@@ -22,7 +22,8 @@ const ENTRIES: SightingListEntry[] = [
 		count: 3,
 		juveniles: 1,
 		isDead: false,
-		waterway: 'Kieler Förde'
+		waterway: 'Kieler Förde',
+		status: 'approved'
 	},
 	{
 		id: 1,
@@ -31,7 +32,8 @@ const ENTRIES: SightingListEntry[] = [
 		count: 1,
 		juveniles: 0,
 		isDead: true,
-		waterway: null
+		waterway: null,
+		status: 'open'
 	}
 ];
 
@@ -113,5 +115,32 @@ describe('SightingsListView', () => {
 		expect(caption).not.toBeNull();
 		expect(caption?.textContent).toContain('2025');
 		expect(caption?.textContent).toMatch(/2\s*Einträge/);
+	});
+
+	describe('Bearbeitungsstand-Spalte (showStatus)', () => {
+		it('zeigt ohne showStatus keine Bearbeitungsstand-Spalte', async () => {
+			render(SightingsListView, { entries: ENTRIES, year: 2025 });
+
+			expect(page.getByRole('columnheader', { name: 'Bearbeitungsstand' }).elements().length).toBe(
+				0
+			);
+			const headers = getTable().querySelectorAll('thead th[scope="col"]');
+			expect(headers.length).toBe(5);
+		});
+
+		it('zeigt mit showStatus eine Bearbeitungsstand-Spalte mit dem Status je Zeile', async () => {
+			render(SightingsListView, { entries: ENTRIES, year: 2025, showStatus: true });
+
+			await expect
+				.element(page.getByRole('columnheader', { name: 'Bearbeitungsstand' }))
+				.toBeInTheDocument();
+			const headers = getTable().querySelectorAll('thead th[scope="col"]');
+			expect(headers.length).toBe(6);
+
+			const rows = getBodyRows();
+			// Kegelrobbe-Eintrag ist approved, Schweinswal-Eintrag ist open
+			expect(rows[0]?.textContent).toContain('Freigegeben');
+			expect(rows[1]?.textContent).toContain('Offen');
+		});
 	});
 });
