@@ -30,7 +30,10 @@ const YEAR_MAX = 2100;
 const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 const SPECIES_ID_PATTERN = /^\d+$/;
 const COLOR_GROUP_PATTERN = /^ct\d+$/;
-const STATUS_PATTERN = /^(open|approved|rejected)$/;
+// Exportiert, damit ein Test gegen SIGHTING_STATUS_ORDER (die Quelle der drei
+// Bearbeitungszustände) prüfen kann, dass dieses Muster keinen davon
+// stillschweigend verwirft — siehe urlFilterState.test.ts.
+export const STATUS_PATTERN = /^(open|approved|rejected)$/;
 
 const MS_PER_DAY = 86_400_000;
 

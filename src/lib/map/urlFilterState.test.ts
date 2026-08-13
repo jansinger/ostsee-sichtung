@@ -6,8 +6,10 @@ import {
 	isoDateFromTimestamp,
 	parseMapFilterParams,
 	serializeMapFilterParams,
+	STATUS_PATTERN,
 	type MapFilterUrlState
 } from '$lib/map/urlFilterState';
+import { SIGHTING_STATUS_ORDER } from '$lib/components/admin/sightingStatus';
 
 /**
  * Tests für den URL-Query-Param-Sync der Sichtungskarten-Filter
@@ -479,5 +481,16 @@ describe('Statusauswahl in der URL', () => {
 			statuses: ['open', 'approved']
 		});
 		expect(state.statuses).toEqual(['open', 'approved']);
+	});
+
+	// T5.2 (Review-Befund): STATUS_PATTERN ist von Hand als Regex-Alternation
+	// gepflegt und SIGHTING_STATUS_ORDER als Array — ein vierter Zustand dort
+	// fiele hier ohne Compiler- oder Testfehler still durchs Muster. Dieser
+	// Test schließt genau diese Lücke, indem er das Muster gegen die Quelle
+	// der Zustände prüft statt gegen eine zweite, von Hand abgeschriebene Liste.
+	it('akzeptiert jeden Bearbeitungszustand aus SIGHTING_STATUS_ORDER', () => {
+		for (const status of SIGHTING_STATUS_ORDER) {
+			expect(STATUS_PATTERN.test(status)).toBe(true);
+		}
 	});
 });
