@@ -404,6 +404,33 @@ beiden:
 sudo /var/www/vhosts/<domain>/repo/legacy-inbox/deploy/install.sh
 ```
 
+Drei Dinge müssen dabei root gehören, weil root sie **einbindet** — und `.`
+ist Ausführen, nicht Lesen:
+
+| Datei                                | Eigentümer    | warum                                                             |
+| ------------------------------------ | ------------- | ----------------------------------------------------------------- |
+| `/usr/local/sbin/legacy-inbox-*`     | `root:root`   | von root ausgeführt                                               |
+| `/usr/local/sbin/legacy-inbox-melde` | `root:root`   | von den root-Skripten eingebunden                                 |
+| `legacy-sync/config`                 | `root:psacln` | von den root-Skripten eingebunden; der Dienst liest sie nur (640) |
+
+Die Kopie von `melde.sh` im Deploy-Verzeichnis bleibt bestehen — sie wird von
+`sync.sh` eingebunden, das als Domain-Benutzer läuft und dabei keine Grenze
+überschreitet.
+
+> **Was der Installationsschritt nicht löst.** `install.sh` liegt im
+> Deploy-Verzeichnis und wird als root aufgerufen — an dieser einen Stelle
+> führt root also Inhalt aus, den der Anwendungsbenutzer schreiben kann. Das
+> lässt sich nicht wegkonfigurieren: Auch wer die beiden `install`-Befehle von
+> Hand tippt, kopiert eine Datei aus demselben Verzeichnis nach
+> `/usr/local/sbin/`.
+>
+> Der Unterschied zum Zeitplan ist aber wesentlich, und er ist der Grund für
+> diese Anordnung: Der Zeitplan läuft **unbeaufsichtigt alle 15 Minuten** — ein
+> kompromittierter Dienst bekäme root von selbst. Der Installationsschritt läuft,
+> wenn ein Mensch ihn auslöst, selten und nach einer Änderung, die er kennt. Wer
+> ganz sicher gehen will, installiert aus einem vertrauenswürdigen Checkout statt
+> aus dem Deploy-Verzeichnis des Servers.
+
 Plesks Post-Deploy-Aktionen können das nicht übernehmen: Sie laufen in der
 chroot-Umgebung des Abonnements, deren Shell auf `/bin/false` steht, und
 wurden im Test überhaupt nicht ausgeführt — konfiguriert, aktiviert, wirkungslos.

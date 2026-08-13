@@ -42,16 +42,21 @@ done
 
 . "$KONFIG"
 
-# Auch dieses Skript läuft als root — es liest die Zugriffsprotokolle, die
-# nur root lesen darf — und liegt deshalb ebenfalls außerhalb des
-# Deploy-Verzeichnisses. Begründung in sync-root.sh.
-if [ -z "${SKRIPT_DIR:-}" ] || [ ! -r "$SKRIPT_DIR/melde.sh" ]; then
-	echo "Melde-Baustein nicht lesbar: ${SKRIPT_DIR:-<SKRIPT_DIR nicht gesetzt>}/melde.sh"
-	echo "Ist der Git-Deploy durchgelaufen? (plesk ext git --deploy)"
+# Auch dieses Skript läuft als root — es liest die Zugriffsprotokolle, die nur
+# root lesen darf — und liegt deshalb ebenfalls außerhalb des
+# Deploy-Verzeichnisses. Aus demselben Grund bindet es die root-eigene Fassung
+# von melde.sh ein und nicht die aus dem Deploy-Verzeichnis: `.` ist
+# Ausführen. SKRIPT_DIR braucht es dadurch gar nicht. Begründung in
+# sync-root.sh.
+MELDE="${LEGACY_SYNC_MELDE:-/usr/local/sbin/legacy-inbox-melde}"
+
+if [ ! -r "$MELDE" ]; then
+	echo "Melde-Baustein nicht lesbar: $MELDE"
+	echo "Installieren mit: sudo <deploy>/install.sh"
 	exit 1
 fi
 
-. "$SKRIPT_DIR/melde.sh"
+. "$MELDE"
 
 LOGS=/var/www/vhosts/system/schweinswalsichtung.de/logs
 

@@ -53,6 +53,13 @@ installiere() {
 installiere sync-root.sh legacy-inbox-sync
 installiere client-report.sh legacy-inbox-report
 
+# melde.sh wird von den root-Skripten per `.` eingebunden, und `.` ist
+# Ausführen. Deshalb braucht auch dieser Baustein eine root-eigene Fassung;
+# die Kopie im Deploy-Verzeichnis bleibt für sync.sh, das als Domain-Benutzer
+# läuft und dabei keine Grenze überschreitet.
+install -o root -g root -m 600 "$QUELLE/melde.sh" "$ZIEL/legacy-inbox-melde"
+echo "installiert: $ZIEL/legacy-inbox-melde"
+
 cat <<HINWEIS
 
 Die Plesk-Zeitpläne müssen auf diese Pfade zeigen:
@@ -65,4 +72,9 @@ Die Plesk-Zeitpläne müssen auf diese Pfade zeigen:
 In der config muss SKRIPT_DIR auf das Deploy-Verzeichnis zeigen:
 
   SKRIPT_DIR="$QUELLE"
+
+Die config selbst muss root gehören — sie wird von den root-Skripten
+eingebunden, und das ist Ausführen:
+
+  chown root:psacln <config> && chmod 640 <config>
 HINWEIS

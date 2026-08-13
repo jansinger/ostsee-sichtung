@@ -19,9 +19,19 @@
 # der Posteingang-Dienst läuft unter genau diesem Benutzer und ist aus dem
 # Internet erreichbar.
 #
-# Deshalb wird es nach /usr/local/sbin/ installiert (siehe install.sh) und
-# findet die übrigen Bausteine über SKRIPT_DIR aus der config, nicht über
-# `dirname $0`.
+# Deshalb wird es nach /usr/local/sbin/ installiert (siehe install.sh).
+#
+# Aus demselben Grund bindet es melde.sh NICHT aus dem Deploy-Verzeichnis ein:
+# `.` ist Ausführen. Root würde damit weiterhin Code lesen, den der
+# Anwendungsbenutzer schreiben kann — der Weg zu root bliebe bestehen, nur
+# eine Zeile tiefer. Es nutzt die mitinstallierte, root-eigene Fassung.
+#
+# Ebenso muss die config root gehören (root:psacln 640): root bindet sie ein,
+# der Dienst liest sie nur.
+#
+# SKRIPT_DIR wird weiterhin gebraucht — aber nur, um sync.sh zu starten, und
+# das geschieht per runuser ALS Domain-Benutzer. Da wird keine Grenze
+# überschritten.
 set -u
 
 KONFIG="${LEGACY_SYNC_CONFIG:-/var/www/vhosts/schweinswalsichtung.de/legacy-sync/config}"
@@ -43,13 +53,15 @@ if [ -z "${SKRIPT_DIR:-}" ]; then
 	exit 1
 fi
 
-if [ ! -r "$SKRIPT_DIR/melde.sh" ]; then
-	echo "Melde-Baustein nicht lesbar: $SKRIPT_DIR/melde.sh"
-	echo "Ist der Git-Deploy durchgelaufen? (plesk ext git --deploy)"
+MELDE="${LEGACY_SYNC_MELDE:-/usr/local/sbin/legacy-inbox-melde}"
+
+if [ ! -r "$MELDE" ]; then
+	echo "Melde-Baustein nicht lesbar: $MELDE"
+	echo "Installieren mit: sudo <deploy>/install.sh"
 	exit 1
 fi
 
-. "$SKRIPT_DIR/melde.sh"
+. "$MELDE"
 
 # Der Systembenutzer der Domain steht in der config und nicht hier im Skript:
 # Plesk vergibt ihn beim Anlegen des Abonnements, und nach einer Migration
