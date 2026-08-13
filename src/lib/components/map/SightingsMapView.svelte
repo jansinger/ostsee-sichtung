@@ -471,6 +471,16 @@
 	/**
 	 * N6: Stellt Default-Jahr, leere Suche, vollen Zeitraum und alle
 	 * Sichtbarkeiten wieder her.
+	 *
+	 * Der Bearbeitungszustand gehört seit der Produktentscheidung vom
+	 * 2026-08-13 dazu: Das Bedienelement sitzt im Filter-Panel und erzeugt
+	 * einen Filter-Chip wie jeder andere — es ist damit ein Filter, kein
+	 * Ansichtsmodus, und "Alle Filter zurücksetzen" muss einen Admin auf die
+	 * Ansicht zurückführen, die auch ein Besucher sieht. Über
+	 * `resetStatusFilter()`/`handleStatusChange()`, nicht per direkter
+	 * `statuses`-Zuweisung: Nur dieser Pfad lädt Karte UND Jahres-Zahlen im
+	 * Gleichschritt neu (siehe `yearsRequestSequencer.ts`) — eine direkte
+	 * Zuweisung ließe das Jahres-Dropdown auf der alten Auswahl stehen.
 	 */
 	function resetAllFilters(): void {
 		clearSearchFilter();
@@ -481,6 +491,11 @@
 		[...(activeFilters.hiddenColors ?? [])].forEach(showColorGroup);
 		if (mapInstance && mapInstance.getDisplayedYear() !== apiDefaultYear) {
 			switchToYear(apiDefaultYear);
+		}
+		// Nur bei abweichender Auswahl neu laden — sonst löst der Reset-Knopf
+		// bei bereits öffentlicher Auswahl einen überflüssigen Round-Trip aus.
+		if (!isPublicStatusSelection(statuses)) {
+			resetStatusFilter();
 		}
 	}
 
