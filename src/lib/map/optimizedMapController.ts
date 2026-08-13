@@ -42,6 +42,8 @@ import {
 	createSightingPopupContent,
 	type SightingPopupProperties as SightingProperties
 } from './popupContent';
+import type { SightingStatus } from '$lib/components/admin/sightingStatus';
+import { buildSightingsQuery, DEFAULT_MAP_STATUSES } from './statusRequestParams';
 
 const logger = createLogger('map:optimized-controller');
 
@@ -69,6 +71,11 @@ export interface MapOptions {
 	 * nach dem Initial-Load einen zweiten Request auszulösen.
 	 */
 	initialSearchTerm?: string;
+	/**
+	 * Bearbeitungszustände, die geladen werden. Nur Admins dürfen davon
+	 * abweichen — die API antwortet sonst mit 403.
+	 */
+	initialStatuses?: readonly SightingStatus[];
 	onLoading?: (isLoading: boolean) => void;
 	onError?: (error: Error) => void;
 	/**
@@ -108,6 +115,7 @@ export class SichtungenMap {
 	private hiddenColors: Record<string, boolean> = {};
 	private displayedYear: number;
 	private searchTerm: string = '';
+	private statuses: readonly SightingStatus[] = DEFAULT_MAP_STATUSES;
 	private legendUpdateCallback?: () => void;
 	private yearChangeCallback?: (year: number) => void;
 	private loadingCallback?: (isLoading: boolean) => void;
@@ -241,6 +249,7 @@ export class SichtungenMap {
 		// Initialize the timeFilter with sensible defaults (zeige das ganze Jahr)
 		this.displayedYear = options.initialYear ?? getDefaultSightingYear();
 		this.searchTerm = options.initialSearchTerm ?? '';
+		this.statuses = options.initialStatuses ?? DEFAULT_MAP_STATUSES;
 		const yearStart = new Date(this.displayedYear, 0, 1).getTime();
 		const yearEnd = new Date(this.displayedYear, 11, 31, 23, 59, 59).getTime();
 		this.timeFilter = {
@@ -656,6 +665,30 @@ export class SichtungenMap {
 		}
 	}
 
+	/**
+	 * Wechselt die geladenen Bearbeitungszustände und lädt neu. Analog zu
+	 * setYear(): Der Zeitfilter bleibt unberührt, die Legende aktualisiert der
+	 * Aufrufer über den CountManager.
+	 */
+	public async setStatuses(statuses: readonly SightingStatus[]): Promise<void> {
+		this.statuses = statuses;
+		this.loadingCallback?.(true);
+		try {
+			await this.loadSightings(this.displayedYear, this.searchTerm);
+			this.reportsLayer.changed();
+			this.legendUpdateCallback?.();
+			this.loadingCallback?.(false);
+		} catch (error) {
+			if (error instanceof DOMException && error.name === 'AbortError') return;
+			this.loadingCallback?.(false);
+			this.errorCallback?.(error instanceof Error ? error : new Error(String(error)));
+		}
+	}
+
+	public getStatuses(): readonly SightingStatus[] {
+		return this.statuses;
+	}
+
 	private async loadSightings(year: number, searchTerm?: string): Promise<void> {
 		// Vorherigen laufenden Request abbrechen (verhindert Race Conditions bei schnellem Wechsel)
 		if (this.activeAbortController) {
@@ -664,10 +697,9 @@ export class SichtungenMap {
 		const abortController = new AbortController();
 		this.activeAbortController = abortController;
 
-		const params = new URLSearchParams({ year: year.toString() });
-		if (searchTerm) params.set('search', searchTerm);
+		const query = buildSightingsQuery(year, searchTerm ?? '', this.statuses);
 
-		const response = await fetch(`/api/map/sightings?${params}`, {
+		const response = await fetch(`/api/map/sightings?${query}`, {
 			signal: abortController.signal
 		});
 		if (!response.ok) {
