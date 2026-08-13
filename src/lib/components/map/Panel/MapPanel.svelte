@@ -127,7 +127,9 @@
 					onclick={() => (sheetExpanded = !sheetExpanded)}
 					class="btn btn-ghost btn-sm hover:bg-base-200 min-h-11 min-w-11 md:hidden"
 					aria-expanded={sheetExpanded}
-					aria-label={sheetExpanded ? `${title} verkleinern` : `${title} vergrößern`}
+					aria-label={sheetExpanded
+						? m.components_map_panel_mappanel_aria_label_title_verkleinern({ title })
+						: m.components_map_panel_mappanel_aria_label_title_vergroessern({ title })}
 				>
 					<Icon
 						icon={sheetExpanded ? 'lucide:chevron-down' : 'lucide:chevron-up'}

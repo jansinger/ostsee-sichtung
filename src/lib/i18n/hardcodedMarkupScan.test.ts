@@ -148,33 +148,49 @@ describe('Mechanisch — der Extraktor findet in Schicht C nichts mehr', () => {
  * Stelle verschwunden statt übersetzt worden.
  */
 /**
- * `sentence-fragment` und `interpolation` stehen bewusst NICHT mehr hier
- * (Aufgabe 2.3b abgeschlossen, 2026-08-13, `about/+page.svelte` war die
- * letzte Datei) — aus demselben Grund wie `already-translated` oben nie
- * hier stand: `openSkipCounts()` trägt nur Gründe ein, die tatsächlich
- * auftreten, ein Eintrag mit `0` fände im gemessenen Objekt nie eine
- * Entsprechung. Taucht einer der beiden künftig wieder auf, meldet der Test
- * das von selbst (Soll-Objekt ohne den Schlüssel, Ist-Objekt mit einem) —
- * kein Eintrag mit `0` nötig, um das abzusichern.
+ * `sentence-fragment`, `interpolation` und `plural-candidate` stehen bewusst
+ * NICHT mehr hier — alle drei sind abgearbeitet (2026-08-13). Aus demselben
+ * Grund, aus dem `already-translated` oben nie hier stand: `openSkipCounts()`
+ * trägt nur Gründe ein, die tatsächlich auftreten; ein Eintrag mit `0` fände
+ * im gemessenen Objekt nie eine Entsprechung. Taucht einer künftig wieder auf,
+ * meldet der Test das von selbst (Soll-Objekt ohne den Schlüssel, Ist-Objekt
+ * mit einem) — kein `0`-Eintrag nötig, um das abzusichern.
+ *
+ * **`plural-candidate` war dabei die Falle.** Der Grund heißt so, weil der
+ * Extraktor Ziffern im Text findet; eine frühere Fassung dieses Ledgers hat
+ * ihn als „falsch-positiv" abgehakt und damit wie erledigt behandelt. Kein
+ * Plural — das stimmte. Aber die zehn Fundstellen waren durchweg **sichtbarer,
+ * unübersetzter Anzeigetext** (vier Überschriften „Schritt N: …" in `FormHelp`,
+ * die drei GPS-Format-Optionen in `LocationInput`, die Fußzeile, zwei
+ * Erklärabsätze). „Kein Plural" heißt eben nicht „nichts zu tun" — die
+ * Kategorie war eine Zurückstellung, keine Erledigung.
  */
 const OPEN_SKIP_LEDGER: Readonly<Record<string, number>> = {
 	/**
-	 * Attributwert mit Ternary. Bleibt auch NACH der Übersetzung stehen, wenn
-	 * beide Zweige bereits `m.key()` sind — der Sammler erkennt nur ein reines
-	 * `attr={m.key()}` als erledigt (`already-translated`), eine
-	 * `ConditionalExpression` meldet er unabhängig von ihrem Inhalt weiter als
-	 * `dynamic-attribute` (`collectSvelte.test.ts`, „Gruppe 3", bewusst so
-	 * gebaut — sonst wäre jede Ternary in eine falsche Einzelbotschaft zu
-	 * pressen ein Freibrief). Sinkt nur, wenn eine Ternary durch eine EINZELNE
-	 * Botschaft ersetzt wird (Beispiel: `StepNavigation`s Fehler-Zähler-Ternary
-	 * wurde ein ICU-Plural, `isLastStep`s Ternary blieb Ternary — beide Zweige
-	 * übersetzt, die Zahl bewegt nur der erste Fall).
+	 * Attributwert mit Ternary. Bleibt auch NACH der Übersetzung stehen, weil der
+	 * Sammler nur ein reines `attr={m.key()}` als erledigt erkennt
+	 * (`already-translated`); eine `ConditionalExpression` meldet er unabhängig
+	 * von ihrem Inhalt weiter (`collectSvelte.test.ts`, „Gruppe 3", bewusst so
+	 * gebaut — sonst wäre es ein Freibrief, jede Ternary in eine falsche
+	 * Einzelbotschaft zu pressen).
+	 *
+	 * **Diese Zahl allein sagt daher NICHTS darüber, ob die Zweige übersetzt
+	 * sind** — genau darauf ist eine frühere Fassung dieses Kommentars
+	 * hereingefallen: Sie behauptete pauschal „beide Zweige übersetzt", während
+	 * vier der sechs Stellen noch hartcodiertes Deutsch trugen (`OLMap`,
+	 * `MapPanel`, `FormSteps`, `DropzoneEnhanced`). Der Schluss war von den zwei
+	 * selbst angefassten Fällen auf alle sechs verallgemeinert. Seit dem
+	 * 2026-08-13 sind alle sechs verifiziert übersetzt (Gegenprobe: kein roher
+	 * String mehr in einem Zweig) — wer die Zahl prüft, prüft trotzdem die
+	 * Zweige mit, nicht nur den Zähler.
+	 *
+	 * Die Zahl sinkt nur, wenn eine Ternary durch eine EINZELNE Botschaft
+	 * ersetzt wird (Beispiel: `StepNavigation`s Fehler-Zähler-Ternary wurde ein
+	 * ICU-Plural).
 	 */
 	'dynamic-attribute': 6,
 	/** Reine Satzzeichen, Symbole, Zahlen — Struktur, wird nie übersetzt. */
 	'no-letter-group': 45,
-	/** Ziffern-Treffer; als Pluralarbeit falsch-positiv (Protokoll, Korrektur zu 2.3b). */
-	'plural-candidate': 10,
 	/** Attributwert ohne jeden statischen Text (`title={file.name}`) — nie Übersetzungsarbeit. */
 	'attribute-no-static-text': 24
 };

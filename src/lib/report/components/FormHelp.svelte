@@ -131,7 +131,7 @@
 						<div class="card bg-base-100 p-4">
 							<h4 class="mb-2 flex items-center gap-2 font-semibold">
 								<Icon icon="lucide:map-pin" width="16" class="text-primary" />
-								Schritt 1: Position & Zeitpunkt
+								{m.report_components_formhelp_text_schritt_1_position_zeitpunkt()}
 							</h4>
 							<ul class="space-y-1 text-xs">
 								<li>
@@ -156,7 +156,7 @@
 						<div class="card bg-base-100 p-4">
 							<h4 class="mb-2 flex items-center gap-2 font-semibold">
 								<Icon icon="lucide:binoculars" width="16" class="text-primary" />
-								Schritt 2: Angaben zum Tier
+								{m.report_components_formhelp_text_schritt_2_angaben_zum_tier()}
 							</h4>
 							<ul class="space-y-1 text-xs">
 								<li>
@@ -188,7 +188,7 @@
 						<div class="card bg-base-100 p-4">
 							<h4 class="mb-2 flex items-center gap-2 font-semibold">
 								<Icon icon="lucide:eye" width="16" class="text-primary" />
-								Schritt 3: Weitere Informationen
+								{m.report_components_formhelp_text_schritt_3_weitere_informationen()}
 							</h4>
 							<ul class="space-y-1 text-xs">
 								<li>
@@ -227,7 +227,7 @@
 						<div class="card bg-base-100 p-4">
 							<h4 class="mb-2 flex items-center gap-2 font-semibold">
 								<Icon icon="lucide:mail" width="16" class="text-primary" />
-								Schritt 4: Kontaktdaten
+								{m.report_components_formhelp_text_schritt_4_kontaktdaten()}
 							</h4>
 							<ul class="space-y-1 text-xs">
 								<li>

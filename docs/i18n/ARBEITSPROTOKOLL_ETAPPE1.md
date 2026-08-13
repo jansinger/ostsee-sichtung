@@ -1909,3 +1909,85 @@ Text unter `/en` — einzige Stelle im gesamten Bestand. Sobald das Museum eine
 gegen die eigene Datenschutzerklärung geprüfte englische Fassung liefert,
 gehört sie in `messages/en.json` unter den `routes_about_page_privacy_*`-
 Schlüsseln eingepflegt; keine weitere Code-Änderung nötig.
+
+---
+
+# Review-Befunde und Nacharbeit (2026-08-13)
+
+Vollständiger Review nach dem Rollout-Flip. Vier Invarianten nachgerechnet
+(alle erfüllt: `germanBaseline.json` bitgleich, 0 Altwerte geändert/entfernt,
+Schlüsselmengen identisch, kein Server-/Export-/Legacy-Modul berührt). Dabei
+**drei Befunde**, zwei davon in meiner eigenen Dokumentation.
+
+## Befund 1: Der Ledger-Kommentar zu `dynamic-attribute` war falsch
+
+Er behauptete pauschal, die sechs Ternaries seien „beide Zweige übersetzt".
+Tatsächlich trugen **vier von sechs hartcodiertes Deutsch**:
+
+| Datei | Text |
+| --- | --- |
+| `OLMap.svelte:216` | `'Interaktive Karte zur Positionsauswahl. …'` |
+| `MapPanel.svelte:130` | `` `${title} verkleinern` / `${title} vergrößern` `` |
+| `FormSteps.svelte:68` | `'Bitte füllen Sie zuerst die vorherigen Schritte aus'` |
+| `DropzoneEnhanced.svelte:1065` | vier Zweige, u. a. `'Medien hochladen'` |
+
+Entstanden durch **Verallgemeinerung von den zwei selbst angefassten Fällen
+auf alle sechs** — dieselbe Fehlerklasse wie die vier zu groben Buchführungen
+weiter oben, nur in der Doku statt in der Messung. `FormSteps.svelte:68` ist
+dabei die **Zwillingsstelle** zu `StepProgressCompact.svelte:92`: derselbe Satz,
+eine der beiden übersetzt, die andere nicht. Sie benutzt jetzt denselben
+Schlüssel (Präzedenz: `ReportKindFeedback` nutzt `…reportkindchoice…`-Schlüssel).
+
+Alle vier behoben, mit **Gegenprobe statt Behauptung**: Der Extraktor-Bericht
+enthält im Umfeld der sechs Ternaries kein rohes Literal mehr.
+
+## Befund 2: `plural-candidate` war keine Erledigt-, sondern eine Zurückstellungs-Kategorie
+
+Der Ledger führte die zehn Fundstellen als „falsch-positiv" — mit der
+Begründung, es seien keine echten Plurale. Das stimmte. Aber es waren
+durchweg **sichtbare, unübersetzte Anzeigetexte**:
+
+- `FormHelp.svelte` — die vier Überschriften „Schritt 1: Position & Zeitpunkt" …
+- `LocationInput.svelte` — die drei GPS-Format-Optionen im Auswahlfeld
+- `PublicFooter.svelte` — die Copyright-Zeile
+- `SpeciesIdentificationHelp.svelte`, `PositionPanel.svelte` — je ein Erklärabsatz
+
+**„Kein Plural" heißt nicht „nichts zu tun".** Der Kategoriename verstellte den
+Blick auf die eigentliche Frage. Alle zehn übersetzt; `plural-candidate` ist
+damit vollständig aus dem Zähler verschwunden.
+
+Zugleich ist damit **Aufgabe 2.4 abgeschlossen** — sie hatte nie einen
+Abschlusseintrag, weil die vier echten ICU-Plurale unterwegs in anderen Wellen
+entstanden (`StepNavigation`, `SightingsListView`, `UnifiedDropzone`,
+`SubmissionSuccess`) und der Rest als „falsch-positiv" abgehakt worden war.
+
+## Befund 3: Der Übersetzungsgrad liegt bei 11,8 % — der Rollout-Flip kam zu früh
+
+Gemessen: von 1274 Botschaften weichen **150 vom Deutschen ab**; 1124 zeigen
+unter `/en` deutschen Text. Im Browser auf `/en/about` belegt: Überschriften
+(„Über Ostsee-Tiere", „Unsere Mission", „Sichtungen seit") deutsch, Absätze
+englisch — gemischtsprachig.
+
+Damit tritt genau der Schaden ein, gegen den `TRANSLATION_ROLLOUT_COMPLETE`
+gebaut wurde und den sein eigener Docblock beschreibt: ein Umschalter auf eine
+ebenso deutsche Seite, und `noindex` entfernt, während Suchmaschinen deutsche
+Inhalte unter englischen URLs indexieren können.
+
+**Ursache:** Schicht-C-**Struktur** fertig (Markup → Botschaften) wurde als
+„Übersetzung fertig" gelesen. Der Plan trennt beides ausdrücklich — der
+**Inhalt** ist Etappe 4.
+
+**Entscheidung Jan (2026-08-13): Der Flip bleibt trotzdem stehen.** Die
+Konstante bleibt `true`, der Übersetzungsgrad wächst weiter, bis er trägt. Wer
+diesen Stand bewertet, muss wissen: `/en` ist ausgeliefert und indexierbar,
+aber inhaltlich erst zu ~12 % englisch.
+
+## Was der Guard strukturell nicht sieht (unverändert offen)
+
+- `popupContent.ts:59` — `Unbekannte Art (${props.ta})`, sichtbar im
+  Kartenpopup. `.ts`-Datei, vom Schicht-C-Guard nicht gelesen.
+- `speciesIdentification.ts` — 316 deutsche Fachtext-Literale, gerendert in
+  `SpeciesIdentificationHelp.svelte`. Schicht E.
+- Die 1124 Schlüssel, deren `en.json`-Wert dem deutschen entspricht.
+
+`discardFormUploads.ts` geprüft und **kein** Befund: nur `logger.error`.

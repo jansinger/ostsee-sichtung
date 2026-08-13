@@ -491,8 +491,7 @@
 							{m.report_components_form_fields_speciesidentificationhel_text_kleinste_art_helle_ringe_im()}
 						</p>
 						<p class="text-base-content/70">
-							Das Kopfprofil ist auch auf 100–200 m mit dem Fernglas erkennbar. Die Nasenlöcher sind
-							das sicherste Merkmal, aber meist nur auf einem Foto zu beurteilen.
+							{m.report_components_form_fields_speciesidentificationhel_text_kopfprofil()}
 						</p>
 					</div>
 				</div>

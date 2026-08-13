@@ -339,9 +339,7 @@
 			     der Foto-Weg ist nicht mehr die Hauptaktion. -->
 			<div class="text-base-content" data-testid="photo-position-card">
 				<p class="text-base-content/70 mb-3 text-sm">
-					Wenn Ihr Foto GPS-Daten enthält, übernehmen wir daraus Position, Datum und Uhrzeit. Das
-					Bild dient hier nur der Positionsbestimmung — weitere Fotos und Videos können Sie in
-					Schritt 2 hochladen.
+					{m.report_components_form_position_positionpanel_text_wenn_ihr_foto_gps_daten()}
 				</p>
 
 				{#if gpsPhotoConfig}

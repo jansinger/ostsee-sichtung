@@ -1062,11 +1062,11 @@
 			title={title ||
 				(ownedMediaFiles.length > 0
 					? isSingleFileMode
-						? 'Foto ersetzen'
-						: 'Weitere Dateien hinzufügen'
+						? m.report_components_form_fields_dropzoneenhanced_title_foto_ersetzen()
+						: m.report_components_form_fields_dropzoneenhanced_title_weitere_dateien_hinzufuegen()
 					: isSingleFileMode
-						? 'Foto hochladen'
-						: 'Medien hochladen')}
+						? m.report_components_form_fields_dropzoneenhanced_title_foto_hochladen()
+						: m.report_components_form_fields_dropzoneenhanced_title_medien_hochladen())}
 			{additionalText}
 			showPreview={false}
 		/>

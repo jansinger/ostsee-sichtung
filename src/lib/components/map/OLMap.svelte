@@ -214,8 +214,8 @@
 	role="application"
 	data-position={hasPosition ? 'set' : 'unset'}
 	aria-label={readonly
-		? 'Interaktive Karte der Sichtungen'
-		: 'Interaktive Karte zur Positionsauswahl. Pfeiltasten zum Verschieben, Plus/Minus zum Zoomen.'}
+		? m.components_map_olmap_aria_label_interaktive_karte_der_sichtungen()
+		: m.components_map_olmap_aria_label_interaktive_karte_zur_position()}
 	tabindex="0"
 ></div>
 

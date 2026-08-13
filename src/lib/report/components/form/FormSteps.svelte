@@ -67,7 +67,7 @@
 					aria-current={currentStep === index ? 'step' : undefined}
 					title={navigable
 						? step.description
-						: 'Bitte füllen Sie zuerst die vorherigen Schritte aus'}
+						: m.report_components_form_stepprogresscompact_title_bitte_fuellen_sie_zuerst()}
 					onclick={() => handleStepClick(index)}
 				>
 					{step.title}
