@@ -23,6 +23,13 @@ NODE="/opt/plesk/node/24/bin/node"
 #   plesk bin subscription --info <domain> | grep -i "system user"
 SYNC_USER="beispiel._abcdefghijk"
 
+# Deploy-Verzeichnis dieser Skripte. Die beiden root-Einstiege liegen
+# außerhalb (/usr/local/sbin/) und finden melde.sh und sync.sh über diesen
+# Pfad — sie dürfen nicht im Deploy-Verzeichnis liegen, weil der Deploy dort
+# alles dem Domain-Benutzer übereignet und root nichts ausführen soll, was
+# dieser Benutzer beschreiben kann.
+SKRIPT_DIR="/var/www/vhosts/schweinswalsichtung.de/repo/legacy-inbox/deploy"
+
 # Verzeichnis der Werkzeuge im deployten Repo. Das Sync-Werkzeug kommt von
 # dort, damit es mit dem Repo aktuell bleibt statt als Kopie zu driften.
 REPO_TOOLS="/var/www/vhosts/schweinswalsichtung.de/repo/src/tools"

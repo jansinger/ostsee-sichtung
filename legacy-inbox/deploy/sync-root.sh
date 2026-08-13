@@ -11,9 +11,19 @@
 #
 # `runuser -u … --` startet das Kommando direkt, ohne Login-Shell; die
 # gesperrte /bin/false stört deshalb nicht.
+#
+# WICHTIG — dieses Skript gehört NICHT ins Deploy-Verzeichnis. Es wird von
+# root ausgeführt, und der Git-Deploy legt dort alles unter dem Domain-Benutzer
+# an (nachgemessen: auch bei unveränderter Datei). Ein root-Zeitplan, der eine
+# vom Anwendungsbenutzer beschreibbare Datei ausführt, ist ein Weg zu root —
+# der Posteingang-Dienst läuft unter genau diesem Benutzer und ist aus dem
+# Internet erreichbar.
+#
+# Deshalb wird es nach /usr/local/sbin/ installiert (siehe install.sh) und
+# findet die übrigen Bausteine über SKRIPT_DIR aus der config, nicht über
+# `dirname $0`.
 set -u
 
-VERZEICHNIS=$(dirname "$0")
 KONFIG="${LEGACY_SYNC_CONFIG:-/var/www/vhosts/schweinswalsichtung.de/legacy-sync/config}"
 
 # Ohne Konfiguration ist nicht einmal bekannt, wem gemeldet werden soll —
@@ -27,12 +37,19 @@ fi
 
 . "$KONFIG"
 
-if [ ! -r "$VERZEICHNIS/melde.sh" ]; then
-	echo "Melde-Baustein nicht lesbar: $VERZEICHNIS/melde.sh"
+if [ -z "${SKRIPT_DIR:-}" ]; then
+	echo "SKRIPT_DIR ist in $KONFIG nicht gesetzt."
+	echo "Erwartet wird das Deploy-Verzeichnis, z. B. …/repo/legacy-inbox/deploy"
 	exit 1
 fi
 
-. "$VERZEICHNIS/melde.sh"
+if [ ! -r "$SKRIPT_DIR/melde.sh" ]; then
+	echo "Melde-Baustein nicht lesbar: $SKRIPT_DIR/melde.sh"
+	echo "Ist der Git-Deploy durchgelaufen? (plesk ext git --deploy)"
+	exit 1
+fi
+
+. "$SKRIPT_DIR/melde.sh"
 
 # Der Systembenutzer der Domain steht in der config und nicht hier im Skript:
 # Plesk vergibt ihn beim Anlegen des Abonnements, und nach einer Migration
@@ -61,4 +78,4 @@ Bis dahin wird der Posteingang NICHT nach Produktion übertragen."
 	exit 1
 fi
 
-exec /usr/sbin/runuser -u "$SYNC_USER" -- "$VERZEICHNIS/sync.sh"
+exec /usr/sbin/runuser -u "$SYNC_USER" -- "$SKRIPT_DIR/sync.sh"
