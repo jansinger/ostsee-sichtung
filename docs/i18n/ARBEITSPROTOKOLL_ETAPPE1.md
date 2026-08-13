@@ -2103,3 +2103,44 @@ gelesen, nicht per Nachbearbeitung geglättet.
 **Konsequenz für die Bewertung des Werkzeugs:** Von 20 Segmenten waren zwei
 fachlich falsch — 10 %, und zwar an Begriffen, die im ganzen Bestand
 wiederkehren. Das Glossar senkt das, ersetzt aber die Durchsicht nicht.
+
+## Zweiter und dritter Trockenlauf: das Glossar wirkt, die Stichprobe war schlecht gewählt
+
+**Nach dem Glossar** (`--limit 20`, dieselben `api_*`-Segmente): „Sichtung" →
+*sighting*, „Meldung" → *report*. Beide Fachfehler behoben, Platzhalter
+unverändert, `$schema` verschwunden.
+
+**Die Stichprobe taugte aber nichts.** Die Schlüssel sind alphabetisch sortiert,
+`--limit 20` zeigt deshalb immer denselben Anfang: die `api_*`-Fehlermeldungen.
+Das sind vollständige technische Sätze — der einfachste Fall im ganzen Bestand.
+Zwanzig grüne davon sagen nichts über die Segmente, die Risiko tragen. Dafür
+gibt es jetzt `--filter <präfix>`.
+
+**Der Lauf über `--filter sighting_`** (Schema-Labels und Hilfetexte) brachte
+dann den erwarteten Befund — und zwar einen, den kein einzelnes Segment für
+sich zeigt:
+
+| Schlüssel | Deutsch | DeepL |
+| --- | --- | --- |
+| `boatdrive_label` | Bootsantrieb | Boat **propulsion** |
+| `boatdrive_meta_helptext` | Welcher **Antrieb** … | Which **drive system** … |
+| `boatdrive_meta_valuetext` | Die **Antriebsart** … | type of **propulsion** |
+| `boatdrivetext_label` | Sonstiger **Antrieb** | Other **drive systems** |
+
+Das Feld hieße „Boat propulsion", der Hilfetext direkt darunter fragte nach
+einem „drive system" — zwei Begriffe für dieselbe Sache, sichtbar untereinander.
+Die letzte Zeile trägt zusätzlich einen Numerus-Fehler: „Sonstiger Antrieb" ist
+Singular (Gegenstück zu „Sonstiges Verhalten" → „Other behaviour").
+
+**Lehre für die Prüfung:** Jedes dieser vier Segmente ist für sich betrachtet
+vertretbar übersetzt. Der Fehler entsteht erst im Vergleich untereinander —
+eine Stichprobe, die Segmente einzeln bewertet, findet ihn nicht. Zu prüfen ist
+**pro Feldgruppe**, nicht pro Segment. Glossar um `Antrieb`/`Bootsantrieb`/
+`Antriebsart` erweitert (16 Begriffe).
+
+**Zweiter, kleinerer Befund:** `Nahrungssuche` wurde zu „foraging **patterns**" —
+DeepL ergänzt ein Wort, das im Deutschen nicht steht. Bei `meta_valuetext` ist
+das heikel, weil `sightingSchemaClaims.test.ts` genau über inhaltliche
+Behauptungen in diesen Texten wacht. Kein Glossar-Fall (die Neigung zur
+Ausschmückung lässt sich nicht per Begriffsliste abstellen) — gehört im Diff
+gelesen.

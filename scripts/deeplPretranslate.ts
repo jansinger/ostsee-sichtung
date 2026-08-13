@@ -122,7 +122,15 @@ const GLOSSAR: Record<string, string> = {
 	Robbe: 'seal',
 	Robben: 'seals',
 	Totfund: 'dead animal find',
-	Meeresmuseum: 'Oceanographic Museum'
+	Meeresmuseum: 'Oceanographic Museum',
+	// Aus dem Trockenlauf `--filter sighting_` (2026-08-13): „Antrieb" bekam
+	// drei Übersetzungen — *propulsion* im Label, *drive system* im Hilfetext
+	// direkt darunter, *drive systems* (Numerus falsch) im Freitext-Label.
+	// Für ein Formularfeld ist das der schlimmste Fall: zwei Begriffe für
+	// dieselbe Sache, sichtbar untereinander.
+	Antrieb: 'propulsion',
+	Bootsantrieb: 'boat propulsion',
+	Antriebsart: 'propulsion type'
 };
 
 /**

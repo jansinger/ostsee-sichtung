@@ -1,31 +1,31 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
-	"api_files_delete_text_datei_erfolgreich_geloescht": "Datei erfolgreich gelöscht",
-	"api_files_delete_text_datei_kann_nicht_geloescht_werden_keine": "Datei kann nicht gelöscht werden - keine Berechtigung",
-	"api_files_delete_text_datei_kann_nicht_geloescht_werden_sie_is": "Datei kann nicht gelöscht werden - sie ist bereits einer Sichtung zugeordnet",
-	"api_files_delete_text_datei_nicht_gefunden": "Datei nicht gefunden",
-	"api_files_delete_text_datei_wurde_geloescht_oder_existierte_be": "Datei wurde gelöscht oder existierte bereits nicht",
-	"api_files_delete_text_interner_server_fehler_beim_datei_loesch": "Interner Server-Fehler beim Datei-Löschen",
-	"api_files_delete_text_ungueltiger_datei_pfad": "Ungültiger Datei-Pfad",
-	"api_files_upload_text_dateiinhalt_stimmt_nicht_mit_dem_angegeb": "Dateiinhalt stimmt nicht mit dem angegebenen Typ überein",
-	"api_files_upload_text_die_meldung_enthaelt_bereits_used_mb": "Die Meldung enthält bereits {used} MB. Insgesamt sind {max} MB erlaubt.",
-	"api_files_upload_text_dieser_dateityp_ist_aus_sicherheitsgruen": "Dieser Dateityp ist aus Sicherheitsgründen nicht erlaubt",
-	"api_files_upload_text_interner_server_fehler_beim_datei_upload": "Interner Server-Fehler beim Datei-Upload",
-	"api_files_upload_text_keine_datei_hochgeladen": "Keine Datei hochgeladen",
-	"api_files_upload_text_sie_haben_in_der_letzten_stunde_bereits": "Sie haben in der letzten Stunde bereits {used} MB übertragen. Bitte versuchen Sie es später erneut.",
-	"api_geo_inbaltic_text_fehler_bei_der_geo_pruefung": "Fehler bei der Geo-Prüfung",
-	"api_geo_inbaltic_text_parameter_latitude_bereich": "Der Parameter latitude muss zwischen -90 und 90 liegen",
-	"api_geo_inbaltic_text_parameter_longitude_bereich": "Der Parameter longitude muss zwischen -180 und 180 liegen",
-	"api_geo_inbaltic_text_parameter_longitude_latitude_angegeben": "Die Parameter longitude und latitude müssen angegeben werden",
-	"api_geo_inbaltic_text_parameter_longitude_latitude_zahlen": "Die Parameter longitude und latitude müssen gültige Zahlen sein",
-	"api_sightings_text_die_daten_konnten_nicht_in_der_datenbank": "Die Daten konnten nicht in der Datenbank gespeichert werden",
-	"api_sightings_text_ein_unbekannter_fehler_ist_aufgetreten": "Ein unbekannter Fehler ist aufgetreten",
-	"api_sightings_text_unbekannter_validierungsfehler": "Unbekannter Validierungsfehler",
-	"api_sightings_text_ungueltige_formularuebermittlung": "Ungültige Formularübermittlung",
-	"api_sightings_text_validierungsfehler_bei_der_eingabe": "Validierungsfehler bei der Eingabe",
-	"api_weather_historical_text_fehlende_oder_ungueltige_parameter": "Fehlende oder ungültige Parameter: lat, lng, date",
-	"api_weather_historical_text_fuer_diesen_ort_und_dieses_datum_konnten": "Für diesen Ort und dieses Datum konnten keine Wetterdaten abgerufen werden.",
-	"api_weather_historical_text_interner_serverfehler": "Interner Serverfehler",
+	"api_files_delete_text_datei_erfolgreich_geloescht": "File deleted successfully",
+	"api_files_delete_text_datei_kann_nicht_geloescht_werden_keine": "File cannot be deleted – no permission",
+	"api_files_delete_text_datei_kann_nicht_geloescht_werden_sie_is": "The file cannot be deleted – it is already assigned to a sighting",
+	"api_files_delete_text_datei_nicht_gefunden": "File not found",
+	"api_files_delete_text_datei_wurde_geloescht_oder_existierte_be": "The file has been deleted or did not exist in the first place",
+	"api_files_delete_text_interner_server_fehler_beim_datei_loesch": "Internal server error whilst deleting a file",
+	"api_files_delete_text_ungueltiger_datei_pfad": "Invalid file path",
+	"api_files_upload_text_dateiinhalt_stimmt_nicht_mit_dem_angegeb": "The file contents do not match the specified type",
+	"api_files_upload_text_die_meldung_enthaelt_bereits_used_mb": "The report already contains {used} MB. A total of {max} MB is permitted.",
+	"api_files_upload_text_dieser_dateityp_ist_aus_sicherheitsgruen": "This file type is not permitted for security reasons",
+	"api_files_upload_text_interner_server_fehler_beim_datei_upload": "Internal server error during file upload",
+	"api_files_upload_text_keine_datei_hochgeladen": "No file uploaded",
+	"api_files_upload_text_sie_haben_in_der_letzten_stunde_bereits": "You have already transferred {used} MB in the last hour. Please try again later.",
+	"api_geo_inbaltic_text_fehler_bei_der_geo_pruefung": "Error during the geo-check",
+	"api_geo_inbaltic_text_parameter_latitude_bereich": "The ‘latitude’ parameter must be between -90 and 90",
+	"api_geo_inbaltic_text_parameter_longitude_bereich": "The ‘longitude’ parameter must be between -180 and 180",
+	"api_geo_inbaltic_text_parameter_longitude_latitude_angegeben": "The parameters ‘longitude’ and ‘latitude’ must be specified",
+	"api_geo_inbaltic_text_parameter_longitude_latitude_zahlen": "The parameters ‘longitude’ and ‘latitude’ must be valid numbers",
+	"api_sightings_text_die_daten_konnten_nicht_in_der_datenbank": "The data could not be saved to the database",
+	"api_sightings_text_ein_unbekannter_fehler_ist_aufgetreten": "An unknown error has occurred",
+	"api_sightings_text_unbekannter_validierungsfehler": "Unknown validation error",
+	"api_sightings_text_ungueltige_formularuebermittlung": "Invalid form submission",
+	"api_sightings_text_validierungsfehler_bei_der_eingabe": "Validation error during data entry",
+	"api_weather_historical_text_fehlende_oder_ungueltige_parameter": "Missing or invalid parameters: lat, lng, date",
+	"api_weather_historical_text_fuer_diesen_ort_und_dieses_datum_konnten": "No weather data could be retrieved for this location and this date.",
+	"api_weather_historical_text_interner_serverfehler": "Internal server error",
 	"components_charts_barchart_text_werte_als_tabelle": "Werte als Tabelle",
 	"components_connectionbadge_text_eingaben_werden_gespeichert": "Eingaben werden gespeichert",
 	"components_connectionbadge_text_keine_internetverbindung_ihre_eingaben_w": "Keine Internetverbindung. Ihre Eingaben werden gespeichert.",
@@ -39,8 +39,13 @@
 	"components_form_unifieddropzone_text_datei_hier_ablegen": "Datei hier ablegen!",
 	"components_form_unifieddropzone_text_datei_hochgeladen_plural": [
 		{
-			"declarations": ["input count", "local countPlural = count: plural"],
-			"selectors": ["countPlural"],
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
 			"match": {
 				"countPlural=one": "{count} file uploaded",
 				"countPlural=other": "{count} files uploaded"
@@ -53,8 +58,13 @@
 	"components_form_unifieddropzone_text_mb": "MB",
 	"components_form_unifieddropzone_text_und_weitere_plural": [
 		{
-			"declarations": ["input count", "local countPlural = count: plural"],
-			"selectors": ["countPlural"],
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
 			"match": {
 				"countPlural=one": "and {count} more",
 				"countPlural=other": "and {count} more"
@@ -116,8 +126,14 @@
 	"components_map_sightingslistview_text_keine_sichtungen_fuer_die_aktuelle": "Keine Sichtungen für die aktuelle Auswahl vorhanden.",
 	"components_map_sightingslistview_text_sichtungen_jahr_plural": [
 		{
-			"declarations": ["input count", "input year", "local countPlural = count: plural"],
-			"selectors": ["countPlural"],
+			"declarations": [
+				"input count",
+				"input year",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
 			"match": {
 				"countPlural=one": "Sightings {year} – {count} entry",
 				"countPlural=other": "Sightings {year} – {count} entries"
@@ -508,8 +524,13 @@
 	"map_popupcontent_text_sichtungen_an_diesem_ort": "{sichtungen} an diesem Ort",
 	"map_popupcontent_text_sichtungen_plural": [
 		{
-			"declarations": ["input count", "local countPlural = count: plural"],
-			"selectors": ["countPlural"],
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
 			"match": {
 				"countPlural=one": "{count} Sichtung",
 				"countPlural=other": "{count} Sichtungen"
@@ -518,8 +539,13 @@
 	],
 	"map_popupcontent_text_tiere_plural": [
 		{
-			"declarations": ["input count", "local countPlural = count: plural"],
-			"selectors": ["countPlural"],
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
 			"match": {
 				"countPlural=one": "{count} Tier",
 				"countPlural=other": "{count} Tiere"
@@ -554,8 +580,13 @@
 	"report_components_form_fields_dropzoneenhanced_text_datei_erfolgreich_hochgeladen": "Datei erfolgreich hochgeladen.",
 	"report_components_form_fields_dropzoneenhanced_text_datei_plural": [
 		{
-			"declarations": ["input count", "local countPlural = count: plural"],
-			"selectors": ["countPlural"],
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
 			"match": {
 				"countPlural=one": "{count} file",
 				"countPlural=other": "{count} files"
@@ -687,8 +718,13 @@
 	"report_components_form_stepnavigation_aria_label_vorheriger_schritt": "Vorheriger Schritt",
 	"report_components_form_stepnavigation_aria_label_zu_den_fehlerhaften_plural": [
 		{
-			"declarations": ["input count", "local countPlural = count: plural"],
-			"selectors": ["countPlural"],
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
 			"match": {
 				"countPlural=one": "Jump to the field with an error",
 				"countPlural=other": "Jump to the {count} fields with errors"
@@ -697,8 +733,14 @@
 	],
 	"report_components_form_stepnavigation_text_bitte_beheben_sie_die_fehler_plural": [
 		{
-			"declarations": ["input count", "input step", "local countPlural = count: plural"],
-			"selectors": ["countPlural"],
+			"declarations": [
+				"input count",
+				"input step",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
 			"match": {
 				"countPlural=one": "Bitte beheben Sie den Fehler in \"{step}\" bevor Sie fortfahren.",
 				"countPlural=other": "Bitte beheben Sie die {count} Fehler in \"{step}\" bevor Sie fortfahren."
@@ -708,8 +750,13 @@
 	"report_components_form_stepnavigation_text_schritt_step": "Schritt {step}",
 	"report_components_form_stepnavigation_text_steperrorcount_fehler_plural": [
 		{
-			"declarations": ["input count", "local countPlural = count: plural"],
-			"selectors": ["countPlural"],
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
 			"match": {
 				"countPlural=one": "{count} error",
 				"countPlural=other": "{count} errors"
@@ -880,8 +927,13 @@
 	"report_components_steps_step4contact_text_gespeicherte_kontaktdaten_gefunden": "✓ Gespeicherte Kontaktdaten gefunden",
 	"report_components_steps_step4contact_text_hochgeladene_aufnahmen_plural": [
 		{
-			"declarations": ["input count", "local countPlural = count: plural"],
-			"selectors": ["countPlural"],
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
 			"match": {
 				"countPlural=one": "Ihre hochgeladene Aufnahme:",
 				"countPlural=other": "Ihre {count} hochgeladenen Aufnahmen:"
@@ -925,8 +977,13 @@
 	"report_components_submissionsuccess_text_tierart": "Tierart:",
 	"report_components_submissionsuccess_text_totalcount_tier_plural": [
 		{
-			"declarations": ["input count", "local countPlural = count: plural"],
-			"selectors": ["countPlural"],
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
 			"match": {
 				"countPlural=one": "{count} animal",
 				"countPlural=other": "{count} animals"
