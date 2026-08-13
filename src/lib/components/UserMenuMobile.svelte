@@ -2,11 +2,15 @@
 	import * as m from '$lib/paraglide/messages';
 	import type { PublicUser } from '$lib/types/User';
 	import Icon from '$lib/components/Icon.svelte';
+	import LanguageSwitcher from './LanguageSwitcher.svelte';
 
 	/* `isAdmin` ist hier bewusst weggefallen — Begründung in `UserMenu.svelte`:
 	   Der Eintrag „Admin-Bereich" dupliziert „Verwaltung → Sichtungen" aus dem
 	   Burger-Menü, das direkt darüber steht. */
-	let { user }: { user: PublicUser | null } = $props();
+	let {
+		user,
+		showLanguageSwitcher = false
+	}: { user: PublicUser | null; showLanguageSwitcher?: boolean } = $props();
 </script>
 
 {#if user}
@@ -37,6 +41,10 @@
 		</div>
 	</div>
 
+	<!-- Sprachumschalter: Begründung siehe `UserMenu.svelte`. -->
+	{#if showLanguageSwitcher}
+		<li><LanguageSwitcher class="flex items-center gap-2" /></li>
+	{/if}
 	<!-- User Menu Items for Mobile -->
 	<li>
 		<a href="/api/auth/logout" class="text-error hover:bg-error/10 flex items-center gap-2">

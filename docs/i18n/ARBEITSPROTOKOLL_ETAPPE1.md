@@ -1991,3 +1991,80 @@ aber inhaltlich erst zu ~12 % englisch.
 - Die 1124 Schlüssel, deren `en.json`-Wert dem deutschen entspricht.
 
 `discardFormUploads.ts` geprüft und **kein** Befund: nur `logger.error`.
+
+---
+
+# Sprachumschalter ins Profilmenü, Superadmin-Gate, DeepL-Vorübersetzung (2026-08-13)
+
+## Umschalter: raus aus der Navbar-Zeile, rein ins Profilmenü
+
+Entscheidung Jan: In der Navigationszeile passte er optisch nicht. Er steht
+jetzt als Eintrag in `UserMenu`/`UserMenuMobile`. Zwei Nebenwirkungen, beide
+erwünscht:
+
+- Die **320px-Platzkonkurrenz mit dem Offline-Abzeichen ist strukturell weg**
+  (Commit 4098b962: 231px Inhalt gegen 320px Breite). Die
+  `!connection.isOffline`-Bedingung an der Einbindung wird damit
+  gegenstandslos und ist entfallen — samt der beiden Imports, die dadurch
+  verwaisten (vom Lint gefangen).
+- `LanguageSwitcher` bestimmt sein Styling nicht mehr selbst, sondern nimmt es
+  über eine `class`-Prop von der Aufrufstelle (Default bleibt der alte
+  Button-Stil). Dazu ein `lucide:languages`-Icon.
+
+## Sichtbar nur für Superadmins
+
+`showLanguageSwitcher: isSuperAdminUser(locals.user)` in `+layout.server.ts`,
+nach demselben Muster wie `showAdminMenu` — serverseitig berechnet, weil
+`PublicUser` die Rollen bewusst nicht trägt.
+
+Begründung: Die englische Fassung ist erst zu 13 % übersetzt, soll aber im
+Betrieb prüfbar sein, ohne jedem Besucher einen Umschalter auf eine
+überwiegend deutsche Seite anzubieten.
+
+**Beide Richtungen geprüft, nicht nur eine.** Der Negativtest allein
+(„nirgends im Header") wäre auch dann grün, wenn der Umschalter versehentlich
+ganz aus dem Markup gefallen wäre. `navbar-structure.spec.ts` prüft deshalb
+zusätzlich positiv: mit `seedAdminSession(context, baseURL, ['admin',
+'superadmin'])` erscheint er im aufgeklappten Profilmenü, mit korrektem
+`hreflang` und Ziel-URL. Zwei Fallstricke dabei:
+
+- Playwright bildet ein `<summary>` **nicht** auf `role=button` ab — ein
+  `getByRole`-Filter läuft ins Leere. Der Selektor greift jetzt über das
+  `aria-label`.
+- Zugeklappt ist der Umschalter im DOM, aber unsichtbar; der Test prüft
+  deshalb erst `toBeHidden()`, dann nach dem Klick `toBeVisible()`.
+
+## `scripts/deeplPretranslate.ts`
+
+Vorübersetzung der noch deutschen `en.json`-Werte. **Trockenlauf per Default**,
+`--write` schreibt. Vier Eigenschaften, auf die es ankommt:
+
+1. Rührt **nur** Schlüssel an, deren englischer Wert dem deutschen entspricht —
+   die von Hand übersetzten bleiben unangetastet.
+2. Kapselt `{platzhalter}` in `<x>`-Tags (`ignore_tags`) und **verwirft** jeden
+   Wert, bei dem die Platzhaltermenge nicht identisch zurückkommt, statt eine
+   kaputte Botschaft zu schreiben.
+3. Behandelt die inlang-Variantenform (Objekt, kein String) über `match`.
+   **Vorbehalt:** DE und EN teilen zufällig die CLDR-Kategorien `one`/`other` —
+   eine Sprache mit `few`/`many` bräuchte Handarbeit.
+4. Lässt die sieben `routes_about_page_privacy_*` aus (`--include-privacy`
+   überschreibt das bewusst): Maschinenübersetzung ist dort genauso ungeprüft
+   wie eine von Hand und braucht dieselbe rechtliche Abnahme.
+
+Erkennt aktuell **1121 unübersetzte Segmente**. Das Skript ist ein
+Vorschlag-Generator, kein Abschluss — DeepL sieht ein Segment ohne sein Markup
+und weiß nicht, dass es Teil eines zusammengesetzten Satzes ist.
+
+## Extraktions-Vollständigkeit: die ehrliche Antwort
+
+**Schicht C ist durch** (`sentence-fragment` 0, `interpolation` 0,
+`plural-candidate` 0). **Der Bestand ist es nicht:**
+
+- Der Guard liest ausschließlich `.svelte` — Anzeigetext in `.ts` sieht er
+  prinzipbedingt nicht. Sichtbar betroffen: `speciesIdentification.ts` (316
+  Fachtext-Literale) und `popupContent.ts` (`Unbekannte Art`).
+- Übersetzungsgrad 13,0 % (168/1292).
+- Ein grober Scan meldet 73 weitere `.ts`-Dateien mit deutschen Literalen,
+  überwiegend Logzeilen und Admin-Bereich. **Eine belastbare Zahl gibt es
+  nicht** — die bräuchte dieselbe Zielgruppen-Trennung wie Befund C, und die
+  geht nur Zeile für Zeile.

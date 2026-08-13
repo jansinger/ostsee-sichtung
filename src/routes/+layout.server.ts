@@ -1,5 +1,5 @@
 import { ServerConfigService } from '$lib/services/configService';
-import { isAdminUser } from '$lib/server/auth/auth';
+import { isAdminUser, isSuperAdminUser } from '$lib/server/auth/auth';
 import type { PublicUser } from '$lib/types/User';
 import type { LayoutServerLoad } from './$types';
 
@@ -37,6 +37,12 @@ export const load = (async ({ locals }) => {
 		sessionExpiresAt: locals.sessionExpiresAt?.toISOString() ?? null,
 		// Server-side computed admin status for UI rendering
 		showAdminMenu: isAdmin,
+		/* Der Sprachumschalter ist vorerst nur für Superadmins sichtbar
+		   (Entscheidung Jan, 2026-08-13): Die englische Fassung ist erst zu
+		   ~13 % übersetzt, soll aber im Betrieb prüfbar sein. Serverseitig
+		   berechnet wie `showAdminMenu` — `PublicUser` trägt die Rollen
+		   bewusst nicht, sie sind aus dem Frontend-Typ herausgefiltert. */
+		showLanguageSwitcher: isSuperAdminUser(locals.user),
 		maintenanceConfig
 	};
 }) satisfies LayoutServerLoad;

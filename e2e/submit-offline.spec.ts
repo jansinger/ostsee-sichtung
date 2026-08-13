@@ -94,12 +94,12 @@ test.describe('Absenden ohne Internetverbindung', () => {
 
 		expect(layout).not.toBeNull();
 		expect(layout!.badgeVisible).toBe(false);
-		// Menü (Desktop) + Dropdown (Mobil) + Sprachumschalter — kein viertes,
-		// leeres Flex-Item. Der Umschalter (`LanguageSwitcher.svelte`) ist seit
-		// `TRANSLATION_ROLLOUT_COMPLETE = true` (2026-08-13,
-		// `$lib/i18n/translationRolloutStage.ts`) eingebunden, hier online, also
-		// bei bestehender Verbindung (`!connection.isOffline`) sichtbar.
-		expect(layout!.inFlowChildren).toBe(3);
+		// Menü (Desktop) + Dropdown (Mobil) — kein drittes, leeres Flex-Item.
+		// Der Sprachumschalter zählt hier nicht mit: Er sitzt seit dem 2026-08-13
+		// im Profilmenü (`UserMenu`), nicht mehr als eigenes Element in
+		// `.navbar-end` — und ist für einen anonymen Besucher ohnehin nicht im
+		// DOM (nur Superadmins, `+layout.server.ts`).
+		expect(layout!.inFlowChildren).toBe(2);
 	});
 
 	/**
@@ -109,13 +109,13 @@ test.describe('Absenden ohne Internetverbindung', () => {
 	 * schmalsten unterstützten Breite (`horizontal-overflow.spec.ts`) — nur dann
 	 * über, wenn BEIDE gleichzeitig sichtbar waren: 231px Inhalt gegen 320px
 	 * verfügbare Breite, davon 74px der Sprachumschalter. Die `!connection.isOffline`-
-	 * Bedingung an der Einbindung des Umschalters (`PublicNavbar.svelte`) sorgt
-	 * dafür, dass sich beide nie gleichzeitig um den Platz streiten: Der
-	 * Umschalter ist seit `TRANSLATION_ROLLOUT_COMPLETE = true` (2026-08-13)
-	 * zwar wieder in der Navbar, aber genau dann ausgeblendet, wenn das
-	 * Offline-Abzeichen erscheint. Dieser Test prüft deshalb weiterhin nur die
-	 * schwächere Aussage: das Offline-Abzeichen läuft für sich allein bei 320px
-	 * nicht über.
+	 * Bedingung an der Einbindung des Umschalters sorgte dafür, dass sich beide
+	 * nie gleichzeitig um den Platz streiten.
+	 * Seit dem 2026-08-13 ist die Konkurrenz strukturell aufgelöst: Der
+	 * Umschalter sitzt im Profilmenü, nicht mehr in `.navbar-end` — genau
+	 * deshalb wurde er dorthin verschoben. Dieser Test prüft damit weiterhin
+	 * die Aussage, auf die es ankommt: das Offline-Abzeichen läuft für sich
+	 * allein bei 320px nicht über.
 	 */
 	test('Offline-Abzeichen läuft bei 320px nicht über', async ({ page, context }) => {
 		await page.setViewportSize({ width: 320, height: 800 });

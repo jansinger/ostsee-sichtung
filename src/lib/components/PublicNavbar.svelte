@@ -5,17 +5,18 @@
 	import Icon from '$lib/components/Icon.svelte';
 
 	import { ADMIN_BEREICHE, istAdminPfad } from '$lib/config/adminNav';
-	import { TRANSLATION_ROLLOUT_COMPLETE } from '$lib/i18n/translationRolloutStage';
 	import { localizeHref } from '$lib/paraglide/runtime';
-	import { connection } from '$lib/stores/connectionState.svelte';
 	import type { PublicUser } from '$lib/types/User';
 	import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
-	import LanguageSwitcher from './LanguageSwitcher.svelte';
 	import OstseeTiereLogo from './OstseeTiereLogo.svelte';
 	import UserMenu from './UserMenu.svelte';
 	import UserMenuMobile from './UserMenuMobile.svelte';
 
-	let { user, isAdmin = false }: { user: PublicUser | null; isAdmin: boolean } = $props();
+	let {
+		user,
+		isAdmin = false,
+		showLanguageSwitcher = false
+	}: { user: PublicUser | null; isAdmin: boolean; showLanguageSwitcher?: boolean } = $props();
 
 	const currentPath = $derived(page.url.pathname);
 
@@ -120,21 +121,6 @@
 					-->
 					<ConnectionBadge compact />
 
-					<!--
-						Eingebunden seit `TRANSLATION_ROLLOUT_COMPLETE = true` (2026-08-13,
-						`$lib/i18n/translationRolloutStage.ts`) — dort auch die eine bekannte
-						Ausnahme (Datenschutz-Abschnitt auf `/about` bleibt deutsch).
-
-						`!connection.isOffline` bleibt zusätzlich zur äußeren Bedingung
-						bestehen (Commit 4098b962: Umschalter + Offline-Abzeichen liefen bei
-						320px gemeinsam über, 231px Inhalt gegen 320px verfügbare Breite) —
-						beide Bedienelemente konkurrieren dadurch nie gleichzeitig um Platz.
-						`e2e/navbar-structure.spec.ts` prüft die Einbindung positiv,
-						`e2e/submit-offline.spec.ts` die Platz-Aufteilung online/offline.
-					-->
-					{#if TRANSLATION_ROLLOUT_COMPLETE && !connection.isOffline}
-						<LanguageSwitcher />
-					{/if}
 
 					<!-- Desktop menu -->
 					<div class="hidden lg:flex lg:items-center lg:gap-4">
@@ -168,7 +154,7 @@
 						</ul>
 
 						<!-- User Menu - Desktop -->
-						<UserMenu {user} />
+						<UserMenu {user} {showLanguageSwitcher} />
 					</div>
 
 					<!-- Mobile menu -->
@@ -197,7 +183,7 @@
 
 							<!-- User Menu - Mobile -->
 							<div class="divider my-2"></div>
-							<UserMenuMobile {user} />
+							<UserMenuMobile {user} {showLanguageSwitcher} />
 						</ul>
 					</details>
 				</div>
