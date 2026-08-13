@@ -145,15 +145,26 @@ describe('Mechanisch — der Extraktor findet in Schicht C nichts mehr', () => {
  */
 const OPEN_SKIP_LEDGER: Readonly<Record<string, number>> = {
 	/** Textknoten neben einem textbehafteten Geschwister — Muster A/C, Aufgabe 2.3b. */
-	'sentence-fragment': 78,
+	'sentence-fragment': 42,
 	/** Textknoten neben einem dynamischen Ausdruck — braucht eine ICU-Botschaft mit Parameter. */
-	interpolation: 58,
-	/** Attributwert mit Ternary — die letzte Gruppe der Dreiteilung aus Aufgabe 2.3c. */
-	'dynamic-attribute': 7,
+	interpolation: 1,
+	/**
+	 * Attributwert mit Ternary. Bleibt auch NACH der Übersetzung stehen, wenn
+	 * beide Zweige bereits `m.key()` sind — der Sammler erkennt nur ein reines
+	 * `attr={m.key()}` als erledigt (`already-translated`), eine
+	 * `ConditionalExpression` meldet er unabhängig von ihrem Inhalt weiter als
+	 * `dynamic-attribute` (`collectSvelte.test.ts`, „Gruppe 3", bewusst so
+	 * gebaut — sonst wäre jede Ternary in eine falsche Einzelbotschaft zu
+	 * pressen ein Freibrief). Sinkt nur, wenn eine Ternary durch eine EINZELNE
+	 * Botschaft ersetzt wird (Beispiel: `StepNavigation`s Fehler-Zähler-Ternary
+	 * wurde ein ICU-Plural, `isLastStep`s Ternary blieb Ternary — beide Zweige
+	 * übersetzt, die Zahl bewegt nur der erste Fall).
+	 */
+	'dynamic-attribute': 6,
 	/** Reine Satzzeichen, Symbole, Zahlen — Struktur, wird nie übersetzt. */
-	'no-letter-group': 44,
+	'no-letter-group': 45,
 	/** Ziffern-Treffer; als Pluralarbeit falsch-positiv (Protokoll, Korrektur zu 2.3b). */
-	'plural-candidate': 12,
+	'plural-candidate': 11,
 	/** Attributwert ohne jeden statischen Text (`title={file.name}`) — nie Übersetzungsarbeit. */
 	'attribute-no-static-text': 24
 };

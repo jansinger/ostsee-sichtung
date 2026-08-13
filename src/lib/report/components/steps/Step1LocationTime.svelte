@@ -21,7 +21,8 @@
 			{m.report_components_steps_step1locationtime_text_position_zeitpunkt()}
 		</h2>
 		<p class="text-base-content/70 mx-auto max-w-2xl text-sm md:text-base">
-			<strong>Wo und wann fand die Sichtung statt?</strong> Je genauer, desto wertvoller für die Forschung.
+			<strong>{m.report_components_steps_step1locationtime_text_wo_und_wann_fand_die()}</strong>
+			{m.report_components_steps_step1locationtime_text_je_genauer_desto_wertvoller()}
 		</p>
 		<!-- Die Rückmeldung „Sie melden: … · [Ändern]" stand hier und kostete
 		     oben den knappsten Platz. Sie steht jetzt einmal in der Aktionszeile

@@ -63,7 +63,10 @@
 	aria-label={m.report_components_form_stepprogresscompact_aria_label_formular_schritte()}
 >
 	<p class="text-support text-base-content/70 shrink-0">
-		Schritt {currentStep + 1} von {steps.length}
+		{m.report_components_form_stepprogresscompact_text_schritt_current_von_total({
+			current: currentStep + 1,
+			total: steps.length
+		})}
 	</p>
 	<ol class="flex flex-1 gap-1">
 		{#each steps as step, index (step.id)}
@@ -88,7 +91,7 @@
 					aria-label={stepNavigationLabel(index, currentStep, step.title)}
 					title={navigable
 						? step.description
-						: 'Bitte füllen Sie zuerst die vorherigen Schritte aus'}
+						: m.report_components_form_stepprogresscompact_title_bitte_fuellen_sie_zuerst()}
 					onclick={() => handleStepClick(index)}
 				>
 					<span

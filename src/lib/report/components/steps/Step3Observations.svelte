@@ -66,7 +66,12 @@
 		     sonst etwas, das einen Schritt weiter vorne liegt, und das ausgerechnet
 		     direkt über dem „Schritt überspringen"-Knopf. -->
 		<p class="text-base-content/70 mx-auto max-w-2xl text-sm md:text-base">
-			Diese Details sind <strong>optional, aber extrem wertvoll</strong> für die Forschung! {introSecondSentence}
+			{m.report_components_steps_step3observations_text_diese_details_sind()}
+			<strong
+				>{m.report_components_steps_step3observations_text_optional_aber_extrem_wertvoll()}</strong
+			>
+			{m.report_components_steps_step3observations_text_fuer_die_forschung()}
+			{introSecondSentence}
 		</p>
 
 		<!-- Skip Button prominent oben platziert -->

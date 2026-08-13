@@ -297,7 +297,8 @@
 										{file.name}
 									</h4>
 									<p class="text-base-content/70 text-support">
-										{(file.size / (1024 * 1024)).toFixed(2)} MB
+										{(file.size / (1024 * 1024)).toFixed(2)}
+										{m.components_form_unifieddropzone_text_mb()}
 									</p>
 								</div>
 
@@ -438,7 +439,11 @@
 					{/each}
 				</ul>
 				{#if hiddenRejectionCount > 0}
-					<p class="mt-1 opacity-80">und {hiddenRejectionCount} weitere</p>
+					<p class="mt-1 opacity-80">
+						{m.components_form_unifieddropzone_text_und_weitere_plural({
+							count: hiddenRejectionCount
+						})}
+					</p>
 				{/if}
 			</div>
 		</div>

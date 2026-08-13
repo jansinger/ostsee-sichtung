@@ -1349,3 +1349,352 @@ in einen Stash — richtig gehandelt, beschriftet statt verworfen. Aber:
 
 Dass HEAD dabei nie beschaedigt wurde, lag nicht an Vorsicht, sondern daran,
 dass der Agent sauber gestasht hat. Verlass dich nicht darauf.
+
+---
+
+# Etappe 2 — Fortsetzung: Schicht-C-Handarbeit (2026-08-12)
+
+Aufgabe 2.3b läuft jetzt in Wellen, eine Datei je Welle, wie in `PLAN_ETAPPE2.md`
+beschrieben. Fortschritt und Ledger-Stand je Welle stehen hier.
+
+## Welle 1: `WeatherDisplay.svelte` (12 Fälle, Kategorie `interpolation`)
+
+Alle 12 Fälle waren Label/Einheit neben einem dynamischen Wert (`Temperatur:
+<strong>{wert}°C</strong>`) — kein Satz mit Wortstellung, sondern dasselbe
+Begriff-Muster wie die bereits übersetzten Labels in `MediaModal.svelte`
+(`Kamera:`, `ISO:`, …). Gelöst durch dieselbe Bauart: Label als eigener
+`m.key()`, Wert und Einheit bleiben unangetastet im Ausdruck.
+
+12 neue Schlüssel in `messages/de.json`/`en.json`
+(`components_weather_weatherdisplay_text_*`), alphabetisch einsortiert, sonst
+keine Änderung an bestehenden Werten. `interpolation` im Guard-Ledger 58 → 46.
+
+Nachweise: `svelte-check` 0 Fehler, `test:quick` grün (4958 + 780). E2E steht
+für diese Welle noch aus — `WeatherDisplay` hat keinen eigenen Component-Test,
+die Änderung ist rein textuell und strukturgleich zum Vorher.
+
+**Restarbeit laut Bestandszähler:** `sentence-fragment` 78, `interpolation` 46,
+`dynamic-attribute` 7 — 24 Dateien mit offenen Fällen, siehe
+`npm run i18n:extract` für die aktuelle Liste je Datei.
+
+## Welle 2: `SubmitStatus.svelte` (9 Fälle, gemischt)
+
+Drei Teilmuster in einer Datei:
+
+- **Label neben dynamischem Wert** (`Referenz: {referenceId}`, zweimal) — wie
+  Welle 1.
+- **Satz, teilweise fett** (Offline-Absatz): Statt eines festen Fragments mit
+  `{@html}` wurde der Satz in drei eigenständige Botschaften zerlegt (Satz 1
+  ganz, der fette Teilsatz, der Gedankenstrich-Anhang als eigene Botschaft,
+  Satz 3 ganz) — Muster C, wie beim `OLMap`-Präzedenzfall aus Etappe 1.
+- **Link am Satzende** (`… über die <a>Kontaktseite des Museums</a>.`): Der
+  Satz vor dem Link und der Linktext sind zwei Botschaften, der Punkt danach
+  bleibt strukturelles Zeichen. Kein Wortstellungsproblem, weil der Link
+  bereits am Satzende stand.
+- **ICU mit Parameter**: `Ihre Aufnahme liegt bereits bei uns. Wir löschen sie
+automatisch, wenn die Meldung nicht innerhalb von {hours} Stunden ankommt.`
+  — `ORPHAN_RETENTION_HOURS` bleibt Zahlenquelle, nur als `{hours}` durchgereicht.
+
+10 neue Schlüssel (`report_components_form_submitstatus_text_*`). Guard-Ledger:
+`sentence-fragment` 78 → 72, `interpolation` 46 → 41.
+
+Nachweise: `svelte-check` 0 Fehler. Isoliert gefahren (ohne `CI=1`, da diese
+Welle Text in `e2e/submit-offline.spec.ts` und `e2e/form-submit.spec.ts`
+berührt, die exakt auf den unveränderten deutschen Wortlaut prüfen):
+`npm run test:e2e -- e2e/submit-offline.spec.ts e2e/form-submit.spec.ts` —
+20/20 grün.
+
+## Welle 3: `RequiredConsent.svelte` (6 Fälle, `sentence-fragment`)
+
+Dieselbe Fläche ist über `consentSurfaces.svelte.test.ts` mit einem SHA-256 über
+den **gerenderten** Text gepinnt (`PRIVACY_CONSENT_VERSION`) — kein Quelltext-
+Hash, sondern über `textContent` normalisiert. Wörtlich gleicher Wortlaut nach
+dem Umbau reicht deshalb aus; keine neue Fassungskennung nötig. Gegenprobe: der
+Test lief vor UND nach dem Umbau unverändert grün gegen denselben gepinnten
+Hash `2e281d78eac3a7af157d330092b2790674d29f96785bddaf2f3ba526795bc915`.
+
+Drei Sätze, alle nach demselben Satzende-Muster wie in Welle 2 aufgeteilt (fett
+
+- Anhang als zwei Botschaften; Link am Satzende als zwei Botschaften). Die
+  E-Mail-Adresse `datenschutz@meeresmuseum.de` bleibt wörtlich Teil ihrer
+  Botschaft, nicht als Parameter — sie ist keine Nutzereingabe.
+
+6 neue Schlüssel (`report_components_form_requiredconsent_text_*`). Guard-
+Ledger: `sentence-fragment` 72 → 66.
+
+Nachweise: `svelte-check` 0 Fehler, `consentSurfaces.svelte.test.ts` 7/7 grün
+(Hash unverändert). E2E isoliert: `npm run test:e2e -- e2e/meldung-wording.spec.ts`
+— 3/3 grün (prüft exakt den unveränderten Satz „Ohne diese Zustimmung kann Ihre
+Meldung nicht gespeichert werden").
+
+## Welle 4: `WeatherDataFetcher.svelte` (2 Fälle, `interpolation`)
+
+„Quelle:" (Label neben API-Namen) und „aus Cache" (Badge), dasselbe
+Label-Muster wie Welle 1. 2 neue Schlüssel. Guard-Ledger: `interpolation`
+41 → 40, `sentence-fragment` 66 → 65. Kein E2E-Treffer für diesen Wortlaut
+(geprüft per Grep über `e2e/`) — `svelte-check` und der Guard genügen als
+Nachweis.
+
+**Zwischenstand nach vier Wellen:** `sentence-fragment` 78 → 65,
+`interpolation` 58 → 40 — 31 der 143 Handarbeitsfälle gelöst, 21 Dateien mit
+offenen Fällen verbleiben laut `npm run i18n:extract`.
+
+## Welle 5: `SubmissionSuccess.svelte` (5 Fälle, gemischt)
+
+Vier Sätze im selben Satzende-Muster wie Welle 2/3 (Text vor Link/Wert als eine
+Botschaft, dynamischer Wert unverändert) plus ein echter **Muster-B-Plural**:
+`{totalCount} Tier{totalCount > 1 ? 'e' : ''}` → inlang-Plural mit
+`{count}`-Parameter. Geprüft vor dem Bau: `totalCount` hat im Schema
+`.min(1)` (`sightingSchema.ts:413`, „Eine Sichtung ohne Tier ist keine
+Sichtung"), der Fall `count === 0` ist auf dieser Seite unerreichbar — die
+CLDR-Regel „one" (nur `n === 1`) und die alte `> 1`-Ternary weichen sonst beim
+Wert 0 voneinander ab (siehe `StepNavigation`-Fall im Hauptprotokoll), hier
+folgenlos.
+
+7 neue Schlüssel. Guard-Ledger: `sentence-fragment` 65 → 62, `interpolation`
+40 → 36.
+
+Nachweise: `svelte-check` 0 Fehler. Kein E2E-Treffer für die geänderten Sätze
+oder den Plural-Text (Grep über `e2e/*.ts` — `Tiere`/`Anzahl:` treffen nur
+unabhängige Stellen); `e2e/i18n-link-sweep.spec.ts` erwähnt die Datei nur wegen
+zweier `<a href>`-Verweise, die diese Welle nicht anfasst.
+
+## Welle 6: `ReportKindFeedback.svelte` (2 Fälle)
+
+„Sie melden:" als Label, „Ändern" als Button-Text. Der Ternär im `<strong>`
+(„Fund eines toten Tieres" / „Beobachtung eines lebenden Tieres") stand nicht
+im Bestandszähler — er ist ein JS-Ausdruck, kein Markup-Textknoten, und damit
+für den Extraktor unsichtbar. Beide Formulierungen existierten bereits
+wortgleich als Schlüssel aus `ReportKindChoice.svelte`
+(`report_components_reportkindchoice_text_fund_eines_toten_tieres` /
+`_beobachtung_eines_lebenden_tieres`) — wiederverwendet statt dupliziert,
+wie schon `sightingFromQuestion` in Etappe 1.
+
+2 neue Schlüssel. Guard-Ledger: `sentence-fragment` 62 → 61, `interpolation`
+36 → 35. Der Ternär-Fund bleibt als offene Lücke im Guard vermerkt (Befund,
+kein Fix in dieser Welle) — der Bestandszähler deckt nur Markup-Textknoten,
+keine JS-Ausdrücke in Attributen oder `{...}`-Blöcken außerhalb der vier
+bekannten Attribute.
+
+Nachweise: `svelte-check` 0 Fehler, `ReportKindFeedback.svelte.test.ts` +
+`FormActions.svelte.test.ts` 12/12 grün (beide prüfen exakt den Wortlaut
+per `getByText`).
+
+## Welle 7: `MediaModal.svelte` (4 Fälle)
+
+„EXIF-Daten" (Überschrift), „GPS"/„Kamera" (Badges neben der Überschrift,
+eigene Schlüssel `..._gps`/`..._kamera_badge` — `..._kamera` war bereits mit
+„Kamera:" belegt, ein anderer String), „mm" (Einheit neben `focalLength`) —
+alle vier dasselbe Label-Muster wie Welle 1/4, keine Satzumstellung nötig.
+
+4 neue Schlüssel. Guard-Ledger: `sentence-fragment` 61 → 59, `interpolation`
+35 → 33.
+
+Nachweise: `svelte-check` 0 Fehler. Kein Component-Test für diese Datei; der
+einzige E2E-Treffer (`modal-overflow.spec.ts`) prüft Layout, nicht Wortlaut
+(geprüft per Grep).
+
+## Welle 8: `DeadFindingNotice.svelte` (3 Fälle, `sentence-fragment`)
+
+Drei Sätze im Standardmuster (fett + zwei Nachbarsätze). 3 neue Schlüssel.
+Guard-Ledger: `sentence-fragment` 59 → 56.
+
+Nachweise: `svelte-check` 0 Fehler. Isoliert: `npm run test:e2e --
+e2e/bestimmungshilfe.spec.ts` (prüft `getByText('Bitte nicht berühren')`) —
+11/11 grün.
+
+**Zwischenstand nach acht Wellen:** `sentence-fragment` 78 → 56,
+`interpolation` 58 → 33 — 42 der 143 Fälle gelöst.
+
+## Welle 9: `StepNavigation.svelte`, `VerifyLocation.svelte`, `SightingsListView.svelte` (5 Fälle)
+
+**Der Fehler-Sprung-Knopf** (`StepNavigation`) trug zwei Handarbeitsfälle:
+eine `aria-label`-Ternary mit `stepErrorCount === 1` und sichtbarer Text
+`{stepErrorCount} Fehler`. Beide wurden zu je einem inlang-Plural — die
+`aria-label`-Ternary verschwindet dadurch aus `dynamic-attribute`, weil sie
+keine Ternary mehr ist, sondern ein einzelner Funktionsaufruf.
+
+**Die zweite Ternary in derselben Datei** (`aria-label={isLastStep ? 'Formular
+absenden' : 'Nächster Schritt'}`) wurde übersetzt — beide Zweige sind jetzt
+`m.key()` —, bleibt aber strukturell eine Ternary und wird vom Sammler
+unabhängig von ihrem Inhalt weiter als `dynamic-attribute` gemeldet
+(`collectSvelte.test.ts`, „Gruppe 3": „eine Verzweigung (Ternary) bleibt
+Handarbeit", bewusst so gebaut). Das ist **kein offener Rest** — beide Texte
+sind übersetzt —, sondern eine dauerhafte Grenze des Zählers. Der Ledger-
+Kommentar in `hardcodedMarkupScan.test.ts` hält das jetzt fest, damit eine
+künftige Welle nicht versucht, diese Ternary „aufzulösen".
+
+**`VerifyLocation.svelte`**: Label „Fehler beim Prüfen der Position:" vor der
+dynamischen Fehlermeldung.
+
+**`SightingsListView.svelte`**: `Sichtungen {year} – {count} Eintrag/Einträge`
+zu einem einzigen inlang-Plural mit zwei Parametern (`year`, `count`)
+zusammengefasst — vorher zwei getrennte Ausdrücke (Interpolation + Ternary)
+für denselben Satz.
+
+7 neue Schlüssel (davon 3 Plurale). Guard-Ledger: `interpolation` 33 → 30,
+`dynamic-attribute` 7 → 6, `no-letter-group` 44 → 43 (das „–" der
+Sichtungen-Caption ist jetzt Teil einer Botschaft statt eigener Fundstelle).
+
+Nachweise: `svelte-check` 0 Fehler, `StepNavigation.svelte.test.ts` +
+`SightingsListView.svelte.test.ts` 8/8 grün. Wegen der Breite der Treffer
+(„Nächster Schritt"/„Formular absenden" stehen in rund einem Dutzend E2E-
+Specs als `getByRole('button', { name: … })`) den kompletten `form`-Shard
+gefahren statt einzelner Specs: `bash scripts/e2e-shards.sh form` — 94/94
+grün.
+
+## Welle 10: `StepProgressCompact.svelte`, `Media.svelte`, `DataUsageNotice.svelte`, `UnifiedDropzone.svelte` (10 Fälle)
+
+Vier kleine Dateien in einer Welle, alle im bekannten Muster:
+
+- `StepProgressCompact`: „Schritt {current} von {total}" (Label+Zähler
+  zusammengefasst) und der `title`-Ternary am Schritt-Link (beide Zweige
+  übersetzt — die Ternary selbst bleibt aus demselben Grund wie in Welle 9
+  als `dynamic-attribute` gemeldet, dauerhaft).
+- `Media.svelte`: Begriff+Erläuterung nach `<strong>Metadaten</strong>` und
+  der Link-am-Satzende zum Foto-Fallback-Postfach (Muster wie
+  `SubmissionSuccess`/`Media.svelte`-Fallback).
+- `DataUsageNotice.svelte`: Drei-Satz-Fluss mit zwei fett ausgezeichneten
+  Institutionsnamen (HELCOM, ASCOBANS) — beide bekommen eigene Schlüssel,
+  obwohl unverändert in beiden Sprachen (Konsistenz mit „Beaufort"/„hPa").
+- `UnifiedDropzone.svelte`: „MB"-Einheit (Label-Muster) und „und {count}
+  weitere" als inlang-Plural — DE und EN sind je Zahl identisch
+  („weitere"/„more" sind unveränderlich), der Plural existiert trotzdem, weil
+  die Botschaft sonst nicht parametrisierbar wäre.
+
+15 neue Schlüssel. Guard-Ledger: `sentence-fragment` 56 → 51, `interpolation`
+30 → 23, `plural-candidate` 12 → 11 (Verschiebung durch die MB-Zahl, kein
+neuer Fund).
+
+Nachweise: `svelte-check` 0 Fehler. Component-Tests (`UnifiedDropzone` × 3,
+`Media.svelte.test.ts`) 54/54 grün. `StepProgressCompact`/`DataUsageNotice`
+ohne eigenen Test; isoliert: `npm run test:e2e -- e2e/bestimmungshilfe.spec.ts`
+(prüft HELCOM/ASCOBANS sichtbar) — 11/11 grün.
+
+**Zwischenstand nach zehn Wellen:** `sentence-fragment` 78 → 51,
+`interpolation` 58 → 23, `dynamic-attribute` 7 → 6, `plural-candidate`
+12 → 11, `no-letter-group` 44 → 43 — 62 der 143 Fälle gelöst, 15 Dateien mit
+offenen Fällen verbleiben (plus `about/+page.svelte`, bewusst zurückgestellt).
+
+## Welle 11: `MediaGallery.svelte`, `SightingsMapView.svelte` (10 Fälle)
+
+`MediaGallery`: vier Abschnitts-Überschriften „Label ({count})" — Label als
+eigene Botschaft, Klammern und Zahl bleiben Struktur außerhalb; „KB"-Einheit
+wie gehabt.
+
+`SightingsMapView`: fünf Filter-Chip-Beschriftungen, alle bereits mit
+übersetztem `aria-label` — jetzt auch der sichtbare Text mit denselben
+Parametern (`Jahr {year}`, `Suche „{query}"`, `Zeitraum {from}–{to}`, zweimal
+`Ohne {label}` — Arten- und Farbgruppen-Filter teilen sich einen Schlüssel,
+da identischer Satzbau).
+
+10 neue Schlüssel. Guard-Ledger: `interpolation` 23 → 13, `no-letter-group`
+43 → 45 (die Klammern der vier Überschriften sind jetzt eigene
+no-letter-group-Fundstellen statt Teil der bisherigen `interpolation`-Zeile —
+Struktur, keine neue Übersetzungsarbeit).
+
+Nachweise: `svelte-check` 0 Fehler. Kein Component-Test für beide Dateien;
+kein E2E-Treffer auf den geänderten Wortlaut (Grep über `getByText` in
+`e2e/*.ts`). Diff manuell zeilenweise gegen das Original geprüft.
+
+**Zwischenstand nach elf Wellen:** `sentence-fragment` 78 → 51, `interpolation`
+58 → 13 — 72 der 143 Fälle gelöst. Offen: 8 Dateien mit je 1–3 Fällen (siehe
+`npm run i18n:extract`), plus `about/+page.svelte` (33, zurückgestellt).
+
+## Welle 12: `Step1LocationTime`, `Step2SightingDetails`, `Step3Observations`, `Step4Contact`, `+error.svelte`, `DropzoneEnhanced.svelte` (10 Fälle)
+
+Sechs kleine Dateien, alle im Standardmuster (fett+Nachbarsatz, Label neben
+dynamischem Wert, Seiten-Titel-Suffix). 10 neue Schlüssel. Guard-Ledger:
+`sentence-fragment` 51 → 44, `interpolation` 13 → 5.
+
+Nachweise: `svelte-check` 0 Fehler, alle fünf betroffenen Component-Tests
+(`Step1LocationTime`, `Step2SightingDetails`, `Step3Observations`,
+`Step4Contact`, `DropzoneEnhanced`) 54/54 grün. `+error.svelte` ohne eigenen
+Test, kein E2E-Treffer auf den Titel-Wortlaut.
+
+## Welle 13: `FormHelp.svelte` (4 Fälle)
+
+„Tierart:"-Begriff mit Erläuterungssatz vor der dynamischen
+`<SpeciesIdentificationHelp />`-Komponente, sowie drei Label-Anhänge nach
+dynamischen Statistik-Werten (Zusatzfelder-Quote, Melder-Zahl,
+Medien-Sichtungen). Die vier „Schritt N: …"-Überschriften bleiben unangetastet
+— sie sind `plural-candidate`-Falsch-Positive (Ziffer im Text, kein echter
+Plural), nicht Handarbeit.
+
+5 neue Schlüssel. Guard-Ledger: `sentence-fragment` 44 → 42, `interpolation`
+5 → 2.
+
+Nachweise: `svelte-check` 0 Fehler, `FormHelp.svelte.test.ts` 2/2 grün.
+
+## Welle 14: `bestimmungshilfe/+page.svelte` (1 Fall)
+
+Seiten-Titel-Suffix „- Ostsee-Tiere", analog zu `+error.svelte` in Welle 12.
+1 neuer Schlüssel. Guard-Ledger: `interpolation` 2 → 1.
+
+Nachweise: `svelte-check` 0 Fehler, kein E2E-Treffer auf den exakten
+Titeltext (`toHaveTitle` prüft nur per Regex auf „Bestimmungshilfe").
+
+## Zwischenstand nach 14 Wellen: nur noch `about/+page.svelte` offen
+
+`npm run i18n:extract` meldet nach Welle 14 für Schicht C nur noch eine
+Datei mit Handarbeitsfällen: `src/routes/about/+page.svelte` (33 Fälle,
+`sentence-fragment` 42 + `interpolation` 1 vollständig). Diese Datei ist
+bewusst zurückgestellt (Entscheidung vom 2026-08-11, `PLAN_ETAPPE2.md`):
+Ihre Struktur wird mit derselben Mechanik umgebaut, ihr **Inhalt** bleibt
+Sache des Museums (`messages/en.json` trägt dort weiterhin den deutschen
+Wortlaut bis zur Content-Lieferung).
+
+**Gesamtbilanz Aufgabe 2.3b:** `sentence-fragment` 78 → 42 (alle 36 gelösten
+außerhalb von `about/+page.svelte`), `interpolation` 58 → 1, `dynamic-attribute`
+7 → 6 (ein permanenter Rest, siehe Welle 9 — beide Zweige übersetzt, die
+Ternary-Struktur bleibt vom Sammler gemeldet). 101 der ursprünglich 143
+Handarbeitsfälle sind gelöst; die verbleibenden 42 stecken vollständig in
+`about/+page.svelte`.
+
+## Absicherung vor Commit: volle drei E2E-Shards, ein echter Fund
+
+Nach Welle 14 alle drei Shards gefahren (ohne `CI=1`):
+
+- **`form`** (94 Tests) — bereits in Welle 9 grün, unverändert.
+- **`map`** (156 Tests) — erster Lauf: zwei Lastartefakte
+  (`i18n-link-sweep.spec.ts` Timeout, `map-lazy-loading.spec.ts` `body`
+  kurz `hidden`) plus **ein echter Fund**, siehe unten. Nach der Behebung
+  und einem zweiten vollen Lauf: drei weitere Lastartefakte in
+  `admin-edit-preserves-record.spec.ts` (`TypeError: Failed to fetch`,
+  vermutlich Ressourcendruck durch die vielen E2E-Läufe dieser Sitzung),
+  isoliert wiederholt und grün. Admin-Routen sind ohnehin nicht Teil dieses
+  Vorhabens.
+- **`smoke`** (229 Tests) — im ersten Lauf grün.
+
+### Der echte Fund: `waitForNextEnabled`/`clickNext`/`clickSubmit` kannten nur Deutsch
+
+`e2e/i18n-link-sweep.spec.ts` (Erfolgsseiten-Test, navigiert auf
+`/en/?meldung=lebend`) blieb auch isoliert rot: `getByRole('button', { name:
+/Nächster Schritt/i })` fand den Button nicht mehr. Grund: Vor Welle 9 war das
+`aria-label` des Buttons in `StepNavigation.svelte` ein **hartcodiertes
+deutsches Literal**, unabhängig von der aktiven Sprache — der Button hieß auch
+auf `/en` immer „Nächster Schritt". Genau dieser Bug ist die Zielklasse dieses
+ganzen Vorhabens, und Welle 9 hat ihn behoben: Auf `/en` heißt der Button jetzt
+korrekt „Next step".
+
+Drei E2E-Helfer verließen sich auf das alte (kaputte) Verhalten, weil sie nie
+gegen `/en` liefen — außer diesem einen Test:
+
+- `e2e/helpers/form-helpers.ts` → `waitForNextEnabled`
+- `e2e/pages/FormPage.ts` → `clickNext`, `clickSubmit`, `isNextDisabled`
+
+Alle vier auf zweisprachige Regex umgestellt (`/Nächster Schritt|Next
+step/i`, `/Formular absenden|Submit form/i`) — dasselbe Muster, das
+`e2e/i18n-links.spec.ts:71` bereits vorher benutzte. Damit bleiben Tests, die
+auf der deutschen Standardseite laufen, unverändert grün (die Regex matcht
+weiterhin Deutsch zuerst), und der eine `/en`-Test findet den Button jetzt
+korrekt in beiden Sprachen.
+
+**Lehre:** Ein Test-Helfer, der nie gegen `/en` läuft, kann einen
+Lokalisierungs-Bug jahrelang verdecken UND, umgekehrt, eine korrekte
+Lokalisierung als Fehlschlag melden. Beide Richtungen sind hier belegt: der
+Helfer verdeckte den Bug, bis Welle 9 ihn behob — und die Behebung machte
+dann sichtbar, dass der Helfer selbst einsprachig war.
+
+**Alle drei Shards nach der Behebung grün** (94 + 156 + 229 = 479),
+`npm run test:quick` ebenfalls (4958 + 780).

@@ -204,8 +204,9 @@
 				{m.report_components_steps_step4contact_text_optionale_veroeffentlichung_von_namen_un()}
 			</h4>
 			<p class="text-base-content/70 mb-4 text-sm">
-				Diese Einverständniserklärungen sind <strong>optional</strong>. Ihre Meldung wird auch ohne
-				diese Zustimmungen gespeichert.
+				{m.report_components_steps_step4contact_text_diese_einverstaendniserklaerungen_sind()}
+				<strong>{m.report_components_steps_step4contact_text_optional()}</strong>
+				{m.report_components_steps_step4contact_text_ihre_meldung_wird_auch_ohne()}
 			</p>
 
 			<div class="space-y-3">

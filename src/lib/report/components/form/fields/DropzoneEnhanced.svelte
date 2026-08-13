@@ -856,7 +856,7 @@
 							<div class="mt-3 text-center">
 								<p class="text-base-content/60 flex items-center justify-center gap-1 text-xs">
 									<Icon icon="lucide:calendar" width="12" height="12" class="text-primary" />
-									Aufnahmezeit: {positionMediaFile.timestamp.toLocaleString(aufnahmeLocale, {
+									{m.report_components_form_fields_dropzoneenhanced_text_aufnahmezeit()} {positionMediaFile.timestamp.toLocaleString(aufnahmeLocale, {
 										timeZone: 'Europe/Berlin'
 									})}
 								</p>
@@ -994,7 +994,7 @@
 						<div class="mt-3 text-center">
 							<p class="text-base-content/60 flex items-center justify-center gap-1 text-xs">
 								<Icon icon="lucide:calendar" width="12" height="12" class="text-primary" />
-								Aufnahmezeit: {positionMediaFile.timestamp.toLocaleString(aufnahmeLocale, {
+								{m.report_components_form_fields_dropzoneenhanced_text_aufnahmezeit()} {positionMediaFile.timestamp.toLocaleString(aufnahmeLocale, {
 									timeZone: 'Europe/Berlin'
 								})}
 							</p>

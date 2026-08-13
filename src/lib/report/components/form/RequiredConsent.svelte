@@ -41,8 +41,9 @@
 				{m.report_components_form_requiredconsent_text_erforderliche_zustimmung_zur_datenverwen()}
 			</h4>
 			<p class="text-base-content/80 text-sm">
-				<strong>Diese Zustimmung ist erforderlich</strong>, um Ihre Meldung zu speichern und für die
-				wissenschaftliche Forschung zu nutzen.
+				<strong
+					>{m.report_components_form_requiredconsent_text_diese_zustimmung_ist_erforderlich()}</strong
+				>{m.report_components_form_requiredconsent_text_um_ihre_meldung_zu_speichern_und_fuer()}
 			</p>
 		</div>
 
@@ -92,20 +93,22 @@
 					auf 2026-08-04. Wer hier umformuliert, hebt die Kennung UND trägt den
 					neuen Hash nach — nur den Hash nachzutragen entwertet den Nachweis.
 				-->
-				<strong>Ohne diese Zustimmung kann Ihre Meldung nicht gespeichert werden.</strong>
-				Sie können diese Zustimmung jederzeit per E-Mail an datenschutz@meeresmuseum.de widerrufen.
+				<strong
+					>{m.report_components_form_requiredconsent_text_ohne_diese_zustimmung_kann_ihre_meldung()}</strong
+				>
+				{m.report_components_form_requiredconsent_text_sie_koennen_diese_zustimmung_jederzeit()}
 				<!--
 					Art. 13 DSGVO verlangt die Datenschutzhinweise dort, wo die Daten erhoben
 					werden. Bis 2026-07-30 stand die Erklärung nur als externer Link auf
 					/about — an der Einwilligung selbst, also an der Erhebungsstelle, fehlte
 					sie.
 				-->
-				Einzelheiten zur Verarbeitung stehen in der
+				{m.report_components_form_requiredconsent_text_einzelheiten_zur_verarbeitung_stehen_in()}
 				<a
 					href="https://www.deutsches-meeresmuseum.de/datenschutz"
 					target="_blank"
 					rel="noopener noreferrer"
-					class="link">Datenschutzerklärung</a
+					class="link">{m.report_components_form_requiredconsent_text_datenschutzerklaerung()}</a
 				>.
 			</p>
 		</div>

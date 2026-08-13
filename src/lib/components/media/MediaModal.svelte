@@ -220,12 +220,16 @@
 						<input type="checkbox" class="peer" />
 						<h4 class="collapse-title flex items-center gap-2 text-sm font-semibold">
 							<Icon icon="lucide:camera" width="16" class="text-primary" />
-							EXIF-Daten
+							{m.components_media_mediamodal_text_exif_daten()}
 							{#if hasGPSData()}
-								<span class="badge badge-success badge-xs ml-2">GPS</span>
+								<span class="badge badge-success badge-xs ml-2"
+									>{m.components_media_mediamodal_text_gps()}</span
+								>
 							{/if}
 							{#if hasCameraData()}
-								<span class="badge badge-secondary badge-xs ml-1">Kamera</span>
+								<span class="badge badge-secondary badge-xs ml-1"
+									>{m.components_media_mediamodal_text_kamera_badge()}</span
+								>
 							{/if}
 						</h4>
 						<div class="collapse-content">
@@ -316,7 +320,10 @@
 													<span class="text-base-content/60"
 														>{m.components_media_mediamodal_text_brennweite()}</span
 													>
-													<span class="ml-1 font-medium">{file.exifData.focalLength} mm</span>
+													<span class="ml-1 font-medium"
+														>{file.exifData.focalLength}
+														{m.components_media_mediamodal_text_mm()}</span
+													>
 												</div>
 											{/if}
 											{#if file.exifData.width && file.exifData.height}

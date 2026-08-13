@@ -12,7 +12,7 @@
 </script>
 
 <svelte:head>
-	<title>{title} - Ostsee-Tiere</title>
+	<title>{title} {m.routes_bestimmungshilfe_page_text_ostsee_tiere_suffix()}</title>
 	<meta name="description" content={description} />
 	<meta
 		name="keywords"

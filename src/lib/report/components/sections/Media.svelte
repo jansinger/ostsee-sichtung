@@ -128,8 +128,8 @@
 			     Ankündigung, dass ein beliebiges der zehn Fotos die eigene Eingabe
 			     überschreibt. -->
 			<li>
-				<strong>{m.report_components_sections_media_text_metadaten()}</strong> GPS-Position und Aufnahmezeit
-				aus dem Foto helfen bei der Einordnung — Ihre Angaben aus Schritt 1 bleiben davon unberührt
+				<strong>{m.report_components_sections_media_text_metadaten()}</strong>
+				{m.report_components_sections_media_text_gps_position_und_aufnahmezeit()}
 			</li>
 			<li>
 				<strong>{m.report_components_sections_media_text_formate()}</strong>
@@ -186,13 +186,13 @@
 	<div class="alert alert-info mt-4">
 		<Icon icon="lucide:mail" width="20" class="text-info-strong" aria-hidden="true" />
 		<span class="text-sm">
-			Ist eine Aufnahme zu groß für den Upload? Senden Sie die Meldung trotzdem ab und schicken Sie
+			{m.report_components_sections_media_text_ist_eine_aufnahme_zu_gross_fuer()}
 			<!-- `wrap-anywhere`: Die Adresse ist ein einziges Wort von 207px und damit
 			     die Mindestbreite dieses Alerts. Auf 320px schob sie das Dokument um
 			     60px über den Fensterrand hinaus (`e2e/horizontal-overflow.spec.ts`) —
 			     ein Alert kann seinem Inhalt nicht ausweichen, und der Seiten-Wrapper
 			     wächst als Flex-Item mit `mx-auto` mit. -->
-			die Datei anschließend an
+			{m.report_components_sections_media_text_die_datei_anschliessend_an()}
 			<a class="link wrap-anywhere" href="mailto:{MEDIA_FALLBACK_EMAIL}">{MEDIA_FALLBACK_EMAIL}</a>.
 		</span>
 	</div>

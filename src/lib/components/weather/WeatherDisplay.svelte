@@ -129,7 +129,7 @@
 			{#if displayData.temperature !== undefined && displayData.temperature !== null}
 				<div class="flex items-center gap-2">
 					<Icon icon="lucide:thermometer" width="18" class="text-primary" />
-					<span>Temperatur: <strong>{displayData.temperature}°C</strong></span>
+					<span>{m.components_weather_weatherdisplay_text_temperatur()} <strong>{displayData.temperature}°C</strong></span>
 				</div>
 			{/if}
 
@@ -146,7 +146,7 @@
 					     bleibt am gespeicherten Feld: Sie fragt, OB Wetterdaten vorliegen —
 					     ein Wettercode 0 („Klar") wäre als Bedingung falsch. -->
 					<span
-						>Wetter: <strong
+						>{m.components_weather_weatherdisplay_text_wetter()} <strong
 							>{getWeatherDescription(displayData.weatherCode ?? 0, getLocale())}</strong
 						></span
 					>
@@ -157,11 +157,11 @@
 				<div class="flex items-center gap-2">
 					<Icon icon="lucide:wind" width="18" class="text-primary" />
 					<span>
-						Wind: <strong>
+						{m.components_weather_weatherdisplay_text_wind()} <strong>
 							{#if formFields?.windForce}
-								Beaufort {getWindStrengthLabel(Number(formFields.windForce))}
+								{m.components_weather_weatherdisplay_text_beaufort()} {getWindStrengthLabel(Number(formFields.windForce))}
 							{:else}
-								{displayData.windSpeed} km/h
+								{displayData.windSpeed} {m.components_weather_weatherdisplay_text_km_h()}
 							{/if}
 						</strong>
 					</span>
@@ -175,7 +175,7 @@
 						style="font-size: 18px;"
 					></i>
 					<span>
-						Windrichtung: <strong>{displayData.windDirectionCardinal || 'unbekannt'}</strong>
+						{m.components_weather_weatherdisplay_text_windrichtung()} <strong>{displayData.windDirectionCardinal || 'unbekannt'}</strong>
 						{#if displayData.windDirection !== undefined && displayData.windDirection !== null}
 							- {displayData.windDirection}°{/if}
 					</span>
@@ -186,11 +186,11 @@
 				<div class="flex items-center gap-2">
 					<Icon icon="lucide:waves" width="18" class="text-primary" />
 					<span>
-						Seegang: <strong>
+						{m.components_weather_weatherdisplay_text_seegang()} <strong>
 							{#if formFields?.seaState}
 								{getSeaStateLabel(Number(formFields.seaState))}
 							{:else}
-								Stufe {displayData.seaState}
+								{m.components_weather_weatherdisplay_text_stufe()} {displayData.seaState}
 							{/if}
 						</strong>
 					</span>
@@ -201,11 +201,11 @@
 				<div class="flex items-center gap-2">
 					<Icon icon="lucide:eye" width="18" class="text-primary" />
 					<span>
-						Sichtweite: <strong>
+						{m.components_weather_weatherdisplay_text_sichtweite()} <strong>
 							{#if formFields?.visibility}
 								{getVisibilityLabel(Number(formFields.visibility))}
 							{:else}
-								{Math.round(displayData.visibility / 1000)} km
+								{Math.round(displayData.visibility / 1000)} {m.components_weather_weatherdisplay_text_km()}
 							{/if}
 						</strong>
 					</span>
@@ -215,7 +215,7 @@
 			{#if displayData.pressure !== undefined && displayData.pressure !== null}
 				<div class="flex items-center gap-2">
 					<Icon icon="lucide:gauge" width="18" class="text-primary" />
-					<span>Luftdruck: <strong>{displayData.pressure} hPa</strong></span>
+					<span>{m.components_weather_weatherdisplay_text_luftdruck()} <strong>{displayData.pressure} {m.components_weather_weatherdisplay_text_hpa()}</strong></span>
 				</div>
 			{/if}
 		</div>

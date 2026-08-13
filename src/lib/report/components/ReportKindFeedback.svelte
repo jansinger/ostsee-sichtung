@@ -29,9 +29,11 @@
   nicht-leeren String wie '0' die falsche Antwort.
 -->
 <p class="text-base-content/70 text-support">
-	Sie melden:
+	{m.report_components_reportkindfeedback_text_sie_melden()}
 	<strong class="text-base-content">
-		{isDeadFinding($form.isDead) ? 'Fund eines toten Tieres' : 'Beobachtung eines lebenden Tieres'}
+		{isDeadFinding($form.isDead)
+			? m.report_components_reportkindchoice_text_fund_eines_toten_tieres()
+			: m.report_components_reportkindchoice_text_beobachtung_eines_lebenden_tieres()}
 	</strong>
 	<!-- Trennpunkt aus Spec §7.5 („Sie melden: … · [Ändern]"). Bedeutungslos für
 	     Screenreader — aria-hidden, wie die übrigen Zierzeichen im Projekt
@@ -44,6 +46,6 @@
 		aria-label={m.report_components_reportkindfeedback_aria_label_art_der_meldung_aendern()}
 		data-testid="report-kind-change"
 	>
-		Ändern
+		{m.report_components_reportkindfeedback_text_aendern()}
 	</button>
 </p>

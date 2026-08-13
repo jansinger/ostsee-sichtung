@@ -175,7 +175,8 @@
 				transition:slide
 			>
 				<Icon icon="lucide:circle-alert" class="h-6 w-6 shrink-0" />
-				<span>Fehler beim Prüfen der Position: {error}</span>
+				<span>{m.report_components_form_verifylocation_text_fehler_beim_pruefen_der()} {error}</span
+				>
 			</div>
 		{:else if currentResult}
 			<!-- Result state -->
