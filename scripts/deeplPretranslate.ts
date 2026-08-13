@@ -25,6 +25,12 @@
  * zurückkommt. Ein Wert, der die Prüfung nicht besteht, wird verworfen und
  * gemeldet, statt eine kaputte Botschaft zu schreiben.
  *
+ * Weil `tag_handling: 'xml'` den **ganzen** Quelltext als XML liest, werden
+ * `&`, `<` und `>` vorher maskiert (`scripts/deeplXml.ts`). Ohne das bricht ein
+ * einziges `Drag & Drop` oder `(< 1 km/h)` den gesamten Stapel von bis zu 50
+ * Segmenten mit einem HTTP 400 ab — so geschehen am 2026-08-13 bei
+ * `formoptions_windstrength_windstill`.
+ *
  * **Plurale.** Die inlang-Variantenform (`declarations`/`selectors`/`match`) ist
  * kein String, sondern ein Objekt. Das Skript übersetzt die Werte unter `match`
  * einzeln und lässt die Struktur unangetastet. Achtung: Die CLDR-Kategorien
@@ -74,6 +80,8 @@
  * Diff, besonders bei kurzen Segmenten, die Teil eines größeren Satzes sind.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
+import * as prettier from 'prettier';
+import { entferneSchutz, schuetzePlatzhalter } from './deeplXml';
 
 const DE_PATH = 'messages/de.json';
 const EN_PATH = 'messages/en.json';
@@ -190,13 +198,6 @@ async function loescheGlossar(id: string): Promise<void> {
 }
 
 const PLACEHOLDER = /\{[^}]+\}/g;
-
-function schuetzePlatzhalter(text: string): string {
-	return text.replace(PLACEHOLDER, (treffer) => `<x>${treffer}</x>`);
-}
-function entferneSchutz(text: string): string {
-	return text.replace(/<x>(\{[^}]*\})<\/x>/g, '$1');
-}
 function platzhalterMenge(text: string): string[] {
 	return (text.match(PLACEHOLDER) ?? []).sort();
 }
@@ -352,9 +353,15 @@ if (verworfen.length > 0) {
 }
 
 if (WRITE) {
-	// Tab-Einrückung und abschließender Zeilenumbruch wie im Bestand — sonst
-	// erzeugt Prettier beim nächsten Lauf einen Diff über die ganze Datei.
-	writeFileSync(EN_PATH, `${JSON.stringify(en, null, '\t')}\n`, 'utf-8');
+	// Durch Prettier, nicht bloß mit Tab-Einrückung: `JSON.stringify` klappt
+	// **jedes** Array auf, Prettier faltet kurze wieder zusammen. Der Lauf vom
+	// 2026-08-13 hinterließ so 57 Zeilen Drift in den Plural-Deklarationen —
+	// Formatierungsrauschen mitten im Übersetzungs-Diff, das erst beim nächsten
+	// Commit auffiel. Die Projekt-Konfiguration wird dabei aufgelöst, damit
+	// hier und `npm run lint` dasselbe Ergebnis liefern.
+	const roh = `${JSON.stringify(en, null, '\t')}\n`;
+	const konfig = await prettier.resolveConfig(EN_PATH);
+	writeFileSync(EN_PATH, await prettier.format(roh, { ...konfig, filepath: EN_PATH }), 'utf-8');
 	console.log(`\n${geschrieben} Werte in ${EN_PATH} geschrieben.`);
 	console.log('Jetzt zwingend: npm run i18n:compile && npm run check && npm run test:quick');
 } else {
