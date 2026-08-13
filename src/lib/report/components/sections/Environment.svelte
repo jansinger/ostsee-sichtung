@@ -9,6 +9,7 @@
 	} from '$lib/services/weatherService';
 	import { convertToStoredWeatherData } from '$lib/services/weatherService';
 	import { berlinCalendarDayIso } from '$lib/utils/format/dateTime';
+	import { environmentIntro } from '$lib/report/wording';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
 	import SectionCard from './SectionCard.svelte';
 
@@ -21,6 +22,7 @@
 	let longitude: number | null | undefined = $derived($form.longitude);
 	let sightingDate: string | null = $derived($form.sightingDate);
 	let sightingTime: string | undefined | null = $derived($form.sightingTime);
+	let intro: string = $derived(environmentIntro($form.isDead));
 
 	// Handle weather data
 	function handleWeatherData(weatherFields: WeatherFormFields) {
@@ -61,8 +63,12 @@
 	title={m.report_components_sections_environment_title_umweltbedingungen()}
 	icon="lucide:waves"
 >
+	<!-- Beim Totfund nennt der Satz den Zustand des Tieres statt Sichtbarkeit
+	     und Verhalten (Wunsch des Meeresmuseums) — die Entscheidung steht wie
+	     die übrigen Zweigtexte in `wording.ts`, weil diese Karte auch die
+	     Admin-Maske rendert. -->
 	<p class="text-base-content/70 mb-4 text-sm">
-		{m.report_components_sections_environment_text_wetter_und_seebedingungen_beeinflussen_s()}
+		{intro}
 	</p>
 
 	<!-- Optionaler Hinweis für User Experience -->

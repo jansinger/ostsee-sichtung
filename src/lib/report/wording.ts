@@ -156,3 +156,22 @@ export function step3ObservationsIntro(isDead: unknown): string {
 		? m.report_wording_text_umweltbedingungen_helfen_beim_verstaendn()
 		: m.report_wording_text_verhaltensinformationen_und_umweltbeding();
 }
+
+/**
+ * Einleitungssatz der Umweltkarte (`sections/Environment.svelte`).
+ *
+ * Der Satz warb in beiden Zweigen mit „beeinflussen sowohl die Sichtbarkeit
+ * als auch das Tierverhalten". Beim Totfund trifft keines von beidem zu: Das
+ * Tier verhält sich nicht mehr, und gefunden ist es bereits. Was Wetter und
+ * Seegang dort tatsächlich beeinflussen, ist der **Zustand** des Fundes —
+ * genau das hat das Meeresmuseum angemerkt (2026-08-13).
+ *
+ * Der Sichtungs-Satz behält seinen `sections_environment`-Schlüssel: Der Name
+ * kommt vom Extraktions-Pfad und ist ein Bezeichner, kein Ort. Ihn umzubenennen
+ * hieße, denselben Text in beiden Sprachdateien neu anzulegen.
+ */
+export function environmentIntro(isDead: unknown): string {
+	return isDeadFinding(isDead)
+		? m.report_wording_text_wetter_und_seebedingungen_koennen_den()
+		: m.report_components_sections_environment_text_wetter_und_seebedingungen_beeinflussen_s();
+}

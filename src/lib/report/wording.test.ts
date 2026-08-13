@@ -9,6 +9,7 @@ import {
 	dateSectionIntro,
 	dateSectionTitle,
 	detailsSectionTitle,
+	environmentIntro,
 	mapHint,
 	observationQuestion,
 	outsideBalticNotice,
@@ -191,5 +192,41 @@ describe('step3ObservationsIntro', () => {
 	it('nennt Verhalten beim Totfund nicht mehr — die Karte fehlt dort', () => {
 		expect(step3ObservationsIntro(true)).not.toContain('Verhalten');
 		expect(step3ObservationsIntro(true)).toContain('Umweltbedingungen');
+	});
+});
+
+/**
+ * Wunsch des Deutschen Meeresmuseums (2026-08-13): Die Umweltkarte auf
+ * Schritt 3 warb in beiden Zweigen mit „Wetter- und Seebedingungen
+ * beeinflussen sowohl die Sichtbarkeit als auch das Tierverhalten". Beim
+ * Totfund ist beides gegenstandslos — das Tier verhält sich nicht mehr, und
+ * entdeckt wurde es bereits. Was die Bedingungen dort tatsächlich beeinflussen,
+ * ist der Zustand des Fundes.
+ *
+ * Wie bei `step3ObservationsIntro` steht die Entscheidung hier und nicht als
+ * Ternär in `Environment.svelte`: Die Karte wird von Melde- und Admin-Maske
+ * gemeinsam benutzt.
+ */
+describe('environmentIntro', () => {
+	it('nennt bei einer Sichtung Sichtbarkeit und Tierverhalten', () => {
+		expect(environmentIntro(false)).toBe(
+			'Wetter- und Seebedingungen beeinflussen sowohl die Sichtbarkeit als auch das Tierverhalten'
+		);
+	});
+
+	it('nennt beim Totfund den Zustand des Tieres', () => {
+		expect(environmentIntro(true)).toBe(
+			'Wetter- und Seebedingungen können den Zustand des Tieres beeinflussen'
+		);
+	});
+
+	/**
+	 * `'1'` ist der Wert, den Datenbank und Legacy-API für `isDead` liefern —
+	 * dieselbe Falle wie bei `speciesQuestion` weiter oben. Ohne
+	 * `isDeadFinding` als einzige Normalisierung stünde in der Admin-Maske
+	 * einer Totfund-Meldung der Sichtungs-Satz.
+	 */
+	it('behandelt den Datenbankwert 1 als Totfund', () => {
+		expect(environmentIntro('1')).toBe(environmentIntro(true));
 	});
 });
