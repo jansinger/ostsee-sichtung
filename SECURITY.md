@@ -18,6 +18,12 @@ Please report security vulnerabilities to the maintainers via:
 2. **Private issue** with security label for non-critical issues
 3. **Direct contact** to maintainers for urgent matters
 
+The same contact is published machine-readably per [RFC 9116](https://www.rfc-editor.org/rfc/rfc9116)
+at `/.well-known/security.txt` (source: `static/.well-known/security.txt`). Its `Expires`
+field is guarded by `src/lib/seo/staticStandardFiles.test.ts`, which fails the test gate
+60 days before the date passes — an expired `security.txt` tells a reporter the contact is
+no longer valid, which is worse than having none.
+
 **Response Commitments:**
 
 - **Initial Response**: Within 48 hours

@@ -1,0 +1,16 @@
+# Ostsee-Tiere — Meerestier-Sichtungen in der Ostsee
+# Deutsches Meeresmuseum, Stralsund
+#
+# Maschinenlesbarer Meldeweg für Sicherheitslücken nach RFC 9116.
+# Die ausführliche Fassung (unterstützte Versionen, Reaktionszeiten, aktueller
+# Stand der Abhängigkeiten) steht in SECURITY.md im Repository.
+#
+# Gepflegt unter static/.well-known/security.txt. Das Ablaufdatum ist keine
+# Zierde: src/lib/seo/staticStandardFiles.test.ts bricht das Test-Gate 60 Tage
+# vorher, damit hier niemand einen toten Kontakt stehen lässt.
+
+Contact: https://github.com/jansinger/ostsee-tiere/security/advisories/new
+Expires: 2027-08-13T00:00:00.000Z
+Policy: https://github.com/jansinger/ostsee-tiere/blob/main/SECURITY.md
+Preferred-Languages: de, en
+Canonical: https://ostsee-tiere.de/.well-known/security.txt

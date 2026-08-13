@@ -132,6 +132,30 @@ PUBLIC_SITE_URL=https://ostsee-tiere.example.com
 > bestimmt der adapter-node aus `PROTOCOL_HEADER`/`HOST_HEADER` (Default in der
 > Compose-Datei), sonst aus dem `Host`-Header.
 
+### Suchmaschinen: nur die kanonische Domain
+
+Beide Hosts fahren dasselbe Image mit `NODE_ENV=production` — eine statische
+`robots.txt` läge auf Staging und Production identisch, und der Staging-Host
+wäre indexierbar. Deshalb erzeugt `src/routes/robots.txt/+server.ts` den Inhalt
+**pro Anfrage-Host**:
+
+| Host                                                 | `/robots.txt`         | `/sitemap.xml` |
+| ---------------------------------------------------- | --------------------- | -------------- |
+| `ostsee-tiere.de`, `www.ostsee-tiere.de`             | Freigabe + Sperrliste | 200            |
+| alles andere (Staging, Vorschau, roher Hostname, IP) | `Disallow: /`         | 404            |
+
+**Kommt eine weitere öffentliche Domain dazu**, gehört sie in
+`KANONISCHE_HOSTS` in `src/lib/seo/robotsTxt.ts` — sonst liefert sie
+`Disallow: /` aus und verschwindet aus dem Suchindex. Die Liste steht bewusst
+im Code und nicht in einer Umgebungsvariablen: Der Production-Host läuft mit
+einem eigenen Compose-Stand, den dieses Repository nicht ändert, eine neue
+Variable bliebe dort still ungesetzt.
+
+Ob KI-Crawler (GPTBot, ClaudeBot, CCBot, Google-Extended, PerplexityBot)
+zugreifen dürfen, ist eine Entscheidung des Museums und steht dort als fertiger,
+auskommentierter Block bereit. Zugelassen ist derzeit alles — das war der
+Zustand vor Einführung der Datei.
+
 Auf Production **vor** dem Update sichern — die Schema-Migrationen des neuen
 Release laufen beim Container-Start automatisch und sind nicht rückrollbar:
 
