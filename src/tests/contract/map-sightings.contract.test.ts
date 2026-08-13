@@ -184,9 +184,27 @@ describe('GET /api/map/sightings — Statusfilter', () => {
 		expect(event.setHeaders).toHaveBeenCalledWith({ 'Cache-Control': 'private, no-store' });
 	});
 
-	it('setzt ohne Statusparameter keinen Cache-Header', async () => {
+	it('setzt ohne Statusparameter keinen Cache-Control-Header, aber Vary: Cookie', async () => {
+		// Finding 4 (Pre-Merge-Review): Die Antwort hängt vom Session-Cookie ab
+		// (Admin-Status entscheidet, ob überhaupt ein Statusfilter erlaubt wäre) —
+		// ein Shared Cache muss das über Vary wissen. Am unveränderten Verhalten
+		// für den öffentlichen Fall (kein Cache-Control) ändert sich nichts.
 		const event = createEvent('/api/map/sightings');
 		await GET(event);
-		expect(event.setHeaders).not.toHaveBeenCalled();
+		expect(event.setHeaders).toHaveBeenCalledWith({ Vary: 'Cookie' });
+		expect(event.setHeaders).not.toHaveBeenCalledWith(
+			expect.objectContaining({ 'Cache-Control': expect.anything() })
+		);
+	});
+
+	it('setzt auf dem 403-Pfad Vary: Cookie und einen privaten Cache-Header', async () => {
+		// Finding 4: Vorher trug die Ablehnung (kein Statusfilter ohne Anmeldung
+		// erlaubt) gar keine Cache-Direktive — als einzige Antwort der Route.
+		const event = createEvent('/api/map/sightings', { searchParams: { status: 'open' } });
+		const response = await GET(event);
+
+		expect(response.status).toBe(403);
+		expect(event.setHeaders).toHaveBeenCalledWith({ Vary: 'Cookie' });
+		expect(event.setHeaders).toHaveBeenCalledWith({ 'Cache-Control': 'private, no-store' });
 	});
 });

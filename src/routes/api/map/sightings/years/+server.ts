@@ -23,7 +23,17 @@ export const GET: RequestHandler = async ({ url, locals, setHeaders }) => {
 	// Muss denselben Statusfilter fahren wie GET /api/map/sightings — sonst
 	// zeigt das Jahres-Dropdown Zahlen, die auf der Karte nicht auftauchen.
 	const selection = resolveMapStatuses(url.searchParams.get('status'), isAdminUser(locals.user));
+
+	// Gleiche Begründung wie an der Schwesterroute GET /api/map/sightings:
+	// jede Antwort hängt vom Session-Cookie ab, ein Shared Cache muss das
+	// wissen. Der öffentliche Fall ohne Statusparameter bekommt bewusst nur
+	// `Vary`, kein `Cache-Control` — Verhalten bleibt dort byte-identisch.
+	setHeaders({ Vary: 'Cookie' });
+
 	if (!selection.ok) {
+		// Auch die 403/400-Antwort ist session-abhängig — ohne diesen Header
+		// wäre sie die einzige Antwort der Route ohne Cache-Direktive.
+		setHeaders({ 'Cache-Control': 'private, no-store' });
 		return json({ error: selection.message }, { status: selection.status });
 	}
 

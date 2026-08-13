@@ -173,10 +173,25 @@ describe('GET /api/map/sightings/years — Statusfilter', () => {
 		expect(setHeaders).toHaveBeenCalledWith({ 'Cache-Control': 'private, no-store' });
 	});
 
-	it('setzt ohne Statusparameter keinen Cache-Header', async () => {
+	it('setzt ohne Statusparameter keinen Cache-Control-Header, aber Vary: Cookie', async () => {
+		// Finding 4 (Pre-Merge-Review): dieselbe Begründung wie bei GET /api/map/sightings —
+		// die Antwort hängt vom Session-Cookie ab, ein Shared Cache muss das über Vary
+		// wissen. Der öffentliche Fall bleibt ohne Cache-Control unverändert.
 		const setHeaders = vi.fn();
 		await GET(makeEvent({ setHeaders }));
 
-		expect(setHeaders).not.toHaveBeenCalled();
+		expect(setHeaders).toHaveBeenCalledWith({ Vary: 'Cookie' });
+		expect(setHeaders).not.toHaveBeenCalledWith(
+			expect.objectContaining({ 'Cache-Control': expect.anything() })
+		);
+	});
+
+	it('setzt auf dem 403-Pfad Vary: Cookie und einen privaten Cache-Header', async () => {
+		const setHeaders = vi.fn();
+		const response = await GET(makeEvent({ status: 'open', setHeaders }));
+
+		expect(response.status).toBe(403);
+		expect(setHeaders).toHaveBeenCalledWith({ Vary: 'Cookie' });
+		expect(setHeaders).toHaveBeenCalledWith({ 'Cache-Control': 'private, no-store' });
 	});
 });

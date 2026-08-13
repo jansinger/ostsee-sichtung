@@ -22,7 +22,22 @@ export const GET: RequestHandler = async ({ url, locals, setHeaders }) => {
 	// gesetzte Parameter verlangt eine Admin-Anmeldung. Die Entscheidung liegt
 	// in statusFilter.ts, damit sie ohne Route testbar ist.
 	const selection = resolveMapStatuses(url.searchParams.get('status'), isAdminUser(locals.user));
+
+	// Jede Antwort dieser Route hängt vom Session-Cookie ab — ob überhaupt ein
+	// Statusfilter erlaubt ist, entscheidet die Admin-Anmeldung. Ein Shared
+	// Cache muss das wissen, sonst kann er die Antwort einer Session an eine
+	// andere Session ausliefern. Gilt auch für den öffentlichen Fall ohne
+	// Statusparameter — dort bleibt bewusst nur `Vary`, kein `Cache-Control`,
+	// damit sich am unveränderten Verhalten nichts ändert (dieselbe Begründung
+	// wie an der Schwesterroute /sichtungen/showreports.json:439-440).
+	setHeaders({ Vary: 'Cookie' });
+
 	if (!selection.ok) {
+		// Die 403/400-Antwort hängt ebenso von der Session ab (unangemeldet vs.
+		// Admin, gültiger vs. unbekannter Statuswert) — ohne diesen Header wäre
+		// sie die einzige Antwort der Route ohne Cache-Direktive und könnte in
+		// einem Shared Cache landen.
+		setHeaders({ 'Cache-Control': 'private, no-store' });
 		return json({ error: selection.message }, { status: selection.status });
 	}
 
