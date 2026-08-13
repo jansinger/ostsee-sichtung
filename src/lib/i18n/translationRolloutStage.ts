@@ -12,26 +12,39 @@
  *  2. `/en`-Antworten tragen `X-Robots-Tag: noindex, follow`
  *     (`noindexEnglishPages.ts`) — sonst indexieren Suchmaschinen deutsche
  *     Inhalte unter englischen URLs (Duplicate Content in falscher Sprache).
- *  3. Es gibt bewusst noch KEIN `hreflang` auf den Seiten selbst — das wird
- *     erst mit Schritt 2 unten sinnvoll (Etappe 2 laut Designdokument).
+ *  3. `hreflang`/`og:locale` existieren seit Aufgabe 2.5 (`HreflangHead.svelte`,
+ *     eingebunden auf `/`, `/map`, `/about`, `/bestimmungshilfe`), zeigen also
+ *     schon auf die `/en`-Fassung — obwohl die weiterhin `noindex` trägt.
  *
- * **Alle drei hängen an derselben Bedingung** — „ist die Übersetzung fertig?" —,
- * liefen bisher aber als zwei unabhängig verstreute Riegel ohne gemeinsame
- * Quelle auseinander. Diese Konstante bündelt sie: Wer sie anfasst, sieht über
- * die Doku hier zwangsläufig alle drei Stellen.
+ * **Entscheidung vom 2026-08-13:** Genau dieser dritte Punkt weicht bewusst von
+ * der ursprünglichen Reihenfolge ab (siehe Git-Historie dieser Datei für den
+ * vorherigen Wortlaut: „kein `hreflang`, bis die Übersetzung fertig ist"). Der
+ * Grund für die Änderung: `about/+page.svelte` bleibt noch auf Museumstext
+ * warten (Aufgabe 2.3b, 33 Fälle), während der Rest der Übersetzung fertig ist
+ * — auf „Übersetzung komplett fertig" zu warten hätte die hreflang-Mechanik
+ * unbestimmt lange blockiert, ohne dass die Bau-Arbeit selbst von den fehlenden
+ * Museumstexten abhinge. `hreflang` auf eine `noindex`-Seite zu zeigen ist ein
+ * bekannter Zwischenzustand (Google ignoriert die Annotation dort schlicht, bis
+ * die Zielseite selbst indexierbar ist) — kein Fehler, aber auch keine
+ * Zielarchitektur; er endet mit Schritt 1 unten.
  *
- * WICHTIG BEIM ABSCHLUSS DER ÜBERSETZUNG — alle drei Schritte gemeinsam, nicht
- * einzeln:
+ * **Die verbleibenden zwei Riegel hängen weiter an derselben Bedingung** —
+ * „ist die Übersetzung fertig?" — und laufen bewusst gemeinsam über diese
+ * Konstante, nicht als zwei unabhängig verstreute Schalter.
+ *
+ * WICHTIG BEIM ABSCHLUSS DER ÜBERSETZUNG:
  *  1. Diese Konstante auf `false` setzen (schaltet den Sprachumschalter wieder
- *     sichtbar UND entfernt den `noindex`-Header, s.u.).
- *  2. `hreflang` ergänzen (z. B. Alternate-Links in `app.html`/`+layout.svelte`).
- *  3. Die dazugehörigen Tests auf die neue Erwartung ziehen — u. a.
+ *     sichtbar UND entfernt den `noindex`-Header, s.u.) — `hreflang` steht dann
+ *     bereits und muss nicht mehr nachgezogen werden.
+ *  2. Die dazugehörigen Tests auf die neue Erwartung ziehen — u. a.
  *     `e2e/submit-offline.spec.ts` (Navbar-Item-Zählung) und
  *     `PublicNavbar.svelte.test.ts`/vergleichbare Guards.
  *
- * Nur den Riegel zu entfernen, ohne `hreflang` zu ergänzen, kippt das Problem
- * nur in die andere Richtung: Google indexiert dann die englische Fassung
- * zwar, aber ohne Sprachzuordnung zur deutschen — wieder Duplicate-Content-
- * Risiko, nur andersherum.
+ * Nur den Riegel zu entfernen, ohne dass `hreflang` bereits stimmt, kippt das
+ * Problem in die andere Richtung: Google indexiert dann die englische Fassung
+ * zwar, aber ohne verlässliche Sprachzuordnung zur deutschen — wieder
+ * Duplicate-Content-Risiko, nur andersherum. Deshalb bleibt die Reihenfolge
+ * bindend, auch wenn `hreflang` jetzt vorgezogen wurde: Erst prüfen, dass die
+ * Ziel-URLs tatsächlich fertig übersetzt sind, dann den Riegel entfernen.
  */
 export const TRANSLATION_ROLLOUT_COMPLETE = false;

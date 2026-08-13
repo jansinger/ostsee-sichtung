@@ -3,6 +3,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import DataUsageNotice from '$lib/components/info/DataUsageNotice.svelte';
 	import DeadFindingNotice from '$lib/components/info/DeadFindingNotice.svelte';
+	import HreflangHead from '$lib/components/seo/HreflangHead.svelte';
 	import SpeciesIdentificationHelp from '$lib/report/components/form/fields/SpeciesIdentificationHelp.svelte';
 	import { localizeHref } from '$lib/paraglide/runtime';
 
@@ -14,10 +15,7 @@
 <svelte:head>
 	<title>{title} {m.routes_bestimmungshilfe_page_text_ostsee_tiere_suffix()}</title>
 	<meta name="description" content={description} />
-	<meta
-		name="keywords"
-		content="Bestimmungshilfe, Schweinswal erkennen, Kegelrobbe, Seehund, Robbe oder Wal, Ostsee, Meeressäuger, Artbestimmung, Sichtung melden"
-	/>
+	<meta name="keywords" content={m.routes_bestimmungshilfe_page_meta_keywords()} />
 
 	<!-- Open Graph -->
 	<meta property="og:title" content="{title} - Ostsee-Tiere" />
@@ -29,6 +27,7 @@
 	<meta name="twitter:title" content="{title} - Ostsee-Tiere" />
 	<meta name="twitter:description" content={description} />
 </svelte:head>
+<HreflangHead />
 
 <div class="mx-auto max-w-5xl p-6">
 	<div class="mb-10">

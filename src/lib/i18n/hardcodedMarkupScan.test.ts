@@ -125,8 +125,12 @@ describe('Mechanisch — der Extraktor findet in Schicht C nichts mehr', () => {
 
 	/* Selbsttest. Ein Guard, der über eine leere Dateimenge läuft, ist grün und
 	   beweist nichts — das war der „stille Nullbefund" aus Aufgabe 1. */
-	it('scannt die 84 Markup-Dateien im Umfang', () => {
-		expect(svelteFiles()).toHaveLength(84);
+	it('scannt die 85 Markup-Dateien im Umfang', () => {
+		// 84 seit Aufgabe 2.3a, +1 seit Aufgabe 2.5: `HreflangHead.svelte`
+		// (`src/lib/components/seo/`) ist neuer, in-scope Code ohne eigenen
+		// Anzeigetext — der Zuwachs bestätigt, dass der Scan sie mitzählt,
+		// nicht dass sie etwas Neues zu übersetzen hätte.
+		expect(svelteFiles()).toHaveLength(85);
 	});
 });
 
@@ -281,18 +285,19 @@ export function findStaticTextAttributes(source: string): SourceHit[] {
  * Statischer Anzeigetext in Attributen außerhalb der Extraktor-Liste, je Datei
  * — erhoben am 2026-08-12, zusammen mit diesem Guard.
  *
- * Zwei Gruppen, beide bewusst noch offen:
+ * **SEO-Metadaten (Aufgabe 2.5, abgeschlossen am 2026-08-13).** Titel,
+ * Beschreibung, Schlagwörter und og:/twitter:-Tags der vier lokalisierten
+ * öffentlichen Seiten (`/`, `/map`, `/about`, `/bestimmungshilfe`) sind jetzt
+ * Botschaften; `HreflangHead.svelte` liefert dazu `hreflang`- und
+ * `og:locale`-Angaben je Route. `src/routes/maintenance/+page.svelte` bleibt
+ * bewusst stehen — `content="noindex, nofollow"` ist eine robots-Direktive,
+ * kein Text, und die Seite ist von der Lokalisierung ausgeschlossen
+ * (`languagePrefix.ts`).
  *
- * **SEO-Metadaten (20× `content` in `<svelte:head>`).** Titel, Beschreibung
- * und Schlagwörter der fünf öffentlichen Seiten, dazu `noindex, nofollow` auf
- * der Wartungsseite (technisch, kein Text). Sie gehören zu Aufgabe 2.5
- * (`hreflang` und `og:locale`) — dort wird der Kopfbereich ohnehin je Route
- * angefasst, und eine übersetzte Beschreibung ohne `hreflang` bringt nichts.
- *
- * **Anzeigetext an Komponenten-Props (7×).** `description`, `label`,
- * `coordinatesHint`, `actionLabel` — echte Schicht-C-Fundstellen, die diese
- * Etappe nie gezählt hat, weil der Extraktor diese Attributnamen nicht kennt.
- * Sie sind Arbeit für die nächste Welle, nicht für 2.5.
+ * **Anzeigetext an Komponenten-Props (7×, weiterhin offen).** `description`,
+ * `label`, `coordinatesHint`, `actionLabel` — echte Schicht-C-Fundstellen, die
+ * der Extraktor nie gezählt hat, weil er diese Attributnamen nicht kennt.
+ * Arbeit für eine künftige Welle.
  */
 const ATTRIBUTE_LEDGER: Readonly<Record<string, number>> = {
 	'src/lib/components/map/SightingsMapView.svelte': 2,
@@ -300,11 +305,7 @@ const ATTRIBUTE_LEDGER: Readonly<Record<string, number>> = {
 	'src/lib/report/components/FormHelp.svelte': 1,
 	'src/lib/report/components/form/position/PositionPanel.svelte': 2,
 	'src/lib/report/components/sections/SightingDetails.svelte': 1,
-	'src/routes/+page.svelte': 6,
-	'src/routes/about/+page.svelte': 6,
-	'src/routes/bestimmungshilfe/+page.svelte': 1,
-	'src/routes/maintenance/+page.svelte': 1,
-	'src/routes/map/+page.svelte': 6
+	'src/routes/maintenance/+page.svelte': 1
 };
 
 describe('Attribute außerhalb der Extraktor-Liste', () => {

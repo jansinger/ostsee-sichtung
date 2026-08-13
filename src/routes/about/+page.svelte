@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as m from '$lib/paraglide/messages';
 	import Icon from '$lib/components/Icon.svelte';
+	import HreflangHead from '$lib/components/seo/HreflangHead.svelte';
 	import OstseeTiereLogo from '$lib/components/OstseeTiereLogo.svelte';
 	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
 	import { resolveDisplayLocale } from '$lib/utils/format/dateTime';
@@ -15,31 +16,20 @@
 
 <svelte:head>
 	<title>{m.routes_about_page_text_ueber_uns_ostsee_tiere()}</title>
-	<meta
-		name="description"
-		content="Erfahren Sie mehr über die Ostsee-Tiere Plattform. Unterstützen Sie die Meeresforschung durch das Melden von Walsichtungen und anderen Meerestier-Beobachtungen in der Ostsee."
-	/>
-	<meta
-		name="keywords"
-		content="Über uns, Ostsee-Tiere, Meeresforschung, Citizen Science, Deutsches Meeresmuseum, Stralsund, Naturschutz"
-	/>
+	<meta name="description" content={m.routes_about_page_meta_description()} />
+	<meta name="keywords" content={m.routes_about_page_meta_keywords()} />
 
 	<!-- Open Graph -->
-	<meta property="og:title" content="Über uns - Ostsee-Tiere" />
-	<meta
-		property="og:description"
-		content="Erfahren Sie mehr über die Ostsee-Tiere Plattform und unsere Mission für den Meeresschutz"
-	/>
+	<meta property="og:title" content={m.routes_about_page_meta_og_title()} />
+	<meta property="og:description" content={m.routes_about_page_meta_og_description()} />
 	<meta property="og:type" content="website" />
 
 	<!-- Twitter Card -->
 	<meta name="twitter:card" content="summary" />
-	<meta name="twitter:title" content="Über uns - Ostsee-Tiere" />
-	<meta
-		name="twitter:description"
-		content="Erfahren Sie mehr über die Ostsee-Tiere Plattform und unsere Mission für den Meeresschutz"
-	/>
+	<meta name="twitter:title" content={m.routes_about_page_meta_og_title()} />
+	<meta name="twitter:description" content={m.routes_about_page_meta_og_description()} />
 </svelte:head>
+<HreflangHead />
 
 <!-- Innenabstand schaltet bei `md` (Breakpoint-Vertrag in
      .claude/rules/design-system.md). Bei 320px zählt das: die Seite stapelt drei

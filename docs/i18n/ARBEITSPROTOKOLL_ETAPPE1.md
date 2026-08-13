@@ -1698,3 +1698,78 @@ dann sichtbar, dass der Helfer selbst einsprachig war.
 
 **Alle drei Shards nach der Behebung grün** (94 + 156 + 229 = 479),
 `npm run test:quick` ebenfalls (4958 + 780).
+
+---
+
+# Aufgabe 2.5 — hreflang und og:locale (2026-08-13)
+
+**Entscheidung vorab (siehe Frage an Jan):** Die Mechanik wird jetzt gebaut,
+obwohl `/en` weiterhin `noindex` trägt und `about/+page.svelte` inhaltlich auf
+Museumstext wartet. Begründung und die damit verbundene Abweichung von der
+ursprünglichen „alles zusammen am Ende"-Reihenfolge stehen ausführlich in
+`src/lib/i18n/translationRolloutStage.ts` — dort auch die Bedingung, unter der
+der `noindex`-Riegel später fällt.
+
+## Umsetzung
+
+**`src/lib/seo/hreflang.ts`** (neu, mit `hreflang.test.ts`, TDD): reine
+Funktionen `buildHreflangLinks(origin, pathAndQuery)` und
+`ogLocale`/`ogLocaleAlternates`. Teilt sich `localizeHref` mit
+`LanguageSwitcher.svelte` — dieselbe Quelle für Umschalter-Link und
+Suchmaschinen-Hinweis, damit beide nie auseinanderlaufen. `og:locale` ist
+`de_DE`/`en_GB` — `en_GB`, nicht `en_US`, konsistent mit der
+`en-GB`-Entscheidung aus Aufgabe 2.1.
+
+**`src/lib/components/seo/HreflangHead.svelte`** (neu, mit
+`.svelte.test.ts`): rendert die `<link rel="alternate">`- und
+`og:locale`-Tags in `<svelte:head>`. `origin`/`pathAndQuery` sind optionale
+Props — an den vier Aufrufstellen leer (Default `page.url`), im Test fest
+gesetzt. Bewusst `page.url.origin` statt `PUBLIC_SITE_URL`: Letzteres braucht
+`$env/dynamic/public`, das im Component-Test keinen Server-Request-Kontext
+hat und dort hart fehlschlägt; `page.url.origin` ist außerdem ohnehin die
+korrekte Origin der aktuellen Anfrage.
+
+Eingebunden auf `/`, `/map`, `/about`, `/bestimmungshilfe` — die vier Routen,
+die tatsächlich eine `/en`-Fassung haben. `/maintenance` und `+error.svelte`
+bewusst ausgenommen: Wartungsseite ist von der Lokalisierung ausgeschlossen
+(`languagePrefix.ts`), eine Fehlerseite bekommt keine hreflang-Alternates.
+
+## Befund A miterledigt: die 20 statischen `svelte:head`-Attribute
+
+Beschreibung, Schlagwörter und og:/twitter:-Tags der vier Routen sind jetzt
+Botschaften (13 neue Schlüssel, da `og:title`/`twitter:title` und
+`og:description`/`twitter:description` sich je Route einen Schlüssel teilen).
+`/maintenance`s `content="noindex, nofollow"` bleibt unverändert — eine
+robots-Direktive ist kein Anzeigetext.
+
+Bewusste Entscheidung, auch für `/about`: Diese vier kurzen Meta-Sätze sind
+Marketing-Kürzel, keine Museums-Fachtexte — anders als die 33 offenen Fälle im
+Seitenkörper, die auf Museumstext warten. Beide Kategorien getrennt zu
+behandeln ist konsistent mit der ursprünglichen Abgrenzung (Struktur jetzt,
+Fachinhalt später).
+
+## Guard-Aktualisierung
+
+`hardcodedMarkupScan.test.ts`: `ATTRIBUTE_LEDGER` verliert alle vier
+Routen-Einträge (24 → 5 verbleibende Fälle, alle Komponenten-Props). Der
+Datei-Zähler steigt 84 → 85 (`HreflangHead.svelte` ist neuer Code im Scan-Umfang,
+ohne eigenen Anzeigetext).
+
+## Nachweise
+
+`svelte-check` 0 Fehler. `hreflang.test.ts` 5/5, `HreflangHead.svelte.test.ts`
+3/3 grün — beide positiv geprüft (unter `de` UND `en`, nicht nur „es gibt
+einen Tag"). `test:quick` grün (328+82 Testdateien, 4963+783 Tests). Isoliert:
+`npm run test:e2e -- e2e/seo-meta.spec.ts e2e/i18n-routing.spec.ts
+e2e/i18n-link-sweep.spec.ts e2e/noindex-english-pages.spec.ts
+e2e/about-page.spec.ts e2e/bestimmungshilfe.spec.ts e2e/homepage.test.ts` —
+63/63 grün.
+
+## Was aus Aufgabe 2.5 weiterhin offen ist
+
+- Befund A, Rest: 7 Anzeigetexte an Komponenten-Props (`description`, `label`,
+  `coordinatesHint`, `actionLabel`) — nicht Teil dieser Aufgabe, siehe
+  `ATTRIBUTE_LEDGER`.
+- Der `noindex`-Riegel und `TRANSLATION_ROLLOUT_COMPLETE` bleiben bestehen,
+  bis `about/+page.svelte` inhaltlich fertig ist (Museumstext) — dann alle
+  drei Schritte aus `translationRolloutStage.ts` gemeinsam.
