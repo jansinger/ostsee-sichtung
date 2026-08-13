@@ -26,6 +26,7 @@
 	import type { SightingStatus } from '$lib/components/admin/sightingStatus';
 	import { DEFAULT_MAP_STATUSES, isPublicStatusSelection } from '$lib/map/statusRequestParams';
 	import { createYearsRequestSequencer, resolveYearsUpdate } from '$lib/map/yearsRequestSequencer';
+	import { reconcileDisplayedYear } from '$lib/map/yearDisplayReconciliation';
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	// Kein `import 'ol/ol.css'` hier: die Datei kommt global aus app.css, und zwar
@@ -458,7 +459,25 @@
 		await mapInstance.setStatuses(next);
 		// Die Jahres-Zahlen zählen dieselbe Grundmenge — ohne diesen zweiten
 		// Aufruf zeigt das Dropdown Zahlen, die auf der Karte nicht auftauchen.
-		await loadAvailableYears();
+		const loadedDefaultYear = await loadAvailableYears();
+		// Pre-Merge-Review (zweimal unabhängig gefunden): Die neu geladene
+		// Jahresliste kann das bisher angezeigte Jahr nicht mehr enthalten (z. B.
+		// 2024 hat unter „Offen" keine Treffer und fällt aus `years`) — ohne
+		// diesen Abgleich zeigt das Dropdown dann kommentarlos ein anderes Jahr
+		// als die Karte tatsächlich lädt, weil keine `<option>` mehr `selected`
+		// trägt (siehe FilterPanel.svelte). `years` ist zu diesem Zeitpunkt
+		// bereits auf `availableYearsData` neu abgeleitet (derselbe `$derived`,
+		// synchron gelesen). Über `switchToYear()` — denselben Pfad wie jeder
+		// andere Jahreswechsel —, damit es nicht einen zweiten Code-Pfad gibt,
+		// der Dropdown und Karte auseinanderlaufen lassen könnte.
+		const targetYear = reconcileDisplayedYear(
+			mapInstance.getDisplayedYear(),
+			years,
+			loadedDefaultYear
+		);
+		if (targetYear !== null) {
+			switchToYear(targetYear);
+		}
 		countManager.updateCounts();
 		syncFiltersToUrl(readCurrentFilterState());
 	}
