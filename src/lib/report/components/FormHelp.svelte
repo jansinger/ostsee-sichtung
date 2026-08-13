@@ -91,7 +91,7 @@
 										variant="failed"
 										announce="status"
 										title={m.report_components_formhelp_title_statistiken_konnten_nicht_geladen_werden()}
-										description="Das Formular funktioniert vollständig — nur die Zahlen in diesem Hilfetext fehlen."
+										description={m.report_components_formhelp_description_das_formular_funktioniert_voll()}
 									/>
 								{:else}
 									<div class="grid grid-cols-2 gap-4 text-center text-sm">
@@ -275,8 +275,8 @@
 									</div>
 									<div class="text-base-content/70 mt-1 text-xs">
 										{#if !loading && statistics && statistics.uniqueUsers > 0}
-										{statistics.uniqueUsers.toLocaleString(zahlenLocale)}
-										{m.report_components_formhelp_text_personen_haben_bereits_gemeldet()}
+											{statistics.uniqueUsers.toLocaleString(zahlenLocale)}
+											{m.report_components_formhelp_text_personen_haben_bereits_gemeldet()}
 										{:else}
 											{m.report_components_formhelp_text_viele_beobachtende_melden_bereits_regelm()}
 										{/if}
@@ -299,8 +299,8 @@
 									</div>
 									<div class="text-base-content/70 mt-1 text-xs">
 										{#if !loading && statistics}
-										{statistics.sightingsWithMedia.toLocaleString(zahlenLocale)}
-										{m.report_components_formhelp_text_freigegebene_sichtungen_mit_medien()}
+											{statistics.sightingsWithMedia.toLocaleString(zahlenLocale)}
+											{m.report_components_formhelp_text_freigegebene_sichtungen_mit_medien()}
 										{:else}
 											{m.report_components_formhelp_text_durch_ihre_fotos_wissenschaftlich_dokume()}
 										{/if}

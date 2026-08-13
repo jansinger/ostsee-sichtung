@@ -721,7 +721,11 @@
 						query: activeFilters.query
 					})}
 				>
-					<span class="truncate">{m.components_map_sightingsmapview_text_suche_query({ query: activeFilters.query })}</span>
+					<span class="truncate"
+						>{m.components_map_sightingsmapview_text_suche_query({
+							query: activeFilters.query
+						})}</span
+					>
 					<Icon icon="lucide:x" width="14" height="14" class="shrink-0" aria-hidden="true" />
 				</button>
 			{/if}
@@ -761,7 +765,9 @@
 						{ colorGroupLabel: colorGroupLabel(colorGroup) }
 					)}
 				>
-					{m.components_map_sightingsmapview_text_ohne_label({ label: colorGroupLabel(colorGroup) })}
+					{m.components_map_sightingsmapview_text_ohne_label({
+						label: colorGroupLabel(colorGroup)
+					})}
 					<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
 				</button>
 			{/each}
@@ -832,7 +838,7 @@
 					title={m.components_map_sightingsmapview_title_keine_sichtungen_fuer_currentdisplayedye({
 						currentDisplayedYear: currentDisplayedYear
 					})}
-					description="Für dieses Jahr liegen keine freigegebenen Meldungen vor."
+					description={m.components_map_sightingsmapview_description_fuer_dieses_jahr_liegen()}
 					action={latestYearWithData !== undefined && latestYearWithData !== currentDisplayedYear
 						? {
 								label: `Sichtungen ${latestYearWithData} anzeigen`,
@@ -853,7 +859,7 @@
 				<StatusBlock
 					variant="empty"
 					title={m.components_map_sightingsmapview_title_keine_sichtungen_fuer_den_aktuellen()}
-					description="Passen Sie den Zeitraum oder die Tierart-Filter an."
+					description={m.components_map_sightingsmapview_description_passen_sie_den_zeitraum()}
 				/>
 			</div>
 		{/if}

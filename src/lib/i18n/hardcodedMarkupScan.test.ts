@@ -289,22 +289,20 @@ export function findStaticTextAttributes(source: string): SourceHit[] {
  * Beschreibung, Schlagwörter und og:/twitter:-Tags der vier lokalisierten
  * öffentlichen Seiten (`/`, `/map`, `/about`, `/bestimmungshilfe`) sind jetzt
  * Botschaften; `HreflangHead.svelte` liefert dazu `hreflang`- und
- * `og:locale`-Angaben je Route. `src/routes/maintenance/+page.svelte` bleibt
- * bewusst stehen — `content="noindex, nofollow"` ist eine robots-Direktive,
- * kein Text, und die Seite ist von der Lokalisierung ausgeschlossen
- * (`languagePrefix.ts`).
+ * `og:locale`-Angaben je Route.
  *
- * **Anzeigetext an Komponenten-Props (7×, weiterhin offen).** `description`,
- * `label`, `coordinatesHint`, `actionLabel` — echte Schicht-C-Fundstellen, die
- * der Extraktor nie gezählt hat, weil er diese Attributnamen nicht kennt.
- * Arbeit für eine künftige Welle.
+ * **Befund A, Komponenten-Props (abgeschlossen am 2026-08-13).** `description`,
+ * `label`, `coordinatesHint`, `actionLabel` — sieben echte Schicht-C-Fundstellen,
+ * die der Extraktor nie gezählt hat, weil er diese Attributnamen nicht kennt.
+ * Alle sieben sind jetzt Botschaften.
+ *
+ * Einzig verbliebener Eintrag: `src/routes/maintenance/+page.svelte` —
+ * `content="noindex, nofollow"` ist eine robots-Direktive, kein Text, und die
+ * Seite ist von der Lokalisierung ausgeschlossen (`languagePrefix.ts`). Bleibt
+ * bewusst stehen statt auf einer Ausnahmeliste, aus demselben Grund wie die
+ * `SCRIPT_TEXT_LEDGER`-Einträge oben.
  */
 const ATTRIBUTE_LEDGER: Readonly<Record<string, number>> = {
-	'src/lib/components/map/SightingsMapView.svelte': 2,
-	'src/lib/components/weather/WeatherDataFetcher.svelte': 1,
-	'src/lib/report/components/FormHelp.svelte': 1,
-	'src/lib/report/components/form/position/PositionPanel.svelte': 2,
-	'src/lib/report/components/sections/SightingDetails.svelte': 1,
 	'src/routes/maintenance/+page.svelte': 1
 };
 

@@ -300,7 +300,7 @@
 		collapsibleCoordinates={false}
 		enableMapGps={false}
 		required={positionRequired}
-		coordinatesHint="Bitte tragen Sie die GPS-Koordinaten ein, wenn diese nicht automatisch über die Karte übernommen werden konnten."
+		coordinatesHint={m.report_components_form_position_positionpanel_coordinateshint_bitte_tragen_sie_die()}
 		mapHintOverride={mapHintText}
 		onchange={handleLocationChange}
 	/>
@@ -364,7 +364,7 @@
 						showNoGpsWarning={false}
 						showPositionMap={false}
 						onExifDateTimeApplied={(applied) => (exifDateTimeApplied = applied)}
-						actionLabel="Foto auswählen"
+						actionLabel={m.report_components_form_position_positionpanel_actionlabel_foto_auswaehlen()}
 						compact={true}
 						additionalText=""
 					/>

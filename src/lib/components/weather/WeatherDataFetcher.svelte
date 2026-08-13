@@ -175,7 +175,7 @@
 				<StatusBlock
 					variant="partial"
 					title={m.components_weather_weatherdatafetcher_title_prognosedaten_fuer_die_heutige_sichtung()}
-					description="Für heute liegen noch keine gemessenen Werte vor. Die Vorhersage aktualisiert sich mehrmals täglich."
+					description={m.components_weather_weatherdatafetcher_description_fuer_heute_liegen_noch()}
 				/>
 			{/if}
 		</div>
