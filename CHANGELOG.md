@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.19.0](https://github.com/jansinger/ostsee-tiere/compare/v2.18.0...v2.19.0) (2026-08-13)
+
+
+### Features
+
+* **config:** Sync-Skripte des Posteingangs ins Repo, Störungsmeldung im Skript ([#865](https://github.com/jansinger/ostsee-tiere/issues/865)) ([421cbb4](https://github.com/jansinger/ostsee-tiere/commit/421cbb40a0bf9e14d85e9669a28e68ec82adebbf))
+* **i18n:** layer C guard, script-block text and the .ts display text ([#864](https://github.com/jansinger/ostsee-tiere/issues/864)) ([71470a0](https://github.com/jansinger/ostsee-tiere/commit/71470a064a7765083ce25da3e756cef8a59a1306))
+* **ui:** add AI transparency notice and EU AI Act assessment ([#868](https://github.com/jansinger/ostsee-tiere/issues/868)) ([1b9559e](https://github.com/jansinger/ostsee-tiere/commit/1b9559e30b2608430124e69dae4d083de796ba02))
+* **ui:** add german/english multi-language infrastructure (stage 0) ([#856](https://github.com/jansinger/ostsee-tiere/issues/856)) ([1701f93](https://github.com/jansinger/ostsee-tiere/commit/1701f9318406322659c460ef85eee1a6d94e01b9))
+* **ui:** complete DE/EN stage 2 — layer C, rollout and full pretranslation ([#867](https://github.com/jansinger/ostsee-tiere/issues/867)) ([c0ea10e](https://github.com/jansinger/ostsee-tiere/commit/c0ea10e2c08cb6a2d8df06a82b8cb1696918f40b))
+* **ui:** three change requests from the museum (heading, dead-find wording, unknown-species badge) ([#869](https://github.com/jansinger/ostsee-tiere/issues/869)) ([77e4300](https://github.com/jansinger/ostsee-tiere/commit/77e430009d5f50b491046c9fe9fa35f4c7bc981c))
+
+
+### Bug Fixes
+
+* **security:** root-Einstiege aus dem Deploy-Verzeichnis herausnehmen ([#866](https://github.com/jansinger/ostsee-tiere/issues/866)) ([5a7b7b7](https://github.com/jansinger/ostsee-tiere/commit/5a7b7b768c76befe362c46b50170cf75cad5e321))
+
+
+### Documentation
+
+* **api:** Stand auf drei angebundene Clients korrigieren ([#859](https://github.com/jansinger/ostsee-tiere/issues/859)) ([5e162e5](https://github.com/jansinger/ostsee-tiere/commit/5e162e56fc16e1da9f9e0197448336f965472524))
+* **docs:** add english species names, consent wording and measured i18n inventory ([#858](https://github.com/jansinger/ostsee-tiere/issues/858)) ([3d28f95](https://github.com/jansinger/ostsee-tiere/commit/3d28f95c55118bbbe4d06230e3a2bb2fe09481e4))
+* **docs:** iframe embedding guide as museum-ready handoff ([#863](https://github.com/jansinger/ostsee-tiere/issues/863)) ([db023e3](https://github.com/jansinger/ostsee-tiere/commit/db023e3546d03643907c41475c46f25562ce81c7))
+* **docs:** iframe test HTML and size recommendations for meeresmuseum.de ([#862](https://github.com/jansinger/ostsee-tiere/issues/862)) ([daa90e8](https://github.com/jansinger/ostsee-tiere/commit/daa90e81929a3194261d9a39a511658a75a010dd))
+* festhalten, welcher sync-abbruch einen menschen braucht ([#860](https://github.com/jansinger/ostsee-tiere/issues/860)) ([1220792](https://github.com/jansinger/ostsee-tiere/commit/122079249dc1c607c04e722035e5c8bf0ee5bacd))
+
 ## [2.18.0](https://github.com/jansinger/ostsee-tiere/compare/v2.17.0...v2.18.0) (2026-08-10)
 
 
