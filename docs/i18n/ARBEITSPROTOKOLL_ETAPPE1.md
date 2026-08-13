@@ -1773,3 +1773,82 @@ e2e/about-page.spec.ts e2e/bestimmungshilfe.spec.ts e2e/homepage.test.ts` —
 - Der `noindex`-Riegel und `TRANSLATION_ROLLOUT_COMPLETE` bleiben bestehen,
   bis `about/+page.svelte` inhaltlich fertig ist (Museumstext) — dann alle
   drei Schritte aus `translationRolloutStage.ts` gemeinsam.
+
+---
+
+# Aufgabe 2.3b, Rest — `about/+page.svelte` (2026-08-13)
+
+**Entscheidung (siehe Frage an Jan):** Struktur UND Inhalt jetzt mechanisieren
+und übersetzen — anders als die ursprüngliche Entscheidung vom 2026-08-11
+(Struktur jetzt, Inhalt vom Museum). Ausnahme: der Abschnitt „Datenschutz &
+Sicherheit" bekommt eine **Entwurfsübersetzung**, klar als solche markiert,
+weil diese Formulierungen bereits mehrfach gegen die offizielle
+DMM-Datenschutzerklärung korrigiert werden mussten
+(`docs/DATENSCHUTZ_ABGLEICH_DMM_2026-08-02.md`) — eine zweite unabhängige
+Formulierung ungeprüft auszuliefern wäre dasselbe Fehlermuster auf Englisch.
+
+## Umsetzung
+
+Alle 33 Handarbeitsfälle (32 `sentence-fragment` + 1 `interpolation`) im
+etablierten Muster aufgelöst: Label/Begriff+Erläuterung, Satz-vor-`<strong>`/
+`<em>`-Auszeichnung, HELCOM/ASCOBANS-Wiederverwendung aus
+`DataUsageNotice.svelte` (Welle 10). 42 neue Schlüssel.
+
+**Wichtig für künftige Segment-Aufteilungen:** Die feste Reihenfolge
+(lead-Botschaft, `<strong>`/`<em>`-Botschaft, trail-Botschaft) zwingt keine
+wortgleiche Wortstellung — jede Sprache füllt ihren Slot frei, nur die
+**Konkatenation** muss in jeder Sprache natürlich lesen. Bei `cta_zu_schuetzen`
+(deutsch: Verb am Satzende, „…ihre einzigartigen Bewohner zu schützen") wanderte
+das Verb im Englischen einfach in den lead-Slot („…and protect its unique
+inhabitants.") — dieselbe Auszeichnungsposition, unterschiedliche
+Wortstellung je Sprache, weil jeder Slot unabhängig übersetzt wird.
+
+## Fund: zwei bare `{expr}`-Mustaches ohne Markup dazwischen behalten rohen Zeilenumbruch
+
+Beim Version-Badge (`{m.…tech_version()}` gefolgt von `{data.version}` auf der
+nächsten Zeile) lieferte Svelte 5 **`"Version\n\t\t\t\t 2.18.0"`** als
+`textContent` — der Zeilenumbruch samt Einrückung blieb als literaler
+Text erhalten, kein Kollabieren auf ein Leerzeichen. Visuell unsichtbar (CSS
+kollabiert Whitespace beim Rendern), aber `e2e/about-page.spec.ts` prüfte mit
+`.filter({ hasText: /Version \d+\.\d+\.\d+/ })` — Playwrights Regex-Matching
+normalisiert das offenbar NICHT wie das String-Matching von `getByText`.
+
+Behoben mit einem einzigen Template-Literal-Ausdruck
+(`` {`${m.…tech_version()} ${data.version}`} ``) statt zwei benachbarter
+Mustaches — dadurch entsteht nur EIN Textknoten mit garantiertem Leerzeichen,
+unabhängig davon, wie Prettier die Zeilen umbricht (zwei Versuche mit
+Leerzeichen zwischen den Mustaches auf einer Zeile scheiterten daran, dass
+Prettier sie beim Formatieren zuverlässig wieder auf zwei Zeilen zog).
+
+**Geprüft, nicht nur vermutet:** Alle anderen `lead`/`<strong>`/`trail`-Aufteilungen
+dieser und früherer Wellen haben immer ein HTML-Element (`<strong>`/`<em>`)
+zwischen den Mustaches, nie zwei bare Ausdrücke direkt hintereinander — ein
+Scan über alle in dieser Etappe geänderten `.svelte`-Dateien (Muster: `})`
+gefolgt von Zeilenumbruch und `{`) fand außer dem Version-Badge keine weitere
+Stelle. Der Fund ist damit ein Einzelfall, keine systematische Lücke.
+
+## Guard-Aktualisierung
+
+`hardcodedMarkupScan.test.ts`: `sentence-fragment` und `interpolation` stehen
+nicht mehr mit `0` in `OPEN_SKIP_LEDGER` — dieselbe Begründung wie bei
+`already-translated`: ein Grund ohne Fundstellen taucht im gemessenen Objekt
+gar nicht mehr auf. `plural-candidate` 11 → 10 (eine Ziffer aus `about` fiel
+mit heraus). `no-letter-group`/`dynamic-attribute`/`attribute-no-static-text`
+unverändert.
+
+## Nachweise
+
+`svelte-check` 0 Fehler, `germanBaseline.json` unverändert (keine Schicht-A/B-
+Datei berührt). `test:quick` grün (328+82 Testdateien, 4963+783 Tests).
+E2E isoliert: `npm run test:e2e -- e2e/about-page.spec.ts
+e2e/design-tokens.spec.ts e2e/modal-overflow.spec.ts e2e/seo-meta.spec.ts
+e2e/bestimmungshilfe.spec.ts` — 141/141 grün (nach dem Version-Badge-Fix).
+
+## Gesamtbilanz Schicht C
+
+Mit diesem Abschnitt sind **alle** ursprünglich 143 Handarbeitsfälle aus
+Aufgabe 2.3b gelöst (`sentence-fragment` 78 → 0, `interpolation` 58 → 0) sowie
+Befund A vollständig (27 Fälle: 20 SEO-Attribute + 7 Komponenten-Props).
+Offen bleibt ausschließlich die **fachliche/rechtliche Prüfung** der
+Datenschutz-Entwurfsübersetzung gegen die DMM-Erklärung, bevor
+`TRANSLATION_ROLLOUT_COMPLETE` auf `true` gehen kann.

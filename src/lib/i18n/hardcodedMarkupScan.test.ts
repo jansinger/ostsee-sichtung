@@ -147,11 +147,17 @@ describe('Mechanisch — der Extraktor findet in Schicht C nichts mehr', () => {
  * und nur die. Sinkt eine Zahl, ohne dass die Welle sie gelöst hat, ist eine
  * Stelle verschwunden statt übersetzt worden.
  */
+/**
+ * `sentence-fragment` und `interpolation` stehen bewusst NICHT mehr hier
+ * (Aufgabe 2.3b abgeschlossen, 2026-08-13, `about/+page.svelte` war die
+ * letzte Datei) — aus demselben Grund wie `already-translated` oben nie
+ * hier stand: `openSkipCounts()` trägt nur Gründe ein, die tatsächlich
+ * auftreten, ein Eintrag mit `0` fände im gemessenen Objekt nie eine
+ * Entsprechung. Taucht einer der beiden künftig wieder auf, meldet der Test
+ * das von selbst (Soll-Objekt ohne den Schlüssel, Ist-Objekt mit einem) —
+ * kein Eintrag mit `0` nötig, um das abzusichern.
+ */
 const OPEN_SKIP_LEDGER: Readonly<Record<string, number>> = {
-	/** Textknoten neben einem textbehafteten Geschwister — Muster A/C, Aufgabe 2.3b. */
-	'sentence-fragment': 42,
-	/** Textknoten neben einem dynamischen Ausdruck — braucht eine ICU-Botschaft mit Parameter. */
-	interpolation: 1,
 	/**
 	 * Attributwert mit Ternary. Bleibt auch NACH der Übersetzung stehen, wenn
 	 * beide Zweige bereits `m.key()` sind — der Sammler erkennt nur ein reines
@@ -168,7 +174,7 @@ const OPEN_SKIP_LEDGER: Readonly<Record<string, number>> = {
 	/** Reine Satzzeichen, Symbole, Zahlen — Struktur, wird nie übersetzt. */
 	'no-letter-group': 45,
 	/** Ziffern-Treffer; als Pluralarbeit falsch-positiv (Protokoll, Korrektur zu 2.3b). */
-	'plural-candidate': 11,
+	'plural-candidate': 10,
 	/** Attributwert ohne jeden statischen Text (`title={file.name}`) — nie Übersetzungsarbeit. */
 	'attribute-no-static-text': 24
 };
