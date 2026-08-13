@@ -274,6 +274,13 @@
 	bottom: 12px;
 	left: -50px;
 	min-width: 280px;
+	/* Ohne Obergrenze ist das Popup shrink-to-fit und wird so breit, wie seine
+	   nicht umbrechenden Kinder es verlangen (Anzahl, Datum, Status-Badge). Bei
+	   320 px Viewport maß es 350 px und wurde am Rand der Karte abgeschnitten —
+	   ein vorbestehender Zustand, der erst auffällt, seit am beschnittenen Ende
+	   mit dem Badge etwas Bedeutungstragendes liegt. Mit der Grenze sind es
+	   312 px, das Badge bleibt vollständig sichtbar. */
+	max-width: min(88vw, 420px);
 	z-index: 1000;
 }
 
@@ -348,6 +355,12 @@
 .cluster-item-species {
 	flex: 1;
 	font-weight: 500;
+}
+
+/* Das Badge trägt die Bedeutung — bei knapper Breite darf nicht es als erstes
+   schrumpfen, sondern der umbruchfähige Artname daneben. */
+.cluster-item-status {
+	flex-shrink: 0;
 }
 
 .cluster-item-count {

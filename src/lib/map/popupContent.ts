@@ -55,10 +55,13 @@ function statusLabel(status: SightingStatus | undefined): string | null {
 	return STATUS_LABELS[status]();
 }
 
-function statusBadge(status: SightingStatus | undefined): string {
+function statusBadge(status: SightingStatus | undefined, extraClass = ''): string {
 	const label = statusLabel(status);
 	if (!label || !status) return '';
-	return `<span class="badge badge-sm ${SIGHTING_STATUS_PRESENTATION[status].badgeClass}">${sanitizeText(label)}</span>`;
+	const classes = ['badge', 'badge-sm', SIGHTING_STATUS_PRESENTATION[status].badgeClass, extraClass]
+		.filter(Boolean)
+		.join(' ');
+	return `<span class="${classes}">${sanitizeText(label)}</span>`;
 }
 
 // M5: timeZone explizit setzen, sonst bestimmt die Browser-Zone das Datum
@@ -184,7 +187,7 @@ export function createClusterListContent(
 		// wäre hier sonst vollständig verloren. Auch im aria-label, sonst hört
 		// die Sprachausgabe die Unterscheidung nicht, die das Auge sieht.
 		const statusName = statusLabel(props.st);
-		const status = statusBadge(props.st);
+		const status = statusBadge(props.st, 'cluster-item-status');
 
 		items += `
 			<li>
