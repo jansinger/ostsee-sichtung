@@ -1,0 +1,48 @@
+# Zitierangabe nach dem Citation File Format (https://citation-file-format.github.io/).
+# GitHub rendert daraus den Knopf „Cite this repository".
+#
+# Warum die Datei hier steht: Ostsee-Tiere sammelt seit über einem Jahrzehnt
+# Meerestier-Sichtungen von Bürgerinnen und Bürgern. Wird der Bestand in einer
+# Arbeit ausgewertet, gab es bis dahin keine vorgesehene Form, ihn zu zitieren —
+# jede Nennung sah anders aus, und das Museum als Betreiber blieb dabei oft
+# ungenannt.
+#
+# `version` und `date-released` pflegt release-please mit (Eintrag in
+# release-please-config.json, `extra-files`); die Anmerkungen dahinter sind
+# dafür die Marker und dürfen nicht entfernt werden. Ein Wächter in
+# scripts/citationFile.test.ts vergleicht die Fassung mit package.json.
+#
+# ACHTUNG zum Feld `license`: Es gilt der **Software**, nicht dem Datenbestand.
+# Unter welchen Bedingungen die Sichtungsdaten weiterverwendet werden dürfen,
+# ist eine offene Entscheidung des Museums; wer den Bestand auswerten will,
+# klärt das dort. Aus demselben Grund trägt das JSON-LD der Anwendung keinen
+# Dataset-Knoten (Begründung in src/lib/seo/structuredData.ts).
+cff-version: 1.2.0
+message: 'Wenn Sie diese Software verwenden, zitieren Sie sie bitte wie folgt.'
+title: 'Ostsee-Tiere — Meldeplattform für Meerestier-Sichtungen in der Ostsee'
+abstract: >-
+  Webanwendung des Deutschen Meeresmuseums zur Erfassung und Veröffentlichung
+  von Sichtungen mariner Säugetiere und anderer Meerestiere in der Ostsee.
+  Bürgerinnen und Bürger melden Sichtungen über ein mehrstufiges Formular; das
+  Museum prüft sie und gibt sie für die öffentliche Karte frei.
+type: software
+authors:
+  - family-names: Singer
+    given-names: Jan
+  - name: 'Deutsches Meeresmuseum'
+    city: Stralsund
+    country: DE
+    website: 'https://www.deutsches-meeresmuseum.de'
+repository-code: 'https://github.com/jansinger/ostsee-tiere'
+url: 'https://ostsee-tiere.de'
+license: MIT
+keywords:
+  - citizen science
+  - Bürgerwissenschaft
+  - marine mammals
+  - Meeressäuger
+  - Baltic Sea
+  - Ostsee
+  - biodiversity monitoring
+version: 2.19.0 # x-release-please-version
+date-released: '2026-08-13' # x-release-please-date

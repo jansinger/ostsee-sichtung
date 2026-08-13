@@ -125,7 +125,7 @@ describe('Mechanisch — der Extraktor findet in Schicht C nichts mehr', () => {
 
 	/* Selbsttest. Ein Guard, der über eine leere Dateimenge läuft, ist grün und
 	   beweist nichts — das war der „stille Nullbefund" aus Aufgabe 1. */
-	it('scannt die 86 Markup-Dateien im Umfang', () => {
+	it('scannt die 87 Markup-Dateien im Umfang', () => {
 		// 84 seit Aufgabe 2.3a, +1 seit Aufgabe 2.5: `HreflangHead.svelte`
 		// (`src/lib/components/seo/`) ist neuer, in-scope Code ohne eigenen
 		// Anzeigetext — der Zuwachs bestätigt, dass der Scan sie mitzählt,
@@ -135,7 +135,12 @@ describe('Mechanisch — der Extraktor findet in Schicht C nichts mehr', () => {
 		// von Einstiegsseite und Formular. Auch dort ist der Zuwachs nur ein
 		// Umzug: Beide Texte hingen vorher an `ModernReportForm.svelte` und
 		// stehen unverändert in beiden Sprachdateien.
-		expect(svelteFiles()).toHaveLength(86);
+		//
+		// +1 seit dem 2026-08-13: `StructuredDataHead.svelte` — derselbe Fall wie
+		// `HreflangHead.svelte` nebenan. Sie rendert JSON-LD in den Seitenkopf und
+		// hat keinen Anzeigetext; die einzige sprachabhängige Angabe darin ist
+		// `inLanguage`, und die kommt aus `getLocale()`, nicht aus einer Botschaft.
+		expect(svelteFiles()).toHaveLength(87);
 	});
 });
 

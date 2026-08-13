@@ -116,7 +116,12 @@ describe('istAusgeschlossen', () => {
 		'/docs',
 		'/docs/api',
 		'/styleguide',
-		'/rest_sichtungen'
+		'/rest_sichtungen',
+		// Beide gelten laut ihrer Spezifikation nur an der Wurzel. `/en/sitemap.xml`
+		// wäre nicht bloß eine zweite URL, sondern protokollwidrig: Eine Sitemap
+		// unter `/en/` darf nur URLs unterhalb ihres eigenen Pfades führen.
+		'/robots.txt',
+		'/sitemap.xml'
 	])('schließt %s aus', (pfad) => {
 		expect(istAusgeschlossen(pfad)).toBe(true);
 	});

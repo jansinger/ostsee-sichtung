@@ -104,6 +104,14 @@ export function stripLegacyLanguagePrefix(pathname: string): string | undefined 
  * Ein Präfix hier hätte `istAusgeschlossen('/sichtungen')` fälschlich
  * ausgeschlossen; der bloße Pfad `/sichtungen` existiert als Seite nicht und
  * muss lokalisierbar bleiben.
+ *
+ * `/robots.txt` und `/sitemap.xml` stehen hier, weil beide Dateien laut ihrer
+ * jeweiligen Spezifikation nur an der Wurzel gelten. Ohne den Eintrag lieferte
+ * `/en/sitemap.xml` eine zweite, gültige Antwort — und die wäre sogar
+ * protokollwidrig: Eine Sitemap unter `/en/` darf nur URLs auf oder unterhalb
+ * ihres eigenen Pfades führen, unsere führt `/`, `/about`, `/map` und
+ * `/bestimmungshilfe`. Zwei crawlbare URLs für eine Datei, deren Zweck gerade
+ * das Vermeiden doppelter URLs ist.
  */
 export const NICHT_LOKALISIERT = [
 	'/api',
@@ -113,7 +121,9 @@ export const NICHT_LOKALISIERT = [
 	'/maintenance',
 	'/docs',
 	'/styleguide',
-	'/rest_sichtungen'
+	'/rest_sichtungen',
+	'/robots.txt',
+	'/sitemap.xml'
 ] as const;
 
 /**
