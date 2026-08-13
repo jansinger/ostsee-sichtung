@@ -23,6 +23,8 @@
 		serializeMapFilterParams,
 		type MapFilterUrlState
 	} from '$lib/map/urlFilterState';
+	import type { SightingStatus } from '$lib/components/admin/sightingStatus';
+	import { DEFAULT_MAP_STATUSES, isPublicStatusSelection } from '$lib/map/statusRequestParams';
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	// Kein `import 'ol/ol.css'` hier: die Datei kommt global aus app.css, und zwar
@@ -108,6 +110,17 @@
 	// window/page.url sind hier also verfügbar.
 	const urlFilterState = parseMapFilterParams(page.url.searchParams);
 
+	/* Das Admin-Flag kommt aus dem Root-Layout (`+layout.server.ts`), das es
+	   serverseitig aus den Rollen berechnet — `PublicUser` trägt die Rollen
+	   bewusst nicht. Superadmins tragen zusätzlich die Rolle `admin`, `showAdminMenu`
+	   deckt damit beide Gruppen ab. Das Flag steuert nur die Sichtbarkeit; die
+	   Sicherheitsgrenze liegt in der API (statusFilter.ts). */
+	let isAdmin = $derived(page.data.showAdminMenu === true);
+
+	/* Nicht-Admins bekommen die URL-Auswahl gar nicht erst zu sehen — sonst
+	   liefe eine geteilte Admin-URL bei ihnen in einen 403 und die Karte bliebe leer. */
+	let statuses = $state<SightingStatus[]>([...DEFAULT_MAP_STATUSES]);
+
 	// Bisheriges Fallback-Jahr, synchron verfügbar für den allerersten Render
 	// (bevor GET /api/map/sightings/years geladen ist). Als Konstante erfasst,
 	// damit die beiden $state-Deklarationen unten nicht voneinander abhängen.
@@ -179,7 +192,8 @@
 			activeFilters.query !== undefined ||
 			activeFilters.from !== undefined ||
 			(activeFilters.hiddenSpecies?.length ?? 0) > 0 ||
-			(activeFilters.hiddenColors?.length ?? 0) > 0
+			(activeFilters.hiddenColors?.length ?? 0) > 0 ||
+			!isPublicStatusSelection(statuses)
 	);
 
 	/**
@@ -267,7 +281,11 @@
 	async function loadAvailableYears(): Promise<number> {
 		let fetchedYears: YearWithCount[] = [];
 		try {
-			const response = await fetch('/api/map/sightings/years');
+			const query =
+				statuses.length > 0 && !isPublicStatusSelection(statuses)
+					? `?status=${statuses.join(',')}`
+					: '';
+			const response = await fetch(`/api/map/sightings/years${query}`);
 			if (response.ok) {
 				const data = await response.json();
 				if (Array.isArray(data?.years)) {
@@ -357,7 +375,8 @@
 			searchTerm: mapInstance.getSearchTerm(),
 			timeFilter: mapInstance.getTimeFilter(),
 			hiddenSpecies: hidden.species,
-			hiddenColors: hidden.colors
+			hiddenColors: hidden.colors,
+			statuses
 		});
 	}
 
@@ -403,6 +422,23 @@
 	function showColorGroup(colorGroup: string): void {
 		colorVisibility[colorGroup] = true;
 		countManager.setColorVisibility(colorGroup, true);
+	}
+
+	/** Wechselt die Bearbeitungszustände: Karte neu laden und Jahreszahlen nachziehen. */
+	async function handleStatusChange(next: SightingStatus[]): Promise<void> {
+		statuses = next;
+		if (!mapInstance) return;
+		await mapInstance.setStatuses(next);
+		// Die Jahres-Zahlen zählen dieselbe Grundmenge — ohne diesen zweiten
+		// Aufruf zeigt das Dropdown Zahlen, die auf der Karte nicht auftauchen.
+		await loadAvailableYears();
+		countManager.updateCounts();
+		syncFiltersToUrl(readCurrentFilterState());
+	}
+
+	/** Setzt die Auswahl auf die öffentliche Grundmenge zurück (Chip-Aktion). */
+	function resetStatusFilter(): void {
+		void handleStatusChange([...DEFAULT_MAP_STATUSES]);
 	}
 
 	/**
@@ -456,6 +492,10 @@
 			// QW2b: Verfügbare Jahre vor Karteninitialisierung laden, damit die
 			// Karte direkt mit einem Jahr startet, das tatsächlich Daten hat.
 			// M4: Ein Jahr aus der URL hat Vorrang vor dem ermittelten Default.
+			// URL-Auswahl nur für Admins übernehmen (siehe oben).
+			if (isAdmin && urlFilterState.statuses?.length) {
+				statuses = [...urlFilterState.statuses];
+			}
 			const loadedDefaultYear = await loadAvailableYears();
 			if (cancelled) return;
 
@@ -480,6 +520,7 @@
 				enableLocationControl: true,
 				initialYear,
 				initialSearchTerm: urlFilterState.query ?? '',
+				initialStatuses: statuses,
 				onLoading: (loading) => {
 					isLoadingData = loading;
 					if (loading) {
@@ -771,6 +812,13 @@
 					<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
 				</button>
 			{/each}
+			{#if !isPublicStatusSelection(statuses)}
+				<button class={chipClass} onclick={resetStatusFilter}>
+					<Icon icon="lucide:inbox" width="14" height="14" aria-hidden="true" />
+					{m.components_map_panel_filterpanel_text_status()}
+					<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
+				</button>
+			{/if}
 			<button type="button" class="{chipClass} btn-outline" onclick={resetAllFilters}>
 				{m.components_map_sightingsmapview_text_alle_filter_zuruecksetzen()}
 			</button>
@@ -955,6 +1003,9 @@
 		isLoading={isLoadingData}
 		initialSearch={urlFilterState.query ?? ''}
 		toggleHidden={filterOpen || legendOpen}
+		showStatusFilter={isAdmin}
+		{statuses}
+		onStatusChange={(next) => void handleStatusChange(next)}
 		bind:isOpen={filterOpen}
 	/>
 
