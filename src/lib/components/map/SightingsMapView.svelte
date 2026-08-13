@@ -326,7 +326,15 @@
 			availableYearsData = update;
 		}
 
-		return pickDefaultYear(fetchedYears, initialFallbackYear);
+		/* Das Default-Jahr muss aus der Liste kommen, die tatsächlich gilt, nicht
+		   aus `fetchedYears`: Bei einem überholten oder fehlgeschlagenen Abruf
+		   bleibt `availableYearsData` bewusst stehen — ein Default aus der
+		   verworfenen Antwort ginge an genau der Liste vorbei, die wir eben
+		   behalten haben, und `reconcileDisplayedYear` würde damit auf ein Jahr
+		   schalten, das zur angezeigten Auswahl nicht gehört (Review PR #872).
+		   Nach der Zuweisung oben ist `availableYearsData` in beiden Fällen die
+		   wirksame Liste. */
+		return pickDefaultYear(availableYearsData, initialFallbackYear);
 	}
 
 	/**
@@ -454,9 +462,22 @@
 
 	/** Wechselt die Bearbeitungszustände: Karte neu laden und Jahreszahlen nachziehen. */
 	async function handleStatusChange(next: SightingStatus[]): Promise<void> {
+		const previous = statuses;
 		statuses = next;
 		if (!mapInstance) return;
-		await mapInstance.setStatuses(next);
+		const result = await mapInstance.setStatuses(next);
+		/* Ein neuerer Wechsel hat übernommen: Der ist jetzt für Jahresliste, URL
+		   und Chip zuständig. Hier nichts weiter tun und vor allem NICHT
+		   zurückrollen — das überschriebe die neuere Auswahl. */
+		if (result === 'superseded') return;
+		/* Fehlgeschlagen (z. B. abgelaufene Session): Die Karte zeigt weiterhin
+		   den alten Bestand. Ohne diesen Rückbau behaupteten Kästchen, Chip und
+		   URL eine Auswahl, die nirgends gilt — der Fehler-Toast erklärt den
+		   Rückbau (Review PR #872). */
+		if (result === 'failed') {
+			statuses = previous;
+			return;
+		}
 		// Die Jahres-Zahlen zählen dieselbe Grundmenge — ohne diesen zweiten
 		// Aufruf zeigt das Dropdown Zahlen, die auf der Karte nicht auftauchen.
 		const loadedDefaultYear = await loadAvailableYears();

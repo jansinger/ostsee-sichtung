@@ -50,6 +50,13 @@ const logger = createLogger('map:optimized-controller');
 /**
  * Optionen für die Map-Klasse
  */
+/**
+ * Ausgang eines Statuswechsels. `superseded` ist kein Fehler, sondern der
+ * Normalfall bei schnellem Umschalten: Ein neuerer Aufruf hat den laufenden
+ * Request abgebrochen und ist ab dann zuständig.
+ */
+export type StatusChangeResult = 'applied' | 'superseded' | 'failed';
+
 export interface MapOptions {
 	translations: MapTranslations;
 	target: string;
@@ -674,9 +681,17 @@ export class SichtungenMap {
 	 * ausschließlich über errorCallback gemeldet: Der Aufrufer ist ein
 	 * Event-Handler ohne eigenes catch, ein Rethrow würde dort als unhandled
 	 * promise rejection auflaufen statt den Fehler nutzbar zu machen.
+	 *
+	 * Der Rückgabewert sagt dem Aufrufer trotzdem, was passiert ist — ohne ihn
+	 * zog die Oberfläche Chip und URL auf eine Auswahl, die die Karte gar nicht
+	 * geladen hatte (Review PR #872). Die drei Fälle sind bewusst getrennt:
+	 * `superseded` heißt, ein neuerer Wechsel hat übernommen und ist jetzt
+	 * zuständig — dort darf der Aufrufer NICHT zurückrollen, sonst überschriebe
+	 * er die neuere Auswahl.
 	 */
-	public async setStatuses(statuses: readonly SightingStatus[]): Promise<void> {
+	public async setStatuses(statuses: readonly SightingStatus[]): Promise<StatusChangeResult> {
 		this.closePopup();
+		const previous = this.statuses;
 		this.statuses = statuses;
 		this.loadingCallback?.(true);
 		try {
@@ -684,10 +699,20 @@ export class SichtungenMap {
 			this.reportsLayer.changed();
 			this.legendUpdateCallback?.();
 			this.loadingCallback?.(false);
+			return 'applied';
 		} catch (error) {
-			if (error instanceof DOMException && error.name === 'AbortError') return;
+			/* Abbruch: Der neuere Aufruf besitzt jetzt sowohl den Ladezustand als
+			   auch `this.statuses` — hier weder den Spinner ausschalten noch
+			   zurückrollen. */
+			if (error instanceof DOMException && error.name === 'AbortError') return 'superseded';
+			/* Fehlschlag: `loadSightings` leert `reportsSource` erst nach der
+			   Antwort, die Karte zeigt also weiterhin den alten Bestand. Damit
+			   `getStatuses()` nicht etwas anderes behauptet als zu sehen ist,
+			   wird die Auswahl mit zurückgenommen. */
+			this.statuses = previous;
 			this.loadingCallback?.(false);
 			this.errorCallback?.(error instanceof Error ? error : new Error(String(error)));
+			return 'failed';
 		}
 	}
 

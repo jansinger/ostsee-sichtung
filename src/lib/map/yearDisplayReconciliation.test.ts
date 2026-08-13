@@ -20,7 +20,10 @@ describe('reconcileDisplayedYear', () => {
 		expect(reconcileDisplayedYear(2024, [2026, 2025], 2026)).toBe(2026);
 	});
 
-	it('liefert null bei leerer selektierbarer Liste, wenn das Jahr trotzdem "enthalten" wäre — Grenzfall: leere Liste heißt immer wechseln', () => {
+	it('wechselt auf das Fallback-Jahr, wenn gar keine Jahre mehr wählbar sind', () => {
+		// Grenzfall: Eine leere Liste enthält das angezeigte Jahr nicht, also
+		// gilt dieselbe Regel wie bei der schrumpfenden Liste — kein Sonderfall,
+		// der "unverändert lassen" rechtfertigte.
 		expect(reconcileDisplayedYear(2024, [], 2026)).toBe(2026);
 	});
 

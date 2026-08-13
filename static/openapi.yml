@@ -1965,8 +1965,30 @@ paths:
                       $ref: '#/components/schemas/SightingGeoFeature'
         '400':
           description: Unbekannter oder leerer Statuswert
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Welcher Statuswert abgelehnt wurde
+                    example: "Unbekannter Status: verified"
+              example:
+                error: "Unbekannter Status: verified"
         '403':
           description: Statusfilter ohne Admin-Anmeldung angefragt
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Generischer Hinweis ohne Angabe zur Sitzung
+                    example: "Statusfilter erfordert eine Admin-Anmeldung"
+              example:
+                error: "Statusfilter erfordert eine Admin-Anmeldung"
         '500':
           description: >-
             Interner Serverfehler. Es wird ausschließlich eine generische
@@ -2045,8 +2067,30 @@ paths:
                     count: 632
         '400':
           description: Unbekannter oder leerer Statuswert
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Welcher Statuswert abgelehnt wurde
+                    example: "Unbekannter Status: verified"
+              example:
+                error: "Unbekannter Status: verified"
         '403':
           description: Statusfilter ohne Admin-Anmeldung angefragt
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Generischer Hinweis ohne Angabe zur Sitzung
+                    example: "Statusfilter erfordert eine Admin-Anmeldung"
+              example:
+                error: "Statusfilter erfordert eine Admin-Anmeldung"
         '500':
           description: >-
             Interner Serverfehler. Es wird ausschließlich eine generische
