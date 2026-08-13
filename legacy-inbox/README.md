@@ -389,8 +389,57 @@ Zwei Orte, und die Unterscheidung ist der häufigste Stolperstein:
 | `…/repo/legacy-inbox/deploy/`           | die vier Skripte | Repo, kommt mit `plesk ext git --deploy`  |
 | `…/schweinswalsichtung.de/legacy-sync/` | nur `config`     | von Hand, aus `config.example` abgeleitet |
 
-Die Skripte werden **aus dem Repo-Verzeichnis** aufgerufen; der Plesk-Zeitplan
-zeigt auf `…/repo/legacy-inbox/deploy/sync-root.sh`. Die `config` bleibt
+Die beiden **root-Einstiege** liegen bewusst außerhalb des Deploy-Verzeichnisses
+in `/usr/local/sbin/` (`legacy-inbox-sync`, `legacy-inbox-report`); die
+Plesk-Zeitpläne zeigen dorthin. Grund: Der Git-Deploy legt im
+Deploy-Verzeichnis alles unter dem Domain-Benutzer an — nachgemessen auch bei
+unveränderter Datei. Ein root-Zeitplan, der eine vom Anwendungsbenutzer
+beschreibbare Datei ausführt, wäre ein Weg zu root, und der Posteingang-Dienst
+läuft unter genau diesem Benutzer und ist aus dem Internet erreichbar.
+
+Installiert werden sie mit einem Befehl, nach jeder Änderung an einem der
+beiden:
+
+```bash
+sudo /var/www/vhosts/<domain>/repo/legacy-inbox/deploy/install.sh
+```
+
+Drei Dinge müssen dabei root gehören, weil root sie **einbindet** — und `.`
+ist Ausführen, nicht Lesen:
+
+| Datei                                | Eigentümer    | warum                                                             |
+| ------------------------------------ | ------------- | ----------------------------------------------------------------- |
+| `/usr/local/sbin/legacy-inbox-*`     | `root:root`   | von root ausgeführt                                               |
+| `/usr/local/sbin/legacy-inbox-melde` | `root:root`   | von den root-Skripten eingebunden                                 |
+| `legacy-sync/config`                 | `root:psacln` | von den root-Skripten eingebunden; der Dienst liest sie nur (640) |
+
+Die Kopie von `melde.sh` im Deploy-Verzeichnis bleibt bestehen — sie wird von
+`sync.sh` eingebunden, das als Domain-Benutzer läuft und dabei keine Grenze
+überschreitet.
+
+> **Was der Installationsschritt nicht löst.** `install.sh` liegt im
+> Deploy-Verzeichnis und wird als root aufgerufen — an dieser einen Stelle
+> führt root also Inhalt aus, den der Anwendungsbenutzer schreiben kann. Das
+> lässt sich nicht wegkonfigurieren: Auch wer die beiden `install`-Befehle von
+> Hand tippt, kopiert eine Datei aus demselben Verzeichnis nach
+> `/usr/local/sbin/`.
+>
+> Der Unterschied zum Zeitplan ist aber wesentlich, und er ist der Grund für
+> diese Anordnung: Der Zeitplan läuft **unbeaufsichtigt alle 15 Minuten** — ein
+> kompromittierter Dienst bekäme root von selbst. Der Installationsschritt läuft,
+> wenn ein Mensch ihn auslöst, selten und nach einer Änderung, die er kennt. Wer
+> ganz sicher gehen will, installiert aus einem vertrauenswürdigen Checkout statt
+> aus dem Deploy-Verzeichnis des Servers.
+
+Plesks Post-Deploy-Aktionen können das nicht übernehmen: Sie laufen in der
+chroot-Umgebung des Abonnements, deren Shell auf `/bin/false` steht, und
+wurden im Test überhaupt nicht ausgeführt — konfiguriert, aktiviert, wirkungslos.
+Ein `chown` nach jedem Deploy wäre die andere Möglichkeit gewesen; sie hält
+nur, solange jemand daran denkt.
+
+`sync.sh` und `melde.sh` bleiben im Deploy-Verzeichnis und kommen mit jedem
+Deploy frisch — `sync.sh` läuft als Domain-Benutzer, `melde.sh` wird nur
+eingebunden. Beide werden über `SKRIPT_DIR` aus der `config` gefunden. Die `config` bleibt
 außerhalb, weil sie die Empfängeradresse der Störungsmeldungen nennt und
 deshalb nicht ins öffentliche Repo gehört. Ihr Pfad steht fest in den Skripten
 und lässt sich über die Umgebungsvariable `LEGACY_SYNC_CONFIG` überschreiben —

@@ -11,9 +11,29 @@
 #
 # `runuser -u … --` startet das Kommando direkt, ohne Login-Shell; die
 # gesperrte /bin/false stört deshalb nicht.
+#
+# WICHTIG — dieses Skript gehört NICHT ins Deploy-Verzeichnis. Es wird von
+# root ausgeführt, und der Git-Deploy legt dort alles unter dem Domain-Benutzer
+# an (nachgemessen: auch bei unveränderter Datei). Ein root-Zeitplan, der eine
+# vom Anwendungsbenutzer beschreibbare Datei ausführt, ist ein Weg zu root —
+# der Posteingang-Dienst läuft unter genau diesem Benutzer und ist aus dem
+# Internet erreichbar.
+#
+# Deshalb wird es nach /usr/local/sbin/ installiert (siehe install.sh).
+#
+# Aus demselben Grund bindet es melde.sh NICHT aus dem Deploy-Verzeichnis ein:
+# `.` ist Ausführen. Root würde damit weiterhin Code lesen, den der
+# Anwendungsbenutzer schreiben kann — der Weg zu root bliebe bestehen, nur
+# eine Zeile tiefer. Es nutzt die mitinstallierte, root-eigene Fassung.
+#
+# Ebenso muss die config root gehören (root:psacln 640): root bindet sie ein,
+# der Dienst liest sie nur.
+#
+# SKRIPT_DIR wird weiterhin gebraucht — aber nur, um sync.sh zu starten, und
+# das geschieht per runuser ALS Domain-Benutzer. Da wird keine Grenze
+# überschritten.
 set -u
 
-VERZEICHNIS=$(dirname "$0")
 KONFIG="${LEGACY_SYNC_CONFIG:-/var/www/vhosts/schweinswalsichtung.de/legacy-sync/config}"
 
 # Ohne Konfiguration ist nicht einmal bekannt, wem gemeldet werden soll —
@@ -27,12 +47,21 @@ fi
 
 . "$KONFIG"
 
-if [ ! -r "$VERZEICHNIS/melde.sh" ]; then
-	echo "Melde-Baustein nicht lesbar: $VERZEICHNIS/melde.sh"
+if [ -z "${SKRIPT_DIR:-}" ]; then
+	echo "SKRIPT_DIR ist in $KONFIG nicht gesetzt."
+	echo "Erwartet wird das Deploy-Verzeichnis, z. B. …/repo/legacy-inbox/deploy"
 	exit 1
 fi
 
-. "$VERZEICHNIS/melde.sh"
+MELDE="${LEGACY_SYNC_MELDE:-/usr/local/sbin/legacy-inbox-melde}"
+
+if [ ! -r "$MELDE" ]; then
+	echo "Melde-Baustein nicht lesbar: $MELDE"
+	echo "Installieren mit: sudo <deploy>/install.sh"
+	exit 1
+fi
+
+. "$MELDE"
 
 # Der Systembenutzer der Domain steht in der config und nicht hier im Skript:
 # Plesk vergibt ihn beim Anlegen des Abonnements, und nach einer Migration
@@ -61,4 +90,4 @@ Bis dahin wird der Posteingang NICHT nach Produktion übertragen."
 	exit 1
 fi
 
-exec /usr/sbin/runuser -u "$SYNC_USER" -- "$VERZEICHNIS/sync.sh"
+exec /usr/sbin/runuser -u "$SYNC_USER" -- "$SKRIPT_DIR/sync.sh"

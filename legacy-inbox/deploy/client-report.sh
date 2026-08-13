@@ -25,7 +25,6 @@
 # (z. B. 31/Jul/2026) prüft stattdessen jenen Tag — zum Nachvollziehen.
 set -u
 
-VERZEICHNIS=$(dirname "$0")
 KONFIG="${LEGACY_SYNC_CONFIG:-/var/www/vhosts/schweinswalsichtung.de/legacy-sync/config}"
 
 # Fehlende oder unlesbare Bausteine ausdrücklich abfangen. Ohne diese Prüfung
@@ -33,7 +32,7 @@ KONFIG="${LEGACY_SYNC_CONFIG:-/var/www/vhosts/schweinswalsichtung.de/legacy-sync
 # dann eine nicht gesetzte Variable, und im Cron-Protokoll steht ein Fehler,
 # der nichts mit der Ursache zu tun hat. Genau dieser Fall trat beim
 # Einrichten auf, als melde.sh root-eigen mit Modus 640 lag.
-for BAUSTEIN in "$KONFIG" "$VERZEICHNIS/melde.sh"; do
+for BAUSTEIN in "$KONFIG"; do
 	if [ ! -r "$BAUSTEIN" ]; then
 		echo "Nicht lesbar: $BAUSTEIN"
 		echo "Prüfen: existiert die Datei, und gehört sie dem ausführenden Benutzer?"
@@ -42,7 +41,22 @@ for BAUSTEIN in "$KONFIG" "$VERZEICHNIS/melde.sh"; do
 done
 
 . "$KONFIG"
-. "$VERZEICHNIS/melde.sh"
+
+# Auch dieses Skript läuft als root — es liest die Zugriffsprotokolle, die nur
+# root lesen darf — und liegt deshalb ebenfalls außerhalb des
+# Deploy-Verzeichnisses. Aus demselben Grund bindet es die root-eigene Fassung
+# von melde.sh ein und nicht die aus dem Deploy-Verzeichnis: `.` ist
+# Ausführen. SKRIPT_DIR braucht es dadurch gar nicht. Begründung in
+# sync-root.sh.
+MELDE="${LEGACY_SYNC_MELDE:-/usr/local/sbin/legacy-inbox-melde}"
+
+if [ ! -r "$MELDE" ]; then
+	echo "Melde-Baustein nicht lesbar: $MELDE"
+	echo "Installieren mit: sudo <deploy>/install.sh"
+	exit 1
+fi
+
+. "$MELDE"
 
 LOGS=/var/www/vhosts/system/schweinswalsichtung.de/logs
 
