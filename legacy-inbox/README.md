@@ -345,14 +345,79 @@ Die Ausnahme greift **nur, wenn sonst nichts auffiel**: Kam neben dem
 Rate-Limit eine Ablehnung vor, bleibt es bei Meldung und Exit 1. Eine
 abgelehnte Meldung braucht einen Menschen, unabhängig vom Limit.
 
-> **Offen (Stand 2026-08-12):** Die Benachrichtigung des Plesk-Zeitplans ist
-> nachweislich **nicht** angekommen — weder bei den planmäßigen Läufen, die am
-> Rate-Limit scheiterten, noch bei einer eigens angelegten Test-Aufgabe mit
-> Exit 1. Zustellung an die konfigurierte Adresse funktioniert (im Mail-Log
-> belegt), es entsteht schlicht keine Mail. Solange das nicht geklärt ist,
-> ersetzt der Zeitplan **keine** Überwachung: Ein Fehler bliebe still. Die
-> robustere Lösung wäre, den Versand nicht Plesk zu überlassen, sondern im
-> Skript selbst auszulösen.
+### Wer die Störungsmeldung verschickt — und warum nicht Plesk
+
+**Die Skripte verschicken selbst** (`deploy/melde.sh`), die Benachrichtigung
+des Plesk-Zeitplans steht bei beiden Aufgaben auf `ignore`.
+
+Der Grund ist gemessen, nicht vermutet: Am 2026-08-12 scheiterten die
+planmäßigen Sync-Läufe mehrfach am Rate-Limit, und eine eigens angelegte
+Test-Aufgabe endete mit Exit 1 — in **keinem** Fall entstand eine Mail,
+obwohl die Zustellung an die konfigurierte Adresse im Mail-Log nachweisbar
+funktioniert. Eine Überwachung, deren Meldeweg im Stillen versagt, ist
+schlimmer als keine: Sie erzeugt das Gefühl, informiert zu werden.
+
+Zwei Fallen stecken darin, beide beim Einrichten aufgetreten und beide von der
+Sorte „meldet Erfolg und tut nichts":
+
+- **Keine eigene `From`-Kopfzeile setzen.** Der erste Entwurf verwendete
+  `noreply@schweinswalsichtung.de`. Der Plesk-Wrapper
+  (`/usr/lib/plesk-9.0/postfix-sendmail-wrapper`) verwarf die Mail daraufhin
+  stillschweigend: Exit 0, kein Eintrag im Mail-Log, nichts zugestellt — für
+  diese Domain gibt es keinen Mail-Dienst und damit kein Postfach, aus dem
+  verschickt werden dürfte. Ohne eigene `From`-Zeile setzt der Wrapper den
+  ausführenden Benutzer ein und stellt zu.
+- **Eigentümer der Dateien beachten.** `sync.sh` läuft als Domain-Benutzer
+  (siehe `sync-root.sh`). Liegt `melde.sh` root-eigen mit Modus 640, endet
+  jeder Lauf mit `Permission denied` — der Sync überträgt dann gar nichts
+  mehr. `config` und `melde.sh` gehören dem Domain-Benutzer.
+
+Geprüft wird das, indem man einen Fehlerfall wirklich auslöst und danach ins
+Mail-Log sieht — nicht, indem man den Exit-Code liest:
+
+```bash
+ssh hawking "sudo -n /var/www/vhosts/schweinswalsichtung.de/legacy-sync/client-report.sh 31/Jul/2026"
+ssh hawking "sudo -n grep 'to=<…>' /var/log/maillog | tail -2"
+```
+
+### Einrichtung auf dem Server
+
+Zwei Orte, und die Unterscheidung ist der häufigste Stolperstein:
+
+| Ort                                     | Inhalt           | Herkunft                                  |
+| --------------------------------------- | ---------------- | ----------------------------------------- |
+| `…/repo/legacy-inbox/deploy/`           | die vier Skripte | Repo, kommt mit `plesk ext git --deploy`  |
+| `…/schweinswalsichtung.de/legacy-sync/` | nur `config`     | von Hand, aus `config.example` abgeleitet |
+
+Die Skripte werden **aus dem Repo-Verzeichnis** aufgerufen; der Plesk-Zeitplan
+zeigt auf `…/repo/legacy-inbox/deploy/sync-root.sh`. Die `config` bleibt
+außerhalb, weil sie die Empfängeradresse der Störungsmeldungen nennt und
+deshalb nicht ins öffentliche Repo gehört. Ihr Pfad steht fest in den Skripten
+und lässt sich über die Umgebungsvariable `LEGACY_SYNC_CONFIG` überschreiben —
+das ist zugleich der Weg, das Ganze woanders zu betreiben.
+
+Deshalb tauchen in den Beispielen oben beide Pfade auf: `legacy-sync/…` überall
+dort, wo es um die Konfiguration geht, `deploy/…` beim Aufruf.
+
+Rechte, an denen es beim Einrichten scheiterte:
+
+- `config` und `melde.sh` müssen für den **Domain-Benutzer** lesbar sein —
+  `sync.sh` läuft unter ihm, nicht als root.
+- `sync-root.sh` läuft als root und gibt die Rechte selbst ab.
+
+Beide Zeitpläne sind serverweite Plesk-Aufgaben als `root` — **nicht** auf
+Abonnement-Ebene. Der Grund: Plesk führt Abonnement-Aufgaben in einer
+chroot-Umgebung aus, in deren `passwd` der Domain-Benutzer nicht steht, weil
+seine Shell auf `/bin/false` gesetzt ist. Das zu ändern hieße, SSH-Zugang zu
+öffnen — ein zu hoher Preis für einen Zeitplan.
+
+Der Systembenutzer selbst steht in der `config` (`SYNC_USER`) und nicht im
+Skript. Plesk vergibt ihn beim Anlegen des Abonnements; nach einer Migration
+heißt er anders. Stünde er fest im Code, liefe der Zeitplan als root weiter,
+`runuser` fiele auf die Nase, und weil `melde.sh` erst in `sync.sh` eingebunden
+würde, käme darüber nie eine Meldung — der Sync stünde still, ohne dass es
+jemand erfährt. `sync-root.sh` prüft deshalb selbst und meldet mit dem Befehl,
+der den aktuellen Namen liefert.
 
 ## Tests
 
