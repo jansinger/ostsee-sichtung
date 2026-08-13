@@ -184,6 +184,31 @@ function platzhalterMenge(text: string): string[] {
 	return (text.match(PLACEHOLDER) ?? []).sort();
 }
 
+/**
+ * Gleicht den Anfangsbuchstaben an die Quelle an.
+ *
+ * Ein Glossar ist case-sensitiv und kontextblind: Der Eintrag
+ * `Bootsantrieb → boat propulsion` ist für die Satzmitte richtig („select the
+ * boat propulsion system"), macht aus dem alleinstehenden Feldlabel aber
+ * „boat propulsion" statt „Boat propulsion". Beobachtet am Trockenlauf vom
+ * 2026-08-13 — und zwar als Regression, die erst der Glossar-Eintrag erzeugt
+ * hat; ohne ihn übersetzte DeepL das Label korrekt groß.
+ *
+ * Die Regel ist deterministisch und deckt die ganze Klasse ab: Beginnt die
+ * deutsche Quelle mit einem Großbuchstaben und die Übersetzung mit einem
+ * Kleinbuchstaben, wird großgeschrieben. Fragmente, die im Deutschen klein
+ * oder mit Satzzeichen beginnen (`, ihre Sichtungen …`), bleiben unberührt —
+ * genau richtig, denn sie stehen als Satzteil im Markup.
+ */
+function gleicheAnfangsbuchstabenAn(quelle: string, uebersetzt: string): string {
+	const quelleGross = quelle[0] !== undefined && quelle[0] === quelle[0].toUpperCase();
+	const zielKlein = uebersetzt[0] !== undefined && uebersetzt[0] === uebersetzt[0].toLowerCase();
+	if (quelleGross && zielKlein && /\p{L}/u.test(quelle[0] ?? '')) {
+		return uebersetzt[0]!.toUpperCase() + uebersetzt.slice(1);
+	}
+	return uebersetzt;
+}
+
 /* Wird unten vor dem ersten `uebersetze`-Aufruf gesetzt. Die Deklaration steht
    hier, weil `uebersetze` sie liest — der Aufruf erfolgt erst danach. */
 let glossarId: string | undefined; // eslint-disable-line prefer-const
@@ -268,7 +293,9 @@ try {
 		const ergebnisse = await uebersetze(stapel.map((a) => a.quelle));
 
 		stapel.forEach((auftrag, index) => {
-			const uebersetzt = ergebnisse[index];
+			const roh = ergebnisse[index];
+			const uebersetzt =
+				roh === undefined ? undefined : gleicheAnfangsbuchstabenAn(auftrag.quelle, roh);
 			if (uebersetzt === undefined) {
 				verworfen.push({ key: auftrag.key, grund: 'keine Antwort von DeepL' });
 				return;

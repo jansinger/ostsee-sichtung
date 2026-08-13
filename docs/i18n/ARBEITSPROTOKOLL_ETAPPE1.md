@@ -2144,3 +2144,39 @@ das heikel, weil `sightingSchemaClaims.test.ts` genau über inhaltliche
 Behauptungen in diesen Texten wacht. Kein Glossar-Fall (die Neigung zur
 Ausschmückung lässt sich nicht per Begriffsliste abstellen) — gehört im Diff
 gelesen.
+
+## Vierter Trockenlauf: das Glossar hat den Fehler behoben — und einen neuen erzeugt
+
+Nach der Glossar-Erweiterung ist „Antrieb" durchgängig *propulsion*
+(`propulsion system`, `propulsion type`, `boat propulsion system`) und der
+Numerus-Fehler weg („Other forms of propulsion" statt „Other drive systems").
+
+**Neu und selbst verursacht:**
+
+```
+sighting_boatdrive_label   DE: Bootsantrieb   EN: boat propulsion
+```
+
+Vor dem Glossar stand dort „Boat propulsion" — richtig. Der Eintrag
+`Bootsantrieb → boat propulsion` erzwingt jetzt die Kleinschreibung auch dort,
+wo das Wort allein als **Feldlabel** steht. Für die Satzmitte („select the boat
+propulsion system") ist klein korrekt, für das Label nicht. Ein Glossar ist
+case-sensitiv und kontextblind; beide Fälle über einen Eintrag zu bedienen geht
+nicht.
+
+**Behoben als Klasse, nicht als Einzelfall:** `gleicheAnfangsbuchstabenAn()`
+schreibt groß, wenn die deutsche Quelle mit einem Großbuchstaben beginnt und die
+Übersetzung mit einem kleinen. Deterministisch und ohne Wortliste. Fragmente,
+die im Deutschen klein oder mit Satzzeichen beginnen (`, ihre Sichtungen …`,
+`abrufbar und damit für`), bleiben unberührt — genau richtig, denn sie stehen
+als Satzteil im Markup.
+
+An sechs Grenzfällen verifiziert: der Regressionsfall selbst, Satzmitte,
+Fragment mit führendem Satzzeichen, klein beginnendes Fragment, Einheit
+(`km/h`), Umlaut am Anfang (`Änderung` → `Change`).
+
+**Die allgemeine Lehre — die dritte in Folge aus diesem Werkzeug:** Jede
+Korrektur an der Maschinenübersetzung kann eine neue Fehlerklasse öffnen. Der
+Glossar-Eintrag hat die Terminologie vereinheitlicht und dabei die
+Groß-/Kleinschreibung gebrochen. Deshalb bleibt der Trockenlauf der
+Normalbetrieb und `--write` die Ausnahme, die man vorher liest.
