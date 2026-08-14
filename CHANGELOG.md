@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.20.0](https://github.com/jansinger/ostsee-tiere/compare/v2.19.0...v2.20.0) (2026-08-14)
+
+
+### Features
+
+* **config:** add robots.txt, sitemap.xml, security.txt, JSON-LD and CITATION.cff ([#870](https://github.com/jansinger/ostsee-tiere/issues/870)) ([4f8a67e](https://github.com/jansinger/ostsee-tiere/commit/4f8a67ef14970f63f9139e40a770799d28a76c02))
+* **map:** admin-only status filter for the sightings map ([#872](https://github.com/jansinger/ostsee-tiere/issues/872)) ([38272b9](https://github.com/jansinger/ostsee-tiere/commit/38272b978895cade4fd755503c30a6c19490d905))
+* **map:** Bearbeitungsstand am Cluster-Ring + zwei Folgefehler aus [#872](https://github.com/jansinger/ostsee-tiere/issues/872) ([#875](https://github.com/jansinger/ostsee-tiere/issues/875)) ([84f5d72](https://github.com/jansinger/ostsee-tiere/commit/84f5d72b2cb12fc1142448c8e364c3878468230d))
+* **map:** show sighting status in popup, cluster list and legend ([#873](https://github.com/jansinger/ostsee-tiere/issues/873)) ([a7a9958](https://github.com/jansinger/ostsee-tiere/commit/a7a995825f33a585c51ef09d3bf69a846d2aa326))
+
 ## [2.19.0](https://github.com/jansinger/ostsee-tiere/compare/v2.18.0...v2.19.0) (2026-08-13)
 
 
