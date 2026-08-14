@@ -9,8 +9,11 @@
 		speciesGroupStyles,
 		speciesSymbols,
 		MARKER_BACKGROUND_COLOR,
+		STATUS_LINE_CAP,
+		STATUS_LINE_DASH,
 		TOTFUND_RING_COLOR
 	} from '$lib/map/styleUtils';
+	import type { SightingStatus } from '$lib/components/admin/sightingStatus';
 	import Icon from '$lib/components/Icon.svelte';
 	import MapPanel from './MapPanel.svelte';
 
@@ -59,6 +62,32 @@
 	const ringLegendEntries = $derived([
 		...Object.values(speciesGroupStyles).map(({ label, color }) => ({ label, color })),
 		{ label: String(translations.found_dead), color: TOTFUND_RING_COLOR }
+	]);
+
+	// Bearbeitungsstand: Muster und Linienende kommen aus derselben Quelle wie
+	// der Marker (styleUtils) — eine abgeschriebene Zahl hier ließe die Legende
+	// still etwas anderes zeigen als die Karte. Reihenfolge: der Regelfall
+	// zuerst, danach die beiden Abweichungen.
+	const statusLegendEntries: {
+		status: SightingStatus;
+		label: string;
+		description: string;
+	}[] = $derived([
+		{
+			status: 'approved',
+			label: m.components_map_panel_filterpanel_text_status_freigegeben(),
+			description: m.components_map_panel_legendpanel_text_status_freigegeben_erklaerung()
+		},
+		{
+			status: 'open',
+			label: m.components_map_panel_filterpanel_text_status_offen(),
+			description: m.components_map_panel_legendpanel_text_status_offen_erklaerung()
+		},
+		{
+			status: 'rejected',
+			label: m.components_map_panel_filterpanel_text_status_abgelehnt(),
+			description: m.components_map_panel_legendpanel_text_status_abgelehnt_erklaerung()
+		}
 	]);
 
 	// Initialisiere Visibility-States (alle sichtbar). Nur fehlende Keys
@@ -289,16 +318,37 @@
 	</div>
 
 	{#if showStatusLegend}
-		<div class="space-y-1">
+		<div class="space-y-2">
 			<h3 class="text-sm font-medium">
 				{m.components_map_panel_legendpanel_text_bearbeitungsstand()}
 			</h3>
-			<p class="text-base-content/70 text-xs">
-				{m.components_map_panel_legendpanel_text_status_offen_erklaerung()}
-			</p>
-			<p class="text-base-content/70 text-xs">
-				{m.components_map_panel_legendpanel_text_status_abgelehnt_erklaerung()}
-			</p>
+			{#each statusLegendEntries as entry (entry.status)}
+				<div class="flex items-center gap-3">
+					<!-- Gerendertes Muster statt Prosa („Gestrichelt: …"), wie bei
+					     Artring, Totfund-Ring und Cluster-Skala weiter oben. Radius,
+					     Strichbreite und Muster entsprechen dem Marker (styleUtils);
+					     dekorativ, die Bedeutung steht als Text daneben. -->
+					<svg
+						data-status-swatch={entry.status}
+						class="text-base-content h-8 w-8 shrink-0"
+						viewBox="0 0 32 32"
+						aria-hidden="true"
+					>
+						<circle
+							cx="16"
+							cy="16"
+							r="14"
+							fill={MARKER_BACKGROUND_COLOR}
+							stroke="currentColor"
+							stroke-width="3"
+							stroke-dasharray={STATUS_LINE_DASH[entry.status]?.join(' ')}
+							stroke-linecap={STATUS_LINE_CAP[entry.status]}
+						/>
+					</svg>
+					<span class="text-sm font-medium">{entry.label}</span>
+					<span class="text-base-content/70 text-xs">{entry.description}</span>
+				</div>
+			{/each}
 		</div>
 	{/if}
 </MapPanel>
