@@ -35,6 +35,7 @@
 	import Cpu from '~icons/lucide/cpu';
 	import Crosshair from '~icons/lucide/crosshair';
 	import Download from '~icons/lucide/download';
+	import ExternalLink from '~icons/lucide/external-link';
 	import Eye from '~icons/lucide/eye';
 	import File from '~icons/lucide/file';
 	import FileCode from '~icons/lucide/file-code';
@@ -215,6 +216,7 @@
 		'lucide:clock': Clock,
 		'lucide:cloud-rain': CloudRain,
 		'lucide:hash': Hash,
+		'lucide:external-link': ExternalLink,
 		'lucide:globe': Globe,
 		'lucide:message-circle': MessageCircle,
 		'lucide:mouse-pointer': MousePointer,

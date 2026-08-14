@@ -163,6 +163,17 @@ form=(
 	# nicht die *neueste* Zeile braucht — NEWEST_ROW_DATE bleibt deren
 	# Reservat. Lokal 3 Tests, ~10 s, räumt seine Zeilen selbst weg.
 	e2e/admin-spam-check.spec.ts
+	# Erklärung zur Barrierefreiheit: statische Seite plus Footer-Link,
+	# lokal 3 Tests, ~5 s. Nicht nach `smoke` (soll laut der Messung
+	# oben entlastet werden); die Startseite kompilieren die Form-Specs
+	# hier ohnehin kalt, nur /barrierefreiheit kommt neu dazu.
+	e2e/accessibility-statement.spec.ts
+	# axe-Scan der fünf öffentlichen Routen. Trotz /map-Anteil nicht
+	# nach `map`: Der Spec fällt nicht unter dessen map-*-Glob, und
+	# `form` kompiliert mit Startseite, /about (hover-transitions) und
+	# /barrierefreiheit (Spec darüber) bereits drei der fünf Routen
+	# kalt. Lokal 5 Tests, ~25 s.
+	e2e/axe-scan.spec.ts
 )
 
 # Die drei Shards laufen parallel; die Laufzeit des Jobs ist die des

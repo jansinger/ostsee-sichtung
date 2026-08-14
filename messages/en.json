@@ -39,8 +39,13 @@
 	"components_form_unifieddropzone_text_datei_hier_ablegen": "Drop the file here!",
 	"components_form_unifieddropzone_text_datei_hochgeladen_plural": [
 		{
-			"declarations": ["input count", "local countPlural = count: plural"],
-			"selectors": ["countPlural"],
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
 			"match": {
 				"countPlural=one": "{count} file uploaded",
 				"countPlural=other": "{count} files uploaded"
@@ -53,8 +58,13 @@
 	"components_form_unifieddropzone_text_mb": "MB",
 	"components_form_unifieddropzone_text_und_weitere_plural": [
 		{
-			"declarations": ["input count", "local countPlural = count: plural"],
-			"selectors": ["countPlural"],
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
 			"match": {
 				"countPlural=one": "and {count} more",
 				"countPlural=other": "and {count} more"
@@ -114,7 +124,7 @@
 	"components_map_panel_legendpanel_text_seezeichen_tonnen_openseamap": "Navigation marks & buoys (OpenSeaMap)",
 	"components_map_panel_legendpanel_text_so_lesen_sie_die_karte": "How to read the map:",
 	"components_map_panel_legendpanel_text_status_abgelehnt_erklaerung": "not published",
-	"components_map_panel_legendpanel_text_status_cluster_erklaerung": "A cluster carries the pattern as soon as not all of the sightings it contains are approved — a solid ring therefore means \u201call approved\u201d, not \u201cmost of them\u201d.",
+	"components_map_panel_legendpanel_text_status_cluster_erklaerung": "A cluster carries the pattern as soon as not all of the sightings it contains are approved — a solid ring therefore means “all approved”, not “most of them”.",
 	"components_map_panel_legendpanel_text_status_freigegeben_erklaerung": "publicly visible",
 	"components_map_panel_legendpanel_text_status_offen_erklaerung": "not yet processed",
 	"components_map_panel_legendpanel_title_legende": "Legend",
@@ -128,8 +138,14 @@
 	"components_map_sightingslistview_text_keine_sichtungen_fuer_die_aktuelle": "There are no sightings available for the current selection.",
 	"components_map_sightingslistview_text_sichtungen_jahr_plural": [
 		{
-			"declarations": ["input count", "input year", "local countPlural = count: plural"],
-			"selectors": ["countPlural"],
+			"declarations": [
+				"input count",
+				"input year",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
 			"match": {
 				"countPlural=one": "Sightings {year} – {count} entry",
 				"countPlural=other": "Sightings {year} – {count} entries"
@@ -247,6 +263,7 @@
 	"components_ostseetierelogo_aria_label_ostsee_tiere_startseite": "Baltic Sea Animals – Home",
 	"components_ostseetierelogo_text_ostsee_tiere_de": "OSTSEE-TIERE.DE",
 	"components_ostseetierelogo_text_ostsee_tiere_de_2": "OSTSEE-TIERE.DE",
+	"components_publicfooter_text_barrierefreiheit": "Accessibility",
 	"components_publicfooter_text_bestimmungshilfe": "Identification guide",
 	"components_publicfooter_text_copyright_meldeplattform": "© 2025–2026 German Oceanographic Museum, Stralsund, Germany · Reporting platform for marine animals in the Baltic Sea",
 	"components_publicfooter_text_datenschutz": "Data protection",
@@ -524,8 +541,13 @@
 	"map_popupcontent_text_sichtungen_an_diesem_ort": "{sichtungen} at this location",
 	"map_popupcontent_text_sichtungen_plural": [
 		{
-			"declarations": ["input count", "local countPlural = count: plural"],
-			"selectors": ["countPlural"],
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
 			"match": {
 				"countPlural=one": "{count} sighting",
 				"countPlural=other": "{count} sightings"
@@ -534,8 +556,13 @@
 	],
 	"map_popupcontent_text_tiere_plural": [
 		{
-			"declarations": ["input count", "local countPlural = count: plural"],
-			"selectors": ["countPlural"],
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
 			"match": {
 				"countPlural=one": "{count} animal",
 				"countPlural=other": "{count} animals"
@@ -570,8 +597,13 @@
 	"report_components_form_fields_dropzoneenhanced_text_datei_erfolgreich_hochgeladen": "File uploaded successfully.",
 	"report_components_form_fields_dropzoneenhanced_text_datei_plural": [
 		{
-			"declarations": ["input count", "local countPlural = count: plural"],
-			"selectors": ["countPlural"],
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
 			"match": {
 				"countPlural=one": "{count} file",
 				"countPlural=other": "{count} files"
@@ -703,8 +735,13 @@
 	"report_components_form_stepnavigation_aria_label_vorheriger_schritt": "Previous step",
 	"report_components_form_stepnavigation_aria_label_zu_den_fehlerhaften_plural": [
 		{
-			"declarations": ["input count", "local countPlural = count: plural"],
-			"selectors": ["countPlural"],
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
 			"match": {
 				"countPlural=one": "Jump to the field with an error",
 				"countPlural=other": "Jump to the {count} fields with errors"
@@ -713,8 +750,14 @@
 	],
 	"report_components_form_stepnavigation_text_bitte_beheben_sie_die_fehler_plural": [
 		{
-			"declarations": ["input count", "input step", "local countPlural = count: plural"],
-			"selectors": ["countPlural"],
+			"declarations": [
+				"input count",
+				"input step",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
 			"match": {
 				"countPlural=one": "Please correct the error in “{step}” before continuing.",
 				"countPlural=other": "Please correct the {count} errors in “{step}” before continuing."
@@ -724,8 +767,13 @@
 	"report_components_form_stepnavigation_text_schritt_step": "Step {step}",
 	"report_components_form_stepnavigation_text_steperrorcount_fehler_plural": [
 		{
-			"declarations": ["input count", "local countPlural = count: plural"],
-			"selectors": ["countPlural"],
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
 			"match": {
 				"countPlural=one": "{count} error",
 				"countPlural=other": "{count} errors"
@@ -895,8 +943,13 @@
 	"report_components_steps_step4contact_text_gespeicherte_kontaktdaten_gefunden": "✓ Saved contact details found",
 	"report_components_steps_step4contact_text_hochgeladene_aufnahmen_plural": [
 		{
-			"declarations": ["input count", "local countPlural = count: plural"],
-			"selectors": ["countPlural"],
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
 			"match": {
 				"countPlural=one": "Your uploaded recording:",
 				"countPlural=other": "Your {count} uploaded recordings:"
@@ -940,8 +993,13 @@
 	"report_components_submissionsuccess_text_tierart": "Species:",
 	"report_components_submissionsuccess_text_totalcount_tier_plural": [
 		{
-			"declarations": ["input count", "local countPlural = count: plural"],
-			"selectors": ["countPlural"],
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
 			"match": {
 				"countPlural=one": "{count} animal",
 				"countPlural=other": "{count} animals"
@@ -1078,6 +1136,24 @@
 	"routes_about_page_text_veroeffentlicht": "Published",
 	"routes_about_page_text_welche_rechte_sie_haben_und": "Your rights and who to contact regarding them are set out in the\n                    German Oceanographic Museum’s Privacy Policy. The purposes for which we use the individual details provided in your\n                    report are set out in the consent sections of the form.",
 	"routes_about_page_text_werden_sie_teil_der_bewegung": "Join the movement",
+	"routes_barrierefreiheit_page_meta_description": "Accessibility statement for the Ostsee-Tiere sighting platform under Mecklenburg-Vorpommern state law (LBGG M-V, BITVO M-V).",
+	"routes_barrierefreiheit_page_text_durchsetzung_link": "Accessibility statement of the Deutsches Meeresmuseum",
+	"routes_barrierefreiheit_page_text_durchsetzung_text": "If you do not receive a satisfactory response to a report within six weeks, you can contact the Monitoring Office for Digital Accessibility of Public Bodies in Mecklenburg-Vorpommern (Überwachungsstelle für digitale Barrierefreiheit öffentlicher Stellen M-V). The procedure is free of charge; details are provided in the accessibility statement of the Deutsches Meeresmuseum:",
+	"routes_barrierefreiheit_page_text_durchsetzung_titel": "Enforcement procedure",
+	"routes_barrierefreiheit_page_text_feedback_text": "You can report barriers in this application and request information in an accessible format:",
+	"routes_barrierefreiheit_page_text_feedback_titel": "Feedback and contact",
+	"routes_barrierefreiheit_page_text_geltungsbereich": "This statement applies to the web application available at ostsee-tiere.de, including when embedded on www.deutsches-meeresmuseum.de. The museum's other websites are covered by its own accessibility statement.",
+	"routes_barrierefreiheit_page_text_intro": "The Deutsches Meeresmuseum is committed to making the Ostsee-Tiere sighting platform accessible in accordance with Section 14 of the Mecklenburg-Vorpommern State Equality Act for Persons with Disabilities (LBGG M-V) and the state ordinance on accessible information technology (BITVO M-V).",
+	"routes_barrierefreiheit_page_text_maengel_fotos": "Photos uploaded by reporters do not carry descriptive alternative text, as they are submitted without an image description.",
+	"routes_barrierefreiheit_page_text_maengel_intro": "The following content is currently not, or only partially, accessible:",
+	"routes_barrierefreiheit_page_text_maengel_karte": "The interactive sighting map offers limited screen reader support. An equivalent tabular list view is available there as an alternative.",
+	"routes_barrierefreiheit_page_text_maengel_sprache": "There is no content in German Sign Language and no plain-language (Leichte Sprache) version.",
+	"routes_barrierefreiheit_page_text_maengel_titel": "Non-accessible content",
+	"routes_barrierefreiheit_page_text_ostsee_tiere_suffix": "– Baltic Sea Animals",
+	"routes_barrierefreiheit_page_text_stand_methode": "This statement is based on a self-assessment. Created on 14 August 2026.",
+	"routes_barrierefreiheit_page_text_stand_text": "This application is partially compliant with the requirements. Development targets WCAG 2.1 level AA: contrast, keyboard operation, focus visibility and form semantics are continuously verified by automated in-browser checks. An independent audit against EN 301 549 has not yet taken place.",
+	"routes_barrierefreiheit_page_text_stand_titel": "Compliance status",
+	"routes_barrierefreiheit_page_text_titel": "Accessibility statement",
 	"routes_bestimmungshilfe_page_meta_keywords": "identification guide, recognise harbour porpoise, grey seal, harbour seal, seal or whale, Baltic Sea, marine mammals, species identification, report sighting",
 	"routes_bestimmungshilfe_page_text_bestimmungshilfe_fuer_meerestiere": "Identification guide to marine animals",
 	"routes_bestimmungshilfe_page_text_bestimmungshilfe_wale_und_robben_der_ost": "Identification guide: Recognising whales and seals in the Baltic Sea",

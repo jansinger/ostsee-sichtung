@@ -167,7 +167,7 @@
 						<em>{m.routes_about_page_feature_gps_genauer_lokalisierung()}</em>.
 					</p>
 					<div class="mt-4">
-						<div class="badge badge-primary badge-outline">
+						<div class="badge badge-primary">
 							{m.routes_about_page_text_gps_integration()}
 						</div>
 					</div>
@@ -195,7 +195,7 @@
 						<em>{m.routes_about_page_feature_muster_und_hotspots()}</em>.
 					</p>
 					<div class="mt-4">
-						<div class="badge badge-secondary badge-outline">
+						<div class="badge badge-secondary">
 							{m.routes_about_page_text_openlayers()}
 						</div>
 					</div>
@@ -228,7 +228,7 @@
 						{m.routes_about_page_feature_nutzbar()}
 					</p>
 					<div class="mt-4">
-						<div class="badge badge-accent badge-outline">
+						<div class="badge badge-accent">
 							{m.routes_about_page_text_open_data()}
 						</div>
 					</div>
@@ -256,12 +256,18 @@
 			     ließ sich die Seite über ihre volle Höhe seitlich schieben. Die beiden
 			     anderen Linkzeilen der Seite (Technik, Handlungsaufforderungen) haben
 			     `flex-wrap` von Anfang an; nur diese hier fehlte. -->
+			<!-- Kein `btn-outline` auf der `bg-primary`-Fläche: Der Outline-Button
+			     erbt `base-content` als Text- und Rahmenfarbe, und dunkler Text auf
+			     dem dunklen Primärblau verfehlt WCAG 1.4.3 (axe-Befund, abgesichert
+			     durch e2e/axe-scan.spec.ts). Der Default-`btn` ist eine helle
+			     Vollton-Fläche mit `base-content` — auf dem Blau lesbar und ohne
+			     handgesetzte Farb-Overrides. -->
 			<div class="flex flex-wrap justify-center gap-4">
 				<a
 					href="https://www.deutsches-meeresmuseum.de"
 					target="_blank"
 					rel="noopener noreferrer"
-					class="btn btn-outline btn-sm"
+					class="btn btn-sm"
 				>
 					<Icon icon="lucide:globe" width="16" class="mr-1" />
 					{m.routes_about_page_text_meeresmuseum_de()}
@@ -270,7 +276,7 @@
 					href="https://www.deutsches-meeresmuseum.de/wissenschaft/sichtungen"
 					target="_blank"
 					rel="noopener noreferrer"
-					class="btn btn-outline btn-sm"
+					class="btn btn-sm"
 				>
 					<Icon icon="lucide:file-text" width="16" class="mr-1" />
 					{m.routes_about_page_text_mehr_ueber_sichtungen()}

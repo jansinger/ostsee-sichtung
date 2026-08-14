@@ -140,7 +140,11 @@ describe('Mechanisch — der Extraktor findet in Schicht C nichts mehr', () => {
 		// `HreflangHead.svelte` nebenan. Sie rendert JSON-LD in den Seitenkopf und
 		// hat keinen Anzeigetext; die einzige sprachabhängige Angabe darin ist
 		// `inLanguage`, und die kommt aus `getLocale()`, nicht aus einer Botschaft.
-		expect(svelteFiles()).toHaveLength(87);
+		//
+		// +1 seit dem 2026-08-14: `routes/barrierefreiheit/+page.svelte` — die
+		// Erklärung zur Barrierefreiheit (§ 14 LBGG M-V), vollständig über
+		// Paraglide-Botschaften.
+		expect(svelteFiles()).toHaveLength(88);
 	});
 });
 

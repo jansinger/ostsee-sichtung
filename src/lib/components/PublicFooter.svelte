@@ -83,6 +83,13 @@
 					rel="noopener noreferrer"
 					class="link link-hover py-3">{m.components_publicfooter_text_datenschutz()}</a
 				>
+				<!-- Eigene Route statt Museums-Link: Anders als Impressum und Datenschutz
+				     beschreibt die Erklärung zur Barrierefreiheit (§ 14 LBGG M-V) den
+				     Stand DIESER Anwendung — die Erklärung des Museums gilt nur für
+				     dessen Hauptseite. -->
+				<a href={localizeHref('/barrierefreiheit')} class="link link-hover py-3"
+					>{m.components_publicfooter_text_barrierefreiheit()}</a
+				>
 			</nav>
 
 			<nav aria-labelledby="footer-projekt">
