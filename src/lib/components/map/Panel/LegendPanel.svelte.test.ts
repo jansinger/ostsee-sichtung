@@ -221,15 +221,45 @@ describe('LegendPanel', () => {
 		expect(document.body.textContent).not.toContain('Bearbeitungsstand');
 	});
 
-	it('zeigt den Bearbeitungsstand-Abschnitt mit beiden Erklärungen, wenn showStatusLegend gesetzt ist (Admin)', async () => {
+	it('zeigt den Bearbeitungsstand-Abschnitt mit allen drei Zuständen, wenn showStatusLegend gesetzt ist (Admin)', async () => {
 		render(LegendPanel, { translations, counts, showStatusLegend: true });
 
 		await page.getByRole('button', { name: /^Legende$/i }).click();
 
 		const heading = document.querySelector('h3');
 		expect(heading?.textContent).toContain('Bearbeitungsstand');
-		expect(document.body.textContent).toContain('Gestrichelt: offen, noch nicht bearbeitet');
-		expect(document.body.textContent).toContain('Gepunktet: abgelehnt, nicht veröffentlicht');
+		// „Freigegeben" fehlte bis Task 9 ganz — zwei von drei Zuständen waren
+		// benannt, der dritte blieb Inferenz.
+		expect(document.body.textContent).toContain('Freigegeben');
+		expect(document.body.textContent).toContain('Offen');
+		expect(document.body.textContent).toContain('Abgelehnt');
+	});
+
+	/**
+	 * Task 9: Jeder andere Kanal im Panel (Artring, Totfund-Ring, Cluster-Skala)
+	 * zeigt ein gerendertes Beispiel — der Bearbeitungsstand stand in reiner
+	 * Prosa („Gestrichelt: …"). Das Muster muss aus derselben Quelle kommen wie
+	 * der Marker, sonst beschreibt die Legende etwas anderes als die Karte.
+	 */
+	it('rendert je Zustand ein Kreis-Beispiel mit dem echten Strichmuster', async () => {
+		render(LegendPanel, { translations, counts, showStatusLegend: true });
+
+		await page.getByRole('button', { name: /^Legende$/i }).click();
+
+		const circles = Array.from(document.querySelectorAll('[data-status-swatch] circle'));
+		expect(circles).toHaveLength(3);
+
+		const dashes = circles.map((c) => c.getAttribute('stroke-dasharray'));
+		// freigegeben durchgezogen, offen [6, 4], abgelehnt [2, 5] (styleUtils)
+		expect(dashes[0]).toBeNull();
+		expect(dashes[1]).toBe('6 4');
+		expect(dashes[2]).toBe('2 5');
+		expect(circles[2]?.getAttribute('stroke-linecap')).toBe('round');
+
+		// Dekoration: die Bedeutung steht als Text daneben
+		document
+			.querySelectorAll('[data-status-swatch]')
+			.forEach((svg) => expect(svg.getAttribute('aria-hidden')).toBe('true'));
 	});
 
 	it('bietet einen Seezeichen-Toggle (OpenSeaMap), Default an (M3)', async () => {

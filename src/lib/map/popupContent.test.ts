@@ -90,6 +90,43 @@ describe('createSightingPopupContent', () => {
 	});
 
 	/**
+	 * Task 9: Der Ring codiert den Bearbeitungsstand — ohne Text im Popup ist
+	 * ein gestrichelter Ring nicht verifizierbar. Für Nicht-Admins ist `st`
+	 * immer `'approved'`; deshalb trägt genau dieser Zustand keine Zeile, und
+	 * die öffentliche Karte bleibt unverändert.
+	 */
+	describe('Bearbeitungsstand (Task 9)', () => {
+		it('zeigt „Offen" als Zeile, wenn st offen ist', () => {
+			const html = createSightingPopupContent({ ...baseProps, st: 'open' }, translations);
+			expect(html).toContain('Bearbeitungsstand');
+			expect(html).toContain('Offen');
+		});
+
+		it('zeigt „Abgelehnt" als Zeile, wenn st abgelehnt ist', () => {
+			const html = createSightingPopupContent({ ...baseProps, st: 'rejected' }, translations);
+			expect(html).toContain('Bearbeitungsstand');
+			expect(html).toContain('Abgelehnt');
+		});
+
+		it('zeigt keine Statuszeile für freigegebene Sichtungen (öffentliche Karte)', () => {
+			const approved = createSightingPopupContent({ ...baseProps, st: 'approved' }, translations);
+			const ohne = createSightingPopupContent(baseProps, translations);
+			expect(approved).not.toContain('Bearbeitungsstand');
+			expect(ohne).not.toContain('Bearbeitungsstand');
+			// Gegenprobe: derselbe Aufruf mit anderem Status trägt die Zeile sehr wohl
+			expect(createSightingPopupContent({ ...baseProps, st: 'open' }, translations)).toContain(
+				'Bearbeitungsstand'
+			);
+		});
+
+		it('nutzt die Badge-Klasse aus sightingStatus statt eigener Farben', () => {
+			const html = createSightingPopupContent({ ...baseProps, st: 'rejected' }, translations);
+			expect(html).toContain('badge-neutral');
+			expect(html).not.toContain('style=');
+		});
+	});
+
+	/**
 	 * M10-Befund: `formatSightingDate` (intern in `popupContent.ts`) läuft seit
 	 * der Umstellung auf `resolveDisplayLocale(getLocale())` statt hartcodiertem
 	 * `'de-DE'` — bewiesen wird das über den tatsächlichen Datumstrenner (`.`
@@ -135,6 +172,41 @@ describe('createClusterListContent', () => {
 		expect(html).toContain('12.05.2026');
 		expect(html).not.toContain('style=');
 		expect(html).toContain('cluster-list-item');
+	});
+
+	/**
+	 * Task 9: In der Clusterliste ist der Ring gar nicht mehr sichtbar — ohne
+	 * Wort im Eintrag ist der Bearbeitungsstand dort vollständig verloren.
+	 */
+	it('zeigt den Bearbeitungsstand offener und abgelehnter Einträge', () => {
+		const html = createClusterListContent(
+			[
+				{ ...baseProps, st: 'open' },
+				{ ...baseProps, ta: 1, st: 'rejected' }
+			],
+			translations
+		);
+		expect(html).toContain('Offen');
+		expect(html).toContain('Abgelehnt');
+		expect(html).toContain('badge-warning');
+		expect(html).toContain('badge-neutral');
+	});
+
+	it('lässt freigegebene Einträge unverändert (öffentliche Karte)', () => {
+		const html = createClusterListContent(
+			[{ ...baseProps, st: 'approved' }, baseProps],
+			translations
+		);
+		expect(html).not.toContain('badge');
+		// Gegenprobe: mit einem offenen Eintrag entsteht das Badge sehr wohl
+		expect(createClusterListContent([{ ...baseProps, st: 'open' }], translations)).toContain(
+			'badge'
+		);
+	});
+
+	it('nennt den Bearbeitungsstand auch im aria-label des Eintrags', () => {
+		const html = createClusterListContent([{ ...baseProps, st: 'open' }], translations);
+		expect(html).toMatch(/aria-label="[^"]*Offen[^"]*"/);
 	});
 });
 

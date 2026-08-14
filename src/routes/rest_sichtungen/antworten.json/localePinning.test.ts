@@ -29,6 +29,18 @@
  * Test tatsächlich rot werden, wenn die Pinnung verschwindet.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
+/*
+ * `./+server` und die Paraglide-Runtime bewusst statisch am Dateikopf, nicht per
+ * `await import()` im Testkörper — Begründung ausführlich in
+ * `../../sichtungen/showreports.json/localePinning.test.ts`: Der Modulgraph zieht
+ * den kompletten Paraglide-Barrel (1.306 Module) nach, dessen Transform unter
+ * Last 4,6–5,2 s kostet und damit in Vitests 5000-ms-Grenze pro Test läuft. Am
+ * Dateikopf zählt derselbe Aufwand zur Collect-Phase, die keine Test-Zeitgrenze
+ * kennt. Hier fiel es nur deshalb noch nicht als Fehlschlag auf, weil der erste
+ * Test knapp unter der Grenze blieb.
+ */
+import { baseLocale, overwriteGetLocale } from '$lib/paraglide/runtime';
+import { GET } from './+server';
 
 const DIVERGED_EN_LABEL = 'TEST-ONLY-DIVERGED-ENGLISH-LABEL';
 
@@ -66,21 +78,18 @@ vi.mock('$lib/paraglide/messages', async (importOriginal) => {
 });
 
 describe('GET /rest_sichtungen/antworten.json — Locale-Pinnung', () => {
-	afterEach(async () => {
+	afterEach(() => {
 		// overwriteGetLocale() überschreibt die Modul-Funktion dauerhaft ohne
 		// eingebauten Reset — auf den echten Default zurückschalten, damit
 		// andere Tests im selben Prozess nicht die englische Locale erben.
-		const { overwriteGetLocale, baseLocale } = await import('$lib/paraglide/runtime');
 		overwriteGetLocale(() => baseLocale);
 	});
 
 	it('liefert die deutsche Artbezeichnung, obwohl die aktive Locale Englisch ist und die englische Botschaft nachweislich abweicht', async () => {
-		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
 		// Simuliert eine Anfrage, deren Locale-Kontext auf Englisch steht — genau
 		// der Fall, den ein ungepinnter getSpeciesLabel()-Aufruf übernehmen würde.
 		overwriteGetLocale(() => 'en');
 
-		const { GET } = await import('./+server');
 		const response = await GET({
 			url: new URL('https://localhost/rest_sichtungen/antworten.json'),
 			getClientAddress: () => '127.0.0.1',
@@ -93,10 +102,8 @@ describe('GET /rest_sichtungen/antworten.json — Locale-Pinnung', () => {
 	});
 
 	it('liefert den deutschen Seegang-Text, obwohl die aktive Locale Englisch ist und die englische Botschaft nachweislich abweicht', async () => {
-		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
 		overwriteGetLocale(() => 'en');
 
-		const { GET } = await import('./+server');
 		const response = await GET({
 			url: new URL('https://localhost/rest_sichtungen/antworten.json'),
 			getClientAddress: () => '127.0.0.1',
@@ -109,10 +116,8 @@ describe('GET /rest_sichtungen/antworten.json — Locale-Pinnung', () => {
 	});
 
 	it('liefert die deutsche Geschlechtsbezeichnung (totfund_geschlecht), obwohl die aktive Locale Englisch ist und die englische Botschaft nachweislich abweicht', async () => {
-		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
 		overwriteGetLocale(() => 'en');
 
-		const { GET } = await import('./+server');
 		const response = await GET({
 			url: new URL('https://localhost/rest_sichtungen/antworten.json'),
 			getClientAddress: () => '127.0.0.1',
@@ -125,10 +130,8 @@ describe('GET /rest_sichtungen/antworten.json — Locale-Pinnung', () => {
 	});
 
 	it('liefert den deutschen Sichtweiten-Text, obwohl die aktive Locale Englisch ist und die englische Botschaft nachweislich abweicht', async () => {
-		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
 		overwriteGetLocale(() => 'en');
 
-		const { GET } = await import('./+server');
 		const response = await GET({
 			url: new URL('https://localhost/rest_sichtungen/antworten.json'),
 			getClientAddress: () => '127.0.0.1',
@@ -141,10 +144,8 @@ describe('GET /rest_sichtungen/antworten.json — Locale-Pinnung', () => {
 	});
 
 	it('liefert den deutschen Windstärke-Text, obwohl die aktive Locale Englisch ist und die englische Botschaft nachweislich abweicht', async () => {
-		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
 		overwriteGetLocale(() => 'en');
 
-		const { GET } = await import('./+server');
 		const response = await GET({
 			url: new URL('https://localhost/rest_sichtungen/antworten.json'),
 			getClientAddress: () => '127.0.0.1',
@@ -157,10 +158,8 @@ describe('GET /rest_sichtungen/antworten.json — Locale-Pinnung', () => {
 	});
 
 	it('liefert den deutschen Entfernungs-Text, obwohl die aktive Locale Englisch ist und die englische Botschaft nachweislich abweicht', async () => {
-		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
 		overwriteGetLocale(() => 'en');
 
-		const { GET } = await import('./+server');
 		const response = await GET({
 			url: new URL('https://localhost/rest_sichtungen/antworten.json'),
 			getClientAddress: () => '127.0.0.1',
@@ -173,10 +172,8 @@ describe('GET /rest_sichtungen/antworten.json — Locale-Pinnung', () => {
 	});
 
 	it('liefert den deutschen Verteilungs-Text, obwohl die aktive Locale Englisch ist und die englische Botschaft nachweislich abweicht', async () => {
-		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
 		overwriteGetLocale(() => 'en');
 
-		const { GET } = await import('./+server');
 		const response = await GET({
 			url: new URL('https://localhost/rest_sichtungen/antworten.json'),
 			getClientAddress: () => '127.0.0.1',
@@ -189,10 +186,8 @@ describe('GET /rest_sichtungen/antworten.json — Locale-Pinnung', () => {
 	});
 
 	it('liefert den deutschen Windrichtungs-Text, obwohl die aktive Locale Englisch ist und die englische Botschaft nachweislich abweicht', async () => {
-		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
 		overwriteGetLocale(() => 'en');
 
-		const { GET } = await import('./+server');
 		const response = await GET({
 			url: new URL('https://localhost/rest_sichtungen/antworten.json'),
 			getClientAddress: () => '127.0.0.1',
@@ -205,10 +200,8 @@ describe('GET /rest_sichtungen/antworten.json — Locale-Pinnung', () => {
 	});
 
 	it('liefert den deutschen Verhaltens-Text, obwohl die aktive Locale Englisch ist und die englische Botschaft nachweislich abweicht', async () => {
-		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
 		overwriteGetLocale(() => 'en');
 
-		const { GET } = await import('./+server');
 		const response = await GET({
 			url: new URL('https://localhost/rest_sichtungen/antworten.json'),
 			getClientAddress: () => '127.0.0.1',
@@ -221,10 +214,8 @@ describe('GET /rest_sichtungen/antworten.json — Locale-Pinnung', () => {
 	});
 
 	it('liefert den deutschen Tierzustands-Text (totfund_zustand), obwohl die aktive Locale Englisch ist und die englische Botschaft nachweislich abweicht', async () => {
-		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
 		overwriteGetLocale(() => 'en');
 
-		const { GET } = await import('./+server');
 		const response = await GET({
 			url: new URL('https://localhost/rest_sichtungen/antworten.json'),
 			getClientAddress: () => '127.0.0.1',
@@ -237,10 +228,8 @@ describe('GET /rest_sichtungen/antworten.json — Locale-Pinnung', () => {
 	});
 
 	it('liefert den deutschen Beobachtungsort-Text (vonwo), obwohl die aktive Locale Englisch ist und die englische Botschaft nachweislich abweicht', async () => {
-		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
 		overwriteGetLocale(() => 'en');
 
-		const { GET } = await import('./+server');
 		const response = await GET({
 			url: new URL('https://localhost/rest_sichtungen/antworten.json'),
 			getClientAddress: () => '127.0.0.1',
@@ -253,10 +242,8 @@ describe('GET /rest_sichtungen/antworten.json — Locale-Pinnung', () => {
 	});
 
 	it('liefert den deutschen Eingangskanal-Text, obwohl die aktive Locale Englisch ist und die englische Botschaft nachweislich abweicht', async () => {
-		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
 		overwriteGetLocale(() => 'en');
 
-		const { GET } = await import('./+server');
 		const response = await GET({
 			url: new URL('https://localhost/rest_sichtungen/antworten.json'),
 			getClientAddress: () => '127.0.0.1',
@@ -269,10 +256,8 @@ describe('GET /rest_sichtungen/antworten.json — Locale-Pinnung', () => {
 	});
 
 	it('liefert den deutschen Bootsantrieb-Text, obwohl die aktive Locale Englisch ist und die englische Botschaft nachweislich abweicht', async () => {
-		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
 		overwriteGetLocale(() => 'en');
 
-		const { GET } = await import('./+server');
 		const response = await GET({
 			url: new URL('https://localhost/rest_sichtungen/antworten.json'),
 			getClientAddress: () => '127.0.0.1',
