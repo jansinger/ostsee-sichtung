@@ -489,21 +489,7 @@
 		goto(detailUrl.toString());
 	}
 
-	/**
-	 * Der zuletzt gescheiterte Vorgang — als **stehende** Fläche und nicht als
-	 * Toast.
-	 *
-	 * Löschen, Prüfstatus-Wechsel und Test-Mail meldeten ihren Fehlschlag bis
-	 * 2026-08-14 in einer Einblendung, die nach fünf Sekunden weg war und die
-	 * Wiederholung nicht trug (`docs/DESIGN_SYSTEM.md`, „Fehlende Zustände").
-	 * Wer daneben sah, hatte einen Vorgang ausgelöst, der nicht stattgefunden
-	 * hat, und keinen Hinweis darauf. Der Erfolg bleibt dagegen ein Toast: Er
-	 * ist die Bestätigung eines abgeschlossenen Vorgangs, und die Tabelle zeigt
-	 * das Ergebnis ohnehin.
-	 *
-	 * `retry` wiederholt genau den Aufruf, der gescheitert ist — die Fläche
-	 * verschwindet dabei erst, wenn er durchgeht.
-	 */
+	/** Der zuletzt gescheiterte Vorgang; `retry` wiederholt genau ihn. Begründung am `StatusBlock` im Markup. */
 	let aktionsFehler = $state<{ title: string; description: string; retry: () => void } | null>(
 		null
 	);
@@ -1383,7 +1369,18 @@
 	     ihre Position wechseln — an der Liste festgemacht wäre die Meldung
 	     wandernd. Kein `announce`-Override: `failed` meldet sich von sich aus als
 	     `alert`, und das ist hier die richtige Rolle — der Fehlschlag ist die
-	     Folge einer Nutzeraktion (`StatusBlock`, Kopfkommentar). -->
+	     Folge einer Nutzeraktion (`StatusBlock`, Kopfkommentar).
+
+	     Warum überhaupt eine stehende Fläche: Löschen, Prüfstatus-Wechsel und
+	     Test-Mail meldeten ihren Fehlschlag bis 2026-08-14 in einer Einblendung,
+	     die nach fünf Sekunden weg war und die Wiederholung nicht trug
+	     (`docs/DESIGN_SYSTEM.md`, „Fehlende Zustände"). Wer daneben sah, hatte
+	     einen Vorgang ausgelöst, der nicht stattgefunden hat, und keinen Hinweis
+	     darauf. Der Erfolg bleibt dagegen ein Toast: Er bestätigt einen
+	     abgeschlossenen Vorgang, und das Ergebnis steht ohnehin in der Liste.
+
+	     Die Fläche verschwindet erst, wenn der wiederholte Aufruf durchgeht —
+	     jeder Handler setzt `aktionsFehler` im Erfolgsfall selbst zurück. -->
 	{#if aktionsFehler}
 		<div class="container mx-auto mb-3 px-4 md:px-6">
 			<StatusBlock

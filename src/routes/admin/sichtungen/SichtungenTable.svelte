@@ -85,11 +85,7 @@
 
 	let emptyText = $derived(describeEmptyList(hasActiveFilters));
 
-	/* Spaltenzahl für das `colspan` der Leer-Zeile: die beiden festen Spalten
-	   (Auswahl, Totfund-Marker) plus jede eingeschaltete konfigurierbare Spalte.
-	   `ColumnVisibility` bildet die `<th>` des Kopfes eins zu eins ab — eine neue
-	   Spalte dort zieht die Zahl mit, ohne dass hier etwas nachgeführt werden
-	   muss. Ein zu kleines `colspan` ließe die Meldung in einer Spalte klemmen. */
+	/* Zwei feste Spalten plus die eingeschalteten; Herleitung am `colspan` im Markup. */
 	let spaltenAnzahl = $derived(2 + Object.values(columnVisibility).filter(Boolean).length);
 
 	/* Gemessene Breite der Aktionsspalte — die Statusspalte rastet links davon
@@ -557,7 +553,14 @@
 					<!-- Die Meldung steht IN der Tabelle und nicht darunter: Der
 					     Spaltenkopf bleibt damit stehen, und die Aussage steht an der
 					     Stelle, an der die Daten stünden (`StatusBlock`, Kopfkommentar).
-					     Wortlaut aus `emptyList.ts`, gemeinsam mit der Kartenliste. -->
+					     Wortlaut aus `emptyList.ts`, gemeinsam mit der Kartenliste.
+
+					     `spaltenAnzahl` sind die zwei festen Spalten (Auswahl,
+					     Totfund-Marker) plus jede eingeschaltete konfigurierbare Spalte.
+					     `ColumnVisibility` bildet die `<th>` des Kopfes eins zu eins ab —
+					     eine neue Spalte dort zieht die Zahl mit, ohne dass hier etwas
+					     nachgeführt werden muss. Ein zu kleines `colspan` ließe die
+					     Meldung in einer Spalte klemmen. -->
 					<tr>
 						<td colspan={spaltenAnzahl} class="p-4">
 							<StatusBlock
