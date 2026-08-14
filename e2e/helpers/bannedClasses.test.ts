@@ -411,3 +411,76 @@ describe('findOffenders', () => {
 		).toEqual([]);
 	});
 });
+
+/**
+ * Varianten-Präfixe (`hover:`, `md:`, `group-hover:`, …).
+ *
+ * **Die Lücke, die diese Gruppe schließt.** Der Scan liest den Ruhezustand —
+ * das stand in `design-system.md` und `docs/DESIGN_SYSTEM.md` als bekannte
+ * Grenze („Was die Regeln nicht sehen: `hover:`-Varianten"). Für die *gemessene*
+ * Farbe stimmt das weiterhin: `getComputedStyle` liefert ohne Zeiger auf dem
+ * Element den Ruhewert. Für die **Klassenliste** stimmt es nicht — sie steht
+ * vollständig im `class`-Attribut, `hover:text-warning` inklusive. Die Regeln
+ * haben sie nur nicht gefunden, weil ihre Muster verankert sind und ein
+ * Varianten-Präfix vorne nicht vorgesehen war.
+ *
+ * Es ist damit dieselbe Fehlerklasse, die diese Datei dreimal beschreibt: Die
+ * Lücke saß in der Grammatik, nicht in den Daten — und sie war zusätzlich als
+ * unvermeidbar dokumentiert, was sie am längsten am Leben gehalten hat. Ein
+ * `hover:text-warning` trägt genau dieselben 2,74:1 wie `text-warning`, nur eben
+ * unter dem Zeiger.
+ *
+ * Die Beispiele hier sind bewusst **konstruiert**: Im Bestand steht keine
+ * einzige solche Klasse (nachgezählt am 2026-08-14), der DOM-Scan könnte die
+ * Regel also nicht scharf stellen.
+ */
+describe('Varianten-Präfixe', () => {
+	it.each([
+		['hover:text-warning', STATUS_AS_FOREGROUND],
+		['focus-visible:fill-success', STATUS_AS_FOREGROUND],
+		['group-hover:stroke-accent/70', STATUS_AS_FOREGROUND],
+		['md:hover:text-info', STATUS_AS_FOREGROUND],
+		['hover:bg-red-500', TAILWIND_PALETTE],
+		['hover:text-white', TAILWIND_PALETTE],
+		['hover:shadow-lg', RAW_ELEVATION],
+		['focus:z-50', RAW_Z_INDEX],
+		['hover:duration-300', RAW_MOTION_DURATION]
+	])('meldet %s', (className, rule) => {
+		expect(findOffenders(rule, [element(className)])).toHaveLength(1);
+	});
+
+	it('meldet die Deckkraft-Untergrenze auch unter einer Variante', () => {
+		expect(findOffenders(BELOW_OPACITY_FLOOR, [element('hover:opacity-40')])).toHaveLength(1);
+	});
+
+	it('nennt in der Meldung die Klasse, wie sie im Markup steht', () => {
+		expect(findOffenders(STATUS_AS_FOREGROUND, [element('p-2 hover:text-warning')])).toEqual([
+			'<span> hover:text-warning — in class="p-2 hover:text-warning"'
+		]);
+	});
+
+	/* Die konformen Varianten des Bestands — sie dürfen nicht mitgerissen
+	   werden. `hover:shadow-floating` steht achtmal im Code, `hover:bg-info/80`
+	   und `focus:z-skip` je einmal. */
+	it.each([
+		['hover:shadow-floating', RAW_ELEVATION],
+		['hover:bg-info/80', STATUS_AS_FOREGROUND],
+		['hover:bg-base-200', TAILWIND_PALETTE],
+		['focus:z-skip', RAW_Z_INDEX],
+		['hover:text-warning-strong', STATUS_AS_FOREGROUND],
+		['group-hover:bg-scrim/90', TAILWIND_PALETTE],
+		['hover:duration-instant', RAW_MOTION_DURATION]
+	])('lässt %s durch', (className, rule) => {
+		expect(findOffenders(rule, [element(className)])).toEqual([]);
+	});
+
+	/* Ein `:` innerhalb eckiger Klammern trennt keine Variante ab — es gehört zum
+	   Wert. Würde stumpf am letzten `:` geschnitten, bliebe von
+	   `z-[calc(var(--x):1)]` ein Rest übrig, der zufällig auf eine Regel passen
+	   kann; und ein Varianten-Selektor wie `[&:hover]:z-50` verlöre seinen
+	   Basisnamen gar nicht erst. */
+	it('schneidet nicht an einem `:` innerhalb eckiger Klammern', () => {
+		expect(findOffenders(RAW_Z_INDEX, [element('[&:hover]:z-50')])).toHaveLength(1);
+		expect(findOffenders(RAW_Z_INDEX, [element('[&:hover]:z-panel')])).toEqual([]);
+	});
+});
