@@ -42,6 +42,7 @@
 	import FileText from '~icons/lucide/file-text';
 	import FileType from '~icons/lucide/file-type';
 	import Filter from '~icons/lucide/filter';
+	import ExternalLink from '~icons/lucide/external-link';
 	import FilterX from '~icons/lucide/filter-x';
 	import Gauge from '~icons/lucide/gauge';
 	import Gem from '~icons/lucide/gem';
@@ -215,6 +216,7 @@
 		'lucide:clock': Clock,
 		'lucide:cloud-rain': CloudRain,
 		'lucide:hash': Hash,
+		'lucide:external-link': ExternalLink,
 		'lucide:globe': Globe,
 		'lucide:message-circle': MessageCircle,
 		'lucide:mouse-pointer': MousePointer,
