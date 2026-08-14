@@ -599,7 +599,7 @@
 					</a>
 					<a
 						href={localizeHref('/map')}
-						class="btn btn-secondary btn-outline btn-lg shadow-raised duration-instant hover:shadow-floating px-8 py-4 text-lg transition-all"
+						class="btn btn-outline btn-lg shadow-raised duration-instant hover:shadow-floating px-8 py-4 text-lg transition-all"
 					>
 						<Icon icon="lucide:map" width="20" height="20" class="mr-2" />
 						{m.routes_about_page_text_karte_erkunden()}
@@ -614,7 +614,7 @@
 					     und mit einer Beschriftung, die es benennt statt zu umschreiben. -->
 					<a
 						href={localizeHref('/bestimmungshilfe')}
-						class="btn btn-accent btn-outline btn-lg shadow-raised duration-instant hover:shadow-floating px-8 py-4 text-lg transition-all"
+						class="btn btn-outline btn-lg shadow-raised duration-instant hover:shadow-floating px-8 py-4 text-lg transition-all"
 					>
 						<Icon icon="lucide:book-open" width="20" height="20" class="mr-2" />
 						{m.routes_about_page_text_tiere_bestimmen()}

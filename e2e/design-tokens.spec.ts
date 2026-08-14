@@ -10,6 +10,7 @@ import { seedAdminSession } from './helpers/adminSession';
 import {
 	BELOW_OPACITY_FLOOR,
 	findOffenders,
+	OUTLINE_STATUS_COLOR,
 	RAW_ELEVATION,
 	RAW_MOTION_DURATION,
 	RAW_Z_INDEX,
@@ -118,6 +119,59 @@ test.describe('Design-Tokens — Kontrast', () => {
 				).toBeGreaterThanOrEqual(AA_TEXT);
 			});
 		}
+	}
+
+	/* `badge-soft` ist die eine Ausnahme in `OUTLINE_STATUS_COLOR`
+	   (`helpers/bannedClasses.ts`): Als einziger Modifikator ohne Vollton-Fläche
+	   darf es eine Statusfarbe tragen. Zulässig ist es aber nicht aus sich
+	   heraus, sondern **nur** wegen des Overrides in `app.css`
+	   (`color: base-content`, Tint 18 %) — DaisyUIs eigenes `.badge-soft` setzt
+	   `color: var(--badge-color)` und läge damit bei denselben Werten wie
+	   `btn-soft` (secondary 2,50, accent 1,50).
+
+	   Eine Ausnahme, die an einem Override hängt, braucht ihren Anker dort, wo
+	   der Override wirkt. Sonst passiert genau das, was diese Datei an mehreren
+	   Stellen beschreibt: Der Klassen-Scan bliebe grün und behauptete eine
+	   Zulässigkeit, deren Grundlage entfallen ist. Gemessen 12,55 bis 15,31:1
+	   (2026-08-14). */
+	for (const token of ['secondary', 'accent', 'warning', 'info', 'success']) {
+		test(`badge-soft badge-${token}: Text ≥ ${AA_TEXT}:1`, async ({ page }) => {
+			const [measured, ohneFarbe] = await measureContrast(page, [
+				{
+					name: `badge-soft badge-${token}`,
+					className: `badge badge-soft badge-${token}`,
+					backdrop: 'var(--color-base-100)'
+				},
+				{
+					name: 'badge-soft ohne Farbklasse',
+					className: 'badge badge-soft',
+					backdrop: 'var(--color-base-100)'
+				}
+			]);
+
+			/* Eigenprobe VOR der Schwelle: Hat die Farbklasse überhaupt gewirkt?
+			   DaisyUI erzeugt `.badge-<farbe>` nur, wenn der Name vollständig im
+			   Quelltext steht (daisyui.md). Verschwindet die letzte Fundstelle —
+			   `badge-accent` hat derzeit zwei —, bleibt `--badge-color` ungesetzt,
+			   und der Override greift auf seinen eigenen Fallback
+			   `var(--badge-color, var(--color-base-content))` zurück. Gemessen
+			   würde dann ein neutraler Tint mit rund 13:1: Der Test bliebe grün,
+			   ohne die Farbe je angefasst zu haben. Deshalb wird zuerst verlangt,
+			   dass sich die Fläche von der farblosen Probe unterscheidet. */
+			expect(
+				measured.background,
+				`badge-soft badge-${token} misst dieselbe Fläche wie ein badge-soft ohne Farbklasse ` +
+					`(${measured.background}). Die Klasse .badge-${token} steht damit nicht im generierten CSS — ` +
+					'DaisyUI erzeugt sie nur, wenn der Name vollständig im Quelltext vorkommt. Der Test misst sonst nichts.'
+			).not.toBe(ohneFarbe.background);
+
+			expect(
+				measured.ratio,
+				`${measured.name}: ${formatRatio(measured.ratio)}:1 (${measured.foreground} auf ${measured.background}). ` +
+					'Trägt der Badge-Soft-Override in app.css noch color: var(--color-base-content)? ' +
+					'Ohne ihn ist badge-soft dieselbe Fehlerklasse wie btn-soft und gehört in FOREGROUND_MODIFIERS.'
+			).toBeGreaterThanOrEqual(AA_TEXT);
+		});
 	}
 
 	test('Deckkraft-Stufen: /60 ist die Untergrenze', async ({ page }) => {
@@ -549,6 +603,21 @@ test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 		}) => {
 			const elements = await scanRoute({ page, context, request, baseURL }, route);
 			expect(findOffenders(STATUS_AS_FOREGROUND, elements), STATUS_AS_FOREGROUND.hint).toEqual([]);
+		});
+
+		/* Die Kombination, die der Test darüber strukturell nicht sehen kann:
+		   `badge-outline` und `badge-secondary` sind einzeln zulässig, zusammen
+		   drehen sie die Statusfarbe auf den Vordergrund (2,68:1). Gefunden hat
+		   den Fall der axe-Scan (`e2e/axe-scan.spec.ts`) auf /about, nicht diese
+		   Gruppe — Begründung an `OUTLINE_STATUS_COLOR` in `bannedClasses.ts`. */
+		test(`${route.path}: keine Statusfarbe an einem Umriss-Bauteil`, async ({
+			page,
+			context,
+			request,
+			baseURL
+		}) => {
+			const elements = await scanRoute({ page, context, request, baseURL }, route);
+			expect(findOffenders(OUTLINE_STATUS_COLOR, elements), OUTLINE_STATUS_COLOR.hint).toEqual([]);
 		});
 
 		test(`${route.path}: keine Textfarbe unter Deckkraft /60`, async ({

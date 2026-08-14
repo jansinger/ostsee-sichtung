@@ -99,6 +99,7 @@
 			{#if required}
 				<span
 					class="text-error ml-1 text-sm"
+					role="img"
 					aria-label={m.report_components_form_fields_basecheckbox_aria_label_pflichtfeld()}>*</span
 				>
 			{/if}

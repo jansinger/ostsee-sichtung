@@ -547,7 +547,7 @@
 				<label class="label w-full pb-1" for="sg-required">
 					<span class="text-label font-medium">
 						Pflichtfeld
-						<span class="text-error ml-1" aria-label="Pflichtfeld">*</span>
+						<span class="text-error ml-1" role="img" aria-label="Pflichtfeld">*</span>
 					</span>
 				</label>
 				<input id="sg-required" type="text" class="input w-full" required aria-required="true" />

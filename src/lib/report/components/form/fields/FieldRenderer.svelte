@@ -355,8 +355,17 @@
 		{/if}
 		{label}
 		{#if required}
+			<!-- `role="img"` ist nicht dekorativ, sondern die Bedingung dafür, dass das
+			     `aria-label` überhaupt gilt: ARIA erlaubt eine Namensangabe nur an
+			     Elementen mit einer Rolle, die Naming unterstützt — ein nacktes `span`
+			     hat gar keine. axe meldet das als `aria-prohibited-attr`, allerdings
+			     unter `incomplete` („not well supported"), und dort sah es bis zum
+			     2026-08-14 niemand an. Dieselbe Ergänzung steht an den vier weiteren
+			     Sternchen-Aufrufstellen (BaseCheckbox, BaseToggle, LocationInput,
+			     /styleguide). -->
 			<span
 				class="text-error ml-1 text-sm"
+				role="img"
 				aria-label={m.report_components_form_fields_fieldrenderer_aria_label_pflichtfeld()}>*</span
 			>
 		{/if}
