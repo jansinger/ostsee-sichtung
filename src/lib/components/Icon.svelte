@@ -35,6 +35,7 @@
 	import Cpu from '~icons/lucide/cpu';
 	import Crosshair from '~icons/lucide/crosshair';
 	import Download from '~icons/lucide/download';
+	import ExternalLink from '~icons/lucide/external-link';
 	import Eye from '~icons/lucide/eye';
 	import File from '~icons/lucide/file';
 	import FileCode from '~icons/lucide/file-code';
@@ -42,7 +43,6 @@
 	import FileText from '~icons/lucide/file-text';
 	import FileType from '~icons/lucide/file-type';
 	import Filter from '~icons/lucide/filter';
-	import ExternalLink from '~icons/lucide/external-link';
 	import FilterX from '~icons/lucide/filter-x';
 	import Gauge from '~icons/lucide/gauge';
 	import Gem from '~icons/lucide/gem';

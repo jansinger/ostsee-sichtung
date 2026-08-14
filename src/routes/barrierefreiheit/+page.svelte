@@ -2,7 +2,7 @@
 	import * as m from '$lib/paraglide/messages';
 	import HreflangHead from '$lib/components/seo/HreflangHead.svelte';
 	import Icon from '$lib/components/Icon.svelte';
-	import { MEDIA_FALLBACK_EMAIL } from '$lib/constants/contact';
+	import { ACCESSIBILITY_FEEDBACK_EMAIL } from '$lib/constants/contact';
 
 	const title = m.routes_barrierefreiheit_page_text_titel();
 	const description = m.routes_barrierefreiheit_page_meta_description();
@@ -15,7 +15,7 @@
 <HreflangHead />
 
 <div class="mx-auto max-w-3xl p-6">
-	<h1 class="text-primary mb-4 text-4xl font-bold tracking-tight">{title}</h1>
+	<h1 class="text-primary text-display mb-4 font-bold tracking-tight">{title}</h1>
 
 	<!-- Pflichtseite nach § 14 LBGG M-V / BITVO M-V (EU-Richtlinie 2016/2102):
 	     Die iframe-Einbettung auf meeresmuseum.de deckt die Pflicht unter
@@ -30,7 +30,7 @@
 		{m.routes_barrierefreiheit_page_text_geltungsbereich()}
 	</p>
 
-	<h2 class="text-base-content mb-3 text-2xl font-semibold">
+	<h2 class="text-base-content text-title mb-3 font-semibold">
 		{m.routes_barrierefreiheit_page_text_stand_titel()}
 	</h2>
 	<p class="text-base-content/80 mb-4 leading-relaxed">
@@ -40,7 +40,7 @@
 		{m.routes_barrierefreiheit_page_text_stand_methode()}
 	</p>
 
-	<h2 class="text-base-content mb-3 text-2xl font-semibold">
+	<h2 class="text-base-content text-title mb-3 font-semibold">
 		{m.routes_barrierefreiheit_page_text_maengel_titel()}
 	</h2>
 	<p class="text-base-content/80 mb-3 leading-relaxed">
@@ -52,7 +52,7 @@
 		<li>{m.routes_barrierefreiheit_page_text_maengel_sprache()}</li>
 	</ul>
 
-	<h2 class="text-base-content mb-3 text-2xl font-semibold">
+	<h2 class="text-base-content text-title mb-3 font-semibold">
 		{m.routes_barrierefreiheit_page_text_feedback_titel()}
 	</h2>
 	<p class="text-base-content/80 mb-3 leading-relaxed">
@@ -60,15 +60,15 @@
 	</p>
 	<p class="mb-8">
 		<a
-			href="mailto:{MEDIA_FALLBACK_EMAIL}"
+			href="mailto:{ACCESSIBILITY_FEEDBACK_EMAIL}"
 			class="link link-primary inline-flex items-center gap-2"
 		>
 			<Icon icon="lucide:mail" width="16" height="16" aria-hidden="true" />
-			{MEDIA_FALLBACK_EMAIL}
+			{ACCESSIBILITY_FEEDBACK_EMAIL}
 		</a>
 	</p>
 
-	<h2 class="text-base-content mb-3 text-2xl font-semibold">
+	<h2 class="text-base-content text-title mb-3 font-semibold">
 		{m.routes_barrierefreiheit_page_text_durchsetzung_titel()}
 	</h2>
 	<p class="text-base-content/80 mb-3 leading-relaxed">
