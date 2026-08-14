@@ -504,7 +504,7 @@ export class EmailService {
 			// Prepare template data with formatted enum values.
 			// Locale bewusst auf baseLocale ('de') gepinnt: Diese Mail geht ans
 			// Deutsche Meeresmuseum, nicht an den Melder, und bleibt laut Entwurf
-			// vom Sprachwechsel ausgenommen (docs/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md,
+			// vom Sprachwechsel ausgenommen (docs/i18n/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md,
 			// Abschnitt 5.4). Ohne die Pinnung würde eine Meldung über /en dem
 			// Museum englische Labels in einer sonst deutschen Mail liefern.
 			const formattedSighting = formatSightingForDisplay(sightingFormValues, baseLocale);

@@ -4,7 +4,7 @@ import { TRANSLATION_ROLLOUT_COMPLETE } from '$lib/i18n/translationRolloutStage'
 
 /**
  * Vorübergehender Auslieferungs-Riegel für Etappe 0 der Mehrsprachigkeit
- * (siehe `docs/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md`, Abschnitt 9.1).
+ * (siehe `docs/i18n/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md`, Abschnitt 9.1).
  *
  * `/en` ist bereits erreichbar, aber noch KEIN einziger Text ist übersetzt —
  * die Übersetzung folgt erst in den Etappen 1–3. `src/app.html` setzt

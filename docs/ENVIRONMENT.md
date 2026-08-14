@@ -90,7 +90,7 @@ Sessions ausstellen könnte, gibt es nicht mehr.
 `UPDATE`-Anweisung (`revokeAllForSub` in `src/lib/server/auth/sessionRepository.ts`) statt
 eines Secret-Wechsels mit Kollateralschaden. Logout wirkt serverseitig.
 
-Hintergrund und Begründung: `docs/SESSION_STORE_SPEC_2026-07-31.md`.
+Hintergrund und Begründung: `docs/archive/SESSION_STORE_SPEC_2026-07-31.md`.
 
 ---
 

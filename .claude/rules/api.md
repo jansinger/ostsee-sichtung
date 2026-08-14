@@ -137,7 +137,7 @@ Datenbank und liest sie weiterhin.
 
 Datenschutz und Aufbewahrung sind am Tabellen-Docblock in
 `src/lib/server/db/schema.ts` begründet, die Entscheidung selbst in
-`docs/ADMIN_IMPROVEMENTS_SPEC.md` (B3).
+`docs/archive/ADMIN_IMPROVEMENTS_SPEC_2026-08-08.md` (B3).
 
 ---
 

@@ -41,7 +41,7 @@ export interface FormattedSightingData extends Omit<
  *   Locale. Der einzige Verbraucher außerhalb der Tests ist die DMM-
  *   Benachrichtigungsmail (`emailService.ts`), die hier ausdrücklich
  *   `baseLocale` übergibt (siehe Docblock dort und
- *   docs/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md, Abschnitt 5.4) — dieser
+ *   docs/i18n/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md, Abschnitt 5.4) — dieser
  *   Default gilt also nur für etwaige künftige, nutzersichtbare Aufrufer.
  */
 export function formatSightingForDisplay(

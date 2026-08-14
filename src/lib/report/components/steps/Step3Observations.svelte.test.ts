@@ -171,7 +171,7 @@ function weatherRequests(fetchSpy: ReturnType<typeof vi.fn>): URL[] {
 
 /**
  * Risiko 5 der Einstiegsseiten-Spezifikation
- * (`docs/PLAN_EINSTIEGSSEITE_MELDEFORMULAR_2026-08-05.md`, Abschnitt 11) und
+ * (`docs/archive/PLAN_EINSTIEGSSEITE_MELDEFORMULAR_2026-08-05.md`, Abschnitt 11) und
  * Punkt 10 der Definition of Done: Die Karte „Umweltbedingungen" trägt einen
  * **automatischen** Wetter-Abruf, der bei gesetzter Position und gesetztem
  * Datum von selbst anspringt und über `handleFullWeatherData` einen

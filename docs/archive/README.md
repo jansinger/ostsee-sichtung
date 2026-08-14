@@ -22,3 +22,13 @@ Code-Änderungen automatisch geladen oder aktuell gehalten.
 | `LEGACY_INBOX_ENTWURF_2026-07-30.md`               | Entwurf eigenständiger Node-Posteingang auf dem Plesk-Server (Legacy-API ohne DB)           |
 | `LEGACY_INBOX_PLAN_2026-07-30.md`                  | Implementierungsplan dazu — 11 Aufgaben, testgetrieben                                      |
 | `Sichtungsdb-Web-Schnittstelle.pdf`                | Ursprüngliches PDF-Schnittstellendokument, Grundlage von `docs/LEGACY_API_SPECIFICATION.md` |
+| `OSTSEE_GEOMETRIE_SPEC_2026-07-30.md`              | Spec Ostsee-Geometrie (Polygon/Bounding-Box)                                                |
+| `OSTSEE_GEOMETRIE_PLAN_2026-07-30.md`              | Implementierungsplan dazu — umgesetzt in #647                                               |
+| `PLAN_SESSION_SECRET_GUARD_2026-07-31.md`          | Startup-Guard für Produktions-Secrets — umgesetzt (`src/lib/server/config/secretGuard.ts`)  |
+| `SESSION_STORE_SPEC_2026-07-31.md`                 | Session-Store statt signiertem Cookie — umgesetzt (#668 u. a.)                              |
+| `VIDEO_UPLOAD_KONZEPT_2026-07-31.md`               | Konzept Video-Upload für Melder — umgesetzt; GPS aus Video blieb bewusst offen              |
+| `DATENSCHUTZ_ABGLEICH_DMM_2026-08-02.md`           | Abgleich DMM-Datenschutzerklärung ↔ App-Verhalten (Fundliste fürs Museum)                   |
+| `PLAN_EINSTIEGSSEITE_MELDEFORMULAR_2026-08-05.md`  | Konzept/Spec Einstiegsseite Meldeformular — umgesetzt, Abschlussreview 2026-08-06           |
+| `PLAN_EINSTIEGSSEITE_UMSETZUNG_2026-08-05.md`      | Implementierungsplan dazu — 15 Tasks + 8b                                                   |
+| `ADMIN_IMPROVEMENTS_SPEC_2026-08-08.md`            | Spec Admin-Verbesserungen aus dem Review 2026-08-08 — abgearbeitet                          |
+| `PLAN_MEHRSPRACHIGKEIT_ETAPPE0_2026-08-10.md`      | i18n Etappe 0 (Paraglide, Routing) — umgesetzt; laufende Etappen in `docs/i18n/`            |

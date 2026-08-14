@@ -198,7 +198,7 @@ export type SightingSelect = typeof sightings.$inferSelect;
  * noch öffentlich steht, und die Frage „wer hat das freigegeben" unbeantwortbar
  * machen, obwohl `freigegeben_von` sie weiterhin beantwortet. Eine eigene Frist
  * wäre erst dann sinnvoll, wenn die Sichtungen selbst eine bekommen — die steht
- * als offener Punkt in `docs/DATENSCHUTZ_ABGLEICH_DMM_2026-08-02.md` (§2.1).
+ * als offener Punkt in `docs/archive/DATENSCHUTZ_ABGLEICH_DMM_2026-08-02.md` (§2.1).
  */
 export const sightingStatusLog = pgTable(
 	'sichtung_status_log',

@@ -307,7 +307,7 @@
 
 	     Zwei weitere Aussagen sind am 2026-08-02 korrigiert worden, beide beim
 	     Abgleich gegen die verlinkte DMM-Erklärung aufgefallen
-	     (docs/DATENSCHUTZ_ABGLEICH_DMM_2026-08-02.md):
+	     (docs/archive/DATENSCHUTZ_ABGLEICH_DMM_2026-08-02.md):
 
 	     - „Ihre Kontaktdaten sind freiwillig. Eine Sichtung lässt sich auch ohne
 	       sie melden." war falsch. `firstName`, `lastName` und `email` sind in
@@ -341,7 +341,7 @@
 	     docs/i18n/ARBEITSPROTOKOLL_ETAPPE1.md, Aufgabe 2.3b-Anhang). Grund: Die
 	     deutschen Formulierungen hier wurden bereits mehrfach gegen die
 	     offizielle Datenschutzerklärung des Deutschen Meeresmuseums korrigiert
-	     (siehe Kommentar oben, docs/DATENSCHUTZ_ABGLEICH_DMM_2026-08-02.md) —
+	     (siehe Kommentar oben, docs/archive/DATENSCHUTZ_ABGLEICH_DMM_2026-08-02.md) —
 	     eine unabhängig übersetzte englische Fassung ungeprüft auszuliefern
 	     wäre dasselbe Fehlermuster auf Englisch. Eine frühere, ungeprüfte
 	     Entwurfsübersetzung stand hier kurzzeitig in `en.json` und wurde

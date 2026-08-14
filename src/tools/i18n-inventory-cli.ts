@@ -1,14 +1,14 @@
 /**
  * CLI für das i18n-Inventar (`src/tools/i18n-inventory.ts`).
  *
- * Liest nur, schreibt ausschließlich die beiden Berichtsdateien unter `docs/`:
- *  - `docs/i18n-inventory.json` (maschinenlesbar, alle Funde)
- *  - `docs/i18n-inventory.md`   (menschenlesbar, gruppiert nach Kategorie/Datei)
+ * Liest nur, schreibt ausschließlich die beiden Berichtsdateien unter `docs/i18n/`:
+ *  - `docs/i18n/i18n-inventory.json` (maschinenlesbar, alle Funde)
+ *  - `docs/i18n/i18n-inventory.md`   (menschenlesbar, gruppiert nach Kategorie/Datei)
  *
- * `docs/` statt `src/tools/out/` (wie bei `render-baltic-review.ts`), weil dieser
+ * `docs/i18n/` statt `src/tools/out/` (wie bei `render-baltic-review.ts`), weil dieser
  * Bericht kein Zwischenergebnis eines Build-Schritts ist, sondern die
- * Entscheidungsgrundlage für die Übersetzungs-Planung — an derselben Stelle wie die
- * übrige Projektdokumentation, damit er beim nächsten `docs/`-Blick auffindbar bleibt.
+ * Entscheidungsgrundlage für die Übersetzungs-Planung — beim übrigen
+ * i18n-Bestand, damit er beim nächsten `docs/i18n/`-Blick auffindbar bleibt.
  *
  * Optionen:
  *   --include-admin   Bezieht /admin-Routen und src/lib/components/admin/ mit ein
@@ -47,7 +47,7 @@ export function main(argv: string[]): void {
 	const options = parseCliOptions(argv);
 	const result = runInventory({ root: options.root, includeAdmin: options.includeAdmin });
 
-	const outDir = resolve(options.root, 'docs');
+	const outDir = resolve(options.root, 'docs', 'i18n');
 	mkdirSync(outDir, { recursive: true });
 
 	const jsonPath = resolve(outDir, 'i18n-inventory.json');

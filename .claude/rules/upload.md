@@ -104,7 +104,7 @@ Teilanfrage die Bereichslänge, bei einer vollen Anfrage die Dateigröße — ei
 `Range`-Header über die ganze Datei bucht also genauso viel wie eine Anfrage
 ohne `Range`. Überschreitung: 429.
 
-Details: `docs/VIDEO_UPLOAD_KONZEPT_2026-07-31.md`.
+Details: `docs/archive/VIDEO_UPLOAD_KONZEPT_2026-07-31.md`.
 
 ---
 

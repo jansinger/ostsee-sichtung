@@ -30,7 +30,7 @@ Seit dem Session-Store (#635) gilt das buchstäblich: `resolveSessionUser` schl�
 Cookie in der Tabelle `sessions` nach, Authentifizierung ohne DB gibt es nicht mehr.
 
 `noindexEnglishPages` und `handleStartseitenSprache`/`handleParaglide` sind Teil der
-Mehrsprachigkeits-Umstellung (siehe `docs/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md`). Beide
+Mehrsprachigkeits-Umstellung (siehe `docs/i18n/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md`). Beide
 letzten Glieder lesen bzw. schreiben ausschließlich über `event.url`/`event.request` und
 `resolve(event)` — sie verschieben nicht, an welcher Stelle `event.url.pathname` für Auth
 und Security-Header gilt. `noindexEnglishPages` ist vorübergehend: Der Kommentar in

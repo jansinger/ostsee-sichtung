@@ -1,7 +1,7 @@
 # Etappe 1 der Mehrsprachigkeit — Entwurf (2026-08-11)
 
 > **Was das ist.** Der abgestimmte Entwurf für Etappe 1 (Schichten A und B) aus
-> `docs/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md`. Er ersetzt jenes Dokument nicht,
+> `docs/i18n/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md`. Er ersetzt jenes Dokument nicht,
 > sondern schärft dessen Abschnitte 3, 5.1 und 5.2 an vier Stellen nach, an denen
 > die Messung von der Annahme abweicht — jede Abweichung ist unten mit Fundstelle
 > belegt.
@@ -23,7 +23,7 @@ Schlüssel; der englische Wert ist zunächst der deutsche Text. Etappe 1 liefert
 Mechanik, nicht die Übersetzung. Das ist Absicht:
 
 - Die englischen Artnamen sind ein **ungeprüfter Vorschlag**
-  (`docs/I18N_ARTNAMEN_VORSCHLAG.md`), keine freigegebene Fassung. Struktur bauen
+  (`docs/i18n/I18N_ARTNAMEN_VORSCHLAG.md`), keine freigegebene Fassung. Struktur bauen
   ja, als freigegeben behandeln nein.
 - `/en` trägt weiterhin `X-Robots-Tag: noindex, follow`, weil
   `TRANSLATION_ROLLOUT_COMPLETE` (`src/lib/i18n/translationRolloutStage.ts`)
@@ -49,7 +49,7 @@ beschreibt.
 
 Die Zahl 286 im Entwurf Abschnitt 3 ist die Summe aus `uebersetzbar` und `unklar`
 im Inventar. Sie zählt Funde, nicht Botschaften. Aufgeschlüsselt nach Aufrufstelle
-(gemessen über `docs/i18n-inventory.json`, 308 Funde in `sightingSchema.ts`):
+(gemessen über `docs/i18n/i18n-inventory.json`, 308 Funde in `sightingSchema.ts`):
 
 | Aspekt              | Funde | übersetzbar |
 | ------------------- | ----: | ----------- |
@@ -241,7 +241,7 @@ Botschaften unter einem Schlüssel haben.
 ### 3.3 Schlüsselschema
 
 Das Schema des Inventars, mit behobenen Kollisionen — damit bleibt
-`docs/i18n-inventory.md` als Nachschlagewerk lesbar:
+`docs/i18n/i18n-inventory.md` als Nachschlagewerk lesbar:
 
 ```
 sighting_latitude_label

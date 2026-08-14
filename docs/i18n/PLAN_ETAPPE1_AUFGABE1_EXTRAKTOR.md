@@ -488,7 +488,7 @@ Erwartet: FAIL, `Failed to resolve import "./messageKey"`.
  * Feldnamen auflösen und Botschaftsschlüssel vergeben.
  *
  * Das Schlüsselschema stammt aus `i18n-inventory.ts`, damit
- * `docs/i18n-inventory.md` als Nachschlagewerk lesbar bleibt — mit einer
+ * `docs/i18n/i18n-inventory.md` als Nachschlagewerk lesbar bleibt — mit einer
  * behobenen Schwäche: `findEnclosingFieldName` (i18n-inventory.ts:589) läuft zum
  * NÄCHSTEN umschließenden `PropertyAssignment` hoch. Innerhalb von
  * `.when('hasPosition', { is: true, then: … })` heißt der `then`, nicht

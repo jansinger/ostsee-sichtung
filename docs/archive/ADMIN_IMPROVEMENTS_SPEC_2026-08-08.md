@@ -346,7 +346,7 @@ ergänzt sie. Aufbewahrung/Datenschutz klären (Bearbeiter-Identität).
   steht — und die Frage „wer hat das freigegeben" unbeantwortbar machen,
   obwohl `freigegeben_von` sie weiterhin beantwortet. Eine eigene Frist wird
   erst sinnvoll, wenn die Sichtungen selbst eine bekommen; das ist der offene
-  Punkt §2.1 in `docs/DATENSCHUTZ_ABGLEICH_DMM_2026-08-02.md`.
+  Punkt §2.1 in `docs/archive/DATENSCHUTZ_ABGLEICH_DMM_2026-08-02.md`.
 - **Eigene Tabelle statt `audit_logs`.** Das Audit-Log hält denselben Vorgang
   fest, taugt aber nicht als Anzeigequelle: `logAuditEvent` schluckt
   Schreibfehler bewusst, `details` ist formloses JSONB, und es gibt keinen
