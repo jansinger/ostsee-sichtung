@@ -1,23 +1,23 @@
 THIRD-PARTY SOFTWARE NOTICES AND LICENSE TERMS
 ===============================================
 
-Generated on: 2026-07-30 (UTC)
+Generated on: 2026-08-14 (UTC)
 
 This project uses the following third-party software components:
 
-MIT: 87 packages
+MIT: 89 packages
 Apache-2.0: 8 packages
-BSD-2-Clause: 10 packages
+BSD-3-Clause: 4 packages
+BSD-2-Clause: 11 packages
 ISC: 7 packages
 MIT-0: 1 package
 (MIT AND Zlib): 1 package
-BSD-3-Clause: 3 packages
 Unlicense: 2 packages
 0BSD: 1 package
 (MIT OR CC0-1.0): 1 package
 CC0-1.0: 1 package
 MIT AND BSD-3-Clause: 1 package
 
-Total Dependencies: 123
+Total Dependencies: 127
 
 For detailed information, see THIRD-PARTY-NOTICES.md
