@@ -80,7 +80,7 @@
 				type="button"
 				onclick={skipToNextStep}
 				disabled={$isSubmitting}
-				class="btn btn-outline btn-secondary gap-2"
+				class="btn btn-outline gap-2"
 				aria-label={m.report_components_steps_step3observations_aria_label_diesen_optionalen_schritt_ueberspringen()}
 			>
 				<Icon icon="lucide:skip-forward" width="16" />

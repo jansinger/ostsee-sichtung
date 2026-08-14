@@ -153,9 +153,7 @@
 					</ol>
 				</div>
 				<div class="card-actions mt-4 justify-end">
-					<a href="/docs/api#authentication" class="btn btn-outline btn-warning">
-						Details anzeigen
-					</a>
+					<a href="/docs/api#authentication" class="btn btn-outline"> Details anzeigen </a>
 				</div>
 			</div>
 		</div>
