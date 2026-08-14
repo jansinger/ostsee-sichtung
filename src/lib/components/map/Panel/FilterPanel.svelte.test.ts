@@ -203,6 +203,15 @@ function getSheetToggleButton(): HTMLButtonElement {
 	return button;
 }
 
+/** Griffleiste des Bottom-Sheets — seit 2026-08-14 ein echtes Bedienelement */
+function getSheetHandle(): HTMLButtonElement {
+	const button = document.querySelector('#filter-panel [data-testid="sheet-handle"]');
+	if (!(button instanceof HTMLButtonElement)) {
+		throw new Error('Sheet handle not found');
+	}
+	return button;
+}
+
 async function openPanel(): Promise<void> {
 	await page.getByRole('button', { name: /^Filter$/i }).click();
 }
@@ -329,6 +338,53 @@ describe('FilterPanel als Bottom-Sheet (H6)', () => {
 
 		const rect = getToggleButton().getBoundingClientRect();
 		expect(rect.width).toBeGreaterThanOrEqual(44);
+	});
+
+	it('Griff schaltet Peek/Expanded', async () => {
+		await page.viewport(375, 667);
+		await render(FilterPanel, { years: YEARS, defaultYear: 2025 });
+
+		await openPanel();
+
+		const panel = getFilterPanel();
+
+		getSheetHandle().click();
+		await vi.waitFor(() => {
+			expect(panel.getAttribute('data-sheet-state')).toBe('expanded');
+		});
+
+		getSheetHandle().click();
+		await vi.waitFor(() => {
+			expect(panel.getAttribute('data-sheet-state')).toBe('peek');
+		});
+	});
+
+	it('Griff bleibt für AT unsichtbar — der Chevron daneben trägt Name und Zustand', async () => {
+		await page.viewport(375, 667);
+		await render(FilterPanel, { years: YEARS, defaultYear: 2025 });
+		await openPanel();
+
+		// Zwei Schaltflächen mit identischem Namen direkt nebeneinander wären
+		// Doppelung, keine Redundanz — der Griff ist reines Zeigegerät-Ziel.
+		const handle = getSheetHandle();
+		expect(handle.getAttribute('aria-hidden')).toBe('true');
+		expect(handle.tabIndex).toBe(-1);
+		expect(handle.getAttribute('aria-label')).toBeNull();
+
+		expect(getSheetToggleButton().getAttribute('aria-expanded')).toBe('false');
+	});
+
+	it('Griff hält das 44px-Touch-Target und ist ab md ausgeblendet', async () => {
+		await page.viewport(375, 667);
+		await render(FilterPanel, { years: YEARS, defaultYear: 2025 });
+		await openPanel();
+
+		expect(getSheetHandle().getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
+
+		await page.viewport(1024, 768);
+		await vi.waitFor(() => {
+			expect(getComputedStyle(getSheetHandle()).display).toBe('none');
+		});
 	});
 });
 

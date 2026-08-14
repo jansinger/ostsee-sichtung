@@ -111,12 +111,45 @@
 	inert={!isOpen}
 >
 	<div class="flex h-full flex-col">
-		<!-- Drag-Handle-Optik des Bottom-Sheets (nur Mobile, rein dekorativ) -->
-		<div class="flex justify-center pt-2 md:hidden" aria-hidden="true">
-			<div class="bg-base-content/20 h-1.5 w-10 rounded-full"></div>
-		</div>
+		<!-- Griff des Bottom-Sheets (nur Mobile). Bis 2026-08-14 war das ein
+		     dekoratives div mit aria-hidden: Es sah nach einem Drag-Handle aus,
+		     ließ sich aber weder ziehen noch tippen — die Peek/Expanded-Umschaltung
+		     hing allein am Chevron rechts im Header. Der Griff schaltet jetzt
+		     denselben Zustand; der Chevron bleibt, weil er den Zustand benennt
+		     und die Umschaltung auch außerhalb der Griff-Fläche erreichbar hält.
+		     Die volle Breite und min-h-11 sind das Touch-Target (WCAG 2.5.5) —
+		     die 6px-Pille darin ist nur die Optik.
 
-		<div class="flex shrink-0 items-center justify-between gap-2 px-4 pt-2 md:pt-4">
+		     aria-hidden + tabindex="-1": Der Griff ist ein zusätzliches Ziel für
+		     den Finger, keine zusätzliche Funktion. Mit eigenem Label hieße er
+		     zwangsläufig wie der Chevron unmittelbar daneben — zwei Schaltflächen
+		     mit identischem Namen und identischer Wirkung, direkt hintereinander.
+		     Playwrights Strict Mode hat das in `e2e/map-panels.spec.ts` sofort als
+		     Mehrdeutigkeit gemeldet; für Screenreader wäre es dieselbe Doppelung,
+		     nur ohne Fehlermeldung. Tastatur und AT bedienen den Chevron, der die
+		     Funktion benennt und den Zustand meldet.
+
+		     Das preventDefault auf mousedown gehört zwingend dazu: tabindex="-1"
+		     nimmt den Griff nur aus der Tab-Reihenfolge, ein Klick fokussiert ihn
+		     trotzdem — nachgemessen stand document.activeElement danach auf einem
+		     Knoten mit aria-hidden="true". Ein Screenreader hat dort nichts zu
+		     melden, weder die Aktion noch den neuen Zustand, und die nächste
+		     Tab-Taste setzt an einer nie angesagten Stelle fort. Ohne die Zeile
+		     wäre aria-hidden also nicht die stille Variante, sondern eine
+		     Fokusfalle. -->
+		<button
+			type="button"
+			data-testid="sheet-handle"
+			onclick={() => (sheetExpanded = !sheetExpanded)}
+			onmousedown={(event) => event.preventDefault()}
+			class="flex min-h-11 w-full shrink-0 cursor-pointer items-center justify-center md:hidden"
+			aria-hidden="true"
+			tabindex="-1"
+		>
+			<span class="bg-base-content/20 h-1.5 w-10 rounded-full"></span>
+		</button>
+
+		<div class="flex shrink-0 items-center justify-between gap-2 px-4 max-md:pt-0 md:pt-4">
 			<!-- tabindex="-1": Fokusziel beim Öffnen des Panels (H5) -->
 			<h2 id={titleId} tabindex="-1" bind:this={headingEl} class="text-lg font-bold">
 				{title}
