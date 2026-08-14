@@ -42,6 +42,7 @@
 	import FileText from '~icons/lucide/file-text';
 	import FileType from '~icons/lucide/file-type';
 	import Filter from '~icons/lucide/filter';
+	import FilterX from '~icons/lucide/filter-x';
 	import Gauge from '~icons/lucide/gauge';
 	import Gem from '~icons/lucide/gem';
 	import Github from '~icons/lucide/github';
@@ -145,6 +146,7 @@
 		'lucide:chevron-up': ChevronUp,
 		'lucide:chevrons-up-down': ChevronsUpDown,
 		'lucide:filter': Filter,
+		'lucide:filter-x': FilterX,
 		'lucide:download': Download,
 		'lucide:code': Code,
 		'lucide:columns': Columns,

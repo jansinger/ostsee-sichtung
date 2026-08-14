@@ -72,11 +72,16 @@ describe('Sichtungstabelle — Chip-Zeile der aktiven Filter', () => {
 		expect(ziel.searchParams.get('page')).toBe('1');
 	});
 
+	/* `.first()`, seit der Leer-Zustand denselben Ausweg anbietet (`emptyList.ts`):
+	   `daten([])` liefert null Zeilen, also stehen ab 2026-08-14 drei Knöpfe
+	   dieses Namens im DOM — der Chip-Zeile und je einer in Kartenliste und
+	   Tabelle. Dass sie gleich heißen, ist Absicht (gleiche Aktion, gleiche
+	   Beschriftung); die Chip-Zeile steht im Markup vor beiden Listen. */
 	it('bietet ab zwei Chips das Zurücksetzen aller Filter an', async () => {
 		const screen = render(SichtungenSeite, { data: daten([]) });
 
 		await expect
-			.element(screen.getByRole('button', { name: 'Alle Filter zurücksetzen' }))
+			.element(screen.getByRole('button', { name: 'Alle Filter zurücksetzen' }).first())
 			.toBeVisible();
 	});
 

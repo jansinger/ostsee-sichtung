@@ -12,7 +12,9 @@
 -->
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
+	import StatusBlock from '$lib/components/StatusBlock.svelte';
 	import { DEAD_FINDING_PRESENTATION, isDeadFinding } from '$lib/components/admin/deadFinding';
+	import { describeEmptyList } from './emptyList';
 	import SightingActionsMenu from '$lib/components/admin/SightingActionsMenu.svelte';
 	import SightingStatusControl from '$lib/components/admin/SightingStatusControl.svelte';
 	import { getSightingStatus, type SightingStatus } from '$lib/components/admin/sightingStatus';
@@ -32,6 +34,9 @@
 		isSuperAdmin: boolean;
 		/** Ids, deren Statuswechsel gerade läuft (je Zeile, nicht global). */
 		statusPending: ReadonlySet<number>;
+		/** Entscheidet den Wortlaut des Leer-Zustands (`emptyList.ts`). */
+		hasActiveFilters: boolean;
+		onresetfilters: () => void;
 		onview: (sighting: SichtungenListRow) => void;
 		ontestemail: (id: number) => void;
 		onspamcheck: (id: number) => void;
@@ -43,12 +48,16 @@
 		sightings,
 		isSuperAdmin,
 		statusPending,
+		hasActiveFilters,
+		onresetfilters,
 		onview,
 		ontestemail,
 		onspamcheck,
 		ondelete,
 		onstatuschange
 	}: Props = $props();
+
+	let emptyText = $derived(describeEmptyList(hasActiveFilters));
 </script>
 
 <div class="{NUR_KOMPAKT} container mx-auto space-y-3 px-4 md:px-6">
@@ -183,5 +192,17 @@
 				/>
 			</div>
 		</div>
+	{:else}
+		<!-- Derselbe Block wie unter der Tabelle nebenan, mit demselben Wortlaut
+		     aus `emptyList.ts`. Ein Ausweg steht nur da, wo es einen gibt: ohne
+		     aktiven Filter hätte „Zurücksetzen" nichts zurückzusetzen. -->
+		<StatusBlock
+			variant="empty"
+			title={emptyText.title}
+			description={emptyText.description}
+			action={emptyText.resetLabel
+				? { label: emptyText.resetLabel, onClick: onresetfilters, icon: 'lucide:filter-x' }
+				: undefined}
+		/>
 	{/each}
 </div>
