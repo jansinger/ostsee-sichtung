@@ -18,7 +18,7 @@ describe('BaseRadio', () => {
 
 	describe('Optionsliste', () => {
 		it('rendert einen Radio-Input pro Option', async () => {
-			const screen = render(BaseRadio, { options, name: 'boatDrive' });
+			const screen = await render(BaseRadio, { options, name: 'boatDrive' });
 
 			expect(screen.container.querySelectorAll('input[type="radio"]')).toHaveLength(options.length);
 			await expect.element(page.getByText('Motor lief', { exact: true })).toBeVisible();
@@ -26,13 +26,13 @@ describe('BaseRadio', () => {
 		});
 
 		it('rendert gar nichts ohne Optionen', async () => {
-			const screen = render(BaseRadio, { options: [], name: 'boatDrive' });
+			const screen = await render(BaseRadio, { options: [], name: 'boatDrive' });
 
 			expect(screen.container.querySelector('input[type="radio"]')).toBeNull();
 		});
 
 		it('bindet alle Optionen unter denselben name — sonst wäre es keine Gruppe', async () => {
-			const screen = render(BaseRadio, { options, name: 'boatDrive' });
+			const screen = await render(BaseRadio, { options, name: 'boatDrive' });
 
 			const namen = [...screen.container.querySelectorAll('input[type="radio"]')].map((radio) =>
 				radio.getAttribute('name')
@@ -41,7 +41,7 @@ describe('BaseRadio', () => {
 		});
 
 		it('hängt den Optionswert an die data-testid, damit E2E die Optionen unterscheiden kann', async () => {
-			render(BaseRadio, { options, name: 'boatDrive', 'data-testid': 'field-boatDrive' });
+			await render(BaseRadio, { options, name: 'boatDrive', 'data-testid': 'field-boatDrive' });
 
 			await expect.element(page.getByTestId('field-boatDrive-1')).toBeInTheDocument();
 			await expect.element(page.getByTestId('field-boatDrive-6')).toBeInTheDocument();
@@ -50,7 +50,7 @@ describe('BaseRadio', () => {
 
 	describe('Auswahl', () => {
 		it('markiert die Option, die dem übergebenen Wert entspricht', async () => {
-			render(BaseRadio, { options, name: 'boatDrive', value: 6 });
+			await render(BaseRadio, { options, name: 'boatDrive', value: 6 });
 
 			await expect.element(page.getByRole('radio', { name: 'Motor lief nicht' })).toBeChecked();
 			await expect
@@ -59,7 +59,7 @@ describe('BaseRadio', () => {
 		});
 
 		it('markiert nichts, solange kein Wert gesetzt ist', async () => {
-			const screen = render(BaseRadio, { options, name: 'boatDrive' });
+			const screen = await render(BaseRadio, { options, name: 'boatDrive' });
 
 			expect(screen.container.querySelector('input[type="radio"]:checked')).toBeNull();
 		});
@@ -75,7 +75,7 @@ describe('BaseRadio', () => {
 			//
 			// Der Cast hält genau den Rückfall fest: Wer den Prop wieder ergänzt
 			// und pro Option ausgibt, lässt diesen Test scheitern.
-			const screen = render(BaseRadio, {
+			const screen = await render(BaseRadio, {
 				options,
 				name: 'boatDrive',
 				icon: 'lucide:zap'
@@ -97,7 +97,7 @@ describe('BaseRadio', () => {
 	 */
 	describe('ARIA-Zustände liegen an der Gruppe, nicht am einzelnen Radio', () => {
 		it('setzt kein aria-invalid am Input, auch nicht bei hasError', async () => {
-			const screen = render(BaseRadio, {
+			const screen = await render(BaseRadio, {
 				options,
 				name: 'boatDrive',
 				'data-testid': 'field-boatDrive',
@@ -112,7 +112,7 @@ describe('BaseRadio', () => {
 		});
 
 		it('setzt kein aria-required am Input, auch nicht bei required', async () => {
-			const screen = render(BaseRadio, {
+			const screen = await render(BaseRadio, {
 				options,
 				name: 'boatDrive',
 				'data-testid': 'field-boatDrive',
@@ -132,7 +132,7 @@ describe('BaseRadio', () => {
 		 * als „required" in den Accessibility-Baum gemappt.
 		 */
 		it('behält die native required-Angabe am Input', async () => {
-			const screen = render(BaseRadio, { options, name: 'boatDrive', required: true });
+			const screen = await render(BaseRadio, { options, name: 'boatDrive', required: true });
 
 			radiosOf(screen.container).forEach((radio) => {
 				expect(radio.required).toBe(true);
@@ -140,7 +140,7 @@ describe('BaseRadio', () => {
 		});
 
 		it('reicht aria-describedby an jedes Radio durch', async () => {
-			const screen = render(BaseRadio, {
+			const screen = await render(BaseRadio, {
 				options,
 				name: 'boatDrive',
 				'aria-describedby': 'field-boatDrive-error'
@@ -162,7 +162,7 @@ describe('BaseRadio', () => {
 	 */
 	describe('Fehler-Optik', () => {
 		it('nutzt radio-error statt radio-primary bei hasError', async () => {
-			const screen = render(BaseRadio, { options, name: 'boatDrive', hasError: true });
+			const screen = await render(BaseRadio, { options, name: 'boatDrive', hasError: true });
 
 			radiosOf(screen.container).forEach((radio) => {
 				expect(radio.classList.contains('radio-error')).toBe(true);
@@ -171,7 +171,7 @@ describe('BaseRadio', () => {
 		});
 
 		it('nutzt radio-success statt radio-primary bei isValid', async () => {
-			const screen = render(BaseRadio, { options, name: 'boatDrive', isValid: true });
+			const screen = await render(BaseRadio, { options, name: 'boatDrive', isValid: true });
 
 			radiosOf(screen.container).forEach((radio) => {
 				expect(radio.classList.contains('radio-success')).toBe(true);
@@ -180,7 +180,7 @@ describe('BaseRadio', () => {
 		});
 
 		it('bleibt ohne Zustand auf radio-primary', async () => {
-			const screen = render(BaseRadio, { options, name: 'boatDrive' });
+			const screen = await render(BaseRadio, { options, name: 'boatDrive' });
 
 			radiosOf(screen.container).forEach((radio) => {
 				expect(radio.classList.contains('radio-primary')).toBe(true);
@@ -190,7 +190,7 @@ describe('BaseRadio', () => {
 		});
 
 		it('zeigt den Fehler-Zustand auch dann, wenn isValid gleichzeitig gesetzt ist', async () => {
-			const screen = render(BaseRadio, {
+			const screen = await render(BaseRadio, {
 				options,
 				name: 'boatDrive',
 				hasError: true,
@@ -207,7 +207,7 @@ describe('BaseRadio', () => {
 	/** Die Größen-Klasse darf durch den Zustands-Zweig nicht verloren gehen. */
 	describe('Größen', () => {
 		it('behält die Größen-Klasse neben dem Fehler-Zustand', async () => {
-			const screen = render(BaseRadio, {
+			const screen = await render(BaseRadio, {
 				options,
 				name: 'boatDrive',
 				size: 'sm' as const,

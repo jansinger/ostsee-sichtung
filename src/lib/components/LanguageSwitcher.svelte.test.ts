@@ -59,14 +59,14 @@ function mittelKlickenOhneNavigation(link: Element): void {
 	}
 }
 
-beforeEach(() => {
+beforeEach(async () => {
 	pageState.url = new URL('https://localhost:4000/');
 	// Jeder Test startet ohne Cookie-Vorbelastung aus einem vorherigen Lauf.
 	document.cookie = `${LOCALE_COOKIE}=; path=/; max-age=0`;
 });
 
 it('verweist auf die jeweils andere Sprache und kennzeichnet sie', async () => {
-	const bildschirm = render(LanguageSwitcher);
+	const bildschirm = await render(LanguageSwitcher);
 	const verweis = bildschirm.getByRole('link', { name: 'English' });
 	await expect.element(verweis).toHaveAttribute('hreflang', 'en');
 	await expect.element(verweis).toHaveAttribute('lang', 'en');
@@ -77,7 +77,7 @@ it('verweist auf die jeweils andere Sprache und kennzeichnet sie', async () => {
 });
 
 it('führt auf die englische Startseite', async () => {
-	const bildschirm = render(LanguageSwitcher);
+	const bildschirm = await render(LanguageSwitcher);
 	const verweis = bildschirm.getByRole('link', { name: 'English' });
 	await expect.element(verweis).toHaveAttribute('href', '/en/');
 });
@@ -87,13 +87,13 @@ it('nimmt Query-String und Hash mit auf die Reise', async () => {
 	// nicht verloren gehen — dieselbe Zusage gilt bereits für jeden anderen
 	// internen Link (`zielFuerStartseite`, `ReportKindChoice`).
 	pageState.url = new URL('https://localhost:4000/?art=schweinswal#foto');
-	const bildschirm = render(LanguageSwitcher);
+	const bildschirm = await render(LanguageSwitcher);
 	const verweis = bildschirm.getByRole('link', { name: 'English' });
 	await expect.element(verweis).toHaveAttribute('href', '/en/?art=schweinswal#foto');
 });
 
 it('schreibt beim Klick PARAGLIDE_LOCALE, nicht nur die URL', async () => {
-	const bildschirm = render(LanguageSwitcher);
+	const bildschirm = await render(LanguageSwitcher);
 	const link = document.querySelector('a[hreflang="en"]');
 	expect(link).not.toBeNull();
 	klickenOhneNavigation(link as Element);
@@ -104,32 +104,32 @@ it('schreibt beim Klick PARAGLIDE_LOCALE, nicht nur die URL', async () => {
 });
 
 describe('auf ausgeschlossenen Routen', () => {
-	it('rendert nichts statt eines Verweises, der in einen 404 führt', () => {
+	it('rendert nichts statt eines Verweises, der in einen 404 führt', async () => {
 		// `/en/admin` gibt es nicht: `reroute` (src/hooks.ts) lehnt ausgeschlossene
 		// Pfade mit `undefined` ab, SvelteKit löst sie wörtlich auf. Ein
 		// sichtbarer Verweis dorthin wäre schlimmer als gar keiner.
 		pageState.url = new URL('https://localhost:4000/admin');
-		render(LanguageSwitcher);
+		await render(LanguageSwitcher);
 		expect(document.querySelector('a[hreflang]')).toBeNull();
 	});
 });
 
-it('Strg-Klick öffnet einen neuen Tab und schreibt kein Cookie im aktuellen', () => {
-	render(LanguageSwitcher);
+it('Strg-Klick öffnet einen neuen Tab und schreibt kein Cookie im aktuellen', async () => {
+	await render(LanguageSwitcher);
 	const link = document.querySelector('a[hreflang="en"]');
 	klickenOhneNavigation(link as Element, { ctrlKey: true });
 	expect(cookieLocale()).toBeUndefined();
 });
 
-it('Shift-Klick öffnet ein neues Fenster und schreibt kein Cookie im aktuellen', () => {
-	render(LanguageSwitcher);
+it('Shift-Klick öffnet ein neues Fenster und schreibt kein Cookie im aktuellen', async () => {
+	await render(LanguageSwitcher);
 	const link = document.querySelector('a[hreflang="en"]');
 	klickenOhneNavigation(link as Element, { shiftKey: true });
 	expect(cookieLocale()).toBeUndefined();
 });
 
-it('Mittelklick öffnet einen neuen Tab und schreibt kein Cookie im aktuellen', () => {
-	render(LanguageSwitcher);
+it('Mittelklick öffnet einen neuen Tab und schreibt kein Cookie im aktuellen', async () => {
+	await render(LanguageSwitcher);
 	const link = document.querySelector('a[hreflang="en"]');
 	mittelKlickenOhneNavigation(link as Element);
 	expect(cookieLocale()).toBeUndefined();

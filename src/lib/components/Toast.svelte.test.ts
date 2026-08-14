@@ -4,13 +4,13 @@ import Toast from './Toast.svelte';
 
 describe('Toast — Aktion', () => {
 	it('zeigt keinen Aktions-Knopf, wenn keine Aktion übergeben wurde', async () => {
-		const screen = render(Toast, { message: 'Gespeichert' });
+		const screen = await render(Toast, { message: 'Gespeichert' });
 		expect(screen.container.querySelectorAll('button').length).toBe(1); // nur „schließen"
 	});
 
 	it('rendert die Aktion und ruft sie beim Klick', async () => {
 		const onClick = vi.fn();
-		const screen = render(Toast, {
+		const screen = await render(Toast, {
 			message: 'Status: Freigegeben',
 			action: { label: 'Rückgängig', onClick }
 		});
@@ -23,7 +23,7 @@ describe('Toast — Aktion', () => {
 	   ein — und der zweite Klick würde den Wechsel erneut zurücknehmen. */
 	it('schließt sich nach dem Klick auf die Aktion', async () => {
 		const onDismiss = vi.fn();
-		const screen = render(Toast, {
+		const screen = await render(Toast, {
 			message: 'Status: Freigegeben',
 			action: { label: 'Rückgängig', onClick: vi.fn() },
 			onDismiss

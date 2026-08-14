@@ -91,12 +91,12 @@ function getColorCheckbox(value: string): HTMLInputElement {
 }
 
 describe('LegendPanel', () => {
-	beforeEach(() => {
+	beforeEach(async () => {
 		vi.clearAllMocks();
 	});
 
 	it('öffnet und schließt das Panel über die Buttons (inert im geschlossenen Zustand)', async () => {
-		render(LegendPanel, { translations, counts });
+		await render(LegendPanel, { translations, counts });
 
 		// H5: Geschlossenes Panel ist inert — kein Element im Tab-Zyklus
 		const panel = getLegendPanel();
@@ -114,7 +114,7 @@ describe('LegendPanel', () => {
 	});
 
 	it('Toggle-Button trägt aria-expanded und aria-controls (H5)', async () => {
-		render(LegendPanel, { translations, counts });
+		await render(LegendPanel, { translations, counts });
 
 		const toggle = document.querySelector('button[aria-controls="legend-panel"]');
 		if (!(toggle instanceof HTMLButtonElement)) {
@@ -129,7 +129,7 @@ describe('LegendPanel', () => {
 	});
 
 	it('rendert Arten-, Farbgruppen- und Zählerdaten', async () => {
-		render(LegendPanel, { translations, counts });
+		await render(LegendPanel, { translations, counts });
 
 		await page.getByRole('button', { name: /^Legende$/i }).click();
 
@@ -147,7 +147,7 @@ describe('LegendPanel', () => {
 	});
 
 	it('zeigt Gruppen-Badges aus den styleUtils-Konstanten (Kegelrobbe → Robbe)', async () => {
-		render(LegendPanel, { translations, counts });
+		await render(LegendPanel, { translations, counts });
 
 		await page.getByRole('button', { name: /^Legende$/i }).click();
 
@@ -156,7 +156,7 @@ describe('LegendPanel', () => {
 	});
 
 	it('weist Unbekannte Walart nicht als Großwal aus (M8)', async () => {
-		render(LegendPanel, { translations, counts });
+		await render(LegendPanel, { translations, counts });
 
 		await page.getByRole('button', { name: /^Legende$/i }).click();
 
@@ -166,7 +166,7 @@ describe('LegendPanel', () => {
 	});
 
 	it('graut Arten ohne Sichtungen (0/0) aus, Checkbox bleibt bedienbar', async () => {
-		render(LegendPanel, { translations, counts });
+		await render(LegendPanel, { translations, counts });
 
 		await page.getByRole('button', { name: /^Legende$/i }).click();
 
@@ -180,7 +180,7 @@ describe('LegendPanel', () => {
 	});
 
 	it('unbekannte Tierart-IDs bekommen den neutralen grauen Ring, nicht Totfund-Schwarz', async () => {
-		render(LegendPanel, {
+		await render(LegendPanel, {
 			translations: {
 				...translations,
 				speciesMap: { ...translations.speciesMap, '99': 'Zukünftige Art' }
@@ -198,7 +198,7 @@ describe('LegendPanel', () => {
 	});
 
 	it('erklärt die Cluster-Farbskala', async () => {
-		render(LegendPanel, { translations, counts });
+		await render(LegendPanel, { translations, counts });
 
 		await page.getByRole('button', { name: /^Legende$/i }).click();
 
@@ -207,7 +207,7 @@ describe('LegendPanel', () => {
 	});
 
 	it('zeigt den Bearbeitungsstand-Abschnitt nicht, wenn showStatusLegend fehlt (Default: öffentliche Karte)', async () => {
-		render(LegendPanel, { translations, counts });
+		await render(LegendPanel, { translations, counts });
 
 		await page.getByRole('button', { name: /^Legende$/i }).click();
 
@@ -222,7 +222,7 @@ describe('LegendPanel', () => {
 	});
 
 	it('zeigt den Bearbeitungsstand-Abschnitt mit allen drei Zuständen, wenn showStatusLegend gesetzt ist (Admin)', async () => {
-		render(LegendPanel, { translations, counts, showStatusLegend: true });
+		await render(LegendPanel, { translations, counts, showStatusLegend: true });
 
 		await page.getByRole('button', { name: /^Legende$/i }).click();
 
@@ -242,7 +242,7 @@ describe('LegendPanel', () => {
 	 * der Marker, sonst beschreibt die Legende etwas anderes als die Karte.
 	 */
 	it('rendert je Zustand ein Kreis-Beispiel mit dem echten Strichmuster', async () => {
-		render(LegendPanel, { translations, counts, showStatusLegend: true });
+		await render(LegendPanel, { translations, counts, showStatusLegend: true });
 
 		await page.getByRole('button', { name: /^Legende$/i }).click();
 
@@ -263,7 +263,7 @@ describe('LegendPanel', () => {
 	});
 
 	it('bietet einen Seezeichen-Toggle (OpenSeaMap), Default an (M3)', async () => {
-		render(LegendPanel, { translations, counts });
+		await render(LegendPanel, { translations, counts });
 
 		await page.getByRole('button', { name: /^Legende$/i }).click();
 
@@ -277,7 +277,7 @@ describe('LegendPanel', () => {
 
 	it('meldet das Ausblenden der Seezeichen-Ebene über onSeamarkToggle (M3)', async () => {
 		const onSeamarkToggle = vi.fn();
-		render(LegendPanel, { translations, counts, onSeamarkToggle });
+		await render(LegendPanel, { translations, counts, onSeamarkToggle });
 
 		await page.getByRole('button', { name: /^Legende$/i }).click();
 
@@ -289,7 +289,7 @@ describe('LegendPanel', () => {
 	});
 
 	it('meldet Species- und Farb-Toggles an den CountManager', async () => {
-		render(LegendPanel, { translations, counts });
+		await render(LegendPanel, { translations, counts });
 
 		await page.getByRole('button', { name: /^Legende$/i }).click();
 
@@ -316,7 +316,7 @@ describe('LegendPanel als Bottom-Sheet (H6)', () => {
 
 	it('offenes Panel trägt data-sheet-state="peek", der Vergrößern-Button schaltet auf expanded', async () => {
 		await page.viewport(375, 667);
-		render(LegendPanel, { translations, counts });
+		await render(LegendPanel, { translations, counts });
 
 		await page.getByRole('button', { name: /^Legende$/i }).click();
 

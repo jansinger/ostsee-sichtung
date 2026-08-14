@@ -45,14 +45,14 @@ function bild(): HTMLImageElement {
 }
 
 describe('MediaThumbnail — Ladezustand', () => {
-	it('zeigt vor dem Laden eine Ladeanzeige', () => {
-		render(MediaThumbnail, { file: bildDatei() });
+	it('zeigt vor dem Laden eine Ladeanzeige', async () => {
+		await render(MediaThumbnail, { file: bildDatei() });
 
 		expect(skeleton()).not.toBeNull();
 	});
 
 	it('nimmt die Ladeanzeige weg, sobald das Bild geladen ist', async () => {
-		render(MediaThumbnail, { file: bildDatei() });
+		await render(MediaThumbnail, { file: bildDatei() });
 
 		bild().dispatchEvent(new Event('load'));
 		// `tick()` und nicht `expect.poll`: Ein Poll liefe hier auch dann grün,
@@ -66,7 +66,7 @@ describe('MediaThumbnail — Ladezustand', () => {
 	it('behält die Ladeanzeige, solange der Fallback noch läuft', async () => {
 		// `onerror` schaltet einmalig auf `file.url` um — das ist ein weiterer
 		// Ladeversuch, kein Ende des Ladens.
-		render(MediaThumbnail, { file: bildDatei() });
+		await render(MediaThumbnail, { file: bildDatei() });
 
 		bild().dispatchEvent(new Event('error'));
 		await tick();
@@ -78,7 +78,7 @@ describe('MediaThumbnail — Ladezustand', () => {
 	it('beendet die Ladeanzeige, wenn auch der Fallback fehlschlägt', async () => {
 		// Sonst bliebe ein Dauer-Skeleton über einem kaputten Bild stehen: `load`
 		// kommt nie, und der zweite `onerror` findet `fallback=true` bereits vor.
-		render(MediaThumbnail, { file: bildDatei() });
+		await render(MediaThumbnail, { file: bildDatei() });
 
 		bild().dispatchEvent(new Event('error'));
 		await tick();
@@ -92,7 +92,7 @@ describe('MediaThumbnail — Ladezustand', () => {
 		// `url` ist im Schema optional. Ohne die Prüfung baute der Handler daraus
 		// `undefined?fallback=true` — eine Anfrage, die niemand beantworten kann,
 		// nur damit ihr Fehlschlag die Anzeige abräumt.
-		render(MediaThumbnail, { file: bildDatei({ url: undefined }) });
+		await render(MediaThumbnail, { file: bildDatei({ url: undefined }) });
 		const vorher = bild().src;
 
 		bild().dispatchEvent(new Event('error'));
@@ -102,10 +102,10 @@ describe('MediaThumbnail — Ladezustand', () => {
 		expect(skeleton()).toBeNull();
 	});
 
-	it('setzt keine Ladeanzeige an Nicht-Bild-Kacheln', () => {
+	it('setzt keine Ladeanzeige an Nicht-Bild-Kacheln', async () => {
 		// Der Video-Zweig lädt wegen `preload="none"` bewusst nichts, der
 		// Datei-Zweig zeigt nur ein Icon — beide haben nichts zu überbrücken.
-		render(MediaThumbnail, {
+		await render(MediaThumbnail, {
 			file: bildDatei({ mimeType: 'video/mp4', originalName: 'clip.mp4' })
 		});
 

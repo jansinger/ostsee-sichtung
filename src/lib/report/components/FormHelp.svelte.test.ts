@@ -32,7 +32,7 @@ function stubStatisticsFetch(): void {
 	}) as typeof fetch;
 }
 
-afterEach(() => {
+afterEach(async () => {
 	globalThis.fetch = originalFetch;
 });
 
@@ -42,7 +42,7 @@ describe('FormHelp — Zahlenformat folgt der Locale', () => {
 		overwriteGetLocale(() => 'de');
 		stubStatisticsFetch();
 
-		render(FormHelp);
+		await render(FormHelp);
 
 		await expect.poll(() => document.body.textContent, { timeout: 5000 }).toContain('1.234');
 	});
@@ -52,7 +52,7 @@ describe('FormHelp — Zahlenformat folgt der Locale', () => {
 		overwriteGetLocale(() => 'en');
 		stubStatisticsFetch();
 
-		render(FormHelp);
+		await render(FormHelp);
 
 		await expect.poll(() => document.body.textContent, { timeout: 5000 }).toContain('1,234');
 

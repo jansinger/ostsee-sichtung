@@ -56,18 +56,18 @@ function daten(ids: number[]): PageData {
 }
 
 describe('Eingangsseite — Undo-Fenster', () => {
-	beforeEach(() => {
+	beforeEach(async () => {
 		vi.useFakeTimers();
 		invalidateAll.mockClear();
 		submitVerdict.mockClear();
 	});
 
-	afterEach(() => {
+	afterEach(async () => {
 		vi.useRealTimers();
 	});
 
 	it('zeigt nach dem Freigeben eine Undo-Zeile und blendet sie nach 8 s aus', async () => {
-		const screen = render(AdminInbox, { data: daten([1]) });
+		const screen = await render(AdminInbox, { data: daten([1]) });
 
 		await screen.getByRole('button', { name: 'Freigeben' }).click();
 		await vi.advanceTimersByTimeAsync(0);
@@ -80,7 +80,7 @@ describe('Eingangsseite — Undo-Fenster', () => {
 	});
 
 	it('ein ablaufendes Fenster kappt das noch laufende Fenster einer anderen Sichtung nicht', async () => {
-		const screen = render(AdminInbox, { data: daten([1, 2]) });
+		const screen = await render(AdminInbox, { data: daten([1, 2]) });
 
 		// A freigeben …
 		await screen.getByRole('button', { name: 'Freigeben' }).first().click();
@@ -101,7 +101,7 @@ describe('Eingangsseite — Undo-Fenster', () => {
 	});
 
 	it('Rückgängig sendet reset und stellt die Karte zurück', async () => {
-		const screen = render(AdminInbox, { data: daten([7]) });
+		const screen = await render(AdminInbox, { data: daten([7]) });
 
 		await screen.getByRole('button', { name: 'Freigeben' }).click();
 		await vi.advanceTimersByTimeAsync(0);

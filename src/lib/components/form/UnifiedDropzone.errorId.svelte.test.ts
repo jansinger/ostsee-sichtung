@@ -29,8 +29,8 @@ function dispatchFileChange(input: HTMLInputElement, files: File[]) {
 
 describe('UnifiedDropzone — Fehlerbereichs-ID bei mehreren Instanzen', () => {
 	it('verknüpft aria-describedby mit einer eindeutigen ID, nicht mit einer festen Zeichenkette', async () => {
-		render(UnifiedDropzone, { config: CONFIG, files: [], onFilesAdded: vi.fn() });
-		render(UnifiedDropzone, { config: CONFIG, files: [], onFilesAdded: vi.fn() });
+		await render(UnifiedDropzone, { config: CONFIG, files: [], onFilesAdded: vi.fn() });
+		await render(UnifiedDropzone, { config: CONFIG, files: [], onFilesAdded: vi.fn() });
 
 		const inputs = page.getByTestId('dropzone-input').all();
 		expect(inputs.length).toBe(2);

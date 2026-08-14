@@ -10,13 +10,13 @@ type RowProps = Parameters<typeof DataTableRow>[1];
  * umgebende Tabelle direkt in den Container — für diese Prüfungen reicht das,
  * weil sie nur den Zelleninhalt betreffen und nicht das Tabellenlayout.
  */
-function renderRow(props: RowProps) {
-	render(DataTableRow, props);
+async function renderRow(props: RowProps) {
+	await render(DataTableRow, props);
 }
 
 describe('DataTableRow', () => {
 	it('rendert Beschriftung und Wert', async () => {
-		renderRow({ label: 'Fahrwasser', value: 'Kadetrinne' });
+		await renderRow({ label: 'Fahrwasser', value: 'Kadetrinne' });
 
 		await expect.element(page.getByText('Fahrwasser')).toBeVisible();
 		await expect.element(page.getByText('Kadetrinne')).toBeVisible();
@@ -29,7 +29,7 @@ describe('DataTableRow', () => {
 	 * Übersicht und Detailansicht auseinanderliefen.
 	 */
 	it('rendert einen Status-Badge samt Erklärung, wenn eine Badge-Klasse übergeben wird', async () => {
-		renderRow({
+		await renderRow({
 			label: 'Ostsee-Status',
 			value: 'außerhalb',
 			badgeClass: 'badge-ghost',
@@ -45,7 +45,7 @@ describe('DataTableRow', () => {
 	});
 
 	it('rendert ohne Badge-Klasse weiterhin reinen Text', async () => {
-		renderRow({ label: 'Seezeichen', value: 'Fehmarnbelt' });
+		await renderRow({ label: 'Seezeichen', value: 'Fehmarnbelt' });
 
 		await expect.element(page.getByText('Fehmarnbelt')).toBeVisible();
 		expect(document.querySelector('.badge')).toBeNull();

@@ -30,7 +30,7 @@ describe('BaseToggle', () => {
 	 */
 	describe('Fehler-Optik', () => {
 		it('nutzt toggle-error statt toggle-primary bei hasError', async () => {
-			const screen = render(BaseToggle, { label: 'Totfund', hasError: true });
+			const screen = await render(BaseToggle, { label: 'Totfund', hasError: true });
 
 			const toggle = toggleOf(screen.container);
 			expect(toggle.classList.contains('toggle-error')).toBe(true);
@@ -38,7 +38,7 @@ describe('BaseToggle', () => {
 		});
 
 		it('nutzt toggle-success statt toggle-primary bei isValid', async () => {
-			const screen = render(BaseToggle, { label: 'Totfund', isValid: true });
+			const screen = await render(BaseToggle, { label: 'Totfund', isValid: true });
 
 			const toggle = toggleOf(screen.container);
 			expect(toggle.classList.contains('toggle-success')).toBe(true);
@@ -46,7 +46,7 @@ describe('BaseToggle', () => {
 		});
 
 		it('bleibt ohne Zustand auf toggle-primary', async () => {
-			const screen = render(BaseToggle, { label: 'Totfund' });
+			const screen = await render(BaseToggle, { label: 'Totfund' });
 
 			const toggle = toggleOf(screen.container);
 			expect(toggle.classList.contains('toggle-primary')).toBe(true);
@@ -55,7 +55,7 @@ describe('BaseToggle', () => {
 		});
 
 		it('zeigt den Fehler-Zustand auch dann, wenn isValid gleichzeitig gesetzt ist', async () => {
-			const screen = render(BaseToggle, {
+			const screen = await render(BaseToggle, {
 				label: 'Totfund',
 				hasError: true,
 				isValid: true
@@ -73,7 +73,7 @@ describe('BaseToggle', () => {
 		 * trägt, leistet der `app.css`-Override.
 		 */
 		it('trägt den Fehler-Zustand auch im ausgeschalteten Zustand', async () => {
-			const screen = render(BaseToggle, {
+			const screen = await render(BaseToggle, {
 				label: 'Totfund',
 				checked: false,
 				hasError: true
@@ -88,7 +88,7 @@ describe('BaseToggle', () => {
 	/** Die Größen-Klasse darf durch den Zustands-Zweig nicht verloren gehen. */
 	describe('Größen', () => {
 		it('behält die Größen-Klasse neben dem Fehler-Zustand', async () => {
-			const screen = render(BaseToggle, {
+			const screen = await render(BaseToggle, {
 				label: 'Totfund',
 				size: 'sm' as const,
 				hasError: true
@@ -114,7 +114,7 @@ describe('BaseToggle', () => {
 	 */
 	describe('ARIA bleibt am Input', () => {
 		it('setzt aria-invalid und behält daneben die Fehler-Optik', async () => {
-			const screen = render(BaseToggle, {
+			const screen = await render(BaseToggle, {
 				label: 'Totfund',
 				hasError: true,
 				'aria-invalid': true
@@ -126,7 +126,7 @@ describe('BaseToggle', () => {
 		});
 
 		it('setzt aria-required', async () => {
-			const screen = render(BaseToggle, {
+			const screen = await render(BaseToggle, {
 				label: 'Totfund',
 				required: true,
 				'aria-required': true
@@ -138,7 +138,7 @@ describe('BaseToggle', () => {
 
 	describe('Beschriftung', () => {
 		it('zeigt das Label', async () => {
-			render(BaseToggle, { label: 'Totfund' });
+			await render(BaseToggle, { label: 'Totfund' });
 
 			await expect.element(page.getByText('Totfund')).toBeVisible();
 		});

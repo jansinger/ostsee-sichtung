@@ -18,7 +18,7 @@ const body = () => createRawSnippet(() => ({ render: () => '<p>Inhalt</p>' }));
 
 describe('SectionCard', () => {
 	it('rendert Titel und Inhalt', async () => {
-		const { container } = render(SectionCard, {
+		const { container } = await render(SectionCard, {
 			title: 'Positionsangabe',
 			icon: 'lucide:map-pin',
 			children: body()
@@ -28,7 +28,7 @@ describe('SectionCard', () => {
 	});
 
 	it('variant="card" (Default) ist eine DaisyUI-Karte', async () => {
-		const { container } = render(SectionCard, {
+		const { container } = await render(SectionCard, {
 			title: 'Sichtungsdetails',
 			icon: 'lucide:eye',
 			children: body()
@@ -42,7 +42,7 @@ describe('SectionCard', () => {
 	});
 
 	it('variant="inset" ist ein eingebetteter Block ohne Karte und ohne Schatten', async () => {
-		const { container } = render(SectionCard, {
+		const { container } = await render(SectionCard, {
 			title: 'Datum und Uhrzeit',
 			icon: 'lucide:calendar',
 			variant: 'inset',
@@ -57,7 +57,7 @@ describe('SectionCard', () => {
 	});
 
 	it('setzt das Icon dekorativ (aria-hidden), der Titel trägt die Bedeutung', async () => {
-		const { container } = render(SectionCard, {
+		const { container } = await render(SectionCard, {
 			title: 'Positionsangabe',
 			icon: 'lucide:map-pin',
 			variant: 'inset',

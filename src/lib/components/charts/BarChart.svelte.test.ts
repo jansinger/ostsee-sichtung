@@ -20,7 +20,7 @@ const DATEN = [
 
 describe('BarChart', () => {
 	it('benennt das Diagramm für Screenreader', async () => {
-		render(BarChart, {
+		await render(BarChart, {
 			data: DATEN,
 			caption: 'Jahrestrends: freigegebene Sichtungen je Jahr',
 			categoryLabel: 'Jahr',
@@ -33,7 +33,7 @@ describe('BarChart', () => {
 	});
 
 	it('gibt jeden Wert zusätzlich als Tabelle aus', async () => {
-		render(BarChart, {
+		await render(BarChart, {
 			data: DATEN,
 			caption: 'Jahrestrends',
 			categoryLabel: 'Jahr',
@@ -49,7 +49,7 @@ describe('BarChart', () => {
 	});
 
 	it('benennt die Hervorhebung im Text, nicht nur in der Farbe', async () => {
-		render(BarChart, {
+		await render(BarChart, {
 			data: DATEN,
 			caption: 'Jahrestrends',
 			categoryLabel: 'Jahr',
@@ -64,7 +64,7 @@ describe('BarChart', () => {
 	});
 
 	it('rendert eine leere Datenreihe ohne Balken statt mit kaputten Maßen', async () => {
-		const { container } = render(BarChart, {
+		const { container } = await render(BarChart, {
 			data: [],
 			caption: 'Ohne Daten',
 			categoryLabel: 'Jahr',
@@ -89,7 +89,7 @@ describe('BarChart — Wertbeschriftung am höchsten Balken', () => {
 	];
 
 	it('setzt den Wert über den Balken statt hinein', async () => {
-		const { container } = render(BarChart, {
+		const { container } = await render(BarChart, {
 			data: VOLLE_HOEHE,
 			caption: 'Saisonalität',
 			categoryLabel: 'Monat',
@@ -106,7 +106,7 @@ describe('BarChart — Wertbeschriftung am höchsten Balken', () => {
 	});
 
 	it('hält die Beschriftung innerhalb der Zeichenfläche', async () => {
-		const { container } = render(BarChart, {
+		const { container } = await render(BarChart, {
 			data: VOLLE_HOEHE,
 			caption: 'Saisonalität',
 			categoryLabel: 'Monat',
@@ -131,7 +131,7 @@ describe('BarChart — Wertbeschriftung am höchsten Balken', () => {
 	it('zeigt das Achsenmaximum nur, wenn die Balken selbst keine Werte tragen', async () => {
 		// Beides zusammen bedeutet dieselbe Zahl zweimal an fast derselben Stelle —
 		// und genau dort kollidierte die Beschriftung des höchsten Balkens.
-		const { container } = render(BarChart, {
+		const { container } = await render(BarChart, {
 			data: VOLLE_HOEHE,
 			caption: 'Saisonalität',
 			categoryLabel: 'Monat',

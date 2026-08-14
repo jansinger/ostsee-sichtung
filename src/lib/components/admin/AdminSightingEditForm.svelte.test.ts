@@ -86,7 +86,7 @@ function gueltigeSichtung(overrides: Record<string, unknown> = {}): FrontendSigh
 
 describe('AdminSightingEditForm — Technik-Karte', () => {
 	it('zeigt den abgeleiteten Status statt „Verifiziert" und keine Bedienelemente', async () => {
-		render(AdminSightingEditForm, {
+		await render(AdminSightingEditForm, {
 			sighting: baseSighting(),
 			onSave: vi.fn(),
 			onCancel: vi.fn()
@@ -102,7 +102,7 @@ describe('AdminSightingEditForm — Technik-Karte', () => {
 	});
 
 	it('zeigt den Freigabe-Zeitpunkt bei freigegebenen Sichtungen', async () => {
-		render(AdminSightingEditForm, {
+		await render(AdminSightingEditForm, {
 			sighting: baseSighting({ approvedAt: new Date('2026-03-12T09:00:00Z') }),
 			onSave: vi.fn(),
 			onCancel: vi.fn()
@@ -115,7 +115,7 @@ describe('AdminSightingEditForm — Technik-Karte', () => {
 	});
 
 	it('nennt bei freigegebenen Sichtungen auch die freigebende Person', async () => {
-		render(AdminSightingEditForm, {
+		await render(AdminSightingEditForm, {
 			sighting: baseSighting({
 				approvedAt: new Date('2026-03-12T09:00:00Z'),
 				approvedBy: 'bernd@example.org'
@@ -128,7 +128,7 @@ describe('AdminSightingEditForm — Technik-Karte', () => {
 	});
 
 	it('zeigt Zeitpunkt und Bearbeiter bei abgelehnten Sichtungen', async () => {
-		render(AdminSightingEditForm, {
+		await render(AdminSightingEditForm, {
 			sighting: baseSighting({
 				rejectedAt: new Date('2026-03-12T09:00:00Z'),
 				rejectedBy: 'anna@example.org'
@@ -160,7 +160,7 @@ async function aendereAnzahl(wert: string): Promise<void> {
 
 describe('AdminSightingEditForm — Speichern-Knopf', () => {
 	it('bleibt bei Validierungsfehlern bedienbar und verweist auf die Fehlerliste', async () => {
-		render(AdminSightingEditForm, {
+		await render(AdminSightingEditForm, {
 			sighting: absendbareSichtung(),
 			onSave: vi.fn(),
 			onCancel: vi.fn()
@@ -183,7 +183,7 @@ describe('AdminSightingEditForm — Speichern-Knopf', () => {
 	});
 
 	it('fokussiert die Fehlerliste, statt still auszusteigen', async () => {
-		render(AdminSightingEditForm, {
+		await render(AdminSightingEditForm, {
 			sighting: absendbareSichtung(),
 			onSave: vi.fn(),
 			onCancel: vi.fn()
@@ -199,7 +199,7 @@ describe('AdminSightingEditForm — Speichern-Knopf', () => {
 	});
 
 	it('reißt den Fokus beim Korrigieren eines Feldes nicht zurück zur Fehlerliste', async () => {
-		render(AdminSightingEditForm, {
+		await render(AdminSightingEditForm, {
 			sighting: absendbareSichtung(),
 			onSave: vi.fn(),
 			onCancel: vi.fn()
@@ -223,8 +223,8 @@ describe('AdminSightingEditForm — Speichern-Knopf', () => {
 		);
 	});
 
-	it('verweist ohne Fehlerliste auf nichts', () => {
-		render(AdminSightingEditForm, {
+	it('verweist ohne Fehlerliste auf nichts', async () => {
+		await render(AdminSightingEditForm, {
 			sighting: baseSighting(),
 			onSave: vi.fn(),
 			onCancel: vi.fn()
@@ -241,18 +241,18 @@ describe('AdminSightingEditForm — Speichern-Knopf', () => {
 describe('AdminSightingEditForm — Schutz vor ungespeicherten Änderungen', () => {
 	let bestaetigung: ReturnType<typeof vi.spyOn>;
 
-	beforeEach(() => {
+	beforeEach(async () => {
 		navigation.callbacks.length = 0;
 		bestaetigung = vi.spyOn(window, 'confirm').mockReturnValue(true);
 	});
 
-	afterEach(() => {
+	afterEach(async () => {
 		bestaetigung.mockRestore();
 		vi.restoreAllMocks();
 	});
 
-	it('lässt eine Navigation ohne Änderungen unbehelligt durch', () => {
-		render(AdminSightingEditForm, {
+	it('lässt eine Navigation ohne Änderungen unbehelligt durch', async () => {
+		await render(AdminSightingEditForm, {
 			sighting: baseSighting(),
 			onSave: vi.fn(),
 			onCancel: vi.fn()
@@ -263,7 +263,7 @@ describe('AdminSightingEditForm — Schutz vor ungespeicherten Änderungen', () 
 	});
 
 	it('fragt vor dem Wegnavigieren mit Änderungen nach', async () => {
-		render(AdminSightingEditForm, {
+		await render(AdminSightingEditForm, {
 			sighting: baseSighting(),
 			onSave: vi.fn(),
 			onCancel: vi.fn()
@@ -277,7 +277,7 @@ describe('AdminSightingEditForm — Schutz vor ungespeicherten Änderungen', () 
 
 	it('bricht die Navigation ab, wenn die Rückfrage verneint wird', async () => {
 		bestaetigung.mockReturnValue(false);
-		render(AdminSightingEditForm, {
+		await render(AdminSightingEditForm, {
 			sighting: baseSighting(),
 			onSave: vi.fn(),
 			onCancel: vi.fn()
@@ -289,7 +289,7 @@ describe('AdminSightingEditForm — Schutz vor ungespeicherten Änderungen', () 
 	});
 
 	it('hält einen harten Reload auf, ohne einen eigenen Dialog zu zeigen', async () => {
-		render(AdminSightingEditForm, {
+		await render(AdminSightingEditForm, {
 			sighting: baseSighting(),
 			onSave: vi.fn(),
 			onCancel: vi.fn()
@@ -315,7 +315,7 @@ describe('AdminSightingEditForm — Schutz vor ungespeicherten Änderungen', () 
 			return new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } });
 		});
 		const onSave = vi.fn();
-		render(AdminSightingEditForm, {
+		await render(AdminSightingEditForm, {
 			sighting: gueltigeSichtung(),
 			onSave,
 			onCancel: vi.fn()

@@ -57,7 +57,7 @@ const daten = () =>
    nimmt eine Zuweisung nicht zurück. */
 const originalFetch = globalThis.fetch;
 
-afterEach(() => {
+afterEach(async () => {
 	globalThis.fetch = originalFetch;
 	vi.useRealTimers();
 	vi.restoreAllMocks();
@@ -84,7 +84,7 @@ describe('Einstellungen — „Alle Änderungen speichern"', () => {
 	it('lässt die Teilfehlschlag-Meldung nach fünf Sekunden stehen', async () => {
 		vi.useFakeTimers({ shouldAdvanceTime: true });
 		respondWith(true, false);
-		render(SettingsPage, { data: daten() });
+		await render(SettingsPage, { data: daten() });
 
 		await beideFelderAendern();
 		await page.getByRole('button', { name: /Alle Änderungen speichern/ }).click();
@@ -100,7 +100,7 @@ describe('Einstellungen — „Alle Änderungen speichern"', () => {
 
 	it('zeigt nach vollem Erfolg die Zusammenfassung und nicht die Einzelmeldung', async () => {
 		respondWith(true, true);
-		render(SettingsPage, { data: daten() });
+		await render(SettingsPage, { data: daten() });
 
 		await beideFelderAendern();
 		await page.getByRole('button', { name: /Alle Änderungen speichern/ }).click();

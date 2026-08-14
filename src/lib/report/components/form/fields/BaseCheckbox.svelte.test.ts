@@ -27,7 +27,7 @@ describe('BaseCheckbox', () => {
 	 */
 	describe('Fehler-Optik', () => {
 		it('nutzt checkbox-error statt checkbox-primary bei hasError', async () => {
-			const screen = render(BaseCheckbox, { label: 'Totfund', hasError: true });
+			const screen = await render(BaseCheckbox, { label: 'Totfund', hasError: true });
 
 			const box = checkboxOf(screen.container);
 			expect(box.classList.contains('checkbox-error')).toBe(true);
@@ -35,7 +35,7 @@ describe('BaseCheckbox', () => {
 		});
 
 		it('nutzt checkbox-success statt checkbox-primary bei isValid', async () => {
-			const screen = render(BaseCheckbox, { label: 'Totfund', isValid: true });
+			const screen = await render(BaseCheckbox, { label: 'Totfund', isValid: true });
 
 			const box = checkboxOf(screen.container);
 			expect(box.classList.contains('checkbox-success')).toBe(true);
@@ -43,7 +43,7 @@ describe('BaseCheckbox', () => {
 		});
 
 		it('bleibt ohne Zustand auf checkbox-primary', async () => {
-			const screen = render(BaseCheckbox, { label: 'Totfund' });
+			const screen = await render(BaseCheckbox, { label: 'Totfund' });
 
 			const box = checkboxOf(screen.container);
 			expect(box.classList.contains('checkbox-primary')).toBe(true);
@@ -52,7 +52,7 @@ describe('BaseCheckbox', () => {
 		});
 
 		it('zeigt den Fehler-Zustand auch dann, wenn isValid gleichzeitig gesetzt ist', async () => {
-			const screen = render(BaseCheckbox, {
+			const screen = await render(BaseCheckbox, {
 				label: 'Totfund',
 				hasError: true,
 				isValid: true
@@ -71,7 +71,7 @@ describe('BaseCheckbox', () => {
 		 * nur unter `:checked` greifen (siehe `BaseToggle.svelte.test.ts`).
 		 */
 		it('trägt den Fehler-Zustand auch ohne Häkchen', async () => {
-			const screen = render(BaseCheckbox, {
+			const screen = await render(BaseCheckbox, {
 				label: 'Totfund',
 				checked: false,
 				hasError: true
@@ -86,7 +86,7 @@ describe('BaseCheckbox', () => {
 	/** Die Größen-Klasse darf durch den Zustands-Zweig nicht verloren gehen. */
 	describe('Größen', () => {
 		it('behält die Größen-Klasse neben dem Fehler-Zustand', async () => {
-			const screen = render(BaseCheckbox, {
+			const screen = await render(BaseCheckbox, {
 				label: 'Totfund',
 				size: 'sm' as const,
 				hasError: true
@@ -106,7 +106,7 @@ describe('BaseCheckbox', () => {
 	 */
 	describe('ARIA bleibt am Input', () => {
 		it('setzt aria-invalid und behält daneben die Fehler-Optik', async () => {
-			const screen = render(BaseCheckbox, {
+			const screen = await render(BaseCheckbox, {
 				label: 'Totfund',
 				hasError: true,
 				'aria-invalid': true
@@ -118,7 +118,7 @@ describe('BaseCheckbox', () => {
 		});
 
 		it('setzt aria-required', async () => {
-			const screen = render(BaseCheckbox, {
+			const screen = await render(BaseCheckbox, {
 				label: 'Totfund',
 				required: true,
 				'aria-required': true
@@ -130,7 +130,7 @@ describe('BaseCheckbox', () => {
 
 	describe('Beschriftung', () => {
 		it('zeigt das Label', async () => {
-			render(BaseCheckbox, { label: 'Totfund bestätigt' });
+			await render(BaseCheckbox, { label: 'Totfund bestätigt' });
 
 			await expect.element(page.getByText('Totfund bestätigt')).toBeVisible();
 		});

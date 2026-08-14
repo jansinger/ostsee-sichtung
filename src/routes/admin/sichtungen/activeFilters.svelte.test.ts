@@ -47,7 +47,7 @@ function daten(rows: SightingSelect[]): PageData {
 
 describe('Sichtungstabelle — aktive Filter kommen aus der URL', () => {
 	it('zeigt keinen Filter-Chip, solange ein Datum nur getippt ist', async () => {
-		const screen = render(SichtungenSeite, { data: daten([]) });
+		const screen = await render(SichtungenSeite, { data: daten([]) });
 
 		// Filter-Panel ist standardmäßig zu — Mobile- UND Desktop-Button stehen im
 		// Test-DOM (nur per CSS getrennt), `.first()` genügt für beide.

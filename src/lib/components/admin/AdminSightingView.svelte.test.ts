@@ -45,7 +45,7 @@ function baseSighting(overrides: Record<string, unknown> = {}): FrontendSighting
 
 describe('AdminSightingView — Foto-Ankündigung', () => {
 	it('zeigt einen Hinweis statt der reinen Ja/Nein-Anzeige, wenn ein Foto angekündigt, aber keine Datei angehängt ist', async () => {
-		render(AdminSightingView, {
+		await render(AdminSightingView, {
 			sighting: baseSighting({ mediaUpload: 1, uploadedFiles: [] })
 		});
 
@@ -56,7 +56,7 @@ describe('AdminSightingView — Foto-Ankündigung', () => {
 	});
 
 	it('zeigt weiterhin die einfache Ja/Nein-Anzeige, wenn kein Foto angekündigt wurde', async () => {
-		render(AdminSightingView, {
+		await render(AdminSightingView, {
 			sighting: baseSighting({ mediaUpload: 0, uploadedFiles: [] })
 		});
 
@@ -67,7 +67,7 @@ describe('AdminSightingView — Foto-Ankündigung', () => {
 	});
 
 	it('zeigt keinen Ankündigungs-Hinweis mehr, sobald eine Datei angehängt wurde (Medien-Galerie übernimmt)', async () => {
-		render(AdminSightingView, {
+		await render(AdminSightingView, {
 			sighting: baseSighting({
 				mediaUpload: 1,
 				uploadedFiles: [
@@ -91,7 +91,7 @@ describe('AdminSightingView — Foto-Ankündigung', () => {
 	// ist. Eine Sichtung von vor dem Client-Start darf den Hinweis deshalb
 	// trotz gesetztem Flag und fehlender Datei nicht zeigen.
 	it('zeigt keinen Ankündigungs-Hinweis für Altbestand von vor dem Client-Start', async () => {
-		render(AdminSightingView, {
+		await render(AdminSightingView, {
 			sighting: baseSighting({
 				mediaUpload: 1,
 				uploadedFiles: [],
@@ -114,7 +114,7 @@ describe('AdminSightingView — Foto-Ankündigung', () => {
  */
 describe('AdminSightingView — Totfund-Auszeichnung', () => {
 	it('zeichnet einen Totfund über allen Angaben aus und zeigt die Totfund-Karte', async () => {
-		render(AdminSightingView, {
+		await render(AdminSightingView, {
 			sighting: baseSighting({ isDead: 1, deadCondition: 1, deadSize: 142 })
 		});
 
@@ -126,7 +126,7 @@ describe('AdminSightingView — Totfund-Auszeichnung', () => {
 	// Die Überschrift der Karte sagt es bereits — die Zeile darunter wiederholte
 	// sie nur und kostete eine Zeile in einer ohnehin dichten Ansicht.
 	it('wiederholt „Totfund" nicht als eigene Ja-Zeile in der Karte', async () => {
-		render(AdminSightingView, {
+		await render(AdminSightingView, {
 			sighting: baseSighting({ isDead: 1, deadCondition: 1 })
 		});
 
@@ -135,7 +135,7 @@ describe('AdminSightingView — Totfund-Auszeichnung', () => {
 	});
 
 	it('zeigt bei einer Lebendsichtung weder Kennzeichen noch Totfund-Karte', async () => {
-		render(AdminSightingView, {
+		await render(AdminSightingView, {
 			sighting: baseSighting({ isDead: 0 })
 		});
 
@@ -157,7 +157,7 @@ describe('AdminSightingView — Eingangskanal der Foto-Ankündigung', () => {
 	])(
 		'zeigt bei einer über %s eingegangenen Meldung keinen Ankündigungs-Hinweis — dort liegt das Foto bereits vor',
 		async (_kanal, entryChannel) => {
-			render(AdminSightingView, {
+			await render(AdminSightingView, {
 				sighting: baseSighting({ mediaUpload: 1, uploadedFiles: [], entryChannel })
 			});
 
@@ -177,7 +177,7 @@ describe('AdminSightingView — Eingangskanal der Foto-Ankündigung', () => {
  */
 describe('AdminSightingView — Statusleiste im Kopfbereich', () => {
 	it('zeigt den Status im Kopfbereich statt in drei verstreuten Zeilen', async () => {
-		const screen = render(AdminSightingView, {
+		const screen = await render(AdminSightingView, {
 			sighting: baseSighting({ approvedAt: new Date('2026-03-12T09:00:00Z') }),
 			onStatusChange: vi.fn()
 		});
@@ -191,7 +191,7 @@ describe('AdminSightingView — Statusleiste im Kopfbereich', () => {
 	});
 
 	it('nennt Zeitpunkt und Bearbeiter der Freigabe', async () => {
-		const screen = render(AdminSightingView, {
+		const screen = await render(AdminSightingView, {
 			sighting: baseSighting({
 				approvedAt: new Date('2026-03-12T09:00:00Z'),
 				approvedBy: 'bernd@example.org'
@@ -206,7 +206,7 @@ describe('AdminSightingView — Statusleiste im Kopfbereich', () => {
 	// Altbestand aus dem Altsystem trägt `freigegeben_von` = NULL. Ein „durch
 	// null" wäre die sichtbare Folge eines naiven Templates.
 	it('zeigt bei Altbestand ohne Person nur das Freigabedatum', async () => {
-		const screen = render(AdminSightingView, {
+		const screen = await render(AdminSightingView, {
 			sighting: baseSighting({ approvedAt: new Date('2026-03-12T09:00:00Z'), approvedBy: null }),
 			onStatusChange: vi.fn()
 		});
@@ -217,7 +217,7 @@ describe('AdminSightingView — Statusleiste im Kopfbereich', () => {
 	});
 
 	it('nennt Zeitpunkt und Bearbeiter der Ablehnung', async () => {
-		const screen = render(AdminSightingView, {
+		const screen = await render(AdminSightingView, {
 			sighting: baseSighting({
 				rejectedAt: new Date('2026-03-12T09:00:00Z'),
 				rejectedBy: 'anna@example.org'
@@ -234,14 +234,14 @@ describe('AdminSightingView — Statusleiste im Kopfbereich', () => {
 
 	it('meldet den Wechsel als Verdict', async () => {
 		const onStatusChange = vi.fn();
-		const screen = render(AdminSightingView, { sighting: baseSighting({}), onStatusChange });
+		const screen = await render(AdminSightingView, { sighting: baseSighting({}), onStatusChange });
 
 		await screen.getByRole('radio', { name: 'Abgelehnt' }).click();
 		expect(onStatusChange).toHaveBeenCalledWith('reject');
 	});
 
 	it('rendert ohne Bedienelement — nur die Pille —, wenn onStatusChange fehlt', async () => {
-		const screen = render(AdminSightingView, { sighting: baseSighting({}) });
+		const screen = await render(AdminSightingView, { sighting: baseSighting({}) });
 
 		expect(screen.getByRole('radiogroup').elements()).toHaveLength(0);
 		await expect.element(screen.getByText('Offen')).toBeVisible();
@@ -262,7 +262,7 @@ function basisProps(overrides: Record<string, unknown> = {}) {
 
 describe('AdminSightingView — Melder-Historie', () => {
 	it('zeigt die Melder-Historie in der Kontakt-Karte', async () => {
-		render(AdminSightingView, {
+		await render(AdminSightingView, {
 			...basisProps(),
 			reporterHistory: { approved: 23, rejected: 0, open: 2, since: '2019-03-04T08:00:00Z' }
 		});
@@ -282,7 +282,7 @@ describe('AdminSightingView — Melder-Historie', () => {
 	   die Zeitzone aus der des Browsers. Ein `since` am Monatsletzten kurz vor
 	   Mitternacht UTC ist der Fall, an dem beides auffällt. */
 	it('nennt den Monat in UTC, nicht in Browser-Ortszeit', async () => {
-		render(AdminSightingView, {
+		await render(AdminSightingView, {
 			...basisProps(),
 			reporterHistory: { approved: 23, rejected: 0, open: 0, since: '2019-03-31T23:00:00Z' }
 		});
@@ -294,7 +294,7 @@ describe('AdminSightingView — Melder-Historie', () => {
 	   Eine unbrauchbare Zeichenkette darf deshalb nicht als „NaN/NaN" auf der
 	   Arbeitsfläche landen — dann lieber gar keine Angabe. */
 	it('verschweigt ein unbrauchbares Datum, statt NaN anzuzeigen', async () => {
-		render(AdminSightingView, {
+		await render(AdminSightingView, {
 			...basisProps(),
 			reporterHistory: { approved: 23, rejected: 0, open: 0, since: 'kein Datum' }
 		});
@@ -307,7 +307,7 @@ describe('AdminSightingView — Melder-Historie', () => {
 	   als dritter Fall sichtbar sein, sonst liest sich eine Lücke wie ein
 	   Befund (gleiche Konstruktion wie beim Status-Log). */
 	it('benennt einen Fehlschlag statt eine leere Historie zu behaupten', async () => {
-		render(AdminSightingView, {
+		await render(AdminSightingView, {
 			...basisProps(),
 			reporterHistory: null,
 			reporterHistoryFailed: true
@@ -323,7 +323,7 @@ describe('AdminSightingView — Melder-Historie', () => {
 	   dort das heutige Datum — „Melder seit 08/2026" behauptete eine
 	   Vorgeschichte, die es gerade nicht gibt. */
 	it('nennt kein „Melder seit" bei einer Erstmeldung', async () => {
-		render(AdminSightingView, {
+		await render(AdminSightingView, {
 			...basisProps(),
 			reporterHistory: { approved: 0, rejected: 0, open: 0, since: '2026-08-10T09:00:00Z' }
 		});
@@ -336,7 +336,7 @@ describe('AdminSightingView — Melder-Historie', () => {
 	   bliebe eine leere Trennlinie samt Abstand stehen — ein Rahmen um nichts. */
 	it('rendert ohne E-Mail-Adresse gar keinen Historien-Block', async () => {
 		const props = basisProps();
-		render(AdminSightingView, {
+		await render(AdminSightingView, {
 			...props,
 			sighting: { ...props.sighting, email: null },
 			reporterHistory: null

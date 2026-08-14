@@ -51,7 +51,7 @@ function getBodyRows(): HTMLTableRowElement[] {
 
 describe('SightingsListView', () => {
 	it('rendert Tabelle mit korrekten Spaltenüberschriften', async () => {
-		render(SightingsListView, { entries: ENTRIES, year: 2025 });
+		await render(SightingsListView, { entries: ENTRIES, year: 2025 });
 
 		for (const heading of ['Datum', 'Tierart', 'Anzahl', 'Totfund', 'Fahrwasser']) {
 			await expect.element(page.getByRole('columnheader', { name: heading })).toBeInTheDocument();
@@ -62,8 +62,8 @@ describe('SightingsListView', () => {
 		expect(headers.length).toBe(5);
 	});
 
-	it('rendert eine Zeile pro Eintrag mit Artname, Anzahl und Datum', () => {
-		render(SightingsListView, { entries: ENTRIES, year: 2025 });
+	it('rendert eine Zeile pro Eintrag mit Artname, Anzahl und Datum', async () => {
+		await render(SightingsListView, { entries: ENTRIES, year: 2025 });
 
 		const rows = getBodyRows();
 		expect(rows.length).toBe(2);
@@ -79,8 +79,8 @@ describe('SightingsListView', () => {
 		expect(secondRowText).toMatch(/15\.0?6\.2025/);
 	});
 
-	it('zeigt Totfund als Ja bzw. Nein an', () => {
-		render(SightingsListView, { entries: ENTRIES, year: 2025 });
+	it('zeigt Totfund als Ja bzw. Nein an', async () => {
+		await render(SightingsListView, { entries: ENTRIES, year: 2025 });
 
 		const rows = getBodyRows();
 		// Kegelrobbe (isDead=false) → Nein, Schweinswal (isDead=true) → Ja
@@ -88,8 +88,8 @@ describe('SightingsListView', () => {
 		expect(rows[1]?.textContent).toMatch(/Ja/);
 	});
 
-	it('zeigt einen Gedankenstrich wenn kein Fahrwasser vorhanden ist', () => {
-		render(SightingsListView, { entries: ENTRIES, year: 2025 });
+	it('zeigt einen Gedankenstrich wenn kein Fahrwasser vorhanden ist', async () => {
+		await render(SightingsListView, { entries: ENTRIES, year: 2025 });
 
 		const rows = getBodyRows();
 		// Schweinswal-Eintrag hat waterway=null
@@ -99,7 +99,7 @@ describe('SightingsListView', () => {
 	});
 
 	it('zeigt bei leerer Liste keinen Tabellen-Torso sondern einen Status-Hinweis', async () => {
-		render(SightingsListView, { entries: [], year: 2025 });
+		await render(SightingsListView, { entries: [], year: 2025 });
 
 		expect(document.querySelector('table')).toBeNull();
 
@@ -108,8 +108,8 @@ describe('SightingsListView', () => {
 		expect(document.querySelector('[role="status"]')?.textContent).toContain('Keine Sichtungen');
 	});
 
-	it('nennt Jahr und Anzahl der Einträge in der caption', () => {
-		render(SightingsListView, { entries: ENTRIES, year: 2025 });
+	it('nennt Jahr und Anzahl der Einträge in der caption', async () => {
+		await render(SightingsListView, { entries: ENTRIES, year: 2025 });
 
 		const caption = getTable().querySelector('caption');
 		expect(caption).not.toBeNull();
@@ -119,7 +119,7 @@ describe('SightingsListView', () => {
 
 	describe('Bearbeitungsstand-Spalte (showStatus)', () => {
 		it('zeigt ohne showStatus keine Bearbeitungsstand-Spalte', async () => {
-			render(SightingsListView, { entries: ENTRIES, year: 2025 });
+			await render(SightingsListView, { entries: ENTRIES, year: 2025 });
 
 			expect(page.getByRole('columnheader', { name: 'Bearbeitungsstand' }).elements().length).toBe(
 				0
@@ -129,7 +129,7 @@ describe('SightingsListView', () => {
 		});
 
 		it('zeigt mit showStatus eine Bearbeitungsstand-Spalte mit dem Status je Zeile', async () => {
-			render(SightingsListView, { entries: ENTRIES, year: 2025, showStatus: true });
+			await render(SightingsListView, { entries: ENTRIES, year: 2025, showStatus: true });
 
 			await expect
 				.element(page.getByRole('columnheader', { name: 'Bearbeitungsstand' }))

@@ -30,8 +30,8 @@ function setRangeValue(id: string, value: number): void {
 }
 
 describe('DualRangeSlider', () => {
-	it('rendert beide Griffe mit korrekten min/max und Startwerten (volles Jahr)', () => {
-		render(DualRangeSlider, { max: 364, year: 2025 });
+	it('rendert beide Griffe mit korrekten min/max und Startwerten (volles Jahr)', async () => {
+		await render(DualRangeSlider, { max: 364, year: 2025 });
 
 		const start = getRange('time-range-start');
 		const end = getRange('time-range-end');
@@ -44,15 +44,15 @@ describe('DualRangeSlider', () => {
 		expect(end.value).toBe('364');
 	});
 
-	it('trägt lesbares Datum als aria-valuetext auf beiden Griffen', () => {
-		render(DualRangeSlider, { max: 364, year: 2025 });
+	it('trägt lesbares Datum als aria-valuetext auf beiden Griffen', async () => {
+		await render(DualRangeSlider, { max: 364, year: 2025 });
 
 		expect(getRange('time-range-start').getAttribute('aria-valuetext')).toBe('1. Januar');
 		expect(getRange('time-range-end').getAttribute('aria-valuetext')).toBe('31. Dezember');
 	});
 
 	it('aktualisiert aria-valuetext live bei Wert-Änderung („186" → „6. Juli")', async () => {
-		render(DualRangeSlider, { max: 364, year: 2025 });
+		await render(DualRangeSlider, { max: 364, year: 2025 });
 
 		setRangeValue('time-range-start', 186);
 
@@ -62,7 +62,7 @@ describe('DualRangeSlider', () => {
 	});
 
 	it('klemmt Start auf Ende, wenn Start über Ende hinausgezogen wird', async () => {
-		render(DualRangeSlider, { max: 364, year: 2025 });
+		await render(DualRangeSlider, { max: 364, year: 2025 });
 
 		setRangeValue('time-range-end', 100);
 		setRangeValue('time-range-start', 200);
@@ -74,7 +74,7 @@ describe('DualRangeSlider', () => {
 	});
 
 	it('klemmt Ende auf Start, wenn Ende unter Start gezogen wird', async () => {
-		render(DualRangeSlider, { max: 364, year: 2025 });
+		await render(DualRangeSlider, { max: 364, year: 2025 });
 
 		setRangeValue('time-range-start', 200);
 		setRangeValue('time-range-end', 50);
@@ -85,7 +85,7 @@ describe('DualRangeSlider', () => {
 	});
 
 	it('setzt die Füll-Variablen des Tracks aus den Griff-Positionen', async () => {
-		render(DualRangeSlider, { max: 364, year: 2025 });
+		await render(DualRangeSlider, { max: 364, year: 2025 });
 
 		const container = document.querySelector('[data-testid="dual-range"]');
 		if (!(container instanceof HTMLElement)) throw new Error('Container not found');
@@ -99,15 +99,15 @@ describe('DualRangeSlider', () => {
 		});
 	});
 
-	it('hält das 44-px-Touch-Target der Griff-Flächen', () => {
-		render(DualRangeSlider, { max: 364, year: 2025 });
+	it('hält das 44-px-Touch-Target der Griff-Flächen', async () => {
+		await render(DualRangeSlider, { max: 364, year: 2025 });
 
 		const rect = getRange('time-range-start').getBoundingClientRect();
 		expect(rect.height).toBeGreaterThanOrEqual(44);
 	});
 
 	it('zeigt Datums-Eingabefelder, auf das gewählte Jahr geklemmt und synchron zum Slider', async () => {
-		render(DualRangeSlider, { max: 364, year: 2025 });
+		await render(DualRangeSlider, { max: 364, year: 2025 });
 
 		const startDate = getDateInput('time-date-start');
 		const endDate = getDateInput('time-date-end');
@@ -126,7 +126,7 @@ describe('DualRangeSlider', () => {
 	});
 
 	it('Datums-Eingabe setzt den Slider-Wert und feuert ein input-Event (Manager-Pfad)', async () => {
-		render(DualRangeSlider, { max: 364, year: 2025 });
+		await render(DualRangeSlider, { max: 364, year: 2025 });
 
 		const start = getRange('time-range-start');
 		const inputEvents: string[] = [];
@@ -144,7 +144,7 @@ describe('DualRangeSlider', () => {
 	});
 
 	it('verwirft ein Datum außerhalb des Jahres und stellt den alten Wert wieder her', async () => {
-		render(DualRangeSlider, { max: 364, year: 2025 });
+		await render(DualRangeSlider, { max: 364, year: 2025 });
 
 		const startDate = getDateInput('time-date-start');
 		startDate.value = '2024-05-01';
@@ -157,7 +157,7 @@ describe('DualRangeSlider', () => {
 	});
 
 	it('Datums-Eingabe über dem Ende wird auf das Ende geklemmt', async () => {
-		render(DualRangeSlider, { max: 364, year: 2025 });
+		await render(DualRangeSlider, { max: 364, year: 2025 });
 
 		setRangeValue('time-range-end', 100);
 
@@ -171,7 +171,7 @@ describe('DualRangeSlider', () => {
 	});
 
 	it('stellt das Datums-Feld auch dann zurück, wenn die Klemmung den Wert nicht ändert', async () => {
-		render(DualRangeSlider, { max: 364, year: 2025 });
+		await render(DualRangeSlider, { max: 364, year: 2025 });
 
 		// Start == Ende (Tag 100) — die Klemmung eines späteren Datums ergibt
 		// wieder 100, der State ändert sich also nicht. Das Feld darf trotzdem
@@ -190,15 +190,15 @@ describe('DualRangeSlider', () => {
 		});
 	});
 
-	it('enthält die Anzeige-Elemente #time-start und #time-end (Controller-Vertrag)', () => {
-		render(DualRangeSlider, { max: 364, year: 2025 });
+	it('enthält die Anzeige-Elemente #time-start und #time-end (Controller-Vertrag)', async () => {
+		await render(DualRangeSlider, { max: 364, year: 2025 });
 
 		expect(document.querySelector('#time-start')).not.toBeNull();
 		expect(document.querySelector('#time-end')).not.toBeNull();
 	});
 
 	it('übernimmt einen externen Reset (beide Werte + ein Event, z. B. Jahreswechsel QW4)', async () => {
-		render(DualRangeSlider, { max: 364, year: 2025 });
+		await render(DualRangeSlider, { max: 364, year: 2025 });
 
 		setRangeValue('time-range-start', 100);
 		setRangeValue('time-range-end', 200);

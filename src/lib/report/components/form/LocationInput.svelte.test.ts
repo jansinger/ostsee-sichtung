@@ -33,7 +33,7 @@ function gpsControlCount(): number {
 
 describe('LocationInput — GPS-Control der Karte', () => {
 	it('zeigt in der Admin-Variante (Defaults) das GPS-Control', async () => {
-		render(LocationInput, { latitude: 54.5, longitude: 13.5 });
+		await render(LocationInput, { latitude: 54.5, longitude: 13.5 });
 
 		await expect.poll(gpsControlCount, { timeout: 5000 }).toBe(1);
 
@@ -44,7 +44,7 @@ describe('LocationInput — GPS-Control der Karte', () => {
 	});
 
 	it('unterdrückt das GPS-Control im Meldeformular (enableMapGps=false)', async () => {
-		render(LocationInput, {
+		await render(LocationInput, {
 			latitude: 54.5,
 			longitude: 13.5,
 			enableMapGps: false
@@ -57,14 +57,14 @@ describe('LocationInput — GPS-Control der Karte', () => {
 	});
 
 	it('zeigt die Koordinatenfelder auch ohne GPS-Control direkt an', async () => {
-		render(LocationInput, { latitude: 54.5, longitude: 13.5, enableMapGps: false });
+		await render(LocationInput, { latitude: 54.5, longitude: 13.5, enableMapGps: false });
 
 		await expect.poll(() => document.querySelector('#latitude'), { timeout: 5000 }).not.toBeNull();
 		expect(document.querySelector('[data-testid="coordinate-fields"]')).toBeNull();
 	});
 
 	it('legt die Felder nur bei collapsibleCoordinates hinter eine Disclosure', async () => {
-		render(LocationInput, { latitude: 54.5, longitude: 13.5, collapsibleCoordinates: true });
+		await render(LocationInput, { latitude: 54.5, longitude: 13.5, collapsibleCoordinates: true });
 
 		await expect
 			.poll(() => document.querySelector('[data-testid="coordinate-fields"]'), { timeout: 5000 })
@@ -72,7 +72,7 @@ describe('LocationInput — GPS-Control der Karte', () => {
 	});
 
 	it('blendet den Koordinaten-Hinweis nur ein, wenn einer übergeben wird', async () => {
-		render(LocationInput, {
+		await render(LocationInput, {
 			latitude: 54.5,
 			longitude: 13.5,
 			enableMapGps: false,
@@ -111,14 +111,14 @@ function mapHintText(): string {
 
 describe('LocationInput — Kartenzustand ohne gewählte Position', () => {
 	it('zeigt ohne Koordinaten keinen Marker und sagt das im Hinweis', async () => {
-		render(LocationInput, { enableMapGps: false });
+		await render(LocationInput, { enableMapGps: false });
 
 		await expect.poll(() => mapContainer()?.dataset.position, { timeout: 5000 }).toBe('unset');
 		expect(mapHintText()).toMatch(/Noch keine Position gewählt/i);
 	});
 
 	it('zeigt mit Koordinaten den Marker und einen Hinweis zum Verschieben', async () => {
-		render(LocationInput, {
+		await render(LocationInput, {
 			latitude: 54.5,
 			longitude: 13.5,
 			enableMapGps: false
@@ -132,7 +132,7 @@ describe('LocationInput — Kartenzustand ohne gewählte Position', () => {
 
 describe('LocationInput — Hinweistext nennt den GPS-Button nur wenn er da ist', () => {
 	it('erwähnt im Meldeformular (kein GPS-Control) keinen GPS-Button', async () => {
-		render(LocationInput, {
+		await render(LocationInput, {
 			latitude: 54.5,
 			longitude: 13.5,
 			enableMapGps: false
@@ -144,7 +144,7 @@ describe('LocationInput — Hinweistext nennt den GPS-Button nur wenn er da ist'
 	});
 
 	it('erwähnt in der Admin-Variante (mit GPS-Control) den GPS-Button', async () => {
-		render(LocationInput, { latitude: 54.5, longitude: 13.5 });
+		await render(LocationInput, { latitude: 54.5, longitude: 13.5 });
 
 		await expect.poll(gpsControlCount, { timeout: 5000 }).toBe(1);
 		expect(mapHintText()).toMatch(/GPS-Button/i);
@@ -188,7 +188,7 @@ function ariaRequiredOf(inputId: string): string | null {
 describe('LocationInput — Pflicht-Markierung der Koordinaten', () => {
 	for (const { mode, latitude, longitude } of COORDINATE_FIELDS) {
 		it(`markiert Breite und Länge im Format "${mode}" als Pflicht, wenn required gesetzt ist`, async () => {
-			render(LocationInput, { mode, required: true, enableMapGps: false });
+			await render(LocationInput, { mode, required: true, enableMapGps: false });
 
 			await expect.poll(() => document.getElementById(latitude), { timeout: 5000 }).not.toBeNull();
 
@@ -206,7 +206,7 @@ describe('LocationInput — Pflicht-Markierung der Koordinaten', () => {
 		 * Assertion hält die Gleichheit fest, statt sie nur zu behaupten.
 		 */
 		it(`lässt Breite und Länge im Format "${mode}" ohne required unmarkiert`, async () => {
-			render(LocationInput, { mode, enableMapGps: false });
+			await render(LocationInput, { mode, enableMapGps: false });
 
 			await expect.poll(() => document.getElementById(latitude), { timeout: 5000 }).not.toBeNull();
 
@@ -224,7 +224,7 @@ describe('LocationInput — Pflicht-Markierung der Koordinaten', () => {
 	 * von beidem gesetzt ist — die häufigste Art, wie die zwei auseinanderdriften.
 	 */
 	it('setzt Sternchen und aria-required immer gemeinsam', async () => {
-		render(LocationInput, { mode: 'dms', required: true, enableMapGps: false });
+		await render(LocationInput, { mode: 'dms', required: true, enableMapGps: false });
 
 		await expect
 			.poll(() => document.getElementById('dms-lat-deg'), { timeout: 5000 })
@@ -248,7 +248,7 @@ describe('LocationInput — Pflicht-Markierung der Koordinaten', () => {
 	 * harmlos, würde die Parität zu `BaseInput.svelte` aber unbemerkt aufgeben.
 	 */
 	it('lässt Minuten und Sekunden auch bei required ohne Pflicht-Ansage', async () => {
-		render(LocationInput, { mode: 'dms', required: true, enableMapGps: false });
+		await render(LocationInput, { mode: 'dms', required: true, enableMapGps: false });
 
 		await expect
 			.poll(() => document.querySelector('[aria-label="Breite Minuten"]'), { timeout: 5000 })

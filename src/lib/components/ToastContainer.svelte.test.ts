@@ -14,18 +14,18 @@ import ToastContainer from './ToastContainer.svelte';
  * weil die wiederholenden `expect.element`-Matcher selbst auf Timern sitzen.
  */
 describe('ToastContainer — automatisches Schließen', () => {
-	beforeEach(() => {
+	beforeEach(async () => {
 		clearAllToasts();
 	});
 
-	afterEach(() => {
+	afterEach(async () => {
 		vi.useRealTimers();
 		clearAllToasts();
 	});
 
 	it('schließt einen errorToast mit duration: 0 nicht automatisch', async () => {
 		vi.useFakeTimers();
-		render(ToastContainer);
+		await render(ToastContainer);
 
 		errorToast('Der Server hat nicht geantwortet');
 		await tick();
@@ -41,7 +41,7 @@ describe('ToastContainer — automatisches Schließen', () => {
 
 	it('schließt einen successToast nach der Standarddauer weiterhin automatisch', async () => {
 		vi.useFakeTimers();
-		render(ToastContainer);
+		await render(ToastContainer);
 
 		successToast('Sichtung gespeichert');
 		await tick();
@@ -56,7 +56,7 @@ describe('ToastContainer — automatisches Schließen', () => {
 
 	it('behält den Titel-Fallback für Toasts ohne Titel', async () => {
 		vi.useFakeTimers();
-		render(ToastContainer);
+		await render(ToastContainer);
 
 		errorToast('Ohne Titel');
 		await tick();

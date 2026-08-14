@@ -76,7 +76,7 @@ const daten = (isSuperAdmin = false) =>
  */
 const originalFetch = globalThis.fetch;
 
-afterEach(() => {
+afterEach(async () => {
 	globalThis.fetch = originalFetch;
 	vi.restoreAllMocks();
 });
@@ -98,7 +98,7 @@ async function ersteEinstellungAendern(wert: string) {
 describe('Einstellungen — Meldungen tragen kein Emoji (Befund 16)', () => {
 	it('meldet den Erfolg ohne Häkchen-Emoji vor dem Text', async () => {
 		respondWith(true);
-		render(SettingsPage, { data: daten() });
+		await render(SettingsPage, { data: daten() });
 
 		await ersteEinstellungAendern('neu@example.org');
 		await page.getByRole('button', { name: /Alle Änderungen speichern/ }).click();
@@ -110,7 +110,7 @@ describe('Einstellungen — Meldungen tragen kein Emoji (Befund 16)', () => {
 
 	it('meldet den Fehlschlag ohne Kreuz-Emoji vor dem Text', async () => {
 		respondWith(false);
-		render(SettingsPage, { data: daten() });
+		await render(SettingsPage, { data: daten() });
 
 		await ersteEinstellungAendern('neu@example.org');
 		await page.getByRole('button', { name: /Alle Änderungen speichern/ }).click();
@@ -124,7 +124,7 @@ describe('Einstellungen — Meldungen tragen kein Emoji (Befund 16)', () => {
 describe('Einstellungen — Eingaben stehen neben data, nicht darin (Befund 21)', () => {
 	it('lässt die Loader-Daten unangetastet', async () => {
 		const data = daten();
-		render(SettingsPage, { data });
+		await render(SettingsPage, { data });
 
 		await ersteEinstellungAendern('neu@example.org');
 		// Sichtbar geändert …
@@ -140,7 +140,7 @@ describe('Einstellungen — Eingaben stehen neben data, nicht darin (Befund 21)'
 	});
 
 	it('behält die Eingabe über den „Alle Einstellungen anzeigen"-Toggle hinweg', async () => {
-		render(SettingsPage, { data: daten(true) });
+		await render(SettingsPage, { data: daten(true) });
 
 		await ersteEinstellungAendern('neu@example.org');
 		await page.getByRole('checkbox', { name: /Alle Einstellungen anzeigen/ }).click();

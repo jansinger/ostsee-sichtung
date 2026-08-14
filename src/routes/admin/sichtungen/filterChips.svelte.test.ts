@@ -44,7 +44,7 @@ function daten(rows: SightingSelect[]): PageData {
 
 describe('Sichtungstabelle — Chip-Zeile der aktiven Filter', () => {
 	it('zeigt je gesetztem Filter einen entfernbaren Chip', async () => {
-		const screen = render(SichtungenSeite, { data: daten([]) });
+		const screen = await render(SichtungenSeite, { data: daten([]) });
 
 		await expect
 			.element(screen.getByLabelText('Filter Sichtung von 01.06.2026 entfernen'))
@@ -54,15 +54,15 @@ describe('Sichtungstabelle — Chip-Zeile der aktiven Filter', () => {
 
 	/* Den Status zeigt der Reiter direkt darunter — ein Chip dafür wäre ein
 	   zweites Bedienelement für dieselbe Aussage. */
-	it('zeigt keinen Chip für den Status', () => {
-		const screen = render(SichtungenSeite, { data: daten([]) });
+	it('zeigt keinen Chip für den Status', async () => {
+		const screen = await render(SichtungenSeite, { data: daten([]) });
 
 		expect(screen.container.querySelectorAll('[aria-label^="Filter Status:"]')).toHaveLength(0);
 	});
 
 	it('entfernt beim Klick genau diesen Filter und springt auf Seite 1', async () => {
 		vi.mocked(goto).mockClear();
-		const screen = render(SichtungenSeite, { data: daten([]) });
+		const screen = await render(SichtungenSeite, { data: daten([]) });
 
 		await screen.getByLabelText('Filter Suche: „delfin“ entfernen').click();
 
@@ -78,7 +78,7 @@ describe('Sichtungstabelle — Chip-Zeile der aktiven Filter', () => {
 	   Tabelle. Dass sie gleich heißen, ist Absicht (gleiche Aktion, gleiche
 	   Beschriftung); die Chip-Zeile steht im Markup vor beiden Listen. */
 	it('bietet ab zwei Chips das Zurücksetzen aller Filter an', async () => {
-		const screen = render(SichtungenSeite, { data: daten([]) });
+		const screen = await render(SichtungenSeite, { data: daten([]) });
 
 		await expect
 			.element(screen.getByRole('button', { name: 'Alle Filter zurücksetzen' }).first())
@@ -88,8 +88,8 @@ describe('Sichtungstabelle — Chip-Zeile der aktiven Filter', () => {
 	/* Die Chips tragen das Signal „es ist gefiltert" jetzt allein. Ein Punkt-
 	   Badge an der Filter-Schaltfläche sagte dasselbe noch einmal, ohne einen
 	   Filter zu benennen und ohne anklickbar zu sein. */
-	it('markiert die Filter-Schaltfläche nicht zusätzlich', () => {
-		const screen = render(SichtungenSeite, { data: daten([]) });
+	it('markiert die Filter-Schaltfläche nicht zusätzlich', async () => {
+		const screen = await render(SichtungenSeite, { data: daten([]) });
 
 		const filterKnoepfe = [...screen.container.querySelectorAll('button')].filter(
 			(knopf) => knopf.textContent?.trim() === 'Filter'

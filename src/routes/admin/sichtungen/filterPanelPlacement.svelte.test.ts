@@ -52,7 +52,7 @@ function stehtVor(a: Element, b: Element): boolean {
 
 describe('Sichtungstabelle — Filter-Panel-Platzierung', () => {
 	it('beide Auslöser tragen aria-expanded=false und ein aria-controls, solange das Panel zu ist', async () => {
-		const screen = render(SichtungenSeite, { data: daten() });
+		const screen = await render(SichtungenSeite, { data: daten() });
 
 		const ausloeser = screen.getByRole('button', { name: 'Filter', exact: true });
 		await expect.element(ausloeser.first()).toHaveAttribute('aria-expanded', 'false');
@@ -65,7 +65,7 @@ describe('Sichtungstabelle — Filter-Panel-Platzierung', () => {
 	});
 
 	it('öffnet über einen Auslöser: beide schalten auf aria-expanded=true, das Panel bekommt die referenzierte id', async () => {
-		const screen = render(SichtungenSeite, { data: daten() });
+		const screen = await render(SichtungenSeite, { data: daten() });
 
 		const ausloeser = screen.getByRole('button', { name: 'Filter', exact: true });
 		const controllerId = ausloeser.first().element().getAttribute('aria-controls');
@@ -81,7 +81,7 @@ describe('Sichtungstabelle — Filter-Panel-Platzierung', () => {
 	});
 
 	it('rendert das Panel im DOM vor der Freitextsuche, sobald es offen ist', async () => {
-		const screen = render(SichtungenSeite, { data: daten() });
+		const screen = await render(SichtungenSeite, { data: daten() });
 
 		const ausloeser = screen.getByRole('button', { name: 'Filter', exact: true });
 		const controllerId = ausloeser.first().element().getAttribute('aria-controls');
@@ -94,7 +94,7 @@ describe('Sichtungstabelle — Filter-Panel-Platzierung', () => {
 	});
 
 	it('lässt die Chip-Zeile unmittelbar vor den Statusreitern stehen, auch bei offenem Panel', async () => {
-		const screen = render(SichtungenSeite, { data: daten() });
+		const screen = await render(SichtungenSeite, { data: daten() });
 
 		// `?q=müller` aus dem URL-Mock erzeugt bereits einen Chip.
 		const entfernenChip = screen.getByRole('button', { name: /Filter Suche.*entfernen/i });

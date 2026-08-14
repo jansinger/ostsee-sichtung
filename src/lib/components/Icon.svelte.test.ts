@@ -18,16 +18,16 @@ import Icon from './Icon.svelte';
 describe('Icon', () => {
 	let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
-	beforeEach(() => {
+	beforeEach(async () => {
 		consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 	});
 
-	afterEach(() => {
+	afterEach(async () => {
 		consoleErrorSpy.mockRestore();
 	});
 
 	it('meldet einen unbekannten Icon-Namen über console.error (im Dev-Modus)', async () => {
-		render(Icon, { icon: 'lucide:does-not-exist' });
+		await render(Icon, { icon: 'lucide:does-not-exist' });
 		await tick();
 
 		expect(consoleErrorSpy).toHaveBeenCalled();
@@ -38,7 +38,7 @@ describe('Icon', () => {
 	});
 
 	it('rendert weiterhin das „?"-Fallback für unbekannte Icons — Nutzerverhalten bleibt gleich', async () => {
-		const { container } = render(Icon, { icon: 'lucide:does-not-exist' });
+		const { container } = await render(Icon, { icon: 'lucide:does-not-exist' });
 		await tick();
 
 		const fallback = container.querySelector('[title="Missing icon: lucide:does-not-exist"]');
@@ -47,14 +47,14 @@ describe('Icon', () => {
 	});
 
 	it('ruft console.error NICHT auf, wenn der Icon-Name bekannt ist', async () => {
-		render(Icon, { icon: 'lucide:map-pin' });
+		await render(Icon, { icon: 'lucide:map-pin' });
 		await tick();
 
 		expect(consoleErrorSpy).not.toHaveBeenCalled();
 	});
 
 	it('kennt das projekteigene custom:porpoise — es ersetzt das fachlich falsche Fisch-Icon', async () => {
-		const { container } = render(Icon, { icon: 'custom:porpoise' });
+		const { container } = await render(Icon, { icon: 'custom:porpoise' });
 		await tick();
 
 		expect(consoleErrorSpy).not.toHaveBeenCalled();
@@ -67,7 +67,7 @@ describe('Icon', () => {
 	// auf ein `{...rest}` am Element — fällt das weg, verschwindet das Attribut
 	// still, und der Screenreader sagt wieder eine unbeschriftete Grafik an.
 	it('reicht aria-hidden bis auf das <svg> durch — auch beim projekteigenen Icon', async () => {
-		const { container } = render(Icon, { icon: 'custom:porpoise', 'aria-hidden': 'true' });
+		const { container } = await render(Icon, { icon: 'custom:porpoise', 'aria-hidden': 'true' });
 		await tick();
 
 		expect(container.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');

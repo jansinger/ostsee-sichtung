@@ -71,14 +71,14 @@ function einzigerToast() {
 }
 
 describe('Sichtungstabelle — Bulk-Aktionen', () => {
-	beforeEach(() => {
+	beforeEach(async () => {
 		submitVerdict.mockClear();
 		invalidateAll.mockClear();
 		toast.clear();
 	});
 
 	it('zeigt die Aktionsleiste erst bei einer Auswahl', async () => {
-		const screen = render(SichtungenSeite, { data: daten([sichtung({ id: 1 })]) });
+		const screen = await render(SichtungenSeite, { data: daten([sichtung({ id: 1 })]) });
 
 		expect(screen.container.textContent).not.toContain('ausgewählt');
 
@@ -88,7 +88,7 @@ describe('Sichtungstabelle — Bulk-Aktionen', () => {
 	});
 
 	it('wählt mit der Kopf-Checkbox alle Zeilen der Seite', async () => {
-		const screen = render(SichtungenSeite, {
+		const screen = await render(SichtungenSeite, {
 			data: daten([sichtung({ id: 1 }), sichtung({ id: 2 }), sichtung({ id: 3 })])
 		});
 
@@ -99,7 +99,7 @@ describe('Sichtungstabelle — Bulk-Aktionen', () => {
 	});
 
 	it('zeigt die Kopf-Checkbox bei Teilauswahl als indeterminate', async () => {
-		const screen = render(SichtungenSeite, {
+		const screen = await render(SichtungenSeite, {
 			data: daten([sichtung({ id: 1 }), sichtung({ id: 2 })])
 		});
 
@@ -111,7 +111,7 @@ describe('Sichtungstabelle — Bulk-Aktionen', () => {
 	});
 
 	it('schickt „Freigeben" für jede gewählte Zeile über submitVerdict', async () => {
-		const screen = render(SichtungenSeite, {
+		const screen = await render(SichtungenSeite, {
 			data: daten([sichtung({ id: 4 }), sichtung({ id: 5 })])
 		});
 
@@ -128,7 +128,7 @@ describe('Sichtungstabelle — Bulk-Aktionen', () => {
 	});
 
 	it('leert die Auswahl nach der Ausführung', async () => {
-		const screen = render(SichtungenSeite, { data: daten([sichtung({ id: 6 })]) });
+		const screen = await render(SichtungenSeite, { data: daten([sichtung({ id: 6 })]) });
 
 		await zeilenCheckbox(screen.container, 0).click();
 		await screen.getByRole('button', { name: 'Ablehnen' }).click();
@@ -137,7 +137,7 @@ describe('Sichtungstabelle — Bulk-Aktionen', () => {
 	});
 
 	it('hebt die Auswahl über „Auswahl aufheben" auf, ohne zu senden', async () => {
-		const screen = render(SichtungenSeite, { data: daten([sichtung({ id: 9 })]) });
+		const screen = await render(SichtungenSeite, { data: daten([sichtung({ id: 9 })]) });
 
 		await zeilenCheckbox(screen.container, 0).click();
 		await screen.getByRole('button', { name: 'Auswahl aufheben' }).click();
@@ -147,7 +147,7 @@ describe('Sichtungstabelle — Bulk-Aktionen', () => {
 	});
 
 	it('fasst das Ergebnis in genau einem Toast mit Rückgängig zusammen', async () => {
-		const screen = render(SichtungenSeite, {
+		const screen = await render(SichtungenSeite, {
 			data: daten([sichtung({ id: 20 }), sichtung({ id: 21 })])
 		});
 
@@ -162,7 +162,7 @@ describe('Sichtungstabelle — Bulk-Aktionen', () => {
 
 	it('schickt beim Rückgängig ein reset für die erfolgreichen IDs', async () => {
 		submitVerdict.mockImplementation((id: number) => Promise.resolve(id !== 31));
-		const screen = render(SichtungenSeite, {
+		const screen = await render(SichtungenSeite, {
 			data: daten([sichtung({ id: 30 }), sichtung({ id: 31 })])
 		});
 
@@ -181,7 +181,7 @@ describe('Sichtungstabelle — Bulk-Aktionen', () => {
 	/* Kein Cross-Page-Gedächtnis: Überlebte die Auswahl den Seitenwechsel, wirkte
 	   „Freigeben" auf Zeilen, die gerade niemand sieht. */
 	it('leert die Auswahl beim Wechsel auf eine andere Seite', async () => {
-		const screen = render(SichtungenSeite, {
+		const screen = await render(SichtungenSeite, {
 			data: daten([sichtung({ id: 1 }), sichtung({ id: 2 })])
 		});
 
@@ -196,8 +196,8 @@ describe('Sichtungstabelle — Bulk-Aktionen', () => {
 	/* Die Checkbox-Spalte ist fest wie die Totfund-Markerspalte: Sie darf im
 	   „Spalten"-Dropdown nicht abschaltbar sein, sonst ist die Bulk-Funktion je
 	   nach gespeicherter Spaltenwahl unerreichbar. */
-	it('bietet die Auswahlspalte nicht im Spalten-Dropdown an', () => {
-		const screen = render(SichtungenSeite, { data: daten([sichtung({ id: 1 })]) });
+	it('bietet die Auswahlspalte nicht im Spalten-Dropdown an', async () => {
+		const screen = await render(SichtungenSeite, { data: daten([sichtung({ id: 1 })]) });
 
 		const dropdown = screen.container.querySelector('.dropdown-content') as HTMLElement;
 		expect(dropdown.textContent).not.toContain('Auswahl');

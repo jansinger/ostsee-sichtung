@@ -71,7 +71,7 @@ const SCHALTFLAECHEN = ['Erste Seite', 'Vorherige Seite', 'Nächste Seite', 'Let
 
 describe('Seiten-Navigation', () => {
 	it.each(SCHALTFLAECHEN)('„%s" ist über ihren Namen ansprechbar', async (name) => {
-		const screen = render(SichtungenSeite, { data: daten({ totalPages: 3, page: 2 }) });
+		const screen = await render(SichtungenSeite, { data: daten({ totalPages: 3, page: 2 }) });
 
 		/* Über die Rolle plus Namen — genau die Abfrage, die vorher ins Leere
 		   lief, weil der zugängliche Name das Zierzeichen war. */
@@ -79,7 +79,7 @@ describe('Seiten-Navigation', () => {
 	});
 
 	it('sperrt bei null Treffern beide Richtungen', async () => {
-		const screen = render(SichtungenSeite, { data: daten({ total: 0, totalPages: 0 }) });
+		const screen = await render(SichtungenSeite, { data: daten({ total: 0, totalPages: 0 }) });
 
 		for (const name of SCHALTFLAECHEN) {
 			await expect.element(screen.getByRole('button', { name })).toBeDisabled();
@@ -87,13 +87,13 @@ describe('Seiten-Navigation', () => {
 	});
 
 	it('nennt bei null Treffern „1 / 1" und nicht „1 / 0"', async () => {
-		const screen = render(SichtungenSeite, { data: daten({ total: 0, totalPages: 0 }) });
+		const screen = await render(SichtungenSeite, { data: daten({ total: 0, totalPages: 0 }) });
 
 		await expect.element(screen.getByText('1 / 1')).toBeVisible();
 	});
 
 	it('gibt in der Mitte beide Richtungen frei', async () => {
-		const screen = render(SichtungenSeite, { data: daten({ totalPages: 3, page: 2 }) });
+		const screen = await render(SichtungenSeite, { data: daten({ totalPages: 3, page: 2 }) });
 
 		await expect.element(screen.getByRole('button', { name: 'Vorherige Seite' })).toBeEnabled();
 		await expect.element(screen.getByRole('button', { name: 'Nächste Seite' })).toBeEnabled();
@@ -103,7 +103,7 @@ describe('Seiten-Navigation', () => {
 	   nicht mehr als Schaltfläche auftauchen — sonst behauptet die Leiste eine
 	   Bedienbarkeit, die es nicht gibt (Button-Hierarchie). */
 	it('bietet die Seitenanzeige nicht als Schaltfläche an', async () => {
-		const screen = render(SichtungenSeite, { data: daten({ totalPages: 3, page: 2 }) });
+		const screen = await render(SichtungenSeite, { data: daten({ totalPages: 3, page: 2 }) });
 
 		expect(screen.getByRole('button', { name: '2 / 3' }).elements()).toHaveLength(0);
 	});

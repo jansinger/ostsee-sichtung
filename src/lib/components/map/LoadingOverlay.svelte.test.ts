@@ -19,31 +19,31 @@ function getStatusRegion(): HTMLElement {
 }
 
 describe('LoadingOverlay', () => {
-	it('Live-Region existiert schon vor dem Sichtbarwerden (sonst verpassen Screenreader die erste Meldung)', () => {
-		render(LoadingOverlay, { isVisible: false, type: 'initial' });
+	it('Live-Region existiert schon vor dem Sichtbarwerden (sonst verpassen Screenreader die erste Meldung)', async () => {
+		await render(LoadingOverlay, { isVisible: false, type: 'initial' });
 
 		const status = getStatusRegion();
 		expect(status.getAttribute('aria-live')).toBe('polite');
 		expect(status.textContent?.trim()).toBe('');
 	});
 
-	it('zeigt Statusmeldung und Initial-Hinweis innerhalb der Live-Region', () => {
-		render(LoadingOverlay, { isVisible: true, type: 'initial' });
+	it('zeigt Statusmeldung und Initial-Hinweis innerhalb der Live-Region', async () => {
+		await render(LoadingOverlay, { isVisible: true, type: 'initial' });
 
 		const status = getStatusRegion();
 		expect(status.textContent).toContain('Karte wird initialisiert...');
 		expect(status.textContent).toContain('Tastaturkürzel');
 	});
 
-	it('enthält keine Dialog-/Modal-Attribute mehr', () => {
-		render(LoadingOverlay, { isVisible: true, type: 'initial' });
+	it('enthält keine Dialog-/Modal-Attribute mehr', async () => {
+		await render(LoadingOverlay, { isVisible: true, type: 'initial' });
 
 		expect(document.querySelector('[role="dialog"]')).toBeNull();
 		expect(document.querySelector('[aria-modal]')).toBeNull();
 	});
 
-	it('dekoratives Spinner-Icon ist aria-hidden (wird in der Live-Region nicht mit angesagt)', () => {
-		render(LoadingOverlay, { isVisible: true, type: 'initial' });
+	it('dekoratives Spinner-Icon ist aria-hidden (wird in der Live-Region nicht mit angesagt)', async () => {
+		await render(LoadingOverlay, { isVisible: true, type: 'initial' });
 
 		const svg = document.querySelector('[role="status"] svg');
 		expect(svg).not.toBeNull();
@@ -57,8 +57,8 @@ describe('LoadingOverlay', () => {
 	 * Varianten `filter`, `features` und `default` (ohne Aufrufstelle). Sie sind
 	 * entfernt; Filter zeigen ihren Ladezustand inline im `FilterPanel`.
 	 */
-	it('kennt nur noch den Initial-Ladevorgang', () => {
-		render(LoadingOverlay, { isVisible: true });
+	it('kennt nur noch den Initial-Ladevorgang', async () => {
+		await render(LoadingOverlay, { isVisible: true });
 
 		expect(document.body.textContent).toContain('Karte wird initialisiert...');
 		expect(document.body.textContent).not.toContain('Filter werden angewendet');
