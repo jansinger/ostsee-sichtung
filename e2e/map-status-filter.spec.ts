@@ -56,9 +56,10 @@ test.describe('Statusfilter der Sichtungskarte', () => {
 	/**
 	 * Die Gegenrichtung zum Test darüber: Der Test oben belegt, dass die Auswahl
 	 * IN die URL geschrieben wird — dass sie beim Laden auch wieder ankommt, hat
-	 * bis hierher nichts geprüft. Genau dort stand der Fehler: Der Init-Effekt
-	 * schrieb `statuses` und las es im selben synchronen Durchlauf wieder
-	 * (`loadAvailableYears`), was sich selbst ungültig machte —
+	 * bis hierher nichts geprüft. Genau dort stand der Fehler: Der Aufbau-Block
+	 * lief als `$effect`, wies `statuses` zu und las es im selben synchronen
+	 * Durchlauf über `loadAvailableYears()` wieder, machte sich also selbst
+	 * ungültig —
 	 * `effect_update_depth_exceeded`, die Jahres-Abfrage lief endlos, und das
 	 * Lade-Overlay verschwand nie. Getroffen hat es damit jeden geteilten Link
 	 * eines Admins, also genau den Zweck, für den #872 die URL überhaupt füllt.
@@ -97,10 +98,13 @@ test.describe('Statusfilter der Sichtungskarte', () => {
 
 	/**
 	 * Der Statuswechsel ist ein Nachladen, kein Neuaufbau: `setStatuses()` tauscht
-	 * den Bestand im laufenden Controller aus. Der Karten-Init-Effekt las
-	 * `statuses` jedoch synchron (über `loadAvailableYears()`) und führte ihn
-	 * damit als Abhängigkeit — jeder Haken riss die Karte ab und baute sie neu
-	 * auf, wodurch Zoom und Ausschnitt zurücksprangen.
+	 * den Bestand im laufenden Controller aus. Der Aufbau-Block las `statuses`
+	 * jedoch synchron (über `loadAvailableYears()`) und führte es als `$effect`
+	 * damit als Abhängigkeit — jeder Haken im Filterpanel ließ ihn erneut laufen,
+	 * die Aufräumfunktion verwarf die Karteninstanz und es entstand eine neue.
+	 * Zoom und Ausschnitt sprangen dabei zurück, während `setStatuses()` daneben
+	 * genau dieses Nachladen bereits inkrementell erledigte. Behoben, indem der
+	 * Block auf `onMount` steht statt auf `$effect`.
 	 *
 	 * Geprüft wird über die Identität des DOM-Knotens statt über Zoomwerte: Ein
 	 * Neuaufbau ersetzt das von OpenLayers erzeugte `.ol-viewport`, ein

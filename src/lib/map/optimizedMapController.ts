@@ -27,10 +27,6 @@ import { getDefaultSightingYear } from '$lib/utils/date/defaultYear';
 import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
 import { clampExtentToBaltic, type Extent } from './extentUtils';
 import { areExtentsColocated, type MapTranslations } from './mapUtils';
-/* `SightingProperties` ist in dieser Datei der Popup-Typ (Alias unten). Der
-   Bearbeitungsstand gehört zur Stil-Sicht auf dieselben Feature-Eigenschaften —
-   deshalb dieser zweite, ausdrücklich benannte Import statt eines Casts. */
-import type { SightingProperties as SightingStyleProperties } from './styleUtils';
 import {
 	aggregateClusterStatus,
 	clearStyleCache,
@@ -1185,7 +1181,7 @@ export class SichtungenMap {
 
 			if (!isHiddenBySpecies && !isHiddenByColor && !isHiddenByTime) {
 				visibleCount++;
-				visibleStatuses.push((properties as SightingStyleProperties).st ?? 'approved');
+				visibleStatuses.push(properties.st ?? 'approved');
 			}
 		});
 
