@@ -367,7 +367,7 @@
 		// Die Sichtung, die diese Seite anzeigt, existiert nach dem Löschen nicht
 		// mehr — zurück, woher man kam, statt auf einen 404 zu warten. Ohne
 		// `sighting.id`: Der Anker zeigte auf eine Karte, die es nicht mehr gibt.
-		if (await deleteSighting(sighting.id)) {
+		if ((await deleteSighting(sighting.id)).ok) {
 			await goto(returnTarget(page.url).href);
 		}
 	}

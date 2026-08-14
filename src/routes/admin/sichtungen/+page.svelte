@@ -27,6 +27,7 @@
 		SPAM_DRIFT_PRESENTATION
 	} from '$lib/components/admin/spamScorePresentation';
 	import Icon from '$lib/components/Icon.svelte';
+	import StatusBlock from '$lib/components/StatusBlock.svelte';
 	import { BALTIC_SEA_STATUS_PRESENTATION } from '$lib/utils/geo/balticSeaStatus';
 	import { MEDIA_UPLOAD_ANNOUNCED_MISSING } from '$lib/utils/media/photoAnnouncement';
 	import { AUFNAHME_LABEL, MELDEART_LABEL } from '$lib/components/admin/filterLabels';
@@ -85,6 +86,12 @@
 	   aktive Reiter zeigt den Status bereits — ein Status-Chip daneben wäre ein
 	   zweites Bedienelement für dieselbe Aussage. */
 	let filterChips = $derived(buildFilterChips(currentFilters, { skipVerified: true }));
+
+	/* Für den Leer-Zustand zählt der Status mit — hier also OHNE `skipVerified`.
+	   Ein Statusreiter ist ein Filter wie jeder andere; „Abgelehnt" ohne Treffer
+	   ist nicht „noch keine Sichtungen erfasst". Trotzdem dieselbe Quelle wie die
+	   Chip-Zeile, statt die acht Felder ein zweites Mal abzufragen. */
+	let hasActiveFilters = $derived(buildFilterChips(currentFilters).length > 0);
 
 	/* Startwerte des Editier-Puffers. Der `$effect` weiter unten, der ihn nach
 	   einer Navigation nachzieht, läuft im SSR-Durchlauf nicht; ohne diese
@@ -482,11 +489,55 @@
 		goto(detailUrl.toString());
 	}
 
+	/**
+	 * Der zuletzt gescheiterte Vorgang — als **stehende** Fläche und nicht als
+	 * Toast.
+	 *
+	 * Löschen, Prüfstatus-Wechsel und Test-Mail meldeten ihren Fehlschlag bis
+	 * 2026-08-14 in einer Einblendung, die nach fünf Sekunden weg war und die
+	 * Wiederholung nicht trug (`docs/DESIGN_SYSTEM.md`, „Fehlende Zustände").
+	 * Wer daneben sah, hatte einen Vorgang ausgelöst, der nicht stattgefunden
+	 * hat, und keinen Hinweis darauf. Der Erfolg bleibt dagegen ein Toast: Er
+	 * ist die Bestätigung eines abgeschlossenen Vorgangs, und die Tabelle zeigt
+	 * das Ergebnis ohnehin.
+	 *
+	 * `retry` wiederholt genau den Aufruf, der gescheitert ist — die Fläche
+	 * verschwindet dabei erst, wenn er durchgeht.
+	 */
+	let aktionsFehler = $state<{ title: string; description: string; retry: () => void } | null>(
+		null
+	);
+
+	function meldeFehlschlag(title: string, description: string, retry: () => void): void {
+		aktionsFehler = { title, description, retry };
+	}
+
 	async function removeSighting(id: number): Promise<void> {
-		if (await deleteSighting(id)) {
-			// Reload data via SvelteKit's invalidation instead of full page reload
-			await invalidateAll();
+		const ausgang = await deleteSighting(id, { silent: true });
+		if (!ausgang.ok) {
+			meldeFehlschlag(
+				'Sichtung wurde nicht gelöscht',
+				ausgang.message,
+				() => void removeSighting(id)
+			);
+			return;
 		}
+		aktionsFehler = null;
+		// Reload data via SvelteKit's invalidation instead of full page reload
+		await invalidateAll();
+	}
+
+	async function sendTestEmailMitFehlerflaeche(id: number): Promise<void> {
+		const ausgang = await sendTestEmail(id, { silent: true });
+		if (!ausgang.ok) {
+			meldeFehlschlag(
+				'Test-E-Mail wurde nicht gesendet',
+				ausgang.message,
+				() => void sendTestEmailMitFehlerflaeche(id)
+			);
+			return;
+		}
+		aktionsFehler = null;
 	}
 
 	let spamCheckModal = $state({
@@ -560,8 +611,22 @@
 		   `finally`-Block deckt zugleich den Fehlerfall (`!ok`) ab, sonst bliebe
 		   die Zeile nach einem gescheiterten Versuch dauerhaft gesperrt. */
 		try {
-			const ok = await submitVerdict(id, verdict);
-			if (!ok) return;
+			/* `silent` und stattdessen die stehende Fläche: derselbe Grund wie beim
+			   Löschen (Docblock an `aktionsFehler`). Der Statuswechsel ist dabei der
+			   wichtigste der drei Fälle — er ist die tägliche Aktion dieser Seite,
+			   und ein übersehener Fehlschlag lässt eine Meldung unentschieden
+			   zurück, ohne dass es irgendwo auffiele. */
+			const ok = await submitVerdict(id, verdict, { silent: true });
+			if (!ok) {
+				const ziel = SIGHTING_STATUS_PRESENTATION[verdictToStatus(verdict)];
+				meldeFehlschlag(
+					`Status „${ziel.label}" wurde nicht gespeichert`,
+					'Die Sichtung steht unverändert in der Liste.',
+					() => void changeStatus(id, verdict, previous)
+				);
+				return;
+			}
+			aktionsFehler = null;
 
 			await invalidateAll();
 
@@ -1313,6 +1378,23 @@
 	     rendert `SichtungenCards`, und gerade dort soll der wichtigste Filter
 	     ohne Aufklappen des Panels erreichbar sein. `active` kommt aus der URL
 	     (`currentFilters`) — dieselbe Quelle wie das `<select>` im Panel. -->
+	<!-- Über den Reitern und über beiden Layouts: Der Fehlschlag betrifft eine
+	     Zeile, aber die Zeile kann durch das Neuladen nach einer anderen Aktion
+	     ihre Position wechseln — an der Liste festgemacht wäre die Meldung
+	     wandernd. Kein `announce`-Override: `failed` meldet sich von sich aus als
+	     `alert`, und das ist hier die richtige Rolle — der Fehlschlag ist die
+	     Folge einer Nutzeraktion (`StatusBlock`, Kopfkommentar). -->
+	{#if aktionsFehler}
+		<div class="container mx-auto mb-3 px-4 md:px-6">
+			<StatusBlock
+				variant="failed"
+				title={aktionsFehler.title}
+				description={aktionsFehler.description}
+				action={{ label: 'Erneut versuchen', onClick: aktionsFehler.retry }}
+			/>
+		</div>
+	{/if}
+
 	<div class="container mx-auto mb-3 px-4 md:px-6">
 		<StatusTabs
 			counts={data.statusCounts}
@@ -1325,8 +1407,10 @@
 		{sightings}
 		isSuperAdmin={!!data.isSuperAdmin}
 		{statusPending}
+		{hasActiveFilters}
+		onresetfilters={resetFilters}
 		onview={viewSightingDetails}
-		ontestemail={sendTestEmail}
+		ontestemail={sendTestEmailMitFehlerflaeche}
 		onspamcheck={checkSpam}
 		ondelete={(sighting) => {
 			sightingToDelete = sighting;
@@ -1344,9 +1428,11 @@
 		{bulkPending}
 		{bulkProgress}
 		{statusPending}
+		{hasActiveFilters}
+		onresetfilters={resetFilters}
 		onbulk={runBulk}
 		onview={viewSightingDetails}
-		ontestemail={sendTestEmail}
+		ontestemail={sendTestEmailMitFehlerflaeche}
 		onspamcheck={checkSpam}
 		ondelete={(sighting) => {
 			sightingToDelete = sighting;
