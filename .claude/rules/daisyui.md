@@ -236,7 +236,9 @@ unkritisch.
 `class="modal"`-Fundstellen (`MediaModal` hängt hinter `{#if selectedMedia}` an
 der Sichtungs-Detailansicht und steht auf keiner Route im Ruhezustand im DOM).
 Ebenfalls nicht abgedeckt sind `hover:`-Zustände — der Test misst den
-Ruhezustand, derselbe Vorbehalt wie beim Token-Scan in `design-system.md`.
+Ruhezustand. Der Vorbehalt gilt hier weiterhin; beim **Klassen**-Scan in
+`design-system.md` ist er seit 2026-08-14 aufgehoben (dort steht die Klasse im
+Attribut, hier hinge die Wirkung am Zeiger).
 Der Test fragt **nicht** die
 sieben Eigenschaften ab — eine solche Liste wäre eine zweite Quelle neben der
 Spezifikation und altert mit ihr. Er misst die Wirkung: Dialog auf 3000 px

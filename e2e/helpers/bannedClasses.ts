@@ -347,6 +347,47 @@ export const RAW_MOTION_DURATION: BannedRule = {
 	offends: (className) => RAW_MOTION_DURATION_PATTERN.test(className)
 };
 
+/* ------------------------------------------------------------------------ */
+/* Varianten-Präfixe                                                          */
+/* ------------------------------------------------------------------------ */
+
+/**
+ * Schält die Varianten-Präfixe ab: `md:hover:text-warning` → `text-warning`.
+ *
+ * **Warum das nötig ist.** Alle Muster oben sind verankert (`^…$`) — das ist der
+ * Grund, aus dem `text-warning-strong` nicht mitgemeldet wird, und er soll so
+ * bleiben. Eine Variante steht aber **vorne** und ließ damit jede Regel ins
+ * Leere laufen: `hover:text-warning` passte auf keines der Muster, obwohl es
+ * dieselben 2,74:1 trägt wie die Klasse ohne Präfix.
+ *
+ * Notiert war das in `design-system.md` als bekannte Grenze („Was der Scan nicht
+ * sieht: `hover:`-Zustände — er liest den Ruhezustand"). Für die **gemessene
+ * Farbe** stimmt das weiterhin: `getComputedStyle` liefert ohne Zeiger auf dem
+ * Element den Ruhewert, und daran ändert sich hier nichts. Für die
+ * **Klassenliste** stimmte es nie — sie steht vollständig im `class`-Attribut.
+ * Die Begründung deckte damit eine echte Grenze und eine vermeidbare Lücke mit
+ * demselben Satz zu; letztere ist seit 2026-08-14 zu.
+ *
+ * **Am `:` außerhalb eckiger Klammern geschnitten**, nicht stumpf am letzten:
+ * Ein arbitrary value darf selbst ein `:` tragen (`[&:hover]:z-50`,
+ * `supports-[display:grid]:block`). Wer am letzten `:` schneidet, macht aus dem
+ * ersten Beispiel `z-50` — zufällig richtig — und aus einem
+ * `bg-[url(a:b)]` einen Rest, der es nicht ist.
+ */
+export function stripVariants(className: string): string {
+	let depth = 0;
+	let lastSeparator = -1;
+
+	for (let i = 0; i < className.length; i++) {
+		const char = className[i];
+		if (char === '[' || char === '(') depth++;
+		else if (char === ']' || char === ')') depth--;
+		else if (char === ':' && depth === 0) lastSeparator = i;
+	}
+
+	return className.slice(lastSeparator + 1);
+}
+
 /** Standardobergrenze für die Fundliste — mehr als 20 Zeilen liest niemand. */
 const DEFAULT_LIMIT = 20;
 
@@ -365,7 +406,11 @@ export function findOffenders(
 	for (const element of elements) {
 		if (rule.textOnly && !element.hasText) continue;
 
-		const offending = element.classes.split(/\s+/).filter((name) => name && rule.offends(name));
+		/* Geprüft wird der Basis-Utility, gemeldet die Klasse, wie sie im Markup
+		   steht — sonst suchte man nach `text-warning` und fände nichts. */
+		const offending = element.classes
+			.split(/\s+/)
+			.filter((name) => name && rule.offends(stripVariants(name)));
 		if (offending.length === 0) continue;
 
 		offenders.push(`<${element.tag}> ${offending.join(' ')} — in class="${element.classes}"`);

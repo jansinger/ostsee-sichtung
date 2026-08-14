@@ -120,7 +120,11 @@ describe('Sichtungstabelle — Statusspalte', () => {
 				const screen = render(SichtungenSeite, { data: daten([sichtung({ id: 7 })]) });
 
 				await radio(screen, 'Freigegeben').click();
-				expect(submitVerdict).toHaveBeenCalledWith(7, 'approve');
+				/* `silent: true` ist Teil des Vertrags und keine Beiläufigkeit: Die
+				   Seite meldet einen Fehlschlag seit 2026-08-14 als stehende Fläche mit
+				   „Erneut versuchen" statt als Toast. Fiele die Option weg, käme beides
+				   gleichzeitig. */
+				expect(submitVerdict).toHaveBeenCalledWith(7, 'approve', { silent: true });
 			});
 
 			it('hebt eine Ablehnung über das Segment „Offen" auf', async () => {
@@ -129,7 +133,7 @@ describe('Sichtungstabelle — Statusspalte', () => {
 				});
 
 				await radio(screen, 'Offen').click();
-				expect(submitVerdict).toHaveBeenCalledWith(8, 'reset');
+				expect(submitVerdict).toHaveBeenCalledWith(8, 'reset', { silent: true });
 			});
 		});
 	}

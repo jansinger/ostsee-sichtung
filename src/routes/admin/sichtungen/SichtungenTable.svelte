@@ -9,6 +9,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import Icon from '$lib/components/Icon.svelte';
+	import StatusBlock from '$lib/components/StatusBlock.svelte';
 	import { DEAD_FINDING_PRESENTATION, isDeadFinding } from '$lib/components/admin/deadFinding';
 	import SightingActionsMenu from '$lib/components/admin/SightingActionsMenu.svelte';
 	import SightingStatusControl from '$lib/components/admin/SightingStatusControl.svelte';
@@ -34,6 +35,7 @@
 	} from '$lib/utils/geo/balticSeaStatus';
 	import { setAllSelected, toggleSelection, type BulkHeaderState } from './bulkSelection';
 	import type { ColumnVisibility } from './columns';
+	import { describeEmptyList } from './emptyList';
 	import { NUR_WEIT_BLOCK } from './layoutSwitch';
 	import { naechsteRichtung, resolveSort, type SortColumn } from './sortParams';
 
@@ -49,6 +51,9 @@
 		bulkProgress: { done: number; total: number } | null;
 		/** Ids, deren Statuswechsel gerade läuft (je Zeile, nicht global). */
 		statusPending: ReadonlySet<number>;
+		/** Entscheidet den Wortlaut des Leer-Zustands (`emptyList.ts`). */
+		hasActiveFilters: boolean;
+		onresetfilters: () => void;
 		onbulk: (verdict: SightingVerdict) => void;
 		onview: (sighting: SichtungenListRow) => void;
 		ontestemail: (id: number) => void;
@@ -66,6 +71,8 @@
 		bulkPending,
 		bulkProgress,
 		statusPending,
+		hasActiveFilters,
+		onresetfilters,
 		onbulk,
 		onview,
 		ontestemail,
@@ -75,6 +82,11 @@
 	}: Props = $props();
 
 	let visibleIds = $derived(sightings.map((sighting) => sighting.id));
+
+	let emptyText = $derived(describeEmptyList(hasActiveFilters));
+
+	/* Zwei feste Spalten plus die eingeschalteten; Herleitung am `colspan` im Markup. */
+	let spaltenAnzahl = $derived(2 + Object.values(columnVisibility).filter(Boolean).length);
 
 	/* Gemessene Breite der Aktionsspalte — die Statusspalte rastet links davon
 	   ein. Ein fester Wert ginge nicht: die Zahl der Aktions-Buttons hängt an
@@ -536,6 +548,34 @@
 								</div>
 							</td>
 						{/if}
+					</tr>
+				{:else}
+					<!-- Die Meldung steht IN der Tabelle und nicht darunter: Der
+					     Spaltenkopf bleibt damit stehen, und die Aussage steht an der
+					     Stelle, an der die Daten stünden (`StatusBlock`, Kopfkommentar).
+					     Wortlaut aus `emptyList.ts`, gemeinsam mit der Kartenliste.
+
+					     `spaltenAnzahl` sind die zwei festen Spalten (Auswahl,
+					     Totfund-Marker) plus jede eingeschaltete konfigurierbare Spalte.
+					     `ColumnVisibility` bildet die `<th>` des Kopfes eins zu eins ab —
+					     eine neue Spalte dort zieht die Zahl mit, ohne dass hier etwas
+					     nachgeführt werden muss. Ein zu kleines `colspan` ließe die
+					     Meldung in einer Spalte klemmen. -->
+					<tr>
+						<td colspan={spaltenAnzahl} class="p-4">
+							<StatusBlock
+								variant="empty"
+								title={emptyText.title}
+								description={emptyText.description}
+								action={emptyText.resetLabel
+									? {
+											label: emptyText.resetLabel,
+											onClick: onresetfilters,
+											icon: 'lucide:filter-x'
+										}
+									: undefined}
+							/>
+						</td>
 					</tr>
 				{/each}
 			</tbody>

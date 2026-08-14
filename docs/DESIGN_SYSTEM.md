@@ -238,6 +238,12 @@ freiräumen soll.
 Panels bei `md`, die Navbar bei `lg` — auf einem 800px-Tablet war das
 Formular „Desktop", die Navigation „Mobil".
 
+**Die Grenze gehört auf `767px`, wenn sie von unten gezogen wird.** `md` meint
+`min-width: 768px`; ein `max-width: 768px` daneben lässt beide Regeln bei genau
+768px gleichzeitig gelten. In `src/app.css` standen deshalb zwei Blöcke mit
+verschiedenen Zahlen für dieselbe Grenze (die Feldmodus-Navigation auf 767px,
+die Hover-Abschaltung auf 768px); seit 2026-08-14 sind es beide 767px.
+
 ---
 
 ## Einbettungs-Modi
@@ -433,13 +439,13 @@ welche Zustände fehlen, und wo das Theme verletzt wird.
 
 ### 1. Wiederkehrende Muster
 
-| Muster                   | Wo                                                                                                                                                                                            | Varianten | Kanonisch sollte sein                                                     |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------- |
+| Muster                   | Wo                                                                                                                                                                                                       | Varianten | Kanonisch sollte sein                                                     |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------- |
 | Datentabelle             | `src/routes/admin/sichtungen/+page.svelte:722`, `src/lib/components/admin/AdminSightingView.svelte` (9×), `src/routes/admin/statistics/+page.svelte:289`, `src/lib/components/admin/DataTableRow.svelte` | **4**     | Zwei Komponenten: `DataTable` (Liste) und `DataTableRow` (Schlüssel/Wert) |
 | Filter + Sortierung      | `src/routes/admin/sichtungen/+page.svelte` (URL-Parameter, `sortableTh`-Snippet)                                                                                                                         | 1         | bleibt — aber ohne Bezug zum `FilterPanel` der Karte                      |
-| Detail- gegen Edit-Sicht | `src/lib/components/admin/AdminSightingView.svelte` / `src/lib/components/admin/AdminSightingEditForm.svelte`                                                                                 | 2         | bleibt getrennt (siehe unten)                                             |
+| Detail- gegen Edit-Sicht | `src/lib/components/admin/AdminSightingView.svelte` / `src/lib/components/admin/AdminSightingEditForm.svelte`                                                                                            | 2         | bleibt getrennt (siehe unten)                                             |
 | Dialog                   | `src/lib/components/admin/ExportModal.svelte`, Spam-Check in `src/routes/admin/sichtungen/+page.svelte:1011`, `src/lib/components/ui/Dialog/DeleteDialog.svelte`                                         | **3**     | `DeleteDialog`s Grundgerüst als `Modal` verallgemeinern                   |
-| Statusbadge              | `src/lib/components/admin/BooleanStatus.svelte` + 5 handgebaute Stellen                                                                                                                       | **6**     | `BooleanStatus` erweitern statt `badge-*` an der Aufrufstelle             |
+| Statusbadge              | `src/lib/components/admin/BooleanStatus.svelte` + 5 handgebaute Stellen                                                                                                                                  | **6**     | `BooleanStatus` erweitern statt `badge-*` an der Aufrufstelle             |
 | Paginierung              | `src/routes/admin/sichtungen/+page.svelte:945`                                                                                                                                                           | 1         | bleibt — einzige Aufrufstelle                                             |
 | Spalten-Sichtbarkeit     | `src/routes/admin/sichtungen/+page.svelte:440`                                                                                                                                                           | 1         | admin-spezifisch, kein Formular-Gegenstück                                |
 
@@ -459,10 +465,14 @@ Kartenliste (Zeile 599, `md:hidden`) und als Tabelle (Zeile 722,
 `hidden md:block`). Beide Schleifen sind getrennt gepflegt; die Spalten-
 Sichtbarkeit wirkt nur auf die Tabelle.
 
-**Ein Bruch des Breakpoint-Vertrags dabei:** Der Seitenkopf schaltet bei `sm`
-(640px, Zeile 385), die Datenliste bei `md` (768px, Zeile 599). Zwischen 640
-und 768px zeigt der Kopf also das Desktop-Layout, während darunter noch Karten
-stehen. Laut Abschnitt „Breakpoints" ist `sm` keine Layout-Grenze.
+**Ein Bruch des Breakpoint-Vertrags dabei — behoben.** Der Seitenkopf schaltete
+bei `sm` (640px), die Datenliste bei `md` (768px); zwischen 640 und 768px stand
+der Desktop-Kopf mit Spalten-Dropdown und Bulk-Kontext über einer Kartenliste,
+die weder Spalten noch Bulk-Auswahl kennt. Alle vier Umschaltpunkte kommen
+inzwischen aus `src/routes/admin/sichtungen/layoutSwitch.ts` und liegen auf
+`md`; nachgeprüft am 2026-08-14 enthält das Verzeichnis keine einzige
+`sm:`-Utility mehr. Abgesichert durch `e2e/admin-table-breakpoint.spec.ts`, der
+die Wirkung bei 700px und 900px misst statt der Klassennamen.
 
 **Warum Detail und Edit getrennt bleiben sollten:** `AdminSightingEditForm`
 setzt auf denselben Schema-getriebenen Feld-Pipeline wie das öffentliche
@@ -475,24 +485,35 @@ Aufgaben, keine zwei Varianten derselben.
 
 Dieselbe Matrix wie im Meldeformular:
 
-| Zustand        | Stand im Admin-Bereich                                                                                                              |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| **leer**       | **Fehlt vollständig.** Beide `{#each sightings}` (Zeile 600 und 782) haben keinen `{:else}`-Zweig.                                  |
-| **lädt**       | Nur in `src/lib/components/admin/AdminSightingView.svelte:346` (`loading`-Prop). Liste, Statistiken und Einstellungen haben keinen. |
-| **teilweise**  | Fehlt vollständig.                                                                                                                  |
-| fehlgeschlagen | Nur als Toast (`src/routes/admin/sichtungen/+page.svelte`: Löschen, Prüfstatus, Test-Mail) plus ein `alert-error` in `admin/[id]`.             |
-| **offline**    | Fehlt vollständig.                                                                                                                  |
+| Zustand        | Stand im Admin-Bereich                                                                                                                                  |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **leer**       | Seit 2026-08-14 in beiden Darstellungen der Liste (`SichtungenCards.svelte`, `SichtungenTable.svelte`). Statistiken und Einstellungen: weiterhin offen. |
+| **lädt**       | Nur in `src/lib/components/admin/AdminSightingView.svelte:346` (`loading`-Prop). Liste, Statistiken und Einstellungen haben keinen.                     |
+| **teilweise**  | Fehlt vollständig.                                                                                                                                      |
+| fehlgeschlagen | Auf `/admin/sichtungen` seit 2026-08-14 als stehende Fläche mit „Erneut versuchen"; dazu ein `alert-error` in `admin/[id]`.                             |
+| **offline**    | Fehlt vollständig.                                                                                                                                      |
 
-**Der wahrscheinlichste Fall ist auch der ungedeckte:** Ein Filter ohne Treffer
-zeigt eine Tabelle mit Kopfzeile und leerem Körper — ohne Aussage, ob gefiltert
+**Der wahrscheinlichste Fall war auch der ungedeckte:** Ein Filter ohne Treffer
+zeigte eine Tabelle mit Kopfzeile und leerem Körper — ohne Aussage, ob gefiltert
 wurde, ob noch geladen wird oder ob die Datenbank leer ist. Dieselbe Lücke, die
 die Karte hatte, bevor `SightingsMapView` einen Leer-Zustand bekam.
 
-**Fehlschläge als Toast sind das Muster, von dem sich das Formular gerade
-gelöst hat.** Löschen, Prüfstatus-Wechsel und Test-Mail melden ihren Fehler in
-einer Einblendung, die nach fünf Sekunden weg ist und die Wiederholung nicht
-trägt. `StatusBlock` deckt `loading`, `empty`, `partial`, `failed` und
-`offline` bereits ab und ist ohne Anpassung verwendbar.
+Der Wortlaut steht in `src/routes/admin/sichtungen/emptyList.ts` und
+unterscheidet die beiden Fälle: „Keine Sichtung passt zu den aktiven Filtern"
+mit dem Ausweg „Alle Filter zurücksetzen", und „Noch keine Sichtungen erfasst"
+**ohne** Schaltfläche — eine, die nichts bewirkt, gehört nicht hin
+(Button-Hierarchie). Ob gefiltert ist, kommt aus `buildFilterChips` **ohne**
+`skipVerified`: Ein Statusreiter ist ein Filter wie jeder andere, „Abgelehnt
+ohne Treffer" ist nicht „noch keine Sichtungen erfasst".
+
+**Fehlschläge als Toast waren das Muster, von dem sich das Formular gerade
+gelöst hatte.** Löschen, Prüfstatus-Wechsel und Test-Mail meldeten ihren Fehler
+in einer Einblendung, die nach fünf Sekunden weg war und die Wiederholung nicht
+trug. Sie laufen jetzt über `silent: true` (`sightingActions.ts`,
+`sightingVerdict.ts`) und einen `StatusBlock` in der Variante `failed` über der
+Liste, dessen Aktion genau den gescheiterten Aufruf wiederholt. Der **Erfolg**
+bleibt bewusst ein Toast: Er bestätigt einen abgeschlossenen Vorgang, und das
+Ergebnis steht ohnehin in der Liste.
 
 ### 3. Theme-Verstöße
 
@@ -579,8 +600,29 @@ an einem Icon landet also im gescannten Bestand und trägt dieselben 2,74:1 wie
 Der Scan über die sieben Routen bleibt dabei grün: die einzigen `stroke-`-Klassen im
 Bestand sind zwei `stroke-current`, und die enthalten keinen Farbnamen.
 
-Was die Regeln weiterhin **nicht** sehen: `hover:`-Varianten — der Scan liest den
-Ruhezustand.
+**`hover:` und die übrigen Varianten sind seit 2026-08-14 mit im Scan.** Hier
+stand bis dahin „Was die Regeln nicht sehen: `hover:`-Varianten — der Scan liest
+den Ruhezustand". Der Satz deckte zwei verschiedene Dinge mit derselben
+Begründung zu. Für die **gemessene Farbe** stimmt er weiterhin:
+`getComputedStyle` liefert ohne Zeiger auf dem Element den Ruhewert, daran ist
+nichts zu ändern. Für die **Klassenliste** stimmte er nie — `hover:text-warning`
+steht vollständig im `class`-Attribut. Gefunden hat der Scan sie nur deshalb
+nicht, weil alle Muster verankert sind (`^text-warning$`) und ein Präfix vorne
+nicht vorgesehen war.
+
+Es ist damit zum vierten Mal dieselbe Fehlerklasse — die Lücke saß in der
+Grammatik, nicht in den Daten —, diesmal zusätzlich als unvermeidbar
+dokumentiert, was sie am längsten getragen hat. `stripVariants` in
+`bannedClasses.ts` schält die Präfixe vor der Prüfung ab und schneidet dabei nur
+an einem `:` außerhalb eckiger Klammern (`[&:hover]:z-50`,
+`supports-[display:grid]:block`). Gemeldet wird die Klasse, wie sie im Markup
+steht.
+
+Der Bestand bleibt grün — geprüft am 2026-08-14: keine einzige Variante mit
+verbotener Basis, die acht `hover:shadow-*` sind durchweg `shadow-floating`. Die
+neuen Regelfälle sind deshalb in `bannedClasses.test.ts` an **konstruierten**
+Beispielen scharfgestellt, samt Gegenprobe über die konformen Varianten des
+Bestands.
 
 **Beim Aufräumen einer Fundstelle gilt:** Erst prüfen, ob die Farbe dort Bedeutung
 trägt. Ein dekoratives Icon oder ein Zierelement gehört auf `base-content/70` —

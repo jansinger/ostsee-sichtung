@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { seedAdminSession } from './helpers/adminSession';
 import { expectNoHorizontalOverflow, openAllDetails } from './helpers/overflow';
 import { expectCurrentStep, fillStep1, fillStep2 } from './helpers/form-helpers';
 import { FormPage } from './pages/FormPage';
@@ -201,5 +202,55 @@ test.describe('Layout — horizontaler Überlauf', () => {
 		await page.addStyleTag({ content: ohneTrennung });
 		await openAllDetails(page);
 		await expectNoHorizontalOverflow(page, '320px ohne Silbentrennung · Schritt 4');
+	});
+});
+
+/**
+ * Die beiden anderen Flächen, die auf 320px bedient werden.
+ *
+ * Bis 2026-08-14 deckte dieser Spec ausschließlich das Meldeformular ab. Das war
+ * nicht die riskanteste Auswahl: `/admin` und `/map` tragen die Elemente, die
+ * horizontal überlaufen — eine Datentabelle mit fixierten Spalten, Filter-Chips,
+ * schwebende Kartenbedienelemente und ein Bottom-Sheet. Dass der Bestand dort
+ * hält, ist im Übrigen kein Zufall, sondern erarbeitet: `break-all` an der
+ * Referenz-ID und `size="sm"` am Status-Control der Karte stehen genau deswegen
+ * im Code (`SichtungenCards.svelte`), und beide haben einen eigenen
+ * Regressionstest. Was fehlte, war der Wächter über die **Seite als Ganzes**.
+ *
+ * Nur 320px und nicht die acht Breiten oben: Beide Seiten sind datengetrieben
+ * und brauchen Session bzw. Kartenaufbau; die engste Breite ist die
+ * aussagekräftigste, und ein Überlauf, den 320px nicht zeigt, zeigen 360 oder
+ * 390 kaum.
+ */
+test.describe('Layout — horizontaler Überlauf auf Admin und Karte', () => {
+	test.setTimeout(90_000);
+
+	test('kein Überlauf auf 320px — /admin (Eingang)', async ({ page, context, baseURL }) => {
+		if (!baseURL) throw new Error('baseURL fehlt — playwright.config.ts setzt sie normalerweise');
+		await page.setViewportSize({ width: 320, height: 900 });
+		await seedAdminSession(context, baseURL);
+
+		const response = await page.goto('/admin');
+		/* Ohne diese Prüfung misst der Test die Login- oder Fehlerseite: Die hat
+		   kein Layout, das überlaufen könnte, und wäre vakuum-grün. Dieselbe
+		   Begründung wie bei den `renders`-Sonden in `design-tokens.spec.ts`. */
+		expect(response?.status(), 'Admin-Session gilt nicht — /admin liefert keine 200').toBe(200);
+		await expect(page.locator('main')).toBeVisible();
+
+		await openAllDetails(page);
+		await expectNoHorizontalOverflow(page, '320px · /admin');
+	});
+
+	test('kein Überlauf auf 320px — /map', async ({ page }) => {
+		await page.setViewportSize({ width: 320, height: 900 });
+		await page.goto('/map');
+
+		/* Erst messen, wenn die Karte steht: Vorher fehlen die schwebenden
+		   Bedienelemente und die Legende im DOM — also gerade das, was auf 320px
+		   überlaufen könnte. */
+		await expect(page.locator('.ol-viewport')).toBeVisible();
+
+		await openAllDetails(page);
+		await expectNoHorizontalOverflow(page, '320px · /map');
 	});
 });
