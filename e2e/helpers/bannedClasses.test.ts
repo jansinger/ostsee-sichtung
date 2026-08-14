@@ -3,6 +3,7 @@ import {
 	BELOW_OPACITY_FLOOR,
 	findOffenders,
 	OPACITY_FLOOR,
+	OUTLINE_STATUS_COLOR,
 	RAW_ELEVATION,
 	RAW_MOTION_DURATION,
 	RAW_Z_INDEX,
@@ -290,6 +291,177 @@ describe('TAILWIND_PALETTE', () => {
 	   verankert bleibt und nicht irgendwo in der Klasse sucht. */
 	it.each(['photo-red-500', 'chromatic-white', 'shadow-raised'])('lässt %s durch', (className) => {
 		expect(TAILWIND_PALETTE.offends(className)).toBe(false);
+	});
+});
+
+/**
+ * Statusfarbe hinter einem Umriss-Modifikator.
+ *
+ * **Die Lücke, die diese Gruppe schließt.** `STATUS_AS_FOREGROUND` oben prüft die
+ * Präfixe `text-`, `fill-` und `stroke-`; die Gegenprobe in `design-system.md`
+ * las sich dazu als „steht sie hinter `bg-`, `btn-`, `badge-` oder `alert-`, darf
+ * sie es nicht" — also: diese vier Präfixe erzeugen eine Vollton-Fläche, dort ist
+ * die Statusfarbe zulässig. Für `badge-secondary` allein stimmt das. In
+ * Verbindung mit `badge-outline` kehrt DaisyUI die Rolle genau um (5.7.16,
+ * `daisyui.css`):
+ *
+ * ```css
+ * .btn-outline, .btn-dash { --btn-bg: #0000; color: var(--btn-color, …) }
+ * .badge-outline          { color: var(--badge-color); --badge-bg: #0000 }
+ * ```
+ *
+ * Damit ist die Statusfarbe Text- und Rahmenfarbe auf durchsichtigem Grund —
+ * dieselbe Lage wie bei `text-secondary`, nur über zwei Klassen zusammengesetzt.
+ * Gemessen auf `base-100` sind das 2,68:1 (`secondary`) bzw. 1,55:1 (`accent`),
+ * die Werte aus der Tabelle in `design-system.md`.
+ *
+ * **Warum der DOM-Scan das strukturell nicht sehen konnte:** Alle Regeln oben
+ * prüfen *eine* Klasse gegen ein verankertes Muster, und beide Klassen sind für
+ * sich genommen zulässig. Der Verstoß entsteht erst aus der Kombination. Es ist
+ * damit nicht wieder die Grammatik und nicht die Datenliste, sondern die
+ * **Granularität**: Die Prüfeinheit war die Klasse, der Fehler lebt am Element.
+ * Gefunden hat ihn deshalb auch keine dieser Regeln, sondern der axe-Scan
+ * (`e2e/axe-scan.spec.ts`) auf `/about`, der den gerenderten Kontrast misst.
+ *
+ * Die Beispiele hier sind aus demselben Grund wie oben **konstruiert**: Ein Scan
+ * über einen bereinigten Bestand belegt nichts über die Regel.
+ */
+describe('OUTLINE_STATUS_COLOR', () => {
+	/* Die fünf Farben aus SURFACE_ONLY_COLORS — dieselbe Liste wie bei
+	   STATUS_AS_FOREGROUND, und aus demselben Grund: Als Vordergrund reicht keine
+	   von ihnen 4,5:1. */
+	it.each(['secondary', 'accent', 'warning', 'info', 'success'])(
+		'meldet badge-outline mit badge-%s',
+		(color) => {
+			expect(
+				findOffenders(OUTLINE_STATUS_COLOR, [element(`badge badge-${color} badge-outline`)])
+			).toHaveLength(1);
+		}
+	);
+
+	/* Der Fund von /about, in der Schreibweise der Aufrufstelle. Gemeldet wird die
+	   Farbklasse und nicht der Modifikator: Der Umriss ist die gewollte Optik, die
+	   Farbe ist das, was weg muss. */
+	it('nennt die Farbklasse, nicht den Modifikator', () => {
+		expect(
+			findOffenders(OUTLINE_STATUS_COLOR, [element('btn btn-secondary btn-outline btn-lg')])
+		).toEqual(['<span> btn-secondary — in class="btn btn-secondary btn-outline btn-lg"']);
+	});
+
+	/* `dash` teilt sich die Deklaration mit `outline` (nur der Rahmenstil
+	   unterscheidet sich), `ghost` und `link` setzen `--btn-bg:#0000` genauso.
+	   Alle vier sind derselbe Fall und stehen deshalb zusammen im Muster — nicht,
+	   weil es sie im Bestand gibt, sondern weil sie dieselbe Regel verletzen. */
+	it.each([
+		'badge badge-dash badge-warning',
+		'btn btn-dash btn-info',
+		'btn btn-ghost btn-accent',
+		'btn btn-link btn-success'
+	])('meldet %s', (classes) => {
+		expect(findOffenders(OUTLINE_STATUS_COLOR, [element(classes)])).toHaveLength(1);
+	});
+
+	/* `btn-soft` steht seit dem 2026-08-14 mit im Muster — vorher war es hier als
+	   „offene Messung" vermerkt. Gemessen (Browser, `/about`, auf base-100):
+	   secondary 2,50 · accent 1,50 · warning 2,54 · info 3,56 · success 3,49.
+	   Es ist damit sogar *schlechter* als der Umriss, weil der 8-%-Tint derselben
+	   Farbe den Hintergrund an den Vordergrund heranholt. */
+	it.each(['secondary', 'accent', 'warning', 'info', 'success'])(
+		'meldet btn-soft mit btn-%s',
+		(color) => {
+			expect(
+				findOffenders(OUTLINE_STATUS_COLOR, [element(`btn btn-soft btn-${color}`)])
+			).toHaveLength(1);
+		}
+	);
+
+	/* **`badge-soft` gehört ausdrücklich NICHT dazu** — und zwar nicht, weil es
+	   selten wäre, sondern weil `app.css` es seit dem 2026-08-10 überschreibt:
+	   `color: var(--color-base-content)` auf einem 18-%-Tint. Dieselbe Messung
+	   liefert dort 12,55 bis 15,31:1, je nach Farbe. `badge-soft badge-success`
+	   in `reporterHistoryPresentation.ts` ist damit korrekt und darf nicht
+	   gemeldet werden.
+
+	   Das ist der Grund für die getrennten Listen je Bauteil: Bei `btn` und
+	   `badge` steht hinter demselben Modifikatornamen ein anderer Rendering-Weg.
+	   Dass die Ausnahme an einem Override hängt, ist ihre Schwachstelle — sie ist
+	   deshalb in `design-tokens.spec.ts` mit einer eigenen Kontrastmessung
+	   verankert: Fällt der Override, wird die Ausnahme rot und nicht still
+	   falsch. */
+	it.each(['success', 'warning', 'secondary', 'accent', 'info'])(
+		'lässt badge-soft mit badge-%s durch (app.css-Override, > 12:1)',
+		(color) => {
+			expect(
+				findOffenders(OUTLINE_STATUS_COLOR, [element(`badge badge-soft badge-${color}`)])
+			).toEqual([]);
+		}
+	);
+
+	/* `primary` (9,22:1) und `error` (6,04:1) bestehen als Vordergrund — dieselbe
+	   Ausnahme wie bei STATUS_AS_FOREGROUND. `btn btn-outline btn-error btn-sm`
+	   ist zudem die in design-system.md vorgeschriebene destruktive Variante; sie
+	   hier zu melden machte die Regel unerfüllbar. */
+	it.each([
+		'btn btn-outline btn-error btn-sm',
+		'btn btn-outline btn-primary',
+		'badge badge-outline badge-primary',
+		'btn btn-soft btn-primary',
+		'btn btn-soft btn-error'
+	])('lässt %s durch', (classes) => {
+		expect(findOffenders(OUTLINE_STATUS_COLOR, [element(classes)])).toEqual([]);
+	});
+
+	/* Beide Klassen sind für sich genommen zulässig — genau daran ist der Fall
+	   vorbeigekommen. Eine Regel, die eine von beiden allein meldete, verböte die
+	   Vollton-Fläche und damit die halbe Anwendung. */
+	it.each([
+		'badge badge-secondary',
+		'badge badge-outline',
+		'btn btn-warning',
+		'btn btn-outline',
+		'alert alert-warning'
+	])('lässt %s allein durch', (classes) => {
+		expect(findOffenders(OUTLINE_STATUS_COLOR, [element(classes)])).toEqual([]);
+	});
+
+	/* `badge-ghost` ist die Ausnahme unter den Modifikatoren: Es setzt Fläche
+	   *und* Vordergrund fest auf base-200/base-content und ignoriert die
+	   Badge-Farbe. Ein `badge-ghost badge-success` ist damit kein Kontrastfehler,
+	   und die Kombination steht im Bestand (`BooleanStatus.svelte` schaltet genau
+	   zwischen diesen beiden). Deshalb führt das Muster die Modifikatoren je
+	   Bauteil getrennt und nicht als eine gemeinsame Liste. */
+	it('lässt badge-ghost mit einer Statusfarbe durch', () => {
+		expect(
+			findOffenders(OUTLINE_STATUS_COLOR, [element('badge badge-ghost badge-success')])
+		).toEqual([]);
+	});
+
+	/* Varianten-Präfixe: `stripVariants` greift auch für die Bedingung, sonst
+	   liefe die Regel an einem `md:btn-outline` ins Leere — dieselbe Lücke, die
+	   die anderen Regeln am 2026-08-14 geschlossen haben, nur an der anderen
+	   Hälfte der Kombination. */
+	it.each(['btn md:btn-outline btn-warning', 'btn btn-outline hover:btn-accent'])(
+		'meldet %s trotz Varianten-Präfix',
+		(classes) => {
+			expect(findOffenders(OUTLINE_STATUS_COLOR, [element(classes)])).toHaveLength(1);
+		}
+	);
+
+	/* Verankerung: Der Modifikator darf nicht als Teilwort greifen. */
+	it.each(['badge badge-outlined badge-warning', 'btn btn-outline-none btn-info'])(
+		'lässt %s durch',
+		(classes) => {
+			expect(findOffenders(OUTLINE_STATUS_COLOR, [element(classes)])).toEqual([]);
+		}
+	);
+
+	/* Der Hinweis muss die Antwort mitliefern. Sie ist hier nicht `-strong` (das
+	   gibt es für `btn-`/`badge-` nicht), sondern: Vollton statt Umriss, oder ein
+	   farbloser Umriss. */
+	it('nennt beide Auswege im Hinweis', () => {
+		expect(OUTLINE_STATUS_COLOR.hint).toContain('btn-outline');
+		expect(OUTLINE_STATUS_COLOR.hint).toContain('primary');
+		expect(OUTLINE_STATUS_COLOR.hint).toContain('error');
 	});
 });
 

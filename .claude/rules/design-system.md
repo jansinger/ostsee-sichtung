@@ -75,6 +75,32 @@ Gemessen auf `base-100` (Rechnung wie in `daisyui.md`, im Browser nach sRGB):
 
 **Gegenprobe:** Steht die Farbe hinter `text-`, `fill-` oder `stroke-`, muss `-strong` dranhängen. Steht sie hinter `bg-`, `btn-`, `badge-` oder `alert-`, darf sie es nicht.
 
+**Die zweite Hälfte dieser Gegenprobe hat einen Vorbehalt** (seit 2026-08-14). Sie nimmt an, dass `btn-`/`badge-` eine Vollton-Fläche erzeugen. Ein Umriss-Modifikator kehrt das um — DaisyUI 5.7.16 setzt an `.btn-outline`, `.btn-dash`, `.btn-ghost`, `.btn-link`, `.badge-outline` und `.badge-dash` den Grund auf `#0000` und die Bauteil-Farbe auf `color`. Aus `badge badge-secondary badge-outline` wird damit dieselbe Textfarbe wie aus `text-secondary`: **2,68:1**, bei `accent` **1,55:1**. Der Klassen-Scan konnte das strukturell nicht sehen, weil beide Klassen einzeln zulässig sind und er je Klasse entscheidet; gefunden hat es der axe-Scan auf `/about`.
+
+```svelte
+<!-- ❌ FALSCH: Statusfarbe wird Text- und Rahmenfarbe auf durchsichtigem Grund -->
+<span class="badge badge-secondary badge-outline">Ostsee</span>
+<a class="btn btn-accent btn-outline">Tiere bestimmen</a>
+
+<!-- ✅ RICHTIG: entweder Vollton — oder Umriss ohne Farbklasse -->
+<span class="badge badge-secondary">Ostsee</span>
+<a class="btn btn-outline">Tiere bestimmen</a>
+```
+
+`primary` und `error` bleiben zulässig; `btn btn-outline btn-error btn-sm` ist weiterhin die vorgeschriebene destruktive Variante. Gewacht wird das seither von `OUTLINE_STATUS_COLOR` (`e2e/helpers/bannedClasses.ts`) — der ersten Regel, die die **ganze** Klassenliste eines Elements auswertet (`appliesTo`) statt einzelner Klassen.
+
+**Zwei der sechs Modifikatoren fallen nicht darunter, und beide Male entscheidet das nicht der Name.** `badge-ghost` setzt Fläche und Vordergrund fest auf `base-200`/`base-content` und ignoriert die Badge-Farbe (`BooleanStatus.svelte` schaltet genau zwischen `badge-ghost` und `badge-success`). Und `soft` heißt an Button und Badge nicht dasselbe — gemessen auf `base-100` am 2026-08-14:
+
+| Farbe     | `btn-soft` | `badge-soft` |
+| --------- | ---------- | ------------ |
+| secondary | **2,50**   | 14,08        |
+| accent    | **1,50**   | 15,31        |
+| warning   | **2,54**   | 14,06        |
+| info      | **3,56**   | 13,33        |
+| success   | **3,49**   | 13,38        |
+
+`btn-soft` ist damit **schlechter als der Umriss** — der Tint derselben Farbe holt den Hintergrund an den Vordergrund heran — und steht in der Regel. `badge-soft` besteht nur wegen des Overrides in `app.css` (Textfarbe `base-content`, Tint 18 %, seit 2026-08-10, dieselbe Korrektur wie bei den Alerts); DaisyUIs eigenes `.badge-soft` läge bei den `btn-soft`-Werten. Weil diese Ausnahme an einem Override hängt, ist sie in `design-tokens.spec.ts` mit einer eigenen Messung verankert: Ohne den Override misst `badge-soft badge-secondary` 2,28:1, und der Test wird rot, statt dass die Ausnahme still zur falschen Aussage wird.
+
 Die über 60 Verstöße des Altbestands sind mit PR 4/4 (#620) abgearbeitet; seither ist die Gruppe „verbotene Kombinationen im DOM" in `e2e/design-tokens.spec.ts` ein **aktiver Guard** und kein `fixme` mehr. Sie fährt `/`, `/map`, `/about` sowie vier Admin-Routen (Session über `e2e/helpers/adminSession.ts`, ohne Auth0 — Begründung dort) — seit dem 2026-07-30 **alle sieben auch in CI**, gegen einen Postgres-Service mit Seed. Eine neue Fundstelle gehört an der Aufrufstelle behoben — nicht durch Aufweichen der Regel.
 
 **Die Regeln stehen in `e2e/helpers/bannedClasses.ts`,** nicht als Regex-Literale im Spec, und sind über `bannedClasses.test.ts` an konstruierten Beispielen abgesichert (läuft in `npm run test:quick`). Der Grund: Ein Scan über einen konformen Bestand belegt nichts über die Regel — genau daran ist die Deckkraft-Lücke unentdeckt geblieben.
@@ -501,6 +527,11 @@ Das Formular wird an Deck und am Strand ausgefüllt — nass, in der Sonne, mit 
   Auswahl-Controls" unten — die Regel gilt für Checkbox und Toggle genauso.
 
 - Fehlermeldungen mit `role="alert"` und `aria-live="polite"`, referenziert über `aria-describedby` — und nur dann referenziert, wenn das Element tatsächlich gerendert ist.
+- **`aria-label` braucht eine Rolle, die Naming unterstützt.** An einem nackten `<span>` gilt es nicht — ARIA erlaubt die Namensangabe nur an Elementen mit passender Rolle. Ein bedeutungstragendes Zeichen (das Pflichtfeld-Sternchen) bekommt deshalb `role="img"` dazu; ein bedeutungsloses bekommt `aria-hidden="true"` statt eines Labels. axe meldet den Fall als `aria-prohibited-attr`, aber unter `incomplete` — siehe den Absatz unten.
+
+**Der axe-Scan wertet seit 2026-08-14 auch `incomplete` aus** (`e2e/axe-scan.spec.ts`). Vorher prüfte er nur `violations` und verwarf damit ein Drittel seines Ergebnisses: Auf `/about` standen zwei CTA-Knöpfe mit `btn-secondary btn-outline` (2,68:1), und der Scan war grün — axe konnte hinter dem durchsichtigen Grund den Verlauf nicht auflösen und legte sie unter `incomplete` ab. Geprüft wird jetzt gegen eine Liste aus Regel-ID, Obergrenze und **Begründung** je Route; eine neue Regel oder eine steigende Zahl macht den Test rot.
+
+Die Arbeitsteilung dabei ist ausdrücklich benannt, weil sie sonst unterstellt würde: Der Deckel bemerkt **neue** unentscheidbare Stellen, nicht eine Farbänderung **innerhalb** einer bereits gelisteten (`/about` steht mit und ohne die fehlerhaften Klassen bei 25 Knoten). Farbe und Klassenkombination entscheiden die eigenen Messungen in `design-tokens.spec.ts` — nicht axe.
 
 ---
 

@@ -85,6 +85,16 @@ export interface BannedRule {
 	 * nicht durch eine Ausnahme hier.
 	 */
 	readonly textOnly?: boolean;
+	/**
+	 * Bedingung an die **ganze** Klassenliste des Elements (varianten-bereinigt).
+	 *
+	 * Ohne sie ist die Prüfeinheit die einzelne Klasse — für die sechs Regeln
+	 * oben genau richtig, weil dort jede Klasse für sich schon der Verstoß ist.
+	 * `OUTLINE_STATUS_COLOR` unten ist der erste Fall, bei dem beide beteiligten
+	 * Klassen einzeln zulässig sind und erst ihre Kombination den Fehler ergibt;
+	 * `offends` bleibt dabei die Frage „welche Klasse wird gemeldet".
+	 */
+	readonly appliesTo?: (classNames: readonly string[]) => boolean;
 }
 
 /**
@@ -265,6 +275,100 @@ export const TAILWIND_PALETTE: BannedRule = {
 	offends: (className) => TAILWIND_PALETTE_PATTERN.test(className)
 };
 
+/**
+ * Modifikatoren, die eine Bauteil-Farbe vom Grund auf den **Vordergrund**
+ * drehen — je Bauteil, nicht als gemeinsame Liste.
+ *
+ * Wörtlich aus `node_modules/daisyui/daisyui.css` (5.7.16):
+ *
+ * ```css
+ * .btn-outline, .btn-dash { --btn-bg:#0000; color: var(--btn-color, …) }
+ * .btn-ghost              { --btn-bg:#0000; color: var(--btn-color, …) }
+ * .btn-link               { --btn-bg:#0000; color: var(--btn-color, …) }
+ * .badge-outline          { color: var(--badge-color); --badge-bg:#0000 }
+ * .badge-dash             { color: var(--badge-color); --badge-bg:#0000 }
+ * ```
+ *
+ * Die Trennung nach Bauteil ist kein Zierrat: **`badge-ghost` gehört nicht
+ * dazu.** Es setzt Fläche und Vordergrund fest auf `base-200`/`base-content`
+ * und ignoriert die Badge-Farbe — `badge-ghost badge-success` ist damit kein
+ * Kontrastfehler, und genau diese Kombination schaltet `BooleanStatus.svelte`.
+ * Eine gemeinsame Modifikatorenliste hätte sie fälschlich gemeldet.
+ *
+ * **`soft` trennt die beiden Listen ein zweites Mal** — und hier entscheidet
+ * nicht DaisyUI, sondern `app.css`. Beide Varianten färben den Vordergrund mit
+ * der Statusfarbe und legen einen Tint derselben Farbe darunter; gemessen im
+ * Browser auf `base-100` (2026-08-14, `e2e/helpers/contrast.ts`):
+ *
+ * | Farbe     | `btn-soft` | `badge-soft` |
+ * | --------- | ---------- | ------------ |
+ * | secondary | **2,50**   | 14,08        |
+ * | accent    | **1,50**   | 15,31        |
+ * | warning   | **2,54**   | 14,06        |
+ * | info      | **3,56**   | 13,33        |
+ * | success   | **3,49**   | 13,38        |
+ *
+ * `btn-soft` ist damit sogar **schlechter als der Umriss** (2,67/1,55/2,73/
+ * 3,91/3,83): Der Tint holt den Hintergrund an den Vordergrund heran. Es steht
+ * deshalb im Muster.
+ *
+ * `badge-soft` steht nicht darin, weil `app.css` seit dem 2026-08-10 die
+ * Textfarbe auf `base-content` und den Tint auf 18 % überschreibt — dieselbe
+ * Korrektur wie bei den Alerts, eine Ebene tiefer. `badge-soft badge-success`
+ * (`reporterHistoryPresentation.ts`) ist damit korrekt.
+ *
+ * **Die Ausnahme hängt an diesem Override und ist deshalb dort verankert:**
+ * `design-tokens.spec.ts` misst `badge-soft` mit allen fünf Farben gegen die
+ * AA-Schwelle. Fällt der Override, wird die Messung rot — statt dass diese
+ * Ausnahme still zur falschen Aussage wird.
+ */
+const FOREGROUND_MODIFIERS = {
+	badge: ['outline', 'dash'],
+	btn: ['outline', 'dash', 'ghost', 'link', 'soft']
+} as const;
+
+const COMPONENTS = Object.keys(FOREGROUND_MODIFIERS) as (keyof typeof FOREGROUND_MODIFIERS)[];
+
+const FOREGROUND_MODIFIER_PATTERN = new RegExp(
+	String.raw`^(?:${COMPONENTS.map(
+		(component) => `${component}-(?:${FOREGROUND_MODIFIERS[component].join('|')})`
+	).join('|')})$`
+);
+
+const COMPONENT_STATUS_COLOR_PATTERN = new RegExp(
+	String.raw`^(?:${COMPONENTS.join('|')})-(?:${SURFACE_ONLY_COLORS.join('|')})${OPACITY_SUFFIX}$`
+);
+
+/**
+ * Statusfarbe an einem Bauteil, dessen Grund durchsichtig ist.
+ *
+ * **Warum die Gegenprobe der `*-content`-Regel hier umkippt.**
+ * `design-system.md` erlaubt die Statusfarbe hinter `bg-`, `btn-`, `badge-` und
+ * `alert-` — mit der Annahme, diese Präfixe erzeugten eine Vollton-Fläche. Für
+ * `badge-secondary` allein trifft das zu. Zusammen mit `badge-outline` wird
+ * dieselbe Farbe zur Text- und Rahmenfarbe auf durchsichtigem Grund und misst
+ * auf `base-100` die 2,68:1 aus der Tabelle dort; `accent` 1,55:1. Es ist
+ * derselbe Verstoß wie `text-secondary`, nur auf zwei Klassen verteilt.
+ *
+ * **Und deshalb ist es die erste Regel mit `appliesTo`.** Die sechs oben prüfen
+ * je eine Klasse gegen ein verankertes Muster — hier sind beide Klassen einzeln
+ * zulässig, der Fehler entsteht erst am Element. Die Lücke saß damit weder in
+ * der Grammatik des Musters noch in seiner Farbliste (die beiden Fehlerklassen,
+ * die diese Datei sonst beschreibt), sondern in der **Granularität**: Die
+ * Prüfeinheit war die Klasse, der Fehler lebt eine Ebene höher. Gefunden hat
+ * ihn folgerichtig keine dieser Regeln, sondern der axe-Scan
+ * (`e2e/axe-scan.spec.ts`), der den gerenderten Kontrast misst statt Namen zu
+ * lesen.
+ *
+ * Gemeldet wird die **Farbklasse**, nicht der Modifikator: Der Umriss ist die
+ * gewollte Optik, die Farbe ist das, was an der Aufrufstelle entfällt.
+ */
+export const OUTLINE_STATUS_COLOR: BannedRule = {
+	hint: 'Statusfarbe an einem Bauteil ohne Vollton-Fläche (btn-outline/-dash/-ghost/-link/-soft, badge-outline/-dash): DaisyUI macht die Farbe dort zur Textfarbe — secondary misst 2,68:1, accent 1,55:1, als btn-soft sogar 2,50 bzw. 1,50. Entweder Vollton (btn-secondary ohne den Modifikator) oder der Umriss ohne Farbklasse. Zulässig bleiben primary und error (9,22:1 / 6,04:1) — btn btn-outline btn-error ist die vorgeschriebene destruktive Variante.',
+	appliesTo: (classNames) => classNames.some((name) => FOREGROUND_MODIFIER_PATTERN.test(name)),
+	offends: (className) => COMPONENT_STATUS_COLOR_PATTERN.test(className)
+};
+
 /* ------------------------------------------------------------------------ */
 /* Nicht-Farb-Tokens: Elevation, Z-Index, Motion                             */
 /* ------------------------------------------------------------------------ */
@@ -408,9 +512,14 @@ export function findOffenders(
 
 		/* Geprüft wird der Basis-Utility, gemeldet die Klasse, wie sie im Markup
 		   steht — sonst suchte man nach `text-warning` und fände nichts. */
-		const offending = element.classes
-			.split(/\s+/)
-			.filter((name) => name && rule.offends(stripVariants(name)));
+		const names = element.classes.split(/\s+/).filter(Boolean);
+		const bases = names.map(stripVariants);
+
+		/* Die Bedingung sieht dieselben bereinigten Namen wie `offends`: Ein
+		   `md:btn-outline` ist derselbe Modifikator wie `btn-outline`. */
+		if (rule.appliesTo && !rule.appliesTo(bases)) continue;
+
+		const offending = names.filter((_, index) => rule.offends(bases[index]));
 		if (offending.length === 0) continue;
 
 		offenders.push(`<${element.tag}> ${offending.join(' ')} — in class="${element.classes}"`);
