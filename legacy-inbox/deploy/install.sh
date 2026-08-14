@@ -52,6 +52,7 @@ installiere() {
 
 installiere sync-root.sh legacy-inbox-sync
 installiere client-report.sh legacy-inbox-report
+installiere status.sh legacy-inbox-status
 
 # melde.sh wird von den root-Skripten per `.` eingebunden, und `.` ist
 # Ausführen. Deshalb braucht auch dieser Baustein eine root-eigene Fassung;
@@ -66,6 +67,10 @@ Die Plesk-Zeitpläne müssen auf diese Pfade zeigen:
 
   $ZIEL/legacy-inbox-sync      alle 15 Minuten
   $ZIEL/legacy-inbox-report    täglich
+
+legacy-inbox-status hat keinen Zeitplan — es ist zum Nachsehen von Hand:
+
+  sudo $ZIEL/legacy-inbox-status
 
   plesk bin scheduler --update <id> -command $ZIEL/legacy-inbox-sync
 

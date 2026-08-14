@@ -372,8 +372,26 @@ Sorte „meldet Erfolg und tut nichts":
   jeder Lauf mit `Permission denied` — der Sync überträgt dann gar nichts
   mehr. `config` und `melde.sh` gehören dem Domain-Benutzer.
 
-Geprüft wird das, indem man einen Fehlerfall wirklich auslöst und danach ins
-Mail-Log sieht — nicht, indem man den Exit-Code liest:
+### Zustand von Hand prüfen
+
+```bash
+ssh hawking "sudo -n /usr/local/sbin/legacy-inbox-status"        # 7 Tage
+ssh hawking "sudo -n /usr/local/sbin/legacy-inbox-status 30"     # 30 Tage
+```
+
+Nur lesend. Der Bericht fasst zusammen, was sonst an fünf Stellen steht:
+Posteingang, Zugriffsprotokoll, Zeitpläne, Dateirechte, Endpunkte. Exit 0
+heißt „keine Auffälligkeiten", Exit 1: Es steht ein `BEFUND:` im Text.
+
+Die tägliche Kontrolle meldet nur, wenn etwas nicht angenommen wurde — dieser
+Bericht zeigt auch, dass nichts vorliegt. Das ist der Unterschied, an dem der
+Android-Ausfall elf Tage lang vorbeigelaufen ist: Stille sah aus wie Ruhe.
+
+Für Claude Code liegt derselbe Ablauf als Skill unter
+`.claude/skills/posteingang-status/`.
+
+Geprüft wird der Meldeweg dagegen, indem man einen Fehlerfall wirklich auslöst
+und danach ins Mail-Log sieht — nicht, indem man den Exit-Code liest:
 
 ```bash
 ssh hawking "sudo -n /var/www/vhosts/schweinswalsichtung.de/legacy-sync/client-report.sh 31/Jul/2026"
