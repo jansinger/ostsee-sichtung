@@ -91,7 +91,9 @@ Die Regel prüft den **Quelltext** aller `<style>`-Blöcke und CSS-Dateien auf H
 
 **Konsequenz für Komponenten-CSS:** Auch ein Farbwert im scoped `<style>` kommt aus einem Token. Braucht ein Schleier dort mehr Deckkraft als die Utility hergibt, ist das `color-mix(in oklab, var(--scrim-surface) <n>%, transparent)` — nicht ein `rgba()` mit demselben Ergebnis.
 
-**Was der Scan nicht sieht:** `hover:`-Zustände — er liest den Ruhezustand. Dafür gilt die Regel „`text-error` nicht auf `base-300`" unten.
+**Varianten-Präfixe fängt der Scan seit 2026-08-14 mit.** `hover:text-warning` ist ein Verstoß wie `text-warning` — `stripVariants` in `bannedClasses.ts` schält `hover:`, `md:`, `group-hover:` usw. vor der Prüfung ab (und schneidet dabei nur an einem `:` außerhalb eckiger Klammern, damit `[&:hover]:z-50` heil bleibt). Hier stand vorher „Was der Scan nicht sieht: `hover:`-Zustände"; das galt für die **gemessene Farbe** und war für die **Klassenliste** falsch, die vollständig im `class`-Attribut steht.
+
+**Was der Scan weiterhin nicht sieht:** den gemessenen Kontrast eines Hover-Zustands — `getComputedStyle` liefert ohne Zeiger den Ruhewert. Dafür gilt die Regel „`text-error` nicht auf `base-300`" unten.
 
 **Erhöhter Kontrast heißt `prefers-contrast: more`, nie `high`** (seit 2026-08-09). `high` war der Entwurfsname des Merkmals; Media Queries Level 5 kennt `no-preference | more | less | custom`, und Tailwinds Variante `contrast-more:` erzeugt entsprechend `more`. Gemessen mit Playwright 1.62 bei aktiver Kontrasterhöhung (Kontext-Option `contrast: 'more'`):
 
