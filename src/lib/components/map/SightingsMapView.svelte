@@ -56,7 +56,7 @@
 		title = 'Sichtungskarte',
 		showLogo = true,
 		containerClass = 'relative h-screen w-screen overflow-hidden',
-		titleClass = 'glass text-base-content text-sm absolute top-4 left-12 z-raised rounded-lg px-3 py-1.5 font-bold shadow-floating backdrop-blur-md flex items-center gap-2'
+		titleClass = 'glass text-base-content text-sm z-raised rounded-lg px-3 py-1.5 font-bold shadow-floating backdrop-blur-md flex items-center gap-2'
 	} = $props<{
 		mapContainerId?: string;
 		showTitle?: boolean;
@@ -843,114 +843,150 @@
 		</a>
 	{/if}
 
-	{#if showTitle}
-		<h1 class={titleClass}>
-			<Icon icon="lucide:map" width="24" height="24" class="text-primary" />
-			<span>{title} {currentDisplayedYear}</span>
-		</h1>
-	{/if}
+	<!-- Kopfzeile der Karte: Titel-Badge und aktive Filter.
 
-	<!-- N6: Aktive Filter als einzeln entfernbare Chips über der Karte —
-	     sichtbar auch bei geschlossenen Panels. Klick auf einen Chip entfernt
-	     genau diesen Filter; „Alle zurücksetzen" stellt den Grundzustand her. -->
-	{#if hasActiveFilters}
+	     Beide standen bis 2026-08-14 einzeln absolut positioniert da — der Titel
+	     linksbündig auf top-4, das Chip-Band zentriert auf top-16. Die 64px des
+	     Bandes waren fast vollständig die reservierte Titelzeile: Zwischen beiden
+	     lagen nur 12px, und weil das Badge nur ~200px breit ist, blieb der Platz
+	     rechts daneben leer. Ab md stehen sie deshalb in EINER Zeile; die Frage,
+	     wie breit das zentrierte Band werden darf, ohne den Titel zu treffen,
+	     stellt sich damit gar nicht mehr (eine max-width-Rechnung hätte an jeder
+	     Übersetzung des Titels neu gestimmt oder eben nicht).
+
+	     right-14 hält die Zeile vom Panel-Reiter frei (44px mobil, 32px ab md).
+	     Vorher endete das Band bei max-w-[92vw] rechnerisch 28px UNTER dem
+	     Reiter — bei vielen Filtern scrollten die letzten Chips darunter.
+
+	     pointer-events-none am Container ist Pflicht: Er liegt als unsichtbares
+	     Band über der Karte, und ohne die Ausnahme schluckte er dort das Ziehen
+	     der Karte. Die Kinder holen es sich per pointer-events-auto zurück. -->
+	{#if showTitle || hasActiveFilters}
 		<div
-			class="scroll-styled z-raised absolute top-16 left-1/2 flex w-max max-w-[92vw] -translate-x-1/2 flex-nowrap items-center justify-start gap-1.5 overflow-x-auto px-1 pb-1"
-			role="group"
-			aria-label={m.components_map_sightingsmapview_aria_label_aktive_filter()}
+			class="z-raised pointer-events-none absolute top-2 right-14 left-12 flex flex-col items-start gap-1.5 md:top-4 md:flex-row md:items-center md:gap-2"
 		>
-			{#if activeFilters.year !== undefined}
-				<button
-					type="button"
-					class={chipClass}
-					onclick={() => switchToYear(apiDefaultYear)}
-					aria-label={m.components_map_sightingsmapview_aria_label_filter_jahr_year_entfernen_und({
-						year: activeFilters.year,
-						apiDefaultYear: apiDefaultYear
-					})}
-				>
-					{m.components_map_sightingsmapview_text_jahr_year({ year: activeFilters.year })}
-					<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
-				</button>
+			{#if showTitle}
+				<!-- shrink-0 und pointer-events-auto stehen hier und NICHT im
+				     titleClass-Default: Beide tragen das Layout dieser Zeile, der
+				     Prop trägt das Aussehen. Ein Aufrufer, der titleClass setzt —
+				     wofür der Prop existiert —, würde sie sonst stillschweigend
+				     mit entfernen; der Titel quetschte dann ab md auf wenige
+				     Zeichen pro Zeile bzw. würde klickdurchlässig. -->
+				<h1 class="pointer-events-auto shrink-0 {titleClass}">
+					<Icon icon="lucide:map" width="24" height="24" class="text-primary" />
+					<span>{title} {currentDisplayedYear}</span>
+				</h1>
 			{/if}
-			{#if activeFilters.query !== undefined}
-				<button
-					type="button"
-					class="{chipClass} max-w-56"
-					onclick={clearSearchFilter}
-					aria-label={m.components_map_sightingsmapview_aria_label_suchfilter_query_entfernen({
-						query: activeFilters.query
-					})}
+
+			<!-- N6: Aktive Filter als einzeln entfernbare Chips über der Karte —
+			     sichtbar auch bei geschlossenen Panels. Klick auf einen Chip entfernt
+			     genau diesen Filter; „Alle zurücksetzen" stellt den Grundzustand her. -->
+			{#if hasActiveFilters}
+				<div
+					class="scroll-styled pointer-events-auto flex w-max max-w-full min-w-0 flex-nowrap items-center justify-start gap-1.5 overflow-x-auto px-1 pb-1"
+					role="group"
+					aria-label={m.components_map_sightingsmapview_aria_label_aktive_filter()}
 				>
-					<span class="truncate"
-						>{m.components_map_sightingsmapview_text_suche_query({
-							query: activeFilters.query
-						})}</span
-					>
-					<Icon icon="lucide:x" width="14" height="14" class="shrink-0" aria-hidden="true" />
-				</button>
+					{#if activeFilters.year !== undefined}
+						<button
+							type="button"
+							class={chipClass}
+							onclick={() => switchToYear(apiDefaultYear)}
+							aria-label={m.components_map_sightingsmapview_aria_label_filter_jahr_year_entfernen_und(
+								{
+									year: activeFilters.year,
+									apiDefaultYear: apiDefaultYear
+								}
+							)}
+						>
+							{m.components_map_sightingsmapview_text_jahr_year({ year: activeFilters.year })}
+							<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
+						</button>
+					{/if}
+					{#if activeFilters.query !== undefined}
+						<button
+							type="button"
+							class="{chipClass} max-w-56"
+							onclick={clearSearchFilter}
+							aria-label={m.components_map_sightingsmapview_aria_label_suchfilter_query_entfernen({
+								query: activeFilters.query
+							})}
+						>
+							<span class="truncate"
+								>{m.components_map_sightingsmapview_text_suche_query({
+									query: activeFilters.query
+								})}</span
+							>
+							<Icon icon="lucide:x" width="14" height="14" class="shrink-0" aria-hidden="true" />
+						</button>
+					{/if}
+					{#if activeFilters.from !== undefined && activeFilters.to !== undefined}
+						<button
+							type="button"
+							class={chipClass}
+							onclick={resetTimeFilter}
+							aria-label={m.components_map_sightingsmapview_aria_label_zeitraum_filter_entfernen_und_volles_jah()}
+						>
+							{m.components_map_sightingsmapview_text_zeitraum_from_bis_to({
+								from: formatChipDate(activeFilters.from),
+								to: formatChipDate(activeFilters.to)
+							})}
+							<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
+						</button>
+					{/if}
+					{#each activeFilters.hiddenSpecies ?? [] as speciesId (speciesId)}
+						<button
+							type="button"
+							class={chipClass}
+							onclick={() => showSpecies(speciesId)}
+							aria-label={m.components_map_sightingsmapview_aria_label_specieslabel_wieder_anzeigen(
+								{
+									speciesLabel: speciesLabel(speciesId)
+								}
+							)}
+						>
+							{m.components_map_sightingsmapview_text_ohne_label({
+								label: speciesLabel(speciesId)
+							})}
+							<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
+						</button>
+					{/each}
+					{#each activeFilters.hiddenColors ?? [] as colorGroup (colorGroup)}
+						<button
+							type="button"
+							class={chipClass}
+							onclick={() => showColorGroup(colorGroup)}
+							aria-label={m.components_map_sightingsmapview_aria_label_gruppe_colorgrouplabel_wieder_anzeigen(
+								{ colorGroupLabel: colorGroupLabel(colorGroup) }
+							)}
+						>
+							{m.components_map_sightingsmapview_text_ohne_label({
+								label: colorGroupLabel(colorGroup)
+							})}
+							<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
+						</button>
+					{/each}
+					{#if !isPublicStatusSelection(statuses)}
+						<button
+							type="button"
+							class={chipClass}
+							onclick={resetStatusFilter}
+							aria-label={m.components_map_sightingsmapview_aria_label_bearbeitungsstand_labels_entfernen_und(
+								{ labels: statusFilterLabel() }
+							)}
+						>
+							<Icon icon="lucide:inbox" width="14" height="14" aria-hidden="true" />
+							{m.components_map_sightingsmapview_text_bearbeitungsstand_labels({
+								labels: statusFilterLabel()
+							})}
+							<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
+						</button>
+					{/if}
+					<button type="button" class="{chipClass} btn-outline" onclick={resetAllFilters}>
+						{m.components_map_sightingsmapview_text_alle_filter_zuruecksetzen()}
+					</button>
+				</div>
 			{/if}
-			{#if activeFilters.from !== undefined && activeFilters.to !== undefined}
-				<button
-					type="button"
-					class={chipClass}
-					onclick={resetTimeFilter}
-					aria-label={m.components_map_sightingsmapview_aria_label_zeitraum_filter_entfernen_und_volles_jah()}
-				>
-					{m.components_map_sightingsmapview_text_zeitraum_from_bis_to({
-						from: formatChipDate(activeFilters.from),
-						to: formatChipDate(activeFilters.to)
-					})}
-					<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
-				</button>
-			{/if}
-			{#each activeFilters.hiddenSpecies ?? [] as speciesId (speciesId)}
-				<button
-					type="button"
-					class={chipClass}
-					onclick={() => showSpecies(speciesId)}
-					aria-label={m.components_map_sightingsmapview_aria_label_specieslabel_wieder_anzeigen({
-						speciesLabel: speciesLabel(speciesId)
-					})}
-				>
-					{m.components_map_sightingsmapview_text_ohne_label({ label: speciesLabel(speciesId) })}
-					<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
-				</button>
-			{/each}
-			{#each activeFilters.hiddenColors ?? [] as colorGroup (colorGroup)}
-				<button
-					type="button"
-					class={chipClass}
-					onclick={() => showColorGroup(colorGroup)}
-					aria-label={m.components_map_sightingsmapview_aria_label_gruppe_colorgrouplabel_wieder_anzeigen(
-						{ colorGroupLabel: colorGroupLabel(colorGroup) }
-					)}
-				>
-					{m.components_map_sightingsmapview_text_ohne_label({
-						label: colorGroupLabel(colorGroup)
-					})}
-					<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
-				</button>
-			{/each}
-			{#if !isPublicStatusSelection(statuses)}
-				<button
-					type="button"
-					class={chipClass}
-					onclick={resetStatusFilter}
-					aria-label={m.components_map_sightingsmapview_aria_label_bearbeitungsstand_labels_entfernen_und(
-						{ labels: statusFilterLabel() }
-					)}
-				>
-					<Icon icon="lucide:inbox" width="14" height="14" aria-hidden="true" />
-					{m.components_map_sightingsmapview_text_bearbeitungsstand_labels({
-						labels: statusFilterLabel()
-					})}
-					<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
-				</button>
-			{/if}
-			<button type="button" class="{chipClass} btn-outline" onclick={resetAllFilters}>
-				{m.components_map_sightingsmapview_text_alle_filter_zuruecksetzen()}
-			</button>
 		</div>
 	{/if}
 
@@ -1166,15 +1202,16 @@
 
 	<!-- Logo (unten rechts) - optional -->
 	{#if showLogo}
-		<!-- Unterhalb md über der Karte/Liste-Umschaltung statt daneben: Das aktuelle
-		     Logo ist zweizeilig ohne „Stralsund" und damit 2,09:1 breit statt 1,33:1
-		     wie das abgelöste dmm-logo.png — bei h-12 sind das 100px Bildbreite (110px
-		     Platte) gegenüber vorher 64px (74px). Nachgemessen kollidiert die Platte
-		     deshalb bei 360px Breite und darunter mit dem „Liste"-Button (-2px bei
-		     360, -22px bei 320); bei 375px blieben nur 5px übrig. Die Umschaltung
-		     belegt 16–60px über der Unterkante, bottom-20 setzt die Platte auf 80px
-		     und räumt sie. -->
-		<div class="z-raised absolute right-1 bottom-20 md:bottom-6">
+		<!-- Unterhalb md steht die Platte neben der Karte/Liste-Umschaltung, nicht
+		     darüber. Vorher hob `bottom-20` sie auf 80px, weil sie bei h-12 110px
+		     breit ist und damit neben dem 136px breiten, zentrierten Umschalter
+		     nicht mehr passt (-2px bei 360px Viewport, -22px bei 320px). Das Logo
+		     schwebte dadurch sichtbar frei über der Karte statt am Rand zu sitzen.
+		     Gelöst über die Breite statt über die Höhe: h-8 macht die Platte 77px
+		     breit, und rechts vom Umschalter bleiben ab 320px Viewport 88px — also
+		     11px Luft im ungünstigsten Fall (360px: 31px, 390px: 46px). Ab md ist
+		     der Platz ohnehin da, dort bleibt es bei h-12. -->
+		<div class="z-raised absolute right-1 bottom-4 md:bottom-6">
 			<!-- Helle Platte, weil /logo_dmm_positiv.svg einfarbig im Markenblau
 			     #003777 zeichnet (relative Luminanz 0,041 — auf Weiß 11,6:1, über
 			     einer dunklen Kachel nur noch ~1,2:1) und dort sonst verschwindet.
@@ -1193,7 +1230,7 @@
 				<img
 					src="/logo_dmm_positiv.svg"
 					alt={m.components_map_sightingsmapview_alt_logo_des_deutschen_meeresmuseums()}
-					class="h-12 w-auto"
+					class="h-8 w-auto md:h-12"
 					id="dmm"
 					title={m.components_map_sightingsmapview_title_deutsches_meeresmuseum()}
 				/>
