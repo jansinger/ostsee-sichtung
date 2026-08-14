@@ -112,9 +112,7 @@
 				     frühere `!connection.isOffline`-Bedingung wird damit gegenstandslos.
 				     Vorerst nur für Superadmins — siehe `+layout.server.ts`. -->
 				{#if showLanguageSwitcher}
-					<LanguageSwitcher
-						class="hover:bg-base-200 flex items-center gap-2 rounded px-4 py-2"
-					/>
+					<LanguageSwitcher class="hover:bg-base-200 flex items-center gap-2 rounded px-4 py-2" />
 				{/if}
 				<a
 					href="/api/auth/logout"

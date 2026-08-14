@@ -52,7 +52,9 @@
 		{#if showTitle}
 			<div class="mb-4 flex items-center gap-2">
 				<Icon icon="lucide:images" width="20" class="text-primary" />
-				<h4 class="text-lg font-semibold">{m.components_media_mediagallery_text_medien()} ({files.length})</h4>
+				<h4 class="text-lg font-semibold">
+					{m.components_media_mediagallery_text_medien()} ({files.length})
+				</h4>
 			</div>
 		{/if}
 
@@ -108,7 +110,8 @@
 									{file.originalName}
 								</p>
 								<p class="text-base-content/60 text-xs">
-									{(file.size / 1024).toFixed(1)} {m.components_media_mediagallery_text_kb()}
+									{(file.size / 1024).toFixed(1)}
+									{m.components_media_mediagallery_text_kb()}
 								</p>
 							</div>
 							<a

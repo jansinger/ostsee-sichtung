@@ -267,7 +267,9 @@
 		<select id="gps-format" class="select w-full min-w-0 md:ml-auto md:w-auto" bind:value={mode}>
 			<option value="dd">{m.report_components_form_locationinput_text_dezimalgrad()}</option>
 			<option value="dm">{m.report_components_form_locationinput_text_grad_dezimalminute()}</option>
-			<option value="dms">{m.report_components_form_locationinput_text_grad_minute_sekunde()}</option>
+			<option value="dms"
+				>{m.report_components_form_locationinput_text_grad_minute_sekunde()}</option
+			>
 		</select>
 	</div>
 
