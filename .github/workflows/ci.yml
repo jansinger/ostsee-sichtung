@@ -644,7 +644,21 @@ jobs:
         run: |
           echo "Generating Software Bill of Materials..."
           mkdir -p sbom
-          npm run sbom:prod || true
+          # No "|| true" here: a failed generation must fail the job.
+          # npm >= 11.15.0 silently breaks "npm ls --json --long --all"
+          # (https://github.com/npm/cli/issues/9873), which is why the
+          # sbom:* scripts pin npm 11.14.1 via "npx npm@11.14.1 exec".
+          npm run sbom:prod
+
+      - name: Verify SBOM is non-empty
+        run: |
+          test -s sbom/sbom-prod.json || { echo "❌ SBOM file missing or empty"; exit 1; }
+          COMPONENTS=$(node -e "const s=require('./sbom/sbom-prod.json'); console.log((s.components ?? []).length)")
+          if [ "$COMPONENTS" -lt 1 ]; then
+            echo "❌ SBOM contains no components"
+            exit 1
+          fi
+          echo "✅ SBOM contains $COMPONENTS components"
 
       - name: Upload SBOM
         uses: actions/upload-artifact@v7
