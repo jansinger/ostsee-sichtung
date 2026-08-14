@@ -2,17 +2,17 @@
 
 This project uses third-party software components. The following is a list of these components and their respective licenses.
 
-Generated on: 2026-07-30 (UTC), from the installed production dependency tree
+Generated on: 2026-08-14 (UTC), from the installed production dependency tree
 
 ## License Summary
 
 | License Type | Count | Compatibility |
 |-------------|-------|---------------|
-| MIT | 87 | ✅ Fully Compatible |
-| BSD-2-Clause | 10 | ✅ Fully Compatible |
+| MIT | 89 | ✅ Fully Compatible |
+| BSD-2-Clause | 11 | ✅ Fully Compatible |
 | Apache-2.0 | 8 | ✅ Fully Compatible |
 | ISC | 7 | ✅ Fully Compatible |
-| BSD-3-Clause | 3 | ✅ Fully Compatible |
+| BSD-3-Clause | 4 | ✅ Fully Compatible |
 | Unlicense | 2 | ✅ Fully Compatible |
 | MIT-0 | 1 | ✅ Fully Compatible |
 | (MIT AND Zlib) | 1 | ⚠️ Multiple Licenses |
@@ -21,15 +21,15 @@ Generated on: 2026-07-30 (UTC), from the installed production dependency tree
 | CC0-1.0 | 1 | ✅ Fully Compatible |
 | MIT AND BSD-3-Clause | 1 | ⚠️ Multiple Licenses |
 
-**Total Dependencies**: 123
+**Total Dependencies**: 127
 
 ## Detailed License Information
 
-### MIT (87 packages)
+### MIT (89 packages)
 
 **Compatibility**: ✅ Fully Compatible
 
-- **@noble/hashes@2.0.1**
+- **@noble/hashes@2.3.0**
   - Repository: https://github.com/paulmillr/noble-hashes
   - Publisher: Paul Miller
 
@@ -45,19 +45,19 @@ Generated on: 2026-07-30 (UTC), from the installed production dependency tree
   - Repository: https://github.com/pinojs/redact
   - Publisher: Matteo Collina
 
-- **@selderee/plugin-htmlparser2@0.11.0**
+- **@selderee/plugin-htmlparser2@0.12.0**
   - Repository: https://github.com/mxxii/selderee
   - Publisher: KillyMXI
 
-- **@turf/boolean-point-in-polygon@7.3.5**
+- **@turf/boolean-point-in-polygon@7.4.0**
   - Repository: https://github.com/Turfjs/turf
   - Publisher: Turf Authors
 
-- **@turf/helpers@7.3.5**
+- **@turf/helpers@7.4.0**
   - Repository: https://github.com/Turfjs/turf
   - Publisher: Turf Authors
 
-- **@turf/invariant@7.3.5**
+- **@turf/invariant@7.4.0**
   - Repository: https://github.com/Turfjs/turf
   - Publisher: Turf Authors
 
@@ -85,7 +85,7 @@ Generated on: 2026-07-30 (UTC), from the installed production dependency tree
   - Repository: https://github.com/moxystudio/node-cross-spawn
   - Publisher: André Cruz
 
-- **dayjs@1.11.20**
+- **dayjs@1.11.21**
   - Repository: https://github.com/iamkun/dayjs
   - Publisher: iamkun
 
@@ -116,11 +116,11 @@ Generated on: 2026-07-30 (UTC), from the installed production dependency tree
   - Repository: https://github.com/MikeKovarik/exifr
   - Publisher: Mike Kovarik
 
-- **fflate@0.8.2**
+- **fflate@0.8.3**
   - Repository: https://github.com/101arrowz/fflate
   - Publisher: Arjun Barrett
 
-- **geotiff@3.0.5**
+- **geotiff@3.1.0-beta.0**
   - Repository: https://github.com/geotiffjs/geotiff.js
   - Publisher: Fabian Schindler
 
@@ -132,15 +132,15 @@ Generated on: 2026-07-30 (UTC), from the installed production dependency tree
   - Repository: https://github.com/handlebars-lang/handlebars.js
   - Publisher: Yehuda Katz
 
-- **html-to-text@9.0.5**
+- **html-to-text@10.0.0**
   - Repository: https://github.com/html-to-text/node-html-to-text
   - Publisher: Malte Legenhausen
 
-- **htmlparser2@12.0.0**
+- **htmlparser2@10.1.0**
   - Repository: https://github.com/fb55/htmlparser2
   - Publisher: Felix Boehm
 
-- **htmlparser2@8.0.2**
+- **htmlparser2@12.0.0**
   - Repository: https://github.com/fb55/htmlparser2
   - Publisher: Felix Boehm
 
@@ -163,15 +163,19 @@ Generated on: 2026-07-30 (UTC), from the installed production dependency tree
   - Repository: https://github.com/panva/jose
   - Publisher: Filip Skokan
 
-- **jose@6.2.4**
+- **jose@6.2.8**
   - Repository: https://github.com/panva/jose
   - Publisher: Filip Skokan
+
+- **kysely@0.28.17**
+  - Repository: https://github.com/kysely-org/kysely
+  - Publisher: Sami Koskimäki
 
 - **launder@1.7.1**
   - Repository: https://github.com/apostrophecms/apostrophe
   - Publisher: Apostrophe Technologies, Inc.
 
-- **leac@0.6.0**
+- **leac@0.7.0**
   - Repository: https://github.com/mxxii/leac
   - Publisher: KillyMXI
 
@@ -187,7 +191,7 @@ Generated on: 2026-07-30 (UTC), from the installed production dependency tree
   - Repository: https://github.com/minimistjs/minimist
   - Publisher: James Halliday
 
-- **nanoid@3.3.12**
+- **nanoid@3.3.18**
   - Repository: https://github.com/ai/nanoid
   - Publisher: Andrey Sitnik
 
@@ -222,7 +226,7 @@ Generated on: 2026-07-30 (UTC), from the installed production dependency tree
   - Repository: https://github.com/albell/parse-srcset
   - Publisher: Alex Bell
 
-- **parseley@0.12.1**
+- **parseley@0.13.1**
   - Repository: https://github.com/mxxii/parseley
   - Publisher: KillyMXI
 
@@ -230,7 +234,7 @@ Generated on: 2026-07-30 (UTC), from the installed production dependency tree
   - Repository: https://github.com/sindresorhus/path-key
   - Publisher: Sindre Sorhus
 
-- **peberminta@0.9.0**
+- **peberminta@0.10.0**
   - Repository: https://github.com/mxxii/peberminta
   - Publisher: KillyMXI
 
@@ -250,11 +254,11 @@ Generated on: 2026-07-30 (UTC), from the installed production dependency tree
   - Repository: https://github.com/rowanwins/point-in-polygon-hao
   - Publisher: Rowan Winsemius
 
-- **postcss@8.5.18**
+- **postcss@8.5.26**
   - Repository: https://github.com/postcss/postcss
   - Publisher: Andrey Sitnik
 
-- **process-warning@5.0.0**
+- **process-warning@5.1.0**
   - Repository: https://github.com/fastify/process-warning
   - Publisher: Tomas Della Vedova
 
@@ -282,6 +286,10 @@ Generated on: 2026-07-30 (UTC), from the installed production dependency tree
   - Repository: https://github.com/pinojs/real-require
   - Publisher: Paolo Insogna
 
+- **real-require@1.0.0**
+  - Repository: https://github.com/pinojs/real-require
+  - Publisher: Paolo Insogna
+
 - **reference-spec-reader@0.2.0**
   - Publisher: manzt
 
@@ -297,11 +305,11 @@ Generated on: 2026-07-30 (UTC), from the installed production dependency tree
   - Repository: https://github.com/BridgeAR/safe-stable-stringify
   - Publisher: Ruben Bridgewater
 
-- **sanitize-html@2.17.6**
+- **sanitize-html@2.17.7**
   - Repository: https://github.com/apostrophecms/apostrophe
   - Publisher: Apostrophe Technologies, Inc.
 
-- **selderee@0.11.0**
+- **selderee@0.12.0**
   - Repository: https://github.com/mxxii/selderee
   - Publisher: KillyMXI
 
@@ -321,7 +329,7 @@ Generated on: 2026-07-30 (UTC), from the installed production dependency tree
   - Repository: https://github.com/sindresorhus/strip-final-newline
   - Publisher: Sindre Sorhus
 
-- **thread-stream@4.0.0**
+- **thread-stream@4.2.0**
   - Repository: https://github.com/mcollina/thread-stream
   - Publisher: Matteo Collina
 
@@ -336,7 +344,7 @@ Generated on: 2026-07-30 (UTC), from the installed production dependency tree
   - Repository: https://github.com/marcelklehr/toposort
   - Publisher: Marcel Klehr
 
-- **undici@6.27.0**
+- **undici@6.28.0**
   - Repository: https://github.com/nodejs/undici
 
 - **unzipit@2.0.0**
@@ -358,7 +366,7 @@ Generated on: 2026-07-30 (UTC), from the installed production dependency tree
   - Repository: https://github.com/jquense/yup
   - Publisher: @monasticpanic Jason Quense
 
-- **zarrita@0.7.1**
+- **zarrita@0.7.4**
   - Repository: https://github.com/manzt/zarrita.js
 
 - **zod@4.1.11**
@@ -369,7 +377,7 @@ Generated on: 2026-07-30 (UTC), from the installed production dependency tree
 
 **Compatibility**: ✅ Fully Compatible
 
-- **nodemailer@9.0.3**
+- **nodemailer@9.0.5**
   - Repository: https://github.com/nodemailer/nodemailer
   - Publisher: Andris Reinman
 
@@ -377,9 +385,9 @@ Generated on: 2026-07-30 (UTC), from the installed production dependency tree
 
 **Compatibility**: ✅ Fully Compatible
 
-- **earcut@3.0.2**
+- **earcut@3.2.3**
   - Repository: https://github.com/mapbox/earcut
-  - Publisher: Vladimir Agafonkin
+  - Publisher: Volodymyr Agafonkin
 
 - **isexe@2.0.0**
   - Repository: https://github.com/isaacs/isexe
@@ -405,7 +413,27 @@ Generated on: 2026-07-30 (UTC), from the installed production dependency tree
   - Repository: https://github.com/isaacs/node-which
   - Publisher: Isaac Z. Schlueter
 
-### BSD-2-Clause (10 packages)
+### BSD-3-Clause (4 packages)
+
+**Compatibility**: ✅ Fully Compatible
+
+- **deepmerge-ts@7.1.6**
+  - Repository: https://github.com/RebeccaStevens/deepmerge-ts
+  - Publisher: Rebecca Stevens
+
+- **pbf@5.1.2**
+  - Repository: https://github.com/mapbox/pbf
+  - Publisher: Konstantin Kaefer
+
+- **source-map-js@1.2.1**
+  - Repository: https://github.com/7rulnik/source-map-js
+  - Publisher: Valentin 7rulnik Semirulnik
+
+- **source-map@0.6.1**
+  - Repository: https://github.com/mozilla/source-map
+  - Publisher: Nick Fitzgerald
+
+### BSD-2-Clause (11 packages)
 
 **Compatibility**: ✅ Fully Compatible
 
@@ -437,47 +465,35 @@ Generated on: 2026-07-30 (UTC), from the installed production dependency tree
   - Repository: https://github.com/fb55/entities
   - Publisher: Felix Boehm
 
+- **entities@7.0.1**
+  - Repository: https://github.com/fb55/entities
+  - Publisher: Felix Boehm
+
 - **entities@8.0.0**
   - Repository: https://github.com/fb55/entities
   - Publisher: Felix Boehm
 
-- **ol@10.9.0**
+- **ol@10.10.0**
   - Repository: https://github.com/openlayers/openlayers
 
 - **uglify-js@3.19.3**
   - Repository: https://github.com/mishoo/UglifyJS
   - Publisher: Mihai Bazon
 
-### BSD-3-Clause (3 packages)
-
-**Compatibility**: ✅ Fully Compatible
-
-- **pbf@4.0.1**
-  - Repository: https://github.com/mapbox/pbf
-  - Publisher: Konstantin Kaefer
-
-- **source-map-js@1.2.1**
-  - Repository: https://github.com/7rulnik/source-map-js
-  - Publisher: Valentin 7rulnik Semirulnik
-
-- **source-map@0.6.1**
-  - Repository: https://github.com/mozilla/source-map
-  - Publisher: Nick Fitzgerald
-
 ### Apache-2.0 (8 packages)
 
 **Compatibility**: ✅ Fully Compatible
 
-- **@vercel/blob@2.6.1**
+- **@vercel/blob@2.8.0**
   - Repository: https://github.com/vercel/storage
 
-- **@vercel/cli-config@0.2.0**
+- **@vercel/cli-config@0.2.3**
   - Repository: https://github.com/vercel/vercel
 
-- **@vercel/cli-exec@1.0.0**
+- **@vercel/cli-exec@1.0.1**
   - Repository: https://github.com/vercel/vercel
 
-- **@vercel/oidc@3.6.2**
+- **@vercel/oidc@3.8.4**
   - Repository: https://github.com/vercel/vercel
 
 - **drizzle-orm@0.45.2**
@@ -503,7 +519,7 @@ Generated on: 2026-07-30 (UTC), from the installed production dependency tree
   - Repository: https://github.com/porsager/postgres
   - Publisher: Rasmus Porsager
 
-- **robust-predicates@3.0.2**
+- **robust-predicates@3.0.3**
   - Repository: https://github.com/mourner/robust-predicates
   - Publisher: Vladimir Agafonkin
 
@@ -527,7 +543,7 @@ Generated on: 2026-07-30 (UTC), from the installed production dependency tree
 
 **Compatibility**: ⚠️ Multiple Licenses
 
-- **pako@2.1.0**
+- **pako@2.2.0**
   - Repository: https://github.com/nodeca/pako
 
 ### (MIT OR CC0-1.0) (1 package)
