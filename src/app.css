@@ -30,13 +30,6 @@
 @import 'ol/ol.css';
 @import './lib/map/mapStyles.css';
 
-@layer base {
-	@font-face {
-		font-family: 'Roboto';
-		font-display: swap;
-	}
-}
-
 /* ===== DaisyUI Plugin mit Theme =====
    Die Werte kommen aus css/tokens.css. Bewusst als var()-Referenzen:
    ein Wert existiert genau einmal. */
@@ -232,8 +225,11 @@
 }
 
 /* ===== Base Styles ===== */
+/* Nur 'Roboto' gehört in Anführungszeichen. `system-ui` und `sans-serif` sind
+   CSS-Schlüsselwörter — in Anführungszeichen wären es Familiennamen, und die
+   Fallback-Kette liefe bei fehlendem Roboto ins Leere. */
 body {
-	font-family: 'Roboto', 'system-ui', 'sans-serif';
+	font-family: 'Roboto', system-ui, sans-serif;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 	background-color: var(--color-base-100);
@@ -349,8 +345,12 @@ h3,
 h4,
 h5,
 h6 {
-	font-family: 'Roboto', 'system-ui', 'sans-serif';
-	font-weight: 600;
+	font-family: 'Roboto', system-ui, sans-serif;
+	/* 700, nicht 600: geladen sind oben nur 400/500/700. Bei 600 synthetisiert
+	   der Browser nicht, er wählt den nächstgelegenen Schnitt — also 700. Der
+	   Wert stand damit für eine Darstellung, die es nie gab. 700 auszuschreiben
+	   ändert nichts am Rendering und spart den Download eines vierten Schnitts. */
+	font-weight: 700;
 	line-height: 1.2;
 }
 
@@ -781,8 +781,13 @@ label:has(> .toggle) {
 	outline-offset: 2px;
 }
 
-/* ===== Responsive ===== */
-@media (max-width: 768px) {
+/* ===== Responsive =====
+   767px und nicht 768px: `md` ist laut Breakpoint-Vertrag die Grenze, und
+   `min-width: 768px` ist bereits Desktop. Bei exakt 768px galten sonst
+   Mobil- und `md`-Verhalten gleichzeitig — derselbe Vertragsbruch, den
+   `docs/DESIGN_SYSTEM.md` für den Admin-Kopf beschreibt. Die
+   Feldmodus-Navigation oben steht aus diesem Grund schon auf 767px. */
+@media (max-width: 767px) {
 	.btn:hover:not(:disabled) {
 		transform: none;
 	}
@@ -953,7 +958,9 @@ label:has(> .toggle) {
 /* Der aktuelle Schritt ist Standort, kein Ziel: kräftiger, aber nicht
    unterstrichen und nicht in der Linkfarbe. */
 .steps .step-button[aria-current='step'] {
-	font-weight: 600;
+	/* 700 aus demselben Grund wie bei h1–h6: 600 ist nicht geladen und wird
+	   ohnehin auf 700 abgebildet. */
+	font-weight: 700;
 }
 
 /* Gesperrt: der `li` trägt bereits die Abblendung, hier fehlte nur der Cursor.
@@ -978,5 +985,9 @@ label:has(> .toggle) {
 		animation-duration: 0.01ms !important;
 		animation-iteration-count: 1 !important;
 		transition-duration: 0.01ms !important;
+		/* Ohne das bleibt `scroll-behavior: smooth` aktiv — die auffälligste
+		   Bewegung der App (Sprung zum ersten Fehler, Schrittwechsel) läuft
+		   nicht über Transitions und wäre sonst als einzige nicht entschärft. */
+		scroll-behavior: auto !important;
 	}
 }
