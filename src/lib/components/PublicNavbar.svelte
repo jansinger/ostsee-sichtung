@@ -121,7 +121,6 @@
 					-->
 					<ConnectionBadge compact />
 
-
 					<!-- Desktop menu -->
 					<div class="hidden lg:flex lg:items-center lg:gap-4">
 						<ul class="menu menu-horizontal flex-nowrap px-1">

@@ -608,16 +608,14 @@
 												? JSON.stringify(wertVon(config), null, 2)
 												: String(wertVon(config))}
 											oninput={(e) => handleJsonChange(config, e)}
-											placeholder="JSON-Format"
-										></textarea>
+											placeholder="JSON-Format"></textarea>
 									{:else if inputType === 'textarea'}
 										<textarea
 											class="textarea h-32"
 											value={String(wertVon(config))}
 											oninput={(e) =>
 												handleInputChange(config, (e.target as HTMLTextAreaElement).value)}
-											placeholder="Mehrzeiliger Text"
-										></textarea>
+											placeholder="Mehrzeiliger Text"></textarea>
 									{:else}
 										<input
 											type="text"
