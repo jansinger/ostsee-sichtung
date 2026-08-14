@@ -27,7 +27,7 @@ function makeFile(name = 'test.jpg', type = 'image/jpeg', size = 1024): File {
 	return new File(['x'.repeat(size)], name, { type });
 }
 
-beforeEach(() => {
+beforeEach(async () => {
 	vi.clearAllMocks();
 	vi.mocked(validateFiles).mockImplementation((files) => ({
 		isValid: true,
@@ -39,7 +39,7 @@ beforeEach(() => {
 describe('UnifiedDropzone', () => {
 	describe('rendering', () => {
 		it('zeigt Titel und Hinweistexte an', async () => {
-			render(UnifiedDropzone, {
+			await render(UnifiedDropzone, {
 				config: mockConfig,
 				title: 'Fotos hochladen',
 				emptyText: 'Klicken oder ziehen'
@@ -50,7 +50,7 @@ describe('UnifiedDropzone', () => {
 		});
 
 		it('zeigt aria-label mit Titel an', async () => {
-			render(UnifiedDropzone, { config: mockConfig, title: 'Bilder' });
+			await render(UnifiedDropzone, { config: mockConfig, title: 'Bilder' });
 
 			await expect
 				.element(page.getByRole('button', { name: /Bilder per Drag & Drop oder Klick/i }))
@@ -58,7 +58,7 @@ describe('UnifiedDropzone', () => {
 		});
 
 		it('zeigt additionalText mit Bindestrich an', async () => {
-			render(UnifiedDropzone, {
+			await render(UnifiedDropzone, {
 				config: mockConfig,
 				subtitle: 'JPEG, PNG',
 				additionalText: 'Max 10MB'
@@ -68,7 +68,7 @@ describe('UnifiedDropzone', () => {
 		});
 
 		it('zeigt nur subtitle ohne Bindestrich wenn additionalText leer', async () => {
-			render(UnifiedDropzone, {
+			await render(UnifiedDropzone, {
 				config: mockConfig,
 				subtitle: 'JPEG only',
 				additionalText: ''
@@ -80,7 +80,7 @@ describe('UnifiedDropzone', () => {
 
 	describe('Ladezustand', () => {
 		it('zeigt loadingText wenn isAnalyzing=true', async () => {
-			render(UnifiedDropzone, {
+			await render(UnifiedDropzone, {
 				config: mockConfig,
 				isAnalyzing: true,
 				loadingText: 'Lade hoch...'
@@ -90,7 +90,7 @@ describe('UnifiedDropzone', () => {
 		});
 
 		it('versteckt Titel wenn isAnalyzing=true', async () => {
-			render(UnifiedDropzone, {
+			await render(UnifiedDropzone, {
 				config: mockConfig,
 				title: 'NurDieserTitel',
 				isAnalyzing: true
@@ -100,7 +100,7 @@ describe('UnifiedDropzone', () => {
 		});
 
 		it('zeigt Titel wenn isAnalyzing=false', async () => {
-			render(UnifiedDropzone, {
+			await render(UnifiedDropzone, {
 				config: mockConfig,
 				title: 'Dateien hochladen',
 				isAnalyzing: false
@@ -120,7 +120,7 @@ describe('UnifiedDropzone', () => {
 				errors: []
 			});
 
-			render(UnifiedDropzone, { config: mockConfig, onFilesAdded });
+			await render(UnifiedDropzone, { config: mockConfig, onFilesAdded });
 
 			const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
 			expect(fileInput).not.toBeNull();
@@ -141,7 +141,7 @@ describe('UnifiedDropzone', () => {
 				errors: ['Ungültiger Dateityp: bad.exe']
 			});
 
-			render(UnifiedDropzone, { config: mockConfig });
+			await render(UnifiedDropzone, { config: mockConfig });
 
 			const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
 			Object.defineProperty(fileInput, 'files', { value: [badFile], writable: false });
@@ -160,7 +160,7 @@ describe('UnifiedDropzone', () => {
 				errors: ['Fehler']
 			});
 
-			render(UnifiedDropzone, { config: mockConfig, onFilesAdded });
+			await render(UnifiedDropzone, { config: mockConfig, onFilesAdded });
 
 			const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
 			Object.defineProperty(fileInput, 'files', { value: [makeFile()], writable: false });
@@ -174,13 +174,13 @@ describe('UnifiedDropzone', () => {
 
 	describe('multiple=false', () => {
 		it('hat kein multiple-Attribut am Input', async () => {
-			render(UnifiedDropzone, { config: mockConfig, multiple: false });
+			await render(UnifiedDropzone, { config: mockConfig, multiple: false });
 			const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
 			expect(fileInput.multiple).toBe(false);
 		});
 
 		it('hat multiple-Attribut am Input bei multiple=true', async () => {
-			render(UnifiedDropzone, { config: mockConfig, multiple: true });
+			await render(UnifiedDropzone, { config: mockConfig, multiple: true });
 			const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
 			expect(fileInput.multiple).toBe(true);
 		});
@@ -200,7 +200,7 @@ describe('UnifiedDropzone', () => {
 				accept: 'image/*,video/*'
 			};
 
-			render(UnifiedDropzone, { config: configWithGroupedAccept });
+			await render(UnifiedDropzone, { config: configWithGroupedAccept });
 
 			const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
 			expect(fileInput.accept).toBe('image/*,video/*');
@@ -209,7 +209,7 @@ describe('UnifiedDropzone', () => {
 
 	describe('Datei-Vorschau', () => {
 		it('zeigt Vorschau-Bereich wenn Dateien vorhanden', async () => {
-			render(UnifiedDropzone, {
+			await render(UnifiedDropzone, {
 				config: mockConfig,
 				files: [makeFile('bild.jpg')],
 				showPreview: true
@@ -219,7 +219,7 @@ describe('UnifiedDropzone', () => {
 		});
 
 		it('zeigt Plural bei mehreren Dateien', async () => {
-			render(UnifiedDropzone, {
+			await render(UnifiedDropzone, {
 				config: mockConfig,
 				files: [makeFile('a.jpg'), makeFile('b.jpg')],
 				showPreview: true
@@ -248,7 +248,7 @@ describe('UnifiedDropzone', () => {
 				const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
 				overwriteGetLocale(() => 'de');
 
-				render(UnifiedDropzone, {
+				await render(UnifiedDropzone, {
 					config: mockConfig,
 					files: [makeFile('a.jpg')],
 					showPreview: true
@@ -261,7 +261,7 @@ describe('UnifiedDropzone', () => {
 				const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
 				overwriteGetLocale(() => 'de');
 
-				render(UnifiedDropzone, {
+				await render(UnifiedDropzone, {
 					config: mockConfig,
 					files: [makeFile('a.jpg'), makeFile('b.jpg')],
 					showPreview: true
@@ -274,7 +274,7 @@ describe('UnifiedDropzone', () => {
 				const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
 				overwriteGetLocale(() => 'en');
 
-				render(UnifiedDropzone, {
+				await render(UnifiedDropzone, {
 					config: mockConfig,
 					files: [makeFile('a.jpg')],
 					showPreview: true
@@ -287,7 +287,7 @@ describe('UnifiedDropzone', () => {
 				const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
 				overwriteGetLocale(() => 'en');
 
-				render(UnifiedDropzone, {
+				await render(UnifiedDropzone, {
 					config: mockConfig,
 					files: [makeFile('a.jpg'), makeFile('b.jpg')],
 					showPreview: true
@@ -298,7 +298,7 @@ describe('UnifiedDropzone', () => {
 		});
 
 		it('versteckt Vorschau wenn showPreview=false', async () => {
-			render(UnifiedDropzone, {
+			await render(UnifiedDropzone, {
 				config: mockConfig,
 				files: [makeFile('a.jpg')],
 				showPreview: false
@@ -308,7 +308,7 @@ describe('UnifiedDropzone', () => {
 		});
 
 		it('zeigt Dateinamen in der Vorschau', async () => {
-			render(UnifiedDropzone, {
+			await render(UnifiedDropzone, {
 				config: mockConfig,
 				files: [makeFile('meinbild.jpg')],
 				showPreview: true
@@ -321,7 +321,7 @@ describe('UnifiedDropzone', () => {
 	describe('Datei entfernen', () => {
 		it('ruft onFileRemoved mit Dateinamen auf', async () => {
 			const onFileRemoved = vi.fn();
-			render(UnifiedDropzone, {
+			await render(UnifiedDropzone, {
 				config: mockConfig,
 				files: [makeFile('foto.jpg')],
 				showPreview: true,
@@ -338,7 +338,7 @@ describe('UnifiedDropzone', () => {
 
 	describe('Alle löschen', () => {
 		it('zeigt "Alle löschen"-Button bei multiple=true', async () => {
-			render(UnifiedDropzone, {
+			await render(UnifiedDropzone, {
 				config: mockConfig,
 				files: [makeFile('a.jpg'), makeFile('b.jpg')],
 				showPreview: true,
@@ -349,7 +349,7 @@ describe('UnifiedDropzone', () => {
 		});
 
 		it('versteckt "Alle löschen"-Button bei multiple=false', async () => {
-			render(UnifiedDropzone, {
+			await render(UnifiedDropzone, {
 				config: mockConfig,
 				files: [makeFile('a.jpg')],
 				showPreview: true,
@@ -363,7 +363,7 @@ describe('UnifiedDropzone', () => {
 
 		it('ruft onClear auf', async () => {
 			const onClear = vi.fn();
-			render(UnifiedDropzone, {
+			await render(UnifiedDropzone, {
 				config: mockConfig,
 				files: [makeFile('a.jpg'), makeFile('b.jpg')],
 				showPreview: true,
@@ -381,7 +381,7 @@ describe('UnifiedDropzone', () => {
 
 	describe('Tastaturzugänglichkeit', () => {
 		it('öffnet Dateidialog bei Enter-Taste', async () => {
-			render(UnifiedDropzone, { config: mockConfig });
+			await render(UnifiedDropzone, { config: mockConfig });
 
 			const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
 			const clickSpy = vi.spyOn(fileInput, 'click');
@@ -395,7 +395,7 @@ describe('UnifiedDropzone', () => {
 		});
 
 		it('öffnet Dateidialog bei Leertaste', async () => {
-			render(UnifiedDropzone, { config: mockConfig });
+			await render(UnifiedDropzone, { config: mockConfig });
 
 			const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
 			const clickSpy = vi.spyOn(fileInput, 'click');
@@ -409,7 +409,7 @@ describe('UnifiedDropzone', () => {
 		});
 
 		it('hat tabindex=0 für Keyboard-Navigation', async () => {
-			render(UnifiedDropzone, { config: mockConfig });
+			await render(UnifiedDropzone, { config: mockConfig });
 			const el = document.querySelector('[role="button"][tabindex="0"]');
 			expect(el).not.toBeNull();
 		});
@@ -425,7 +425,7 @@ describe('UnifiedDropzone', () => {
 				errors: []
 			});
 
-			render(UnifiedDropzone, { config: mockConfig, onFilesAdded });
+			await render(UnifiedDropzone, { config: mockConfig, onFilesAdded });
 
 			const dropzone = document.querySelector('[role="button"][tabindex="0"]') as HTMLElement;
 			const dataTransfer = new DataTransfer();
@@ -447,7 +447,7 @@ describe('UnifiedDropzone', () => {
 		 * Flackern und traf den unteren Bereich praktisch nicht.
 		 */
 		it('bleibt bereit, wenn der Zeiger von der Fläche auf eine ihrer Textzeilen wechselt', async () => {
-			render(UnifiedDropzone, { config: mockConfig, title: 'Foto hochladen', multiple: false });
+			await render(UnifiedDropzone, { config: mockConfig, title: 'Foto hochladen', multiple: false });
 
 			const zone = document.querySelector<HTMLElement>('.border-dashed');
 			if (!zone) throw new Error('Dropzone-Fläche nicht im DOM');
@@ -465,7 +465,7 @@ describe('UnifiedDropzone', () => {
 		});
 
 		it('gibt die Fläche wieder frei, wenn der Zeiger sie wirklich verlässt', async () => {
-			render(UnifiedDropzone, { config: mockConfig, title: 'Foto hochladen', multiple: false });
+			await render(UnifiedDropzone, { config: mockConfig, title: 'Foto hochladen', multiple: false });
 
 			const zone = document.querySelector<HTMLElement>('.border-dashed');
 			if (!zone) throw new Error('Dropzone-Fläche nicht im DOM');
@@ -485,7 +485,7 @@ describe('UnifiedDropzone', () => {
 		 * Zeiger, sobald es einmal ansprang.
 		 */
 		it('meldet die Ablage-Bereitschaft, ohne die Fläche zu vergrößern', async () => {
-			render(UnifiedDropzone, {
+			await render(UnifiedDropzone, {
 				config: mockConfig,
 				title: 'Foto hochladen',
 				actionLabel: 'Foto auswählen',
@@ -527,7 +527,7 @@ describe('UnifiedDropzone', () => {
 		 * „Accessibility — Touch-Targets der Hinweis-Buttons" ab.
 		 */
 		it('Entfernen- und "Alle löschen"-Button tragen die 44-px-Klassen', async () => {
-			render(UnifiedDropzone, {
+			await render(UnifiedDropzone, {
 				config: mockConfig,
 				files: [makeFile('a.jpg'), makeFile('b.jpg')],
 				showPreview: true,
@@ -548,7 +548,7 @@ describe('UnifiedDropzone', () => {
 		});
 
 		it('verwendet keine rohen Farbklassen ausserhalb des Themes', async () => {
-			render(UnifiedDropzone, {
+			await render(UnifiedDropzone, {
 				config: mockConfig,
 				files: [makeFile('a.jpg')],
 				showPreview: true,
@@ -579,7 +579,7 @@ describe('UnifiedDropzone', () => {
 	 */
 	describe('compact', () => {
 		it('lässt Titelzeile und dekoratives Icon weg, wenn ein Button die Beschriftung trägt', async () => {
-			render(UnifiedDropzone, {
+			await render(UnifiedDropzone, {
 				config: mockConfig,
 				title: 'Foto hochladen',
 				actionLabel: 'Foto auswählen',
@@ -591,7 +591,7 @@ describe('UnifiedDropzone', () => {
 		});
 
 		it('behält die Titelzeile ohne actionLabel — sie ist dann der Name der Fläche', async () => {
-			render(UnifiedDropzone, {
+			await render(UnifiedDropzone, {
 				config: mockConfig,
 				title: 'Foto hochladen',
 				compact: true
@@ -604,7 +604,7 @@ describe('UnifiedDropzone', () => {
 		});
 
 		it('zeigt die Titelzeile in der Standardvariante weiterhin an', async () => {
-			render(UnifiedDropzone, {
+			await render(UnifiedDropzone, {
 				config: mockConfig,
 				title: 'Foto hochladen',
 				actionLabel: 'Foto auswählen'
@@ -616,7 +616,7 @@ describe('UnifiedDropzone', () => {
 		it('meldet die Ablage-Bereitschaft trotz fehlender Titelzeile', async () => {
 			// Der Rahmenwechsel allein sagt nicht, dass jetzt losgelassen werden darf.
 			// Die Zeile ist im Ruhezustand weg, beim Ziehen aber wieder da.
-			render(UnifiedDropzone, {
+			await render(UnifiedDropzone, {
 				config: mockConfig,
 				title: 'Foto hochladen',
 				actionLabel: 'Foto auswählen',
@@ -634,7 +634,7 @@ describe('UnifiedDropzone', () => {
 		});
 
 		it('nimmt der Fläche Innenabstand', async () => {
-			render(UnifiedDropzone, {
+			await render(UnifiedDropzone, {
 				config: mockConfig,
 				title: 'Foto hochladen',
 				actionLabel: 'Foto auswählen',

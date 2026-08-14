@@ -21,7 +21,7 @@ import ReportHeading from './ReportHeading.svelte';
  */
 describe('ReportHeading', () => {
 	it('nennt die Aufgabe als Seitenüberschrift', async () => {
-		const screen = render(ReportHeading);
+		const screen = await render(ReportHeading);
 
 		await expect
 			.element(
@@ -31,7 +31,7 @@ describe('ReportHeading', () => {
 	});
 
 	it('nennt darunter den Zweck — die Forschung des Museums', async () => {
-		const screen = render(ReportHeading);
+		const screen = await render(ReportHeading);
 
 		await expect
 			.element(screen.getByText('für die Forschung des Deutschen Meeresmuseums'))

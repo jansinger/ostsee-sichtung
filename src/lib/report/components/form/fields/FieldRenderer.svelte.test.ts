@@ -110,7 +110,7 @@ const deadConfirmedFieldConfig = makeFieldConfig({
 describe('FieldRenderer', () => {
 	describe('Pflichtfeld-Anzeige', () => {
 		it('zeigt Pflichtfeld-Stern (*) für required Fields', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: emailFieldConfig,
 				name: 'email',
 				value: ''
@@ -120,7 +120,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('zeigt keinen Stern für optionale Fields', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: phoneFieldConfig,
 				name: 'phone',
 				value: ''
@@ -141,7 +141,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('zeigt Stern für ein schema-optionales Feld mit required={true}', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: waterwayFieldConfig,
 				name: 'waterway',
 				value: '',
@@ -152,7 +152,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('setzt aria-required=true bei required={true} trotz optionalem Schema', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: waterwayFieldConfig,
 				name: 'waterway',
 				value: '',
@@ -165,7 +165,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('entfernt Stern und aria-required bei required={false}', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: waterwayFieldConfig,
 				name: 'waterway',
 				value: '',
@@ -179,7 +179,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('unterdrückt die Schema-Pflicht, wenn required={false} übergeben wird', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: emailFieldConfig,
 				name: 'email',
 				value: '',
@@ -193,7 +193,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('nutzt ohne Override weiterhin die Schema-Ableitung', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: waterwayFieldConfig,
 				name: 'waterway',
 				value: ''
@@ -237,7 +237,7 @@ describe('FieldRenderer', () => {
 		const publicBoatDriveOptions = getPublicBoatDriveOptions();
 
 		it('rendert bei type="radio" + eigenen options eine Radiogruppe mit genau diesen Optionen', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: boatDriveSelectFieldConfig,
 				name: 'boatDrive',
 				value: null,
@@ -250,7 +250,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('zeigt die Schema-Select-Optionen NICHT mehr, wenn options überschrieben wurde', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: boatDriveSelectFieldConfig,
 				name: 'boatDrive',
 				value: null,
@@ -264,7 +264,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('behält Label und Pflicht-Sternchen aus dem Schema, auch mit Override', async () => {
-			const screen = render(FieldRenderer, {
+			const screen = await render(FieldRenderer, {
 				fieldConfig: boatDriveSelectFieldConfig,
 				name: 'boatDrive',
 				value: null,
@@ -282,7 +282,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('verknüpft aria-describedby weiterhin mit dem Hilfetext, auch mit Override', async () => {
-			const screen = render(FieldRenderer, {
+			const screen = await render(FieldRenderer, {
 				fieldConfig: boatDriveSelectFieldConfig,
 				name: 'boatDrive',
 				value: null,
@@ -314,7 +314,7 @@ describe('FieldRenderer', () => {
 		 * aufhört, den Zustand zu setzen — deshalb steht das hier.
 		 */
 		it('macht das fieldset zur radiogroup und benennt es über die Legend', async () => {
-			const screen = render(FieldRenderer, {
+			const screen = await render(FieldRenderer, {
 				fieldConfig: boatDriveSelectFieldConfig,
 				name: 'boatDrive',
 				value: null,
@@ -331,7 +331,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('setzt aria-invalid=true an der Radiogruppe, wenn ein Fehler anliegt', async () => {
-			const screen = render(FieldRenderer, {
+			const screen = await render(FieldRenderer, {
 				fieldConfig: boatDriveSelectFieldConfig,
 				name: 'boatDrive',
 				value: null,
@@ -344,7 +344,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('setzt kein aria-invalid an der Radiogruppe ohne Fehler', async () => {
-			const screen = render(FieldRenderer, {
+			const screen = await render(FieldRenderer, {
 				fieldConfig: boatDriveSelectFieldConfig,
 				name: 'boatDrive',
 				value: null,
@@ -358,7 +358,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('setzt aria-required=true an der Radiogruppe (Schema-Pflichtfeld)', async () => {
-			const screen = render(FieldRenderer, {
+			const screen = await render(FieldRenderer, {
 				fieldConfig: boatDriveSelectFieldConfig,
 				name: 'boatDrive',
 				value: null,
@@ -378,7 +378,7 @@ describe('FieldRenderer', () => {
 		 * die Regel verbietet.
 		 */
 		it('hält Pflicht-Sternchen und aria-required der Radiogruppe zusammen', async () => {
-			const screen = render(FieldRenderer, {
+			const screen = await render(FieldRenderer, {
 				fieldConfig: boatDriveSelectFieldConfig,
 				name: 'boatDrive',
 				value: null,
@@ -398,7 +398,7 @@ describe('FieldRenderer', () => {
 		 * `commonFieldProps` zwar bereit, dürfen aber nicht an den Radios landen.
 		 */
 		it('setzt die ARIA-Zustände NICHT an den einzelnen Radios', async () => {
-			const screen = render(FieldRenderer, {
+			const screen = await render(FieldRenderer, {
 				fieldConfig: boatDriveSelectFieldConfig,
 				name: 'boatDrive',
 				value: null,
@@ -416,7 +416,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('gibt der Radiogruppe bei Fehler die Fehler-Optik statt radio-primary', async () => {
-			const screen = render(FieldRenderer, {
+			const screen = await render(FieldRenderer, {
 				fieldConfig: boatDriveSelectFieldConfig,
 				name: 'boatDrive',
 				value: null,
@@ -434,7 +434,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('rendert ohne Override weiterhin das Schema-Select (Admin-Maske)', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: boatDriveSelectFieldConfig,
 				name: 'boatDrive',
 				value: null
@@ -454,7 +454,7 @@ describe('FieldRenderer', () => {
 		 */
 		describe('helpText-Override', () => {
 			it('unterdrückt den Schema-Hilfetext bei helpText={null}', async () => {
-				const screen = render(FieldRenderer, {
+				const screen = await render(FieldRenderer, {
 					fieldConfig: boatDriveSelectFieldConfig,
 					name: 'boatDrive',
 					value: null,
@@ -470,7 +470,7 @@ describe('FieldRenderer', () => {
 			});
 
 			it('nimmt den unterdrückten Hilfetext auch aus aria-describedby heraus', async () => {
-				const screen = render(FieldRenderer, {
+				const screen = await render(FieldRenderer, {
 					fieldConfig: boatDriveSelectFieldConfig,
 					name: 'boatDrive',
 					value: null,
@@ -489,7 +489,7 @@ describe('FieldRenderer', () => {
 			});
 
 			it('ersetzt den Schema-Hilfetext durch einen übergebenen String', async () => {
-				const screen = render(FieldRenderer, {
+				const screen = await render(FieldRenderer, {
 					fieldConfig: boatDriveSelectFieldConfig,
 					name: 'boatDrive',
 					value: null,
@@ -504,7 +504,7 @@ describe('FieldRenderer', () => {
 			});
 
 			it('nutzt ohne Override weiterhin den Schema-Hilfetext', async () => {
-				const screen = render(FieldRenderer, {
+				const screen = await render(FieldRenderer, {
 					fieldConfig: boatDriveSelectFieldConfig,
 					name: 'boatDrive',
 					value: null,
@@ -538,7 +538,7 @@ describe('FieldRenderer', () => {
 			});
 
 			it('rendert das Feld-Icon genau einmal, nicht pro Option', async () => {
-				const screen = render(FieldRenderer, {
+				const screen = await render(FieldRenderer, {
 					fieldConfig: boatDriveRadioFieldConfig,
 					name: 'boatDrive',
 					value: null
@@ -550,7 +550,7 @@ describe('FieldRenderer', () => {
 			});
 
 			it('setzt das Icon in die Legende der Gruppe', async () => {
-				const screen = render(FieldRenderer, {
+				const screen = await render(FieldRenderer, {
 					fieldConfig: boatDriveRadioFieldConfig,
 					name: 'boatDrive',
 					value: null
@@ -560,7 +560,7 @@ describe('FieldRenderer', () => {
 			});
 
 			it('rendert kein Icon in den Optionszeilen', async () => {
-				const screen = render(FieldRenderer, {
+				const screen = await render(FieldRenderer, {
 					fieldConfig: boatDriveRadioFieldConfig,
 					name: 'boatDrive',
 					value: null
@@ -577,7 +577,7 @@ describe('FieldRenderer', () => {
 
 	describe('Häkchen nur bei berührten Feldern', () => {
 		it('zeigt KEIN grünes Häkchen für ein Feld mit Wert, das nicht berührt wurde', async () => {
-			const screen = render(FieldRenderer, {
+			const screen = await render(FieldRenderer, {
 				fieldConfig: emailFieldConfig,
 				name: 'email',
 				value: 'test@test.de',
@@ -590,7 +590,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('zeigt grünes Häkchen für ein berührtes Feld mit Wert und ohne Fehler', async () => {
-			const screen = render(FieldRenderer, {
+			const screen = await render(FieldRenderer, {
 				fieldConfig: emailFieldConfig,
 				name: 'email',
 				value: 'test@test.de',
@@ -602,7 +602,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('zeigt kein Häkchen für ein berührtes Feld mit Fehler', async () => {
-			const screen = render(FieldRenderer, {
+			const screen = await render(FieldRenderer, {
 				fieldConfig: emailFieldConfig,
 				name: 'email',
 				value: 'test@test.de',
@@ -617,7 +617,7 @@ describe('FieldRenderer', () => {
 
 	describe('Error-Anzeige', () => {
 		it('zeigt Fehlermeldung mit role="alert"', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: emailFieldConfig,
 				name: 'email',
 				value: '',
@@ -630,7 +630,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('setzt aria-live="polite" auf Fehlermeldung', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: emailFieldConfig,
 				name: 'email',
 				value: '',
@@ -642,7 +642,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('zeigt keine Fehlermeldung ohne Error', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: emailFieldConfig,
 				name: 'email',
 				value: 'test@test.de'
@@ -668,7 +668,7 @@ describe('FieldRenderer', () => {
 		}
 
 		it('reicht hasError als checkbox-error durch', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: deadConfirmedFieldConfig,
 				name: 'deadConfirmed',
 				value: false,
@@ -682,7 +682,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('reicht hasError als toggle-error durch', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: isDeadFieldConfig,
 				name: 'isDead',
 				value: false,
@@ -697,7 +697,7 @@ describe('FieldRenderer', () => {
 
 		/** `isValid` = `touched && hasValue && !hasError` (siehe FieldRenderer). */
 		it('reicht isValid als checkbox-success durch', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: deadConfirmedFieldConfig,
 				name: 'deadConfirmed',
 				value: true,
@@ -711,7 +711,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('reicht isValid als toggle-success durch', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: isDeadFieldConfig,
 				name: 'isDead',
 				value: true,
@@ -725,7 +725,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('bleibt im Normalfall auf der primary-Variante', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: isDeadFieldConfig,
 				name: 'isDead',
 				value: false
@@ -741,7 +741,7 @@ describe('FieldRenderer', () => {
 
 	describe('ARIA-Attribute', () => {
 		it('setzt aria-invalid=true bei Fehler', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: emailFieldConfig,
 				name: 'email',
 				value: '',
@@ -753,7 +753,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('setzt aria-invalid=false ohne Fehler', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: emailFieldConfig,
 				name: 'email',
 				value: 'test@test.de'
@@ -765,7 +765,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('setzt aria-required=true für Pflichtfelder', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: emailFieldConfig,
 				name: 'email',
 				value: ''
@@ -776,7 +776,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('setzt aria-required=false für optionale Felder', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: phoneFieldConfig,
 				name: 'phone',
 				value: ''
@@ -788,7 +788,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('setzt data-testid mit Feldnamen', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: emailFieldConfig,
 				name: 'email',
 				value: ''
@@ -798,7 +798,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('verknüpft Hilfetext via aria-describedby', async () => {
-			const screen = render(FieldRenderer, {
+			const screen = await render(FieldRenderer, {
 				fieldConfig: emailFieldConfig,
 				name: 'email',
 				value: ''
@@ -818,7 +818,7 @@ describe('FieldRenderer', () => {
 			['textarea', 'textarea'],
 			['radio', 'radio']
 		])('blendet das dekorative Feld-Icon aus (%s)', async (_name, fieldType) => {
-			const screen = render(FieldRenderer, {
+			const screen = await render(FieldRenderer, {
 				fieldConfig: makeFieldConfig({
 					label: 'Bemerkungen',
 					meta: {
@@ -839,7 +839,7 @@ describe('FieldRenderer', () => {
 
 	describe('Hilfetext', () => {
 		it('zeigt Hilfetext wenn konfiguriert', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: emailFieldConfig,
 				name: 'email',
 				value: ''
@@ -849,7 +849,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('zeigt keinen Hilfetext wenn leer', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: phoneFieldConfig,
 				name: 'phone',
 				value: ''
@@ -863,7 +863,7 @@ describe('FieldRenderer', () => {
 
 	describe('Feld-Typ-Rendering', () => {
 		it('rendert Select mit Optionen', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: speciesFieldConfig,
 				name: 'species',
 				value: ''
@@ -879,7 +879,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('rendert Toggle für Boolean-Feld', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: isDeadFieldConfig,
 				name: 'isDead',
 				value: false
@@ -890,7 +890,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('rendert Textarea', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: otherObsFieldConfig,
 				name: 'otherObservations',
 				value: ''
@@ -901,7 +901,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('rendert Date-Input', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: dateFieldConfig,
 				name: 'sightingDate',
 				value: ''
@@ -912,7 +912,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('rendert Radio-Optionen mit allen Auswahlmöglichkeiten', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: distributionFieldConfig,
 				name: 'distribution',
 				value: null
@@ -924,7 +924,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('rendert Checkbox mit Label', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: deadConfirmedFieldConfig,
 				name: 'deadConfirmed',
 				value: false
@@ -943,7 +943,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('zeigt numerischen Wert 42 korrekt im Number-Input', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: numberFieldConfig,
 				name: 'count',
 				value: 42
@@ -955,7 +955,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('zeigt String-Wert "5" korrekt im Number-Input ohne Verfälschung', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: numberFieldConfig,
 				name: 'count',
 				value: '5'
@@ -967,7 +967,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('zeigt Datums-String "2024-01-15" korrekt im Date-Input (kein NaN)', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: dateFieldConfig,
 				name: 'sightingDate',
 				value: '2024-01-15'
@@ -978,7 +978,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('setzt Checkbox als aktiviert wenn value=true', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: deadConfirmedFieldConfig,
 				name: 'deadConfirmed',
 				value: true
@@ -988,7 +988,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('setzt Checkbox als deaktiviert wenn value=false', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: deadConfirmedFieldConfig,
 				name: 'deadConfirmed',
 				value: false
@@ -998,7 +998,7 @@ describe('FieldRenderer', () => {
 		});
 
 		it('zeigt Textarea-Inhalt "Hallo Welt" korrekt', async () => {
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: otherObsFieldConfig,
 				name: 'otherObservations',
 				value: 'Hallo Welt'
@@ -1022,7 +1022,7 @@ describe('FieldRenderer', () => {
 				}
 			});
 
-			render(FieldRenderer, {
+			await render(FieldRenderer, {
 				fieldConfig: selectWithZero,
 				name: 'boatDrive',
 				value: 0

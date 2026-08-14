@@ -20,13 +20,13 @@ const QUEUE: SightingQueue = {
 
 describe('SightingQueueNav', () => {
 	it('nennt Position und Gesamtzahl', async () => {
-		const screen = render(SightingQueueNav, { queue: QUEUE, queueFailed: false, order: 'desc' });
+		const screen = await render(SightingQueueNav, { queue: QUEUE, queueFailed: false, order: 'desc' });
 
 		await expect.element(screen.getByTestId('queue-counter')).toHaveTextContent('17 von 653 offen');
 	});
 
 	it('verlinkt beide Nachbarn mit Herkunft und Sortierung — order: asc', async () => {
-		const screen = render(SightingQueueNav, { queue: QUEUE, queueFailed: false, order: 'asc' });
+		const screen = await render(SightingQueueNav, { queue: QUEUE, queueFailed: false, order: 'asc' });
 
 		const naechste = screen.getByRole('link', { name: /Nächste/ });
 		await expect.element(naechste).toHaveAttribute('href', '/admin/501?from=inbox&order=asc');
@@ -36,7 +36,7 @@ describe('SightingQueueNav', () => {
 	});
 
 	it('verlinkt beide Nachbarn mit Herkunft und Sortierung — order: desc', async () => {
-		const screen = render(SightingQueueNav, { queue: QUEUE, queueFailed: false, order: 'desc' });
+		const screen = await render(SightingQueueNav, { queue: QUEUE, queueFailed: false, order: 'desc' });
 
 		const naechste = screen.getByRole('link', { name: /Nächste/ });
 		await expect.element(naechste).toHaveAttribute('href', '/admin/501?from=inbox&order=desc');
@@ -46,7 +46,7 @@ describe('SightingQueueNav', () => {
 	});
 
 	it('zeigt das hintere Stapelende als Text statt als Knopf-Attrappe', async () => {
-		const screen = render(SightingQueueNav, {
+		const screen = await render(SightingQueueNav, {
 			queue: { ...QUEUE, next: null },
 			queueFailed: false,
 			order: 'desc'
@@ -62,7 +62,7 @@ describe('SightingQueueNav', () => {
 	});
 
 	it('zeigt das vordere Stapelende als Text statt als Knopf-Attrappe', async () => {
-		const screen = render(SightingQueueNav, {
+		const screen = await render(SightingQueueNav, {
 			queue: { ...QUEUE, prev: null },
 			queueFailed: false,
 			order: 'desc'
@@ -78,7 +78,7 @@ describe('SightingQueueNav', () => {
 	});
 
 	it('sagt bei einem Fehlschlag, dass die Position unbekannt ist', async () => {
-		const screen = render(SightingQueueNav, { queue: null, queueFailed: true, order: 'desc' });
+		const screen = await render(SightingQueueNav, { queue: null, queueFailed: true, order: 'desc' });
 
 		await expect
 			.element(screen.getByText(/nicht geladen — Position unbekannt/i))
@@ -86,7 +86,7 @@ describe('SightingQueueNav', () => {
 	});
 
 	it('zeigt für eine entschiedene Sichtung keine Position, aber die Nachbarn', async () => {
-		const screen = render(SightingQueueNav, {
+		const screen = await render(SightingQueueNav, {
 			queue: { ...QUEUE, position: null },
 			queueFailed: false,
 			order: 'desc'
@@ -96,8 +96,8 @@ describe('SightingQueueNav', () => {
 		await expect.element(screen.getByRole('link', { name: /Nächste/ })).toBeInTheDocument();
 	});
 
-	it('rendert nichts, solange die Warteschlange weder geladen noch fehlgeschlagen ist', () => {
-		const screen = render(SightingQueueNav, { queue: null, queueFailed: false, order: 'desc' });
+	it('rendert nichts, solange die Warteschlange weder geladen noch fehlgeschlagen ist', async () => {
+		const screen = await render(SightingQueueNav, { queue: null, queueFailed: false, order: 'desc' });
 
 		expect(screen.container.querySelector('nav')).toBeNull();
 	});

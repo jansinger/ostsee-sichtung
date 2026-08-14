@@ -67,13 +67,13 @@ function fokussierteKarte(): string | null {
 }
 
 describe('Eingangsseite — Tastatur-Triage', () => {
-	beforeEach(() => {
+	beforeEach(async () => {
 		invalidateAll.mockClear();
 		submitVerdict.mockClear();
 	});
 
 	it('fokussiert mit J vorwärts und mit K zurück', async () => {
-		render(AdminInbox, { data: daten([1, 2, 3]) });
+		await render(AdminInbox, { data: daten([1, 2, 3]) });
 
 		await userEvent.keyboard('j');
 		expect(fokussierteKarte()).toBe('0');
@@ -90,7 +90,7 @@ describe('Eingangsseite — Tastatur-Triage', () => {
 	});
 
 	it('gibt die fokussierte Karte mit A frei und rückt den Fokus nach', async () => {
-		const screen = render(AdminInbox, { data: daten([11, 12]) });
+		const screen = await render(AdminInbox, { data: daten([11, 12]) });
 
 		await userEvent.keyboard('j');
 		await userEvent.keyboard('a');
@@ -103,7 +103,7 @@ describe('Eingangsseite — Tastatur-Triage', () => {
 	});
 
 	it('lehnt die fokussierte Karte mit R ab', async () => {
-		render(AdminInbox, { data: daten([21, 22]) });
+		await render(AdminInbox, { data: daten([21, 22]) });
 
 		await userEvent.keyboard('j');
 		await userEvent.keyboard('j');
@@ -113,7 +113,7 @@ describe('Eingangsseite — Tastatur-Triage', () => {
 	});
 
 	it('nimmt die letzte Entscheidung mit U zurück', async () => {
-		const screen = render(AdminInbox, { data: daten([31, 32]) });
+		const screen = await render(AdminInbox, { data: daten([31, 32]) });
 
 		await userEvent.keyboard('j');
 		await userEvent.keyboard('a');
@@ -125,7 +125,7 @@ describe('Eingangsseite — Tastatur-Triage', () => {
 	});
 
 	it('tut bei A nichts, solange keine Karte fokussiert ist', async () => {
-		render(AdminInbox, { data: daten([41]) });
+		await render(AdminInbox, { data: daten([41]) });
 
 		await userEvent.keyboard('a');
 
@@ -137,7 +137,7 @@ describe('Eingangsseite — Tastatur-Triage', () => {
 		   Ring folgt dem DOM-Fokus, die gemerkte Position folgte nur J und K. Wer
 		   nach einem J per Tab oder Klick in eine andere Karte wandert und dann A
 		   drückt, gibt sonst die erste frei. */
-		const screen = render(AdminInbox, { data: daten([81, 82]) });
+		const screen = await render(AdminInbox, { data: daten([81, 82]) });
 
 		await userEvent.keyboard('j');
 		const zweiteFreigabe = screen.getByRole('button', { name: 'Freigeben' }).elements()[1];
@@ -149,7 +149,7 @@ describe('Eingangsseite — Tastatur-Triage', () => {
 	});
 
 	it('entscheidet nichts, wenn der Fokus die Liste verlassen hat', async () => {
-		const screen = render(AdminInbox, { data: daten([91]) });
+		const screen = await render(AdminInbox, { data: daten([91]) });
 
 		await userEvent.keyboard('j');
 		/* Der Sortier-Umschalter steht außerhalb der Liste — er ist der kürzeste
@@ -164,7 +164,7 @@ describe('Eingangsseite — Tastatur-Triage', () => {
 	});
 
 	it('blendet die Übersicht mit einem zweiten ? wieder aus', async () => {
-		const screen = render(AdminInbox, { data: daten([101]) });
+		const screen = await render(AdminInbox, { data: daten([101]) });
 
 		await userEvent.keyboard('?');
 		const overlay = screen.getByRole('dialog', { name: /Tastaturkürzel/ });
@@ -175,7 +175,7 @@ describe('Eingangsseite — Tastatur-Triage', () => {
 	});
 
 	it('gibt den Fokus nach dem Schließen an die Karte zurück', async () => {
-		render(AdminInbox, { data: daten([111, 112]) });
+		await render(AdminInbox, { data: daten([111, 112]) });
 
 		await userEvent.keyboard('j');
 		await userEvent.keyboard('j');
@@ -190,7 +190,7 @@ describe('Eingangsseite — Tastatur-Triage', () => {
 		   Escape-Zweig — genau dort wird der Fokus-Rückweg leicht vergessen. Ohne
 		   ihn bliebe die gemerkte Position gesetzt, während keine Karte den Fokus
 		   sichtbar trägt: A und R wirkten dann wieder auf eine unsichtbare Karte. */
-		const screen = render(AdminInbox, { data: daten([121, 122]) });
+		const screen = await render(AdminInbox, { data: daten([121, 122]) });
 
 		await userEvent.keyboard('j');
 		await userEvent.keyboard('j');
@@ -201,7 +201,7 @@ describe('Eingangsseite — Tastatur-Triage', () => {
 	});
 
 	it('gibt den Fokus beim Klick auf den Hintergrund zurück', async () => {
-		const screen = render(AdminInbox, { data: daten([131]) });
+		const screen = await render(AdminInbox, { data: daten([131]) });
 
 		await userEvent.keyboard('j');
 		await userEvent.keyboard('?');
@@ -220,7 +220,7 @@ describe('Eingangsseite — Tastatur-Triage', () => {
 		   Verglichen wird das **Element** und nicht sein `textContent`: Fällt der
 		   Fokus auf `<body>`, enthält deren Textinhalt den ganzen Seitentext und
 		   damit auch „alle Kürzel" — eine Text-Assertion wäre hier immer grün. */
-		const screen = render(AdminInbox, { data: daten([141]) });
+		const screen = await render(AdminInbox, { data: daten([141]) });
 		const knopf = screen.getByRole('button', { name: /alle Kürzel/ }).element();
 
 		await userEvent.keyboard('?');
@@ -230,13 +230,13 @@ describe('Eingangsseite — Tastatur-Triage', () => {
 	});
 
 	it('macht die Shortcuts ohne Overlay entdeckbar', async () => {
-		const screen = render(AdminInbox, { data: daten([51]) });
+		const screen = await render(AdminInbox, { data: daten([51]) });
 
 		await expect.element(screen.getByText(/Tastatur/)).toBeInTheDocument();
 	});
 
 	it('öffnet mit ? die Übersicht und schließt sie mit Escape', async () => {
-		const screen = render(AdminInbox, { data: daten([61]) });
+		const screen = await render(AdminInbox, { data: daten([61]) });
 
 		await userEvent.keyboard('?');
 		const overlay = screen.getByRole('dialog', { name: /Tastaturkürzel/ });
@@ -248,7 +248,7 @@ describe('Eingangsseite — Tastatur-Triage', () => {
 	});
 
 	it('entscheidet nichts, während die Übersicht offen ist', async () => {
-		render(AdminInbox, { data: daten([71]) });
+		await render(AdminInbox, { data: daten([71]) });
 
 		await userEvent.keyboard('j');
 		await userEvent.keyboard('?');

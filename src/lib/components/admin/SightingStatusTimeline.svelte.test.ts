@@ -12,7 +12,7 @@ const eintrag = (
 
 describe('SightingStatusTimeline', () => {
 	it('zeigt jeden Eintrag mit dem Wort des Zustands, den er hergestellt hat', async () => {
-		const screen = render(SightingStatusTimeline, {
+		const screen = await render(SightingStatusTimeline, {
 			entries: [
 				eintrag(1, 'reject', '2026-08-01T10:00:00Z'),
 				eintrag(2, 'approve', '2026-08-02T10:00:00Z')
@@ -24,7 +24,7 @@ describe('SightingStatusTimeline', () => {
 	});
 
 	it('nennt den Bearbeiter, wenn einer bekannt ist', async () => {
-		const screen = render(SightingStatusTimeline, {
+		const screen = await render(SightingStatusTimeline, {
 			entries: [eintrag(1, 'approve', '2026-08-02T10:00:00Z', 'anna@example.com')]
 		});
 
@@ -35,7 +35,7 @@ describe('SightingStatusTimeline', () => {
 	   dieselbe Lage wie beim Altbestand in `freigegeben_von`. Ein Platzhalter
 	   behauptete eine Person, die es nie gab. */
 	it('behauptet ohne bekannten Bearbeiter keine Person', async () => {
-		const screen = render(SightingStatusTimeline, {
+		const screen = await render(SightingStatusTimeline, {
 			entries: [eintrag(1, 'approve', '2026-08-02T10:00:00Z', null)]
 		});
 
@@ -46,7 +46,7 @@ describe('SightingStatusTimeline', () => {
 	   diesen Hinweis liest sich eine leere Liste als „nie bearbeitet" — falsch
 	   für 19.262 Freigaben aus dem Altsystem. */
 	it('erklärt eine leere Historie, statt sie wortlos zu zeigen', async () => {
-		const screen = render(SightingStatusTimeline, { entries: [] });
+		const screen = await render(SightingStatusTimeline, { entries: [] });
 
 		await expect.element(screen.getByText(/Aufzeichnung/)).toBeVisible();
 	});
@@ -57,7 +57,7 @@ describe('SightingStatusTimeline', () => {
 	   gab. Genau der Fehlermodus, gegen den das Feature selbst antritt — eine
 	   Zeitleiste mit Lücke sieht vollständig aus und ist es nicht. */
 	it('unterscheidet einen Ladefehler von einer leeren Historie', async () => {
-		const screen = render(SightingStatusTimeline, { entries: [], failed: true });
+		const screen = await render(SightingStatusTimeline, { entries: [], failed: true });
 
 		await expect.element(screen.getByRole('alert')).toBeVisible();
 		await expect.element(screen.getByText(/konnte nicht geladen/)).toBeVisible();
@@ -65,7 +65,7 @@ describe('SightingStatusTimeline', () => {
 	});
 
 	it('ist eine Liste — Screenreader melden die Anzahl der Einträge', async () => {
-		const screen = render(SightingStatusTimeline, {
+		const screen = await render(SightingStatusTimeline, {
 			entries: [
 				eintrag(1, 'approve', '2026-08-01T10:00:00Z'),
 				eintrag(2, 'reset', '2026-08-02T10:00:00Z')

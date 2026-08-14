@@ -75,14 +75,14 @@ function daten(
 }
 
 describe('Detailansicht — Tastatur-Triage: Verdrahtung von U', () => {
-	beforeEach(() => {
+	beforeEach(async () => {
 		vi.useFakeTimers();
 		goto.mockClear();
 		invalidateAll.mockClear();
 		submitVerdict.mockClear();
 	});
 
-	afterEach(() => {
+	afterEach(async () => {
 		vi.useRealTimers();
 	});
 
@@ -93,7 +93,7 @@ describe('Detailansicht — Tastatur-Triage: Verdrahtung von U', () => {
 			position: 1,
 			total: 2
 		};
-		const screen = render(AdminSightingDetail, {
+		const screen = await render(AdminSightingDetail, {
 			data: daten(sichtung({ id: 42 }), { queue, queueFailed: false })
 		});
 
@@ -143,7 +143,7 @@ describe('Detailansicht — Tastatur-Triage: Verdrahtung von U', () => {
 	   das Overlay öffnet (nur die Taste `?`), deshalb die Überschrift als
 	   Ersatzziel. */
 	it('gibt den Fokus an die Überschrift zurück, wenn kein Element ihn hatte (document.body)', async () => {
-		const screen = render(AdminSightingDetail, {
+		const screen = await render(AdminSightingDetail, {
 			data: daten(sichtung({ id: 42 }), { queue: null, queueFailed: true })
 		});
 

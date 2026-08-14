@@ -83,7 +83,7 @@ function persistedUploads(): UploadedFileInfo[] {
 }
 
 describe('ModernReportForm — Zurücksetzen räumt die Uploads mit auf', () => {
-	beforeEach(() => {
+	beforeEach(async () => {
 		deleteMultipleFiles.mockReset();
 		deleteMultipleFiles.mockResolvedValue(undefined);
 	});
@@ -91,7 +91,7 @@ describe('ModernReportForm — Zurücksetzen räumt die Uploads mit auf', () => 
 	it('löscht die hochgeladenen Dateien vom Server', async () => {
 		seedFormWithUpload();
 		vi.spyOn(window, 'confirm').mockReturnValue(true);
-		render(ModernReportForm);
+		await render(ModernReportForm);
 
 		resetButton().click();
 
@@ -108,7 +108,7 @@ describe('ModernReportForm — Zurücksetzen räumt die Uploads mit auf', () => 
 		deleteMultipleFiles.mockRejectedValueOnce(new Error('Verbindung zum Server unterbrochen'));
 		seedFormWithUpload();
 		vi.spyOn(window, 'confirm').mockReturnValue(true);
-		render(ModernReportForm);
+		await render(ModernReportForm);
 
 		resetButton().click();
 
@@ -118,7 +118,7 @@ describe('ModernReportForm — Zurücksetzen räumt die Uploads mit auf', () => 
 	it('löscht nichts, wenn die Rückfrage abgelehnt wird', async () => {
 		seedFormWithUpload();
 		vi.spyOn(window, 'confirm').mockReturnValue(false);
-		render(ModernReportForm);
+		await render(ModernReportForm);
 
 		resetButton().click();
 
@@ -141,7 +141,7 @@ describe('ModernReportForm — Reset meldet den Zweig-Reset an den Aufrufer (B1)
 		seedFormWithUpload();
 		vi.spyOn(window, 'confirm').mockReturnValue(true);
 		const onreset = vi.fn();
-		render(ModernReportForm, { onreset });
+		await render(ModernReportForm, { onreset });
 
 		resetButton().click();
 
@@ -152,7 +152,7 @@ describe('ModernReportForm — Reset meldet den Zweig-Reset an den Aufrufer (B1)
 		seedFormWithUpload();
 		vi.spyOn(window, 'confirm').mockReturnValue(false);
 		const onreset = vi.fn();
-		render(ModernReportForm, { onreset });
+		await render(ModernReportForm, { onreset });
 
 		resetButton().click();
 
@@ -178,7 +178,7 @@ describe('ModernReportForm — der Zweig verlässt den Speicher mit den Formular
 		await vi.waitFor(() => expect(submitSightingFormMock).toHaveBeenCalled());
 	}
 
-	beforeEach(() => {
+	beforeEach(async () => {
 		submitSightingFormMock.mockClear();
 		submitSightingFormMock.mockResolvedValue({ status: 'ok', id: 1 });
 	});
@@ -209,7 +209,7 @@ describe('ModernReportForm — der Zweig verlässt den Speicher mit den Formular
 			})
 		);
 
-		render(ModernReportForm, { initialIsDead: true });
+		await render(ModernReportForm, { initialIsDead: true });
 
 		await submit();
 
@@ -232,7 +232,7 @@ describe('ModernReportForm — „Ändern" auf Schritt 2 erreicht die Kette', ()
 	it('reicht onchangekind bis zur Aktionszeile durch', async () => {
 		sessionStorage.setItem(STORAGE_KEYS.CURRENT_STEP, JSON.stringify(1));
 		const onchangekind = vi.fn();
-		render(ModernReportForm, { onchangekind });
+		await render(ModernReportForm, { onchangekind });
 
 		await page.getByRole('button', { name: /ändern/i }).click();
 
@@ -250,7 +250,7 @@ describe('ModernReportForm — „Ändern" auf Schritt 1 erreicht die Kette (B6)
 	it('reicht onchangekind auch auf Schritt 1 durch', async () => {
 		sessionStorage.setItem(STORAGE_KEYS.CURRENT_STEP, JSON.stringify(0));
 		const onchangekind = vi.fn();
-		render(ModernReportForm, { onchangekind });
+		await render(ModernReportForm, { onchangekind });
 
 		await page.getByRole('button', { name: /ändern/i }).click();
 
@@ -297,7 +297,7 @@ describe('ModernReportForm — zweigfremde Felder werden beim Start geleert', ()
 			})
 		);
 
-		render(ModernReportForm, { initialIsDead: false });
+		await render(ModernReportForm, { initialIsDead: false });
 
 		await vi.waitFor(() => {
 			const data = persistedFormData();
@@ -328,7 +328,7 @@ describe('ModernReportForm — zweigfremde Felder werden beim Start geleert', ()
 			})
 		);
 
-		render(ModernReportForm, { initialIsDead: true });
+		await render(ModernReportForm, { initialIsDead: true });
 
 		await vi.waitFor(() => {
 			const data = persistedFormData();
@@ -370,7 +370,7 @@ describe('ModernReportForm — zweigfremde Felder werden beim Start geleert', ()
 			})
 		);
 
-		render(ModernReportForm, { initialIsDead: true });
+		await render(ModernReportForm, { initialIsDead: true });
 
 		await vi.waitFor(() => {
 			const data = persistedFormData();
@@ -393,7 +393,7 @@ describe('ModernReportForm — zweigfremde Felder werden beim Start geleert', ()
  * die Meldung — und schweigt sie sonst.
  */
 describe('ModernReportForm — der Zweigwechsel meldet, was er geräumt hat (UX-Review Punkt 3)', () => {
-	beforeEach(() => {
+	beforeEach(async () => {
 		clearAllToasts();
 	});
 
@@ -413,7 +413,7 @@ describe('ModernReportForm — der Zweigwechsel meldet, was er geräumt hat (UX-
 			})
 		);
 
-		render(ModernReportForm, { initialIsDead: false });
+		await render(ModernReportForm, { initialIsDead: false });
 
 		await vi.waitFor(() => {
 			expect(toastMessages()).toContain(
@@ -434,7 +434,7 @@ describe('ModernReportForm — der Zweigwechsel meldet, was er geräumt hat (UX-
 			})
 		);
 
-		render(ModernReportForm, { initialIsDead: true });
+		await render(ModernReportForm, { initialIsDead: true });
 
 		await vi.waitFor(() => {
 			expect(toastMessages()).toContain(
@@ -458,7 +458,7 @@ describe('ModernReportForm — der Zweigwechsel meldet, was er geräumt hat (UX-
 			})
 		);
 
-		render(ModernReportForm, { initialIsDead: false });
+		await render(ModernReportForm, { initialIsDead: false });
 
 		// Auf den Wiederherstellungs-Hinweis warten: Er läuft über dasselbe
 		// `queueMicrotask` und ist damit der Beleg, dass die Meldung, auf die es
@@ -511,7 +511,7 @@ describe('ModernReportForm — Bootsangaben werden beim Absenden entfernt, die K
 		return submitSightingFormMock.mock.calls[0]?.[0] as Record<string, unknown>;
 	}
 
-	beforeEach(() => {
+	beforeEach(async () => {
 		submitSightingFormMock.mockClear();
 		submitSightingFormMock.mockResolvedValue({ status: 'ok', id: 1 });
 	});
@@ -562,7 +562,7 @@ describe('ModernReportForm — Bootsangaben werden beim Absenden entfernt, die K
 			})
 		);
 
-		render(ModernReportForm);
+		await render(ModernReportForm);
 
 		const sent = await submit();
 
@@ -623,7 +623,7 @@ describe('ModernReportForm — Bootsangaben werden beim Absenden entfernt, die K
 			})
 		);
 
-		render(ModernReportForm);
+		await render(ModernReportForm);
 
 		await page.getByTestId('field-sightingFrom').selectOptions(String(SightingFromEnum.LAND));
 
@@ -696,7 +696,7 @@ describe('ModernReportForm — mediaConsent ohne Aufnahme wird zurückgesetzt (T
 			})
 		);
 
-		render(ModernReportForm);
+		await render(ModernReportForm);
 
 		await vi.waitFor(() => {
 			expect(persistedFormData().mediaConsent).toBe(false);
@@ -715,7 +715,7 @@ describe('ModernReportForm — mediaConsent ohne Aufnahme wird zurückgesetzt (T
 			})
 		);
 
-		render(ModernReportForm);
+		await render(ModernReportForm);
 
 		// Auf denselben Aufbau warten wie im Reset-Fall, damit ein fälschlich
 		// greifender Reset Zeit hätte, sich zu zeigen.
@@ -742,7 +742,7 @@ describe('ModernReportForm — mediaConsent ohne fertigen Upload erreicht den Se
 		return submitSightingFormMock.mock.calls[0]?.[0] as Record<string, unknown>;
 	}
 
-	beforeEach(() => {
+	beforeEach(async () => {
 		submitSightingFormMock.mockClear();
 		submitSightingFormMock.mockResolvedValue({ status: 'ok', id: 1 });
 	});
@@ -772,7 +772,7 @@ describe('ModernReportForm — mediaConsent ohne fertigen Upload erreicht den Se
 			})
 		);
 
-		render(ModernReportForm);
+		await render(ModernReportForm);
 
 		const sent = await submit();
 
@@ -804,7 +804,7 @@ describe('ModernReportForm — mediaConsent ohne fertigen Upload erreicht den Se
 			})
 		);
 
-		render(ModernReportForm);
+		await render(ModernReportForm);
 
 		const sent = await submit();
 
@@ -858,7 +858,7 @@ describe('ModernReportForm — die Fehler-Navigation kennt den Zweig', () => {
 		);
 	}
 
-	beforeEach(() => {
+	beforeEach(async () => {
 		submitSightingFormMock.mockClear();
 		submitSightingFormMock.mockResolvedValue({ status: 'ok', id: 1 });
 	});
@@ -886,7 +886,7 @@ describe('ModernReportForm — die Fehler-Navigation kennt den Zweig', () => {
 			}
 		} as never);
 
-		render(ModernReportForm);
+		await render(ModernReportForm);
 
 		await page.getByRole('button', { name: 'Formular absenden' }).click();
 
@@ -923,7 +923,7 @@ describe('ModernReportForm — die Fehler-Navigation kennt den Zweig', () => {
 	it('bestimmt das Sprungziel nur aus Feldern, die im aktuellen Zweig bedienbar sind', async () => {
 		seedValidLandReport({ boatDrive: 99, shipCount: 99 });
 
-		render(ModernReportForm);
+		await render(ModernReportForm);
 
 		await page.getByRole('button', { name: 'Formular absenden' }).click();
 
@@ -998,7 +998,7 @@ describe('ModernReportForm — ausgeblendete Felder halten das Absenden nicht au
 		return submitSightingFormMock.mock.calls[0]?.[0] as Record<string, unknown>;
 	}
 
-	beforeEach(() => {
+	beforeEach(async () => {
 		submitSightingFormMock.mockClear();
 		submitSightingFormMock.mockResolvedValue({ status: 'ok', id: 1 });
 	});
@@ -1011,7 +1011,7 @@ describe('ModernReportForm — ausgeblendete Felder halten das Absenden nicht au
 	it('sendet trotz eines zu langen Restwerts in `reaction` ab', async () => {
 		seedReport({ reaction: 'x'.repeat(1001) });
 
-		render(ModernReportForm);
+		await render(ModernReportForm);
 
 		const sent = await submit();
 
@@ -1026,7 +1026,7 @@ describe('ModernReportForm — ausgeblendete Felder halten das Absenden nicht au
 	it('sendet trotz eines zu langen Restwerts in `shipName` ab', async () => {
 		seedReport({ shipName: 'M'.repeat(65) });
 
-		render(ModernReportForm);
+		await render(ModernReportForm);
 
 		const sent = await submit();
 
@@ -1042,7 +1042,7 @@ describe('ModernReportForm — ausgeblendete Felder halten das Absenden nicht au
 	it('hält weiterhin auf, wenn ein SICHTBARES Feld ungültig ist', async () => {
 		seedReport({ shipCount: 99 });
 
-		render(ModernReportForm);
+		await render(ModernReportForm);
 
 		await page.getByRole('button', { name: 'Formular absenden' }).click();
 
@@ -1070,7 +1070,7 @@ describe('ModernReportForm — ausgeblendete Felder halten das Absenden nicht au
 	it('sendet `boatDrive` bei einer Land-Meldung nicht mit', async () => {
 		seedReport({ boatDrive: 1 });
 
-		render(ModernReportForm);
+		await render(ModernReportForm);
 
 		const sent = await submit();
 
@@ -1080,7 +1080,7 @@ describe('ModernReportForm — ausgeblendete Felder halten das Absenden nicht au
 	it('sendet die Totfund-Felder bei einer Lebend-Meldung nicht mit', async () => {
 		seedReport({ isDead: false, deadCondition: 2, deadSize: 150, deadPhoneContact: true });
 
-		render(ModernReportForm, { initialIsDead: false });
+		await render(ModernReportForm, { initialIsDead: false });
 
 		const sent = await submit();
 
@@ -1107,7 +1107,7 @@ describe('ModernReportForm — ausgeblendete Felder halten das Absenden nicht au
 			boatDrive: 1
 		});
 
-		render(ModernReportForm, { initialIsDead: true });
+		await render(ModernReportForm, { initialIsDead: true });
 
 		const sent = await submit();
 

@@ -15,11 +15,11 @@ import SightingActionsMenu from './SightingActionsMenu.svelte';
    Menü-Styles). Explizit importieren, wie in FilterPanel.svelte.test.ts. */
 import '../../../app.css';
 
-function renderMenu(overrides: Partial<Parameters<typeof render>[1]> = {}) {
+async function renderMenu(overrides: Partial<Parameters<typeof render>[1]> = {}) {
 	const onspamcheck = vi.fn();
 	const ontestemail = vi.fn();
 	const ondelete = vi.fn();
-	const screen = render(SightingActionsMenu, {
+	const screen = await render(SightingActionsMenu, {
 		menuId: 'aktionen-test-1',
 		label: 'Weitere Aktionen zu Sichtung REF-1',
 		isSuperAdmin: false,
@@ -33,7 +33,7 @@ function renderMenu(overrides: Partial<Parameters<typeof render>[1]> = {}) {
 
 describe('SightingActionsMenu', () => {
 	it('öffnet das Menü über den benannten Auslöser', async () => {
-		const { screen } = renderMenu();
+		const { screen } = await renderMenu();
 
 		const trigger = screen.getByRole('button', { name: 'Weitere Aktionen zu Sichtung REF-1' });
 		await trigger.click();
@@ -45,7 +45,7 @@ describe('SightingActionsMenu', () => {
 	});
 
 	it('feuert die Callbacks und schließt das Menü nach der Auswahl', async () => {
-		const { screen, onspamcheck, ondelete } = renderMenu();
+		const { screen, onspamcheck, ondelete } = await renderMenu();
 
 		await screen.getByRole('button', { name: 'Weitere Aktionen zu Sichtung REF-1' }).click();
 		await screen.getByRole('button', { name: 'Spam-Check durchführen' }).click();
@@ -62,7 +62,7 @@ describe('SightingActionsMenu', () => {
 	});
 
 	it('zeigt die Mail-Aktion nur für Superadmins', async () => {
-		const { screen, ontestemail } = renderMenu({ isSuperAdmin: true });
+		const { screen, ontestemail } = await renderMenu({ isSuperAdmin: true });
 
 		await screen.getByRole('button', { name: 'Weitere Aktionen zu Sichtung REF-1' }).click();
 		const mail = screen.getByRole('button', { name: 'Benachrichtigung ans Team senden' });
@@ -76,7 +76,7 @@ describe('SightingActionsMenu', () => {
 		   Touch-Target-Block in app.css deckte nur `.btn` ab — die einfachen
 		   Menüeinträge (Spam-Check, Mail) kamen mit DaisyUIs Menü-Padding nur
 		   auf ~32px. Superadmin an, damit alle drei Einträge im DOM stehen. */
-		const { screen } = renderMenu({ isSuperAdmin: true });
+		const { screen } = await renderMenu({ isSuperAdmin: true });
 
 		await screen.getByRole('button', { name: 'Weitere Aktionen zu Sichtung REF-1' }).click();
 		const eintraege = screen.container.querySelectorAll('[popover] li > button');
@@ -95,7 +95,7 @@ describe('SightingActionsMenu', () => {
 	});
 
 	it('hat ohne Superadmin-Rolle keinen Mail-Eintrag', async () => {
-		const { screen } = renderMenu();
+		const { screen } = await renderMenu();
 
 		await screen.getByRole('button', { name: 'Weitere Aktionen zu Sichtung REF-1' }).click();
 		expect(

@@ -29,52 +29,52 @@ function dialog(): HTMLDialogElement {
 }
 
 describe('UploadNotice', () => {
-	it('zeigt den Hinweis nicht dauerhaft ausgeklappt', () => {
+	it('zeigt den Hinweis nicht dauerhaft ausgeklappt', async () => {
 		// Der Platzgewinn IST das Feature: Ein offener Dialog wäre derselbe
 		// Dauer-Block wie vorher.
-		render(UploadNotice);
+		await render(UploadNotice);
 
 		expect(dialog().open).toBe(false);
 	});
 
-	it('beschriftet den Auslöser als Datenschutzhinweis', () => {
-		render(UploadNotice);
+	it('beschriftet den Auslöser als Datenschutzhinweis', async () => {
+		await render(UploadNotice);
 
 		expect(trigger().textContent).toMatch(/datenschutz/i);
 	});
 
 	it('öffnet den Dialog per Klick', async () => {
-		render(UploadNotice);
+		await render(UploadNotice);
 
 		trigger().click();
 
 		expect(dialog().open).toBe(true);
 	});
 
-	it('zeigt im Dialog den vollständigen Wortlaut', () => {
+	it('zeigt im Dialog den vollständigen Wortlaut', async () => {
 		// Vollständig, nicht zusammengefasst: Übertragung beim Ablegen, Zweck,
 		// Löschfrist und die getrennte Entscheidung über die Veröffentlichung
 		// stehen als eine Aussage in `uploadNotice()`.
-		render(UploadNotice);
+		await render(UploadNotice);
 
 		expect(dialog().textContent).toContain(uploadNotice());
 	});
 
-	it('bringt kein eigenes <form> mit', () => {
+	it('bringt kein eigenes <form> mit', async () => {
 		// Beide Aufrufstellen liegen im `<form>` aus `Form.svelte`. DaisyUIs
 		// `<form method="dialog">` wäre dort ein verschachteltes Formular: Svelte
 		// meldet `node_invalid_placement_ssr`, und der Parser verwirft das innere
 		// Element — das `</form>` beendet dabei das Sichtungsformular vorzeitig.
-		render(UploadNotice);
+		await render(UploadNotice);
 
 		expect(document.querySelectorAll('form')).toHaveLength(0);
 	});
 
-	it('benennt zwei gleichzeitige Instanzen getrennt', () => {
+	it('benennt zwei gleichzeitige Instanzen getrennt', async () => {
 		// Die Komponente steht im Formular zweimal (Schritt 1 und Schritt 2). Mit
 		// einer festen ID zeigten beide `aria-labelledby` auf dasselbe Element.
-		render(UploadNotice);
-		render(UploadNotice);
+		await render(UploadNotice);
+		await render(UploadNotice);
 
 		const labels = Array.from(
 			document.querySelectorAll<HTMLDialogElement>('[data-testid="upload-notice-dialog"]')
@@ -85,8 +85,8 @@ describe('UploadNotice', () => {
 		expect(new Set(labels).size).toBe(2);
 	});
 
-	it('lässt sich wieder schließen', () => {
-		render(UploadNotice);
+	it('lässt sich wieder schließen', async () => {
+		await render(UploadNotice);
 		trigger().click();
 
 		const close = dialog().querySelector<HTMLButtonElement>('[data-testid="upload-notice-close"]');

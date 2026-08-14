@@ -28,7 +28,7 @@ function dispatchFileChange(input: HTMLInputElement, files: File[]) {
 
 describe('UnifiedDropzone — abgelehnte Dateien', () => {
 	it('zeigt den Fehler dauerhaft an, nicht nur als Toast', async () => {
-		render(UnifiedDropzone, { config: CONFIG, files: [], onFilesAdded: vi.fn() });
+		await render(UnifiedDropzone, { config: CONFIG, files: [], onFilesAdded: vi.fn() });
 
 		const input = page.getByTestId('dropzone-input');
 		dispatchFileChange(input.element() as HTMLInputElement, [
@@ -40,7 +40,7 @@ describe('UnifiedDropzone — abgelehnte Dateien', () => {
 	});
 
 	it('räumt den Fehlerbereich, sobald eine gültige Datei folgt', async () => {
-		render(UnifiedDropzone, { config: CONFIG, files: [], onFilesAdded: vi.fn() });
+		await render(UnifiedDropzone, { config: CONFIG, files: [], onFilesAdded: vi.fn() });
 
 		const input = page.getByTestId('dropzone-input');
 		dispatchFileChange(input.element() as HTMLInputElement, [

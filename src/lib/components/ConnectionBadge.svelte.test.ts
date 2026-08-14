@@ -9,11 +9,11 @@ function badge(state: 'offline' | 'reconnected'): HTMLElement | null {
 }
 
 describe('ConnectionBadge', () => {
-	beforeEach(() => {
+	beforeEach(async () => {
 		connection.reset();
 	});
 
-	afterEach(() => {
+	afterEach(async () => {
 		vi.useRealTimers();
 		connection.reset();
 	});
@@ -23,7 +23,7 @@ describe('ConnectionBadge', () => {
 	 * Normalfall darf die Komponente deshalb keinen Platz kosten.
 	 */
 	it('rendert nichts, solange die Verbindung steht', async () => {
-		render(ConnectionBadge);
+		await render(ConnectionBadge);
 		await tick();
 
 		expect(badge('offline')).toBeNull();
@@ -38,7 +38,7 @@ describe('ConnectionBadge', () => {
 	 * sichtbare Fläche wird bedingt gerendert.
 	 */
 	it('hinterlässt online nur die layoutneutrale Live-Region', async () => {
-		const { container } = render(ConnectionBadge);
+		const { container } = await render(ConnectionBadge);
 		await tick();
 
 		// `getComputedStyle` taugt hier nicht: Die Browser-Komponententests laden
@@ -55,7 +55,7 @@ describe('ConnectionBadge', () => {
 	 * stehen.
 	 */
 	it('reicht Layout-Klassen an die sichtbare Fläche durch', async () => {
-		render(ConnectionBadge, { class: 'mb-2 md:hidden' });
+		await render(ConnectionBadge, { class: 'mb-2 md:hidden' });
 		connection.reportUnreachable();
 		await tick();
 
@@ -64,7 +64,7 @@ describe('ConnectionBadge', () => {
 	});
 
 	it('zeigt den Offline-Zustand mit der Zusage zu den Eingaben', async () => {
-		render(ConnectionBadge);
+		await render(ConnectionBadge);
 		connection.reportUnreachable();
 		await tick();
 
@@ -73,7 +73,7 @@ describe('ConnectionBadge', () => {
 	});
 
 	it('lässt den Zusatz im kompakten Modus weg', async () => {
-		render(ConnectionBadge, { compact: true });
+		await render(ConnectionBadge, { compact: true });
 		connection.reportUnreachable();
 		await tick();
 
@@ -93,7 +93,7 @@ describe('ConnectionBadge', () => {
 		 * nichts. Sie ist deshalb auch im Online-Fall vorhanden, nur leer.
 		 */
 		it('steht schon vor dem Zustandswechsel bereit', async () => {
-			const { container } = render(ConnectionBadge);
+			const { container } = await render(ConnectionBadge);
 			await tick();
 
 			const live = container.querySelector('[role="status"]');
@@ -102,7 +102,7 @@ describe('ConnectionBadge', () => {
 		});
 
 		it('trägt den Text der Ansage, nicht die sichtbare Fläche', async () => {
-			const { container } = render(ConnectionBadge);
+			const { container } = await render(ConnectionBadge);
 			connection.reportUnreachable();
 			await tick();
 
@@ -114,7 +114,7 @@ describe('ConnectionBadge', () => {
 		});
 
 		it('bleibt mit announce={false} stumm, aber sichtbar', async () => {
-			const { container } = render(ConnectionBadge, { announce: false });
+			const { container } = await render(ConnectionBadge, { announce: false });
 			connection.reportUnreachable();
 			await tick();
 
@@ -130,7 +130,7 @@ describe('ConnectionBadge', () => {
 	 * das letzte Wort.
 	 */
 	it('folgt dem letzten Request-Ergebnis, nicht navigator.onLine', async () => {
-		render(ConnectionBadge);
+		await render(ConnectionBadge);
 		expect(navigator.onLine).toBe(true);
 
 		connection.reportUnreachable();
@@ -147,7 +147,7 @@ describe('ConnectionBadge', () => {
 	 * daran hart sperrt, sperrt bis zum Neuladen.
 	 */
 	describe('sicheres gegen vermutetes Offline', () => {
-		it('meldet ein gescheitertes Request-Ergebnis NICHT als sicheres Offline', () => {
+		it('meldet ein gescheitertes Request-Ergebnis NICHT als sicheres Offline', async () => {
 			connection.reportUnreachable();
 
 			expect(connection.isOffline).toBe(true);
@@ -157,7 +157,7 @@ describe('ConnectionBadge', () => {
 		it('meldet eine abgeschaltete Schnittstelle als sicheres Offline', async () => {
 			// Erst rendern: `watchConnection()` hängt am `$effect` der Komponente,
 			// ohne Instanz hört niemand auf das Ereignis.
-			render(ConnectionBadge);
+			await render(ConnectionBadge);
 			await tick();
 
 			window.dispatchEvent(new Event('offline'));
@@ -169,7 +169,7 @@ describe('ConnectionBadge', () => {
 
 	describe('Wieder online', () => {
 		it('erscheint nach der Rückkehr aus dem Offline-Zustand', async () => {
-			render(ConnectionBadge);
+			await render(ConnectionBadge);
 
 			connection.reportUnreachable();
 			await tick();
@@ -181,7 +181,7 @@ describe('ConnectionBadge', () => {
 		});
 
 		it('erscheint nicht, wenn es nie offline war', async () => {
-			render(ConnectionBadge);
+			await render(ConnectionBadge);
 
 			connection.reportReachable();
 			await tick();
@@ -195,7 +195,7 @@ describe('ConnectionBadge', () => {
 		 */
 		it('verschwindet nach 4 Sekunden wieder', async () => {
 			vi.useFakeTimers();
-			render(ConnectionBadge);
+			await render(ConnectionBadge);
 
 			connection.reportUnreachable();
 			connection.reportReachable();
@@ -210,7 +210,7 @@ describe('ConnectionBadge', () => {
 
 		it('steht kurz vor Ablauf der Frist noch', async () => {
 			vi.useFakeTimers();
-			render(ConnectionBadge);
+			await render(ConnectionBadge);
 
 			connection.reportUnreachable();
 			connection.reportReachable();

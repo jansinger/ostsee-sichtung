@@ -44,7 +44,7 @@ function daten(rows: SightingSelect[]): PageData {
 
 describe('Sichtungstabelle — Statusfilter aus der URL', () => {
 	it('zeigt den Legacy-Alias `verified=1` im Filter-Feld als „Freigegeben", nicht leer', async () => {
-		const screen = render(SichtungenSeite, { data: daten([]) });
+		const screen = await render(SichtungenSeite, { data: daten([]) });
 
 		// Filter-Panel ist standardmäßig zu — Mobile- UND Desktop-Button stehen
 		// im Test-DOM (nur per CSS `hidden`/`block` getrennt, Tailwind ist in der

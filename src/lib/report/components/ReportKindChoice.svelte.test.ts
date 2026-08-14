@@ -29,7 +29,7 @@ import ReportKindChoice from './ReportKindChoice.svelte';
  */
 describe('ReportKindChoice', () => {
 	it('bietet beide Zweige als Links an, lebendes Tier zuerst', async () => {
-		const screen = render(ReportKindChoice, { onchoose: vi.fn() });
+		const screen = await render(ReportKindChoice, { onchoose: vi.fn() });
 
 		const testids = Array.from(
 			document.querySelectorAll<HTMLAnchorElement>('a[data-testid^="report-kind-option-"]')
@@ -47,7 +47,7 @@ describe('ReportKindChoice', () => {
 		// totes Tier gefunden, meist an einem Strand"). Stünde er außerhalb des
 		// Links, hörte ein Screenreader-Nutzer beim Durchgehen der Links nur die
 		// beiden ähnlich klingenden Überschriften.
-		const screen = render(ReportKindChoice, { onchoose: vi.fn() });
+		const screen = await render(ReportKindChoice, { onchoose: vi.fn() });
 
 		await expect
 			.element(screen.getByRole('link', { name: /totes Tier gefunden/i }))
@@ -56,7 +56,7 @@ describe('ReportKindChoice', () => {
 
 	it('meldet den Zweig beim Klick und lässt den Browser nicht navigieren', async () => {
 		const onchoose = vi.fn();
-		render(ReportKindChoice, { onchoose });
+		await render(ReportKindChoice, { onchoose });
 
 		const link = document.querySelector<HTMLAnchorElement>(
 			'a[data-testid="report-kind-option-totfund"]'
@@ -80,8 +80,8 @@ describe('ReportKindChoice', () => {
  * `REPORT_KIND_PARAM` in `reportKind.ts`.
  */
 describe('ReportKindChoice — der Link trägt den Zweig ohne JS', () => {
-	it('zeigt per Default auf den Query-Parameter der Seite', () => {
-		render(ReportKindChoice, { onchoose: vi.fn() });
+	it('zeigt per Default auf den Query-Parameter der Seite', async () => {
+		await render(ReportKindChoice, { onchoose: vi.fn() });
 
 		const hrefs = Array.from(
 			document.querySelectorAll<HTMLAnchorElement>('a[data-testid^="report-kind-option-"]')
@@ -90,12 +90,12 @@ describe('ReportKindChoice — der Link trägt den Zweig ohne JS', () => {
 		expect(hrefs).toEqual(['?meldung=lebend', '?meldung=totfund']);
 	});
 
-	it('überlässt das Ziel dem Aufrufer, damit fremde Query-Parameter überleben', () => {
+	it('überlässt das Ziel dem Aufrufer, damit fremde Query-Parameter überleben', async () => {
 		// `+page.svelte` baut den `href` aus `page.url` und hält damit
 		// Kampagnen-Marker aus einem Museums-Link erhalten. Die alte Lösung
 		// konnte das auf dem JS-losen Weg nicht: Ein nativer GET-Submit ersetzt
 		// die gesamte Query.
-		render(ReportKindChoice, {
+		await render(ReportKindChoice, {
 			onchoose: vi.fn(),
 			buildHref: (kind: ReportKind) =>
 				`/?kampagne=museumsnacht&meldung=${kind === 'dead' ? 'totfund' : 'lebend'}`
@@ -150,9 +150,9 @@ describe('ReportKindChoice — modifizierte Klicks bleiben Browser-Sache', () =>
 		['Cmd', { metaKey: true }],
 		['Shift', { shiftKey: true }],
 		['Alt', { altKey: true }]
-	])('%s-Klick wird nicht abgefangen', (_name, modifier) => {
+	])('%s-Klick wird nicht abgefangen', async (_name, modifier) => {
 		const onchoose = vi.fn();
-		render(ReportKindChoice, { onchoose });
+		await render(ReportKindChoice, { onchoose });
 
 		const link = document.querySelector('a[data-testid="report-kind-option-totfund"]');
 		expect(link).not.toBeNull();
@@ -162,12 +162,12 @@ describe('ReportKindChoice — modifizierte Klicks bleiben Browser-Sache', () =>
 		expect(vonKomponenteAbgefangen).toBe(false);
 	});
 
-	it('fängt den gewöhnlichen Klick dagegen ab — die Gegenprobe zum Helfer', () => {
+	it('fängt den gewöhnlichen Klick dagegen ab — die Gegenprobe zum Helfer', async () => {
 		// Ohne sie belegte das Grün oben nur, dass `vonKomponenteAbgefangen`
 		// irgendwie `false` wird: Ein Helfer, der die Flanke gar nicht misst, wäre
 		// für alle vier Modifier genauso grün.
 		const onchoose = vi.fn();
-		render(ReportKindChoice, { onchoose });
+		await render(ReportKindChoice, { onchoose });
 
 		const link = document.querySelector('a[data-testid="report-kind-option-totfund"]');
 		const { vonKomponenteAbgefangen } = klickenOhneNavigation(link as Element, {});
@@ -203,7 +203,7 @@ describe('ReportKindChoice — Fokus beim Rücksprung aus dem Formular (B7)', ()
 	it('fokussiert die Frage, wenn autofocusHeading gesetzt ist', async () => {
 		vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
 
-		render(ReportKindChoice, { onchoose: vi.fn(), autofocusHeading: true });
+		await render(ReportKindChoice, { onchoose: vi.fn(), autofocusHeading: true });
 		await tick();
 
 		const frage = document.getElementById('report-kind-question');
@@ -214,7 +214,7 @@ describe('ReportKindChoice — Fokus beim Rücksprung aus dem Formular (B7)', ()
 	it('lässt den Fokus beim allerersten Aufruf unangetastet (kein Prop)', async () => {
 		vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
 
-		render(ReportKindChoice, { onchoose: vi.fn() });
+		await render(ReportKindChoice, { onchoose: vi.fn() });
 		await tick();
 
 		const frage = document.getElementById('report-kind-question');
@@ -240,8 +240,8 @@ describe('ReportKindChoice — Fokus beim Rücksprung aus dem Formular (B7)', ()
  * Top-Fenster") ebenfalls nicht unit-testet.
  */
 describe('ReportKindChoice — Seitentitel im iframe unterdrückt (Politur)', () => {
-	it('rendert die Seiten-H1 in dieser (iframe-artigen) Testumgebung nicht', () => {
-		render(ReportKindChoice, { onchoose: vi.fn() });
+	it('rendert die Seiten-H1 in dieser (iframe-artigen) Testumgebung nicht', async () => {
+		await render(ReportKindChoice, { onchoose: vi.fn() });
 
 		expect(document.querySelector('h1')).toBeNull();
 	});

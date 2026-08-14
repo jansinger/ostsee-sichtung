@@ -16,7 +16,7 @@ describe('SpeciesIdentificationHelp', () => {
 
 	describe('variant="inline" (Default)', () => {
 		it('startet zugeklappt und zeigt den Inhalt erst nach Klick', async () => {
-			render(SpeciesIdentificationHelp);
+			await render(SpeciesIdentificationHelp);
 
 			expect(root().textContent).not.toContain('Im Zweifel nicht raten');
 
@@ -31,7 +31,7 @@ describe('SpeciesIdentificationHelp', () => {
 		});
 
 		it('beginnt die Hierarchie bei h4 und rendert keine h1/h2', async () => {
-			render(SpeciesIdentificationHelp);
+			await render(SpeciesIdentificationHelp);
 
 			(root().querySelector('button[aria-expanded]') as HTMLButtonElement | null)?.click();
 			await new Promise((resolve) => setTimeout(resolve, 0));
@@ -43,22 +43,22 @@ describe('SpeciesIdentificationHelp', () => {
 	});
 
 	describe('variant="page"', () => {
-		it('zeigt den Inhalt ohne Klick und bietet keinen Toggle an', () => {
-			render(SpeciesIdentificationHelp, { variant: 'page' });
+		it('zeigt den Inhalt ohne Klick und bietet keinen Toggle an', async () => {
+			await render(SpeciesIdentificationHelp, { variant: 'page' });
 
 			expect(root().textContent).toContain('Im Zweifel nicht raten');
 			expect(root().textContent).toContain('Wal oder Robbe?');
 			expect(root().querySelector('button[aria-expanded]')).toBeNull();
 		});
 
-		it('rendert keine eigene h1 — die gehört der Route', () => {
-			render(SpeciesIdentificationHelp, { variant: 'page' });
+		it('rendert keine eigene h1 — die gehört der Route', async () => {
+			await render(SpeciesIdentificationHelp, { variant: 'page' });
 
 			expect(root().querySelectorAll('h1')).toHaveLength(0);
 		});
 
-		it('beginnt die Hierarchie bei h2 und rendert keine h5/h6', () => {
-			render(SpeciesIdentificationHelp, { variant: 'page' });
+		it('beginnt die Hierarchie bei h2 und rendert keine h5/h6', async () => {
+			await render(SpeciesIdentificationHelp, { variant: 'page' });
 
 			expect(root().querySelectorAll('h2').length).toBeGreaterThan(0);
 			expect(root().querySelectorAll('h5, h6')).toHaveLength(0);
@@ -69,8 +69,8 @@ describe('SpeciesIdentificationHelp', () => {
 		 * Deck gelesen wird, liegt das unter der Typografie-Untergrenze
 		 * (design-system.md: `support` = 13px).
 		 */
-		it('nutzt keine 12px-Schrift', () => {
-			render(SpeciesIdentificationHelp, { variant: 'page' });
+		it('nutzt keine 12px-Schrift', async () => {
+			await render(SpeciesIdentificationHelp, { variant: 'page' });
 
 			const withXs = Array.from(root().querySelectorAll('[class*="text-xs"]'));
 			expect(withXs).toHaveLength(0);
@@ -112,7 +112,7 @@ describe('SpeciesIdentificationHelp', () => {
 		}
 
 		it('benennt den geöffneten Dialog über seine Überschrift', async () => {
-			render(SpeciesIdentificationHelp, { variant: 'page' });
+			await render(SpeciesIdentificationHelp, { variant: 'page' });
 
 			const dialog = firstImageDialog();
 			const trigger = await openFirstImageIn(dialog);
@@ -132,11 +132,11 @@ describe('SpeciesIdentificationHelp', () => {
 			expect(trigger.getAttribute('aria-label')).toContain(headingText);
 		});
 
-		it('nennt den geschlossenen Dialog keinen Titel, den es nicht gibt', () => {
+		it('nennt den geschlossenen Dialog keinen Titel, den es nicht gibt', async () => {
 			// Ohne Bild steht die Überschrift nicht im DOM. Ein dann gesetztes
 			// `aria-labelledby` wäre ein ungültiger IDREF — DaisyUI blendet den
 			// Dialog nur per `visibility` aus, er bleibt also stehen.
-			render(SpeciesIdentificationHelp, { variant: 'page' });
+			await render(SpeciesIdentificationHelp, { variant: 'page' });
 
 			const dialog = firstImageDialog();
 
@@ -148,8 +148,8 @@ describe('SpeciesIdentificationHelp', () => {
 			// Die Hilfe steht im Formular am Tierart-Feld und zusätzlich als
 			// eigenständige Seite. Eine feste ID wäre im DOM doppelt und machte
 			// `aria-labelledby` unbrauchbar.
-			render(SpeciesIdentificationHelp, { variant: 'page' });
-			render(SpeciesIdentificationHelp, { variant: 'page' });
+			await render(SpeciesIdentificationHelp, { variant: 'page' });
+			await render(SpeciesIdentificationHelp, { variant: 'page' });
 
 			const dialogs = imageDialogs();
 			expect(dialogs).toHaveLength(2);
@@ -186,8 +186,8 @@ describe('SpeciesIdentificationHelp', () => {
 			);
 		}
 
-		it('bindet sie in der Seitenvariante an --target-min', () => {
-			render(SpeciesIdentificationHelp, { variant: 'page' });
+		it('bindet sie in der Seitenvariante an --target-min', async () => {
+			await render(SpeciesIdentificationHelp, { variant: 'page' });
 
 			const classes = summaryClasses();
 			expect(classes.length).toBeGreaterThan(0);
@@ -195,7 +195,7 @@ describe('SpeciesIdentificationHelp', () => {
 		});
 
 		it('bindet sie in der eingebetteten Variante an --target-min', async () => {
-			render(SpeciesIdentificationHelp);
+			await render(SpeciesIdentificationHelp);
 
 			(root().querySelector('button[aria-expanded]') as HTMLButtonElement | null)?.click();
 			await new Promise((resolve) => setTimeout(resolve, 0));
@@ -210,8 +210,8 @@ describe('SpeciesIdentificationHelp', () => {
 	 * Die zwölf Arten bleiben in beiden Varianten zugeklappt: aufgeklappt wären es
 	 * zwölf Steckbriefe mit je ein bis zwei Fotos auf einer Seite.
 	 */
-	it('lässt die Arten-Akkordeons auch auf der Seite zugeklappt', () => {
-		render(SpeciesIdentificationHelp, { variant: 'page' });
+	it('lässt die Arten-Akkordeons auch auf der Seite zugeklappt', async () => {
+		await render(SpeciesIdentificationHelp, { variant: 'page' });
 
 		const accordions = Array.from(root().querySelectorAll('details'));
 		expect(accordions.length).toBeGreaterThan(0);
@@ -238,14 +238,14 @@ describe('SpeciesIdentificationHelp', () => {
 			return zeile?.querySelector('.badge')?.textContent?.trim();
 		}
 
-		it('trägt es bei einer bestimmbaren Art', () => {
-			render(SpeciesIdentificationHelp, { variant: 'page' });
+		it('trägt es bei einer bestimmbaren Art', async () => {
+			await render(SpeciesIdentificationHelp, { variant: 'page' });
 
 			expect(badgeTextOf('Schweinswal')).toBe('Heimisch');
 		});
 
-		it('lässt es bei den beiden Platzhaltern weg', () => {
-			render(SpeciesIdentificationHelp, { variant: 'page' });
+		it('lässt es bei den beiden Platzhaltern weg', async () => {
+			await render(SpeciesIdentificationHelp, { variant: 'page' });
 
 			expect(badgeTextOf('Unbekannte Walart')).toBeUndefined();
 			expect(badgeTextOf('Unbekannte Robbenart')).toBeUndefined();

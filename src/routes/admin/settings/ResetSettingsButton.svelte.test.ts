@@ -12,7 +12,7 @@ import ResetSettingsButton from './ResetSettingsButton.svelte';
 describe('ResetSettingsButton', () => {
 	it('öffnet den Bestätigungsdialog statt sofort zurückzusetzen', async () => {
 		const onReset = vi.fn();
-		render(ResetSettingsButton, { onReset });
+		await render(ResetSettingsButton, { onReset });
 
 		await page.getByRole('button', { name: 'Zurücksetzen' }).click();
 
@@ -24,7 +24,7 @@ describe('ResetSettingsButton', () => {
 
 	it('löst den Reset erst beim Bestätigen aus', async () => {
 		const onReset = vi.fn();
-		render(ResetSettingsButton, { onReset });
+		await render(ResetSettingsButton, { onReset });
 
 		await page.getByRole('button', { name: 'Zurücksetzen' }).click();
 		await page.getByRole('button', { name: 'Endgültig zurücksetzen' }).click();
@@ -34,7 +34,7 @@ describe('ResetSettingsButton', () => {
 
 	it('bricht ohne Reset ab, wenn "Abbrechen" geklickt wird', async () => {
 		const onReset = vi.fn();
-		render(ResetSettingsButton, { onReset });
+		await render(ResetSettingsButton, { onReset });
 
 		await page.getByRole('button', { name: 'Zurücksetzen' }).click();
 		await page.getByRole('button', { name: 'Abbrechen' }).click();

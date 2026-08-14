@@ -19,7 +19,7 @@ const ZAEHLER: StatusCounts = { all: 12, open: 7, approved: 4, rejected: 1 };
 
 describe('StatusTabs', () => {
 	it('zeigt die vier Reiter mit ihren Trefferzahlen', async () => {
-		const screen = render(StatusTabs, { counts: ZAEHLER, active: '', onselect: vi.fn() });
+		const screen = await render(StatusTabs, { counts: ZAEHLER, active: '', onselect: vi.fn() });
 
 		/* Die Beschriftungen gegen `SIGHTING_STATUS_PRESENTATION` geprüft und
 		   nicht gegen Literale: Sonst wäre die Leiste eine zweite Quelle für
@@ -41,7 +41,7 @@ describe('StatusTabs', () => {
 	});
 
 	it('markiert den aktiven Reiter mit aria-current', async () => {
-		const screen = render(StatusTabs, { counts: ZAEHLER, active: 'open', onselect: vi.fn() });
+		const screen = await render(StatusTabs, { counts: ZAEHLER, active: 'open', onselect: vi.fn() });
 
 		await expect
 			.element(screen.getByRole('button', { name: /Offen/ }))
@@ -52,7 +52,7 @@ describe('StatusTabs', () => {
 	});
 
 	it('markiert ohne Statusfilter den Reiter „Alle"', async () => {
-		const screen = render(StatusTabs, { counts: ZAEHLER, active: '', onselect: vi.fn() });
+		const screen = await render(StatusTabs, { counts: ZAEHLER, active: '', onselect: vi.fn() });
 
 		await expect
 			.element(screen.getByRole('button', { name: /Alle/ }))
@@ -68,7 +68,7 @@ describe('StatusTabs', () => {
 		['Abgelehnt', 'rejected']
 	])('meldet beim Klick auf „%s" den Wert %s', async (label, wert) => {
 		const onselect = vi.fn();
-		const screen = render(StatusTabs, { counts: ZAEHLER, active: '', onselect });
+		const screen = await render(StatusTabs, { counts: ZAEHLER, active: '', onselect });
 
 		await screen.getByRole('button', { name: new RegExp(label) }).click();
 
@@ -77,7 +77,7 @@ describe('StatusTabs', () => {
 
 	it('meldet beim Klick auf „Alle" den leeren Wert', async () => {
 		const onselect = vi.fn();
-		const screen = render(StatusTabs, { counts: ZAEHLER, active: 'approved', onselect });
+		const screen = await render(StatusTabs, { counts: ZAEHLER, active: 'approved', onselect });
 
 		await screen.getByRole('button', { name: /Alle/ }).click();
 

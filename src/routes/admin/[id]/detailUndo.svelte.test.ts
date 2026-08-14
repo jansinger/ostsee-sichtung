@@ -94,7 +94,7 @@ function loeseUndoAus() {
 }
 
 describe('Detailansicht — Rückgängig', () => {
-	beforeEach(() => {
+	beforeEach(async () => {
 		vi.useFakeTimers();
 		goto.mockReset();
 		goto.mockImplementation(() => Promise.resolve());
@@ -105,12 +105,12 @@ describe('Detailansicht — Rückgängig', () => {
 		toastRemoveByKey.mockClear();
 	});
 
-	afterEach(() => {
+	afterEach(async () => {
 		vi.useRealTimers();
 	});
 
 	it('aus der Tabelle geöffnet (kein Warteschlangen-Modus): Undo ruft submitVerdict mit der entschiedenen ID auf und navigiert nicht', async () => {
-		render(AdminSightingDetail, { data: daten(sichtung({ id: 42 })) });
+		await render(AdminSightingDetail, { data: daten(sichtung({ id: 42 })) });
 
 		await freigeben();
 		expect(submitVerdict).toHaveBeenCalledWith(42, 'approve');
@@ -130,7 +130,7 @@ describe('Detailansicht — Rückgängig', () => {
 			position: 1,
 			total: 2
 		};
-		const screen = render(AdminSightingDetail, {
+		const screen = await render(AdminSightingDetail, {
 			data: daten(sichtung({ id: 42 }), { queue, queueFailed: false })
 		});
 
@@ -167,7 +167,7 @@ describe('Detailansicht — Rückgängig', () => {
 	   den Erfolgszweig: Ein gescheiterter Versuch lässt die Erinnerung stehen,
 	   ein zweiter Versuch kann es erneut probieren. */
 	it('ein gescheiterter Undo-Request räumt die Erinnerung nicht — ein zweiter Versuch geht noch', async () => {
-		render(AdminSightingDetail, { data: daten(sichtung({ id: 42 })) });
+		await render(AdminSightingDetail, { data: daten(sichtung({ id: 42 })) });
 
 		await freigeben();
 		expect(submitVerdict).toHaveBeenCalledWith(42, 'approve');
@@ -223,7 +223,7 @@ describe('Detailansicht — Rückgängig', () => {
 				})
 		);
 
-		render(AdminSightingDetail, {
+		await render(AdminSightingDetail, {
 			data: daten(sichtung({ id: 42 }), { queue, queueFailed: false })
 		});
 

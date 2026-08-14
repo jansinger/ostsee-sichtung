@@ -60,7 +60,7 @@ const BASE_100 = 'rgb(255, 255, 255)';
 const BASE_200 = 'rgb(240, 240, 240)';
 
 describe('Sichtungstabelle — Spalten', () => {
-	beforeEach(() => {
+	beforeEach(async () => {
 		document.documentElement.style.setProperty('--color-base-100', BASE_100);
 		document.documentElement.style.setProperty('--color-base-200', BASE_200);
 		// Ohne das hier: Der Round-Trip-Test unten schreibt eine geänderte
@@ -84,8 +84,8 @@ describe('Sichtungstabelle — Spalten', () => {
 		vi.mocked((await import('$app/navigation')).goto).mockClear();
 	});
 
-	it('zeigt E-Mail, Entfernung und Verteilung per Default nicht', () => {
-		const screen = render(SichtungenSeite, { data: daten([sichtung({})]) });
+	it('zeigt E-Mail, Entfernung und Verteilung per Default nicht', async () => {
+		const screen = await render(SichtungenSeite, { data: daten([sichtung({})]) });
 
 		const kopf = kopfzeilen(screen.container);
 		expect(kopf).not.toContain('E-Mail');
@@ -93,16 +93,16 @@ describe('Sichtungstabelle — Spalten', () => {
 		expect(kopf).not.toContain('Verteilung');
 	});
 
-	it('behält Status und Aktionen in der Default-Auswahl', () => {
-		const screen = render(SichtungenSeite, { data: daten([sichtung({})]) });
+	it('behält Status und Aktionen in der Default-Auswahl', async () => {
+		const screen = await render(SichtungenSeite, { data: daten([sichtung({})]) });
 
 		const kopf = kopfzeilen(screen.container);
 		expect(kopf).toContain('Status');
 		expect(kopf).toContain('Aktionen');
 	});
 
-	it('friert Status und Aktionen am rechten Rand fest', () => {
-		const screen = render(SichtungenSeite, { data: daten([sichtung({})]) });
+	it('friert Status und Aktionen am rechten Rand fest', async () => {
+		const screen = await render(SichtungenSeite, { data: daten([sichtung({})]) });
 
 		const zellen = [...screen.container.querySelectorAll('tbody tr td')];
 		const aktionen = zellen.at(-1) as HTMLElement;
@@ -116,8 +116,8 @@ describe('Sichtungstabelle — Spalten', () => {
 		expect(parseFloat(getComputedStyle(status).right)).toBeCloseTo(aktionen.offsetWidth, 0);
 	});
 
-	it('gibt den fixierten Zellen einen opaken Hintergrund, der Zebra mitmacht', () => {
-		const screen = render(SichtungenSeite, {
+	it('gibt den fixierten Zellen einen opaken Hintergrund, der Zebra mitmacht', async () => {
+		const screen = await render(SichtungenSeite, {
 			data: daten([sichtung({ id: 1 }), sichtung({ id: 2 })])
 		});
 
@@ -131,11 +131,11 @@ describe('Sichtungstabelle — Spalten', () => {
 		expect(getComputedStyle(zweiteAktionen).backgroundColor).toBe(BASE_200);
 	});
 
-	it('sagt am Screenreader, was der Gedankenstrich der Spam-Spalte bedeutet', () => {
+	it('sagt am Screenreader, was der Gedankenstrich der Spam-Spalte bedeutet', async () => {
 		// Die Zelle einer nie bewerteten Sichtung zeigt nur „—". Die Erklärung
 		// hing allein am `title`, und das ist an einem nicht fokussierbaren
 		// `span` für assistive Technik nicht verlässlich erreichbar.
-		const screen = render(SichtungenSeite, { data: daten([sichtung({ spamScore: null })]) });
+		const screen = await render(SichtungenSeite, { data: daten([sichtung({ spamScore: null })]) });
 
 		const zeile = screen.container.querySelector('tbody tr') as HTMLElement;
 		expect(zeile.textContent).toContain('Nicht bewertet');
@@ -145,11 +145,11 @@ describe('Sichtungstabelle — Spalten', () => {
 		expect(strich, 'der Gedankenstrich selbst wird nicht mit vorgelesen').toBeTruthy();
 	});
 
-	it('zeigt schon beim ersten Aufruf, wonach sortiert ist', () => {
+	it('zeigt schon beim ersten Aufruf, wonach sortiert ist', async () => {
 		// Die gemockte URL trägt keine Query-Parameter — genau der erste Aufruf.
 		// Der Loader sortiert dann nach Sichtungsdatum absteigend; vorher stand
 		// an keinem Kopf ein Pfeil.
-		const screen = render(SichtungenSeite, { data: daten([sichtung({})]) });
+		const screen = await render(SichtungenSeite, { data: daten([sichtung({})]) });
 
 		const aktiv = [...screen.container.querySelectorAll('thead th')].filter(
 			(th) => th.getAttribute('aria-sort') !== 'none' && th.getAttribute('aria-sort') !== null
@@ -163,10 +163,10 @@ describe('Sichtungstabelle — Spalten', () => {
 		expect(kopf.querySelector('button')?.getAttribute('aria-label')).toContain('absteigend');
 	});
 
-	it('zeigt an inaktiven sortierbaren Köpfen ein dezentes Sortier-Icon, an nicht sortierbaren keins', () => {
+	it('zeigt an inaktiven sortierbaren Köpfen ein dezentes Sortier-Icon, an nicht sortierbaren keins', async () => {
 		// Default-Sortierung ist Sichtungsdatum absteigend — Meldedatum ist damit
 		// ein sortierbarer, aber inaktiver Kopf; Aufnahme ist gar nicht sortierbar.
-		const screen = render(SichtungenSeite, { data: daten([sichtung({})]) });
+		const screen = await render(SichtungenSeite, { data: daten([sichtung({})]) });
 
 		const köpfe = [...screen.container.querySelectorAll('thead th')];
 		const meldedatum = köpfe.find((th) => th.textContent?.includes('Meldedatum')) as HTMLElement;
@@ -185,12 +185,12 @@ describe('Sichtungstabelle — Spalten', () => {
 		).toBeFalsy();
 	});
 
-	it('zentriert die Auswahl-Checkbox in ihrer Zelle', () => {
+	it('zentriert die Auswahl-Checkbox in ihrer Zelle', async () => {
 		// `app.css` setzt für jedes `label:has(> .checkbox)` ungelayert
 		// `align-items: flex-start` — richtig für mehrzeilige Feld-Labels, in
 		// einer Tabellenzeile hängt die Checkbox damit oben. Ein `items-center`
 		// als Utility verliert dagegen.
-		const screen = render(SichtungenSeite, { data: daten([sichtung({})]) });
+		const screen = await render(SichtungenSeite, { data: daten([sichtung({})]) });
 
 		const label = screen.container.querySelector('tbody tr td label') as HTMLElement;
 		expect(getComputedStyle(label).alignItems).toBe('center');
@@ -206,7 +206,7 @@ describe('Sichtungstabelle — Spalten', () => {
 			'https://localhost:4000/admin/sichtungen?page=7&perPage=20'
 		) as typeof appState.url;
 
-		const screen = render(SichtungenSeite, { data: daten([sichtung({})]) });
+		const screen = await render(SichtungenSeite, { data: daten([sichtung({})]) });
 		const tierart = [...screen.container.querySelectorAll('thead th button')].find((b) =>
 			b.textContent?.includes('Tierart')
 		) as HTMLButtonElement;
@@ -219,8 +219,8 @@ describe('Sichtungstabelle — Spalten', () => {
 		expect(ziel.searchParams.get('perPage')).toBe('20');
 	});
 
-	it('verspricht an nicht sortierbaren Spaltenköpfen keine Klickbarkeit', () => {
-		const screen = render(SichtungenSeite, { data: daten([sichtung({})]) });
+	it('verspricht an nicht sortierbaren Spaltenköpfen keine Klickbarkeit', async () => {
+		const screen = await render(SichtungenSeite, { data: daten([sichtung({})]) });
 
 		const nichtSortierbar = [...screen.container.querySelectorAll('thead th')].filter(
 			(th) => !th.querySelector('button')
@@ -232,14 +232,14 @@ describe('Sichtungstabelle — Spalten', () => {
 		}
 	});
 
-	it('lässt localStorage unangetastet, solange niemand die Spaltenauswahl ändert', () => {
+	it('lässt localStorage unangetastet, solange niemand die Spaltenauswahl ändert', async () => {
 		// Fix-Runde-2-Regression: Die Effekt-Aufspaltung setzte
 		// `hatGespeicherteSpaltenGeladen` synchron im Lade-Effekt, bevor der
 		// Speicher-Effekt zum ersten Mal lief — dessen erster Durchlauf schrieb
 		// dadurch den (unveränderten) Default sofort zurück. Jeder Seitenaufruf
 		// seedete damit `localStorage`, nicht nur der einer Person, die die
 		// Spaltenauswahl tatsächlich ändert.
-		render(SichtungenSeite, { data: daten([sichtung({})]) });
+		await render(SichtungenSeite, { data: daten([sichtung({})]) });
 
 		expect(window.localStorage.getItem(COLUMN_PREFERENCES_STORAGE_KEY)).toBeNull();
 	});
@@ -250,7 +250,7 @@ describe('Sichtungstabelle — Spalten', () => {
 	   Bug, den die Aufspaltung behoben hat; gegen die unaufgespaltene Fassung
 	   schlägt er fehl (siehe Fix-Report). */
 	it('speichert die Spaltenauswahl bei jeder Änderung und setzt sie per Reset-Button zurück', async () => {
-		const screen = render(SichtungenSeite, { data: daten([sichtung({})]) });
+		const screen = await render(SichtungenSeite, { data: daten([sichtung({})]) });
 
 		const resetButton = [...screen.container.querySelectorAll('button')].find(
 			(button) => button.textContent?.trim() === 'Standard wiederherstellen'

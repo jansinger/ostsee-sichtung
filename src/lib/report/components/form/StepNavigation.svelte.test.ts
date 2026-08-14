@@ -15,7 +15,7 @@ import StepNavigation from './StepNavigation.svelte';
  * sah den Toast des VERLASSENEN Schritts bis zu 5s auf dem neuen Schritt.
  */
 
-function renderStepNavigation() {
+async function renderStepNavigation() {
 	const formContext: FormContext = {
 		...createForm<SightingFormData>({
 			// Step 0 („Position & Zeitpunkt") bleibt mit den Default-Werten
@@ -28,7 +28,7 @@ function renderStepNavigation() {
 	};
 
 	const context = new Map([[formContextKey, formContext]]);
-	render(StepNavigation, { context });
+	await render(StepNavigation, { context });
 	return formContext;
 }
 
@@ -37,12 +37,12 @@ function toastMessages(): string[] {
 }
 
 describe('StepNavigation — Validierungs-Toast', () => {
-	beforeEach(() => {
+	beforeEach(async () => {
 		clearAllToasts();
 	});
 
 	it('ersetzt den Toast statt sich zu stapeln, wenn mehrfach auf einem invaliden Schritt auf „Weiter" geklickt wird', async () => {
-		renderStepNavigation();
+		await renderStepNavigation();
 
 		const next = page.getByRole('button', { name: /Nächster Schritt/i });
 		await next.click();
@@ -54,7 +54,7 @@ describe('StepNavigation — Validierungs-Toast', () => {
 	});
 
 	it('schließt einen aktiven Validierungs-Toast beim Wechsel auf den (nun validen) nächsten Schritt', async () => {
-		const formContext = renderStepNavigation();
+		const formContext = await renderStepNavigation();
 
 		const next = page.getByRole('button', { name: /Nächster Schritt/i });
 		await next.click();

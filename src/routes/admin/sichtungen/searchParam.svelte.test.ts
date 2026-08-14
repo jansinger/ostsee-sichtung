@@ -43,14 +43,14 @@ function daten(rows: SightingSelect[]): PageData {
 
 describe('Sichtungstabelle — Freitext-Suche', () => {
 	it('übernimmt den Suchbegriff aus der URL ins Feld', async () => {
-		const screen = render(SichtungenSeite, { data: daten([]) });
+		const screen = await render(SichtungenSeite, { data: daten([]) });
 
 		await expect.element(screen.getByRole('searchbox', { name: /suche/i })).toHaveValue('müller');
 	});
 
 	it('schreibt den Suchbegriff in die URL und springt auf Seite 1', async () => {
 		goto.mockClear();
-		const screen = render(SichtungenSeite, { data: daten([]) });
+		const screen = await render(SichtungenSeite, { data: daten([]) });
 
 		const feld = screen.getByRole('searchbox', { name: /suche/i });
 		await feld.fill('ostsee');
@@ -68,7 +68,7 @@ describe('Sichtungstabelle — Freitext-Suche', () => {
 		// `hasActiveFilters` als aktiver Filter — die URL trüge dadurch fälschlich
 		// einen aktiven Chip in der Filterzeile, obwohl gar keine Suche gesetzt ist.
 		goto.mockClear();
-		const screen = render(SichtungenSeite, { data: daten([]) });
+		const screen = await render(SichtungenSeite, { data: daten([]) });
 
 		const feld = screen.getByRole('searchbox', { name: /suche/i });
 		await feld.fill('  ostsee  ');
@@ -79,7 +79,7 @@ describe('Sichtungstabelle — Freitext-Suche', () => {
 
 	it('leert ein Feld aus lauter Leerzeichen beim Suchen', async () => {
 		goto.mockClear();
-		const screen = render(SichtungenSeite, { data: daten([]) });
+		const screen = await render(SichtungenSeite, { data: daten([]) });
 
 		const feld = screen.getByRole('searchbox', { name: /suche/i });
 		await feld.fill('   ');
@@ -93,7 +93,7 @@ describe('Sichtungstabelle — Freitext-Suche', () => {
 
 	it('entfernt den Parameter, wenn das Feld geleert wird', async () => {
 		goto.mockClear();
-		const screen = render(SichtungenSeite, { data: daten([]) });
+		const screen = await render(SichtungenSeite, { data: daten([]) });
 
 		await screen.getByRole('searchbox', { name: /suche/i }).fill('');
 		await screen.getByRole('button', { name: 'Suchen' }).click();

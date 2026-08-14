@@ -60,7 +60,7 @@ function getSlider(id: string): HTMLInputElement {
 
 describe('FilterPanel', () => {
 	it('öffnet und schließt das Panel über die Buttons (inert im geschlossenen Zustand)', async () => {
-		render(FilterPanel, { years: YEARS, defaultYear: 2025 });
+		await render(FilterPanel, { years: YEARS, defaultYear: 2025 });
 
 		const panel = getFilterPanel();
 
@@ -79,7 +79,7 @@ describe('FilterPanel', () => {
 	});
 
 	it('Toggle-Button trägt aria-expanded und aria-controls (H5)', async () => {
-		render(FilterPanel, { years: YEARS, defaultYear: 2025 });
+		await render(FilterPanel, { years: YEARS, defaultYear: 2025 });
 
 		const toggle = getToggleButton();
 		expect(toggle.getAttribute('aria-expanded')).toBe('false');
@@ -91,7 +91,7 @@ describe('FilterPanel', () => {
 	});
 
 	it('Elemente im geschlossenen Panel sind nicht fokussierbar (WCAG 4.1.2)', async () => {
-		render(FilterPanel, { years: YEARS, defaultYear: 2025 });
+		await render(FilterPanel, { years: YEARS, defaultYear: 2025 });
 
 		const yearSelect = getYearSelect();
 		yearSelect.focus();
@@ -99,7 +99,7 @@ describe('FilterPanel', () => {
 	});
 
 	it('beim Öffnen wandert der Fokus auf die Panel-Überschrift, beim Schließen zurück zum Toggle', async () => {
-		render(FilterPanel, { years: YEARS, defaultYear: 2025 });
+		await render(FilterPanel, { years: YEARS, defaultYear: 2025 });
 
 		await page.getByRole('button', { name: /^Filter$/i }).click();
 		const heading = document.querySelector('#filter-title');
@@ -114,7 +114,7 @@ describe('FilterPanel', () => {
 	});
 
 	it('behält Suchtext beim Schließen und erneuten Öffnen', async () => {
-		render(FilterPanel, { years: YEARS, defaultYear: 2025 });
+		await render(FilterPanel, { years: YEARS, defaultYear: 2025 });
 
 		await page.getByRole('button', { name: /^Filter$/i }).click();
 		const searchInput = getSearchInput();
@@ -130,7 +130,7 @@ describe('FilterPanel', () => {
 	});
 
 	it('zeigt Jahresoptionen und korrekte ARIA-Attribute (region statt dialog)', async () => {
-		render(FilterPanel, { years: YEARS, defaultYear: 2025 });
+		await render(FilterPanel, { years: YEARS, defaultYear: 2025 });
 
 		await page.getByRole('button', { name: /^Filter$/i }).click();
 
@@ -147,7 +147,7 @@ describe('FilterPanel', () => {
 	// N4: Die years-Prop kommt bereits absteigend sortiert aus deriveSelectableYears —
 	// das Dropdown übernimmt die Reihenfolge unverändert (neuestes Jahr zuerst).
 	it('rendert die Jahresoptionen in Prop-Reihenfolge (absteigend, neuestes zuerst)', async () => {
-		render(FilterPanel, { years: [2026, 2025, 2008], defaultYear: 2025 });
+		await render(FilterPanel, { years: [2026, 2025, 2008], defaultYear: 2025 });
 
 		await page.getByRole('button', { name: /^Filter$/i }).click();
 
@@ -156,7 +156,7 @@ describe('FilterPanel', () => {
 	});
 
 	it('passt Slider-Maximum bei Schaltjahr an', async () => {
-		render(FilterPanel, { years: YEARS, defaultYear: 2025 });
+		await render(FilterPanel, { years: YEARS, defaultYear: 2025 });
 
 		await page.getByRole('button', { name: /^Filter$/i }).click();
 		const yearSelect = getYearSelect();
@@ -172,7 +172,7 @@ describe('FilterPanel', () => {
 	// M10: Datums-Eingabefelder als gleichwertige Alternative zum Dual-Slider —
 	// ihre min/max-Klemmung folgt dem gewählten Jahr.
 	it('klemmt die Datums-Eingabefelder auf das gewählte Jahr', async () => {
-		render(FilterPanel, { years: YEARS, defaultYear: 2025 });
+		await render(FilterPanel, { years: YEARS, defaultYear: 2025 });
 
 		await page.getByRole('button', { name: /^Filter$/i }).click();
 
@@ -216,7 +216,7 @@ describe('FilterPanel als Bottom-Sheet (H6)', () => {
 
 	it('Panel trägt data-sheet-state="peek" initial, nach dem Öffnen und nach erneutem Öffnen', async () => {
 		await page.viewport(375, 667);
-		render(FilterPanel, { years: YEARS, defaultYear: 2025 });
+		await render(FilterPanel, { years: YEARS, defaultYear: 2025 });
 
 		const panel = getFilterPanel();
 		expect(panel.getAttribute('data-sheet-state')).toBe('peek');
@@ -243,7 +243,7 @@ describe('FilterPanel als Bottom-Sheet (H6)', () => {
 
 	it('Vergrößern-Button wechselt aria-label und aria-expanded mit dem Sheet-Zustand', async () => {
 		await page.viewport(375, 667);
-		render(FilterPanel, { years: YEARS, defaultYear: 2025 });
+		await render(FilterPanel, { years: YEARS, defaultYear: 2025 });
 
 		await openPanel();
 
@@ -260,7 +260,7 @@ describe('FilterPanel als Bottom-Sheet (H6)', () => {
 
 	it('Vergrößern-Button ist auf Desktop-Viewports per CSS versteckt (md:hidden)', async () => {
 		await page.viewport(1024, 768);
-		render(FilterPanel, { years: YEARS, defaultYear: 2025 });
+		await render(FilterPanel, { years: YEARS, defaultYear: 2025 });
 
 		await openPanel();
 
@@ -272,7 +272,7 @@ describe('FilterPanel als Bottom-Sheet (H6)', () => {
 
 	it('Mobile: offenes Panel liegt als Bottom-Sheet unten über die volle Breite (peek 30–60%)', async () => {
 		await page.viewport(375, 667);
-		render(FilterPanel, { years: YEARS, defaultYear: 2025 });
+		await render(FilterPanel, { years: YEARS, defaultYear: 2025 });
 
 		await openPanel();
 
@@ -292,7 +292,7 @@ describe('FilterPanel als Bottom-Sheet (H6)', () => {
 
 	it('Mobile: expanded-Sheet nimmt mehr als 70% der Viewport-Höhe ein', async () => {
 		await page.viewport(375, 667);
-		render(FilterPanel, { years: YEARS, defaultYear: 2025 });
+		await render(FilterPanel, { years: YEARS, defaultYear: 2025 });
 
 		await openPanel();
 		getSheetToggleButton().click();
@@ -309,7 +309,7 @@ describe('FilterPanel als Bottom-Sheet (H6)', () => {
 
 	it('Desktop: offenes Panel ist 320px breit und ragt nicht unten aus dem Viewport', async () => {
 		await page.viewport(1024, 768);
-		render(FilterPanel, { years: YEARS, defaultYear: 2025 });
+		await render(FilterPanel, { years: YEARS, defaultYear: 2025 });
 
 		await openPanel();
 
@@ -325,7 +325,7 @@ describe('FilterPanel als Bottom-Sheet (H6)', () => {
 
 	it('Toggle-Button hält das 44px-Touch-Target auf Mobile (WCAG 2.5.5)', async () => {
 		await page.viewport(375, 667);
-		render(FilterPanel, { years: YEARS, defaultYear: 2025 });
+		await render(FilterPanel, { years: YEARS, defaultYear: 2025 });
 
 		const rect = getToggleButton().getBoundingClientRect();
 		expect(rect.width).toBeGreaterThanOrEqual(44);
@@ -333,17 +333,17 @@ describe('FilterPanel als Bottom-Sheet (H6)', () => {
 });
 
 describe('Statusfilter', () => {
-	afterEach(() => {
+	afterEach(async () => {
 		document.body.innerHTML = '';
 	});
 
 	it('zeigt die Statusauswahl ohne Admin-Flag nicht', async () => {
-		render(FilterPanel, { years: YEARS, isOpen: true });
+		await render(FilterPanel, { years: YEARS, isOpen: true });
 		expect(document.querySelector('input[type="checkbox"]')).toBeNull();
 	});
 
 	it('zeigt drei Auswahlfelder für Admins', async () => {
-		render(FilterPanel, {
+		await render(FilterPanel, {
 			years: YEARS,
 			isOpen: true,
 			showStatusFilter: true,
@@ -356,7 +356,7 @@ describe('Statusfilter', () => {
 
 	it('meldet die neue Auswahl beim Umschalten', async () => {
 		const onStatusChange = vi.fn();
-		render(FilterPanel, {
+		await render(FilterPanel, {
 			years: YEARS,
 			isOpen: true,
 			showStatusFilter: true,
@@ -371,7 +371,7 @@ describe('Statusfilter', () => {
 		// Eine leere Auswahl beantwortet die API mit 400 (statusFilter.ts) und
 		// sähe auf der Karte wie ein Datenverlust aus.
 		const onStatusChange = vi.fn();
-		render(FilterPanel, {
+		await render(FilterPanel, {
 			years: YEARS,
 			isOpen: true,
 			showStatusFilter: true,
@@ -391,7 +391,7 @@ describe('Statusfilter', () => {
 	// Das liest sich wie ein kaputtes Bedienelement, obwohl der Nutzer die
 	// Sperre auflösen kann (erst einen anderen Status anhaken).
 	it('zeigt beim Abwählen des letzten Status eine Meldung im fieldset', async () => {
-		render(FilterPanel, {
+		await render(FilterPanel, {
 			years: YEARS,
 			isOpen: true,
 			showStatusFilter: true,
@@ -413,7 +413,7 @@ describe('Statusfilter', () => {
 	});
 
 	it('meldet nicht role="alert" für die Refusal-Meldung (kein unterbrechender Fehler)', async () => {
-		render(FilterPanel, {
+		await render(FilterPanel, {
 			years: YEARS,
 			isOpen: true,
 			showStatusFilter: true,
@@ -426,7 +426,7 @@ describe('Statusfilter', () => {
 	});
 
 	it('löscht die Refusal-Meldung nach einer erfolgreichen Statusänderung', async () => {
-		render(FilterPanel, {
+		await render(FilterPanel, {
 			years: YEARS,
 			isOpen: true,
 			showStatusFilter: true,

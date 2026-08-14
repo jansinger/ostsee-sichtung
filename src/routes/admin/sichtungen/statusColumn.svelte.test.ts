@@ -71,7 +71,7 @@ function daten(rows: SightingSelect[]): PageData {
 const BEREICHE = [
 	{
 		name: 'Desktop-Tabelle',
-		radio: (screen: ReturnType<typeof render>, name: string) =>
+		radio: (screen: Awaited<ReturnType<typeof render>>, name: string) =>
 			screen.getByRole('table').getByRole('radio', { name })
 	},
 	{
@@ -82,13 +82,13 @@ const BEREICHE = [
 		   genau einer Sichtung pro Test gibt es je Name nur zwei Treffer im
 		   ganzen Dokument — `.first()` ist damit verlässlich die Mobilkarte. */
 		name: 'Mobilkarte',
-		radio: (screen: ReturnType<typeof render>, name: string) =>
+		radio: (screen: Awaited<ReturnType<typeof render>>, name: string) =>
 			screen.getByRole('radio', { name }).first()
 	}
 ];
 
 describe('Sichtungstabelle — Statusspalte', () => {
-	beforeEach(() => {
+	beforeEach(async () => {
 		submitVerdict.mockClear();
 		invalidateAll.mockClear();
 	});
@@ -96,7 +96,7 @@ describe('Sichtungstabelle — Statusspalte', () => {
 	for (const { name: bereichName, radio } of BEREICHE) {
 		describe(`Bereich: ${bereichName}`, () => {
 			it('zeigt eine abgelehnte Sichtung als „Abgelehnt", nicht als ungeprüft', async () => {
-				const screen = render(SichtungenSeite, {
+				const screen = await render(SichtungenSeite, {
 					data: daten([sichtung({ rejectedAt: new Date('2026-08-02T09:00:00Z') })])
 				});
 
@@ -109,7 +109,7 @@ describe('Sichtungstabelle — Statusspalte', () => {
 			 * ungeprüft, obwohl sie öffentlich sichtbar sind.
 			 */
 			it('zeigt eine freigegebene Sichtung als „Freigegeben", auch wenn sie als ungeprüft markiert ist', async () => {
-				const screen = render(SichtungenSeite, {
+				const screen = await render(SichtungenSeite, {
 					data: daten([sichtung({ verified: 0, approvedAt: new Date('2026-08-02T09:00:00Z') })])
 				});
 
@@ -117,7 +117,7 @@ describe('Sichtungstabelle — Statusspalte', () => {
 			});
 
 			it('schickt beim Wechsel das passende Verdict', async () => {
-				const screen = render(SichtungenSeite, { data: daten([sichtung({ id: 7 })]) });
+				const screen = await render(SichtungenSeite, { data: daten([sichtung({ id: 7 })]) });
 
 				await radio(screen, 'Freigegeben').click();
 				/* `silent: true` ist Teil des Vertrags und keine Beiläufigkeit: Die
@@ -128,7 +128,7 @@ describe('Sichtungstabelle — Statusspalte', () => {
 			});
 
 			it('hebt eine Ablehnung über das Segment „Offen" auf', async () => {
-				const screen = render(SichtungenSeite, {
+				const screen = await render(SichtungenSeite, {
 					data: daten([sichtung({ id: 8, rejectedAt: new Date('2026-08-02T09:00:00Z') })])
 				});
 
@@ -143,7 +143,7 @@ describe('Sichtungstabelle — Statusspalte', () => {
 	   — es gibt ihn in keinem Layout mehr, eine Parametrisierung liefe hier nur
 	   auf denselben Textinhalt zweimal geprüft hinaus. */
 	it('hat keinen separaten Knopf „Aufheben" mehr', async () => {
-		const screen = render(SichtungenSeite, {
+		const screen = await render(SichtungenSeite, {
 			data: daten([sichtung({ rejectedAt: new Date('2026-08-02T09:00:00Z') })])
 		});
 

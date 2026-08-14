@@ -55,13 +55,13 @@ function basisProps() {
 
 describe('SightingInboxCard', () => {
 	it('zeigt Tierart, Anzahl, E-Mail und Meldedatum', async () => {
-		const screen = render(SightingInboxCard, basisProps());
+		const screen = await render(SightingInboxCard, basisProps());
 		await expect.element(screen.getByText(/Schweinswal/)).toBeInTheDocument();
 		await expect.element(screen.getByText('melder@example.com')).toBeInTheDocument();
 	});
 
 	it('zeigt Fahrwasser/Ort, wenn angegeben', async () => {
-		const screen = render(SightingInboxCard, {
+		const screen = await render(SightingInboxCard, {
 			sighting: { ...basisSichtung, waterway: 'Kieler Förde, Höhe Laboe' } as SightingSelect,
 			images: [],
 			busy: false,
@@ -72,7 +72,7 @@ describe('SightingInboxCard', () => {
 	});
 
 	it('zeichnet einen Totfund aus, eine Lebendsichtung nicht', async () => {
-		const tot = render(SightingInboxCard, {
+		const tot = await render(SightingInboxCard, {
 			sighting: { ...basisSichtung, isDead: 1 } as SightingSelect,
 			images: [],
 			busy: false,
@@ -83,7 +83,7 @@ describe('SightingInboxCard', () => {
 	});
 
 	it('Spam-Score: hoher Score → error-Badge', async () => {
-		const hoch = render(SightingInboxCard, {
+		const hoch = await render(SightingInboxCard, {
 			sighting: { ...basisSichtung, spamScore: 7 } as SightingSelect,
 			images: [],
 			busy: false,
@@ -100,7 +100,7 @@ describe('SightingInboxCard', () => {
 		// `basisSichtung` trägt `spamScore: null`. Die Karte zeigte dafür ein
 		// graues „Spam: –" und sah damit aus wie Score 0 („geprüft, unauffällig").
 		// Die Tabellenspalte lässt das Badge weg; jetzt beide gleich.
-		const ohne = render(SightingInboxCard, {
+		const ohne = await render(SightingInboxCard, {
 			sighting: basisSichtung,
 			images: [],
 			busy: false,
@@ -111,7 +111,7 @@ describe('SightingInboxCard', () => {
 	});
 
 	it('Spam-Score 0 bekommt ein Badge — bewertet und unauffällig', async () => {
-		const null_ist_nicht_null = render(SightingInboxCard, {
+		const null_ist_nicht_null = await render(SightingInboxCard, {
 			sighting: { ...basisSichtung, spamScore: 0 } as SightingSelect,
 			images: [],
 			busy: false,
@@ -125,7 +125,7 @@ describe('SightingInboxCard', () => {
 	it('Freigeben/Ablehnen rufen die Callbacks, busy deaktiviert beide', async () => {
 		const onApprove = vi.fn();
 		const onReject = vi.fn();
-		const screen = render(SightingInboxCard, {
+		const screen = await render(SightingInboxCard, {
 			sighting: basisSichtung,
 			images: [],
 			busy: false,
@@ -147,7 +147,7 @@ describe('SightingInboxCard', () => {
 	   Handlungswort sind verschieden: Das Segment heißt „Freigegeben", der
 	   Knopf „Freigeben". */
 	it('beschriftet die Aktionen aus der gemeinsamen Statusquelle', async () => {
-		const screen = render(SightingInboxCard, {
+		const screen = await render(SightingInboxCard, {
 			sighting: basisSichtung,
 			images: [],
 			busy: false,
@@ -178,7 +178,7 @@ describe('SightingInboxCard', () => {
 		];
 
 		it('bleibt ohne Kandidaten unsichtbar', async () => {
-			const screen = render(SightingInboxCard, {
+			const screen = await render(SightingInboxCard, {
 				sighting: basisSichtung,
 				images: [],
 				duplicates: [],
@@ -190,7 +190,7 @@ describe('SightingInboxCard', () => {
 		});
 
 		it('nennt die Anzahl ähnlicher Meldungen', async () => {
-			const screen = render(SightingInboxCard, {
+			const screen = await render(SightingInboxCard, {
 				sighting: basisSichtung,
 				images: [],
 				duplicates: kandidaten,
@@ -204,7 +204,7 @@ describe('SightingInboxCard', () => {
 		});
 
 		it('sagt bei genau einem Kandidaten „1 ähnliche Meldung"', async () => {
-			const screen = render(SightingInboxCard, {
+			const screen = await render(SightingInboxCard, {
 				sighting: basisSichtung,
 				images: [],
 				duplicates: kandidaten.slice(0, 1),
@@ -218,7 +218,7 @@ describe('SightingInboxCard', () => {
 		});
 
 		it('verlinkt jeden Kandidaten auf seine Detailansicht', async () => {
-			const screen = render(SightingInboxCard, {
+			const screen = await render(SightingInboxCard, {
 				sighting: basisSichtung,
 				images: [],
 				duplicates: kandidaten,
@@ -242,7 +242,7 @@ describe('SightingInboxCard', () => {
 	   jedem Blick ins Detail ab. Der Marker gehört an *jeden* Link der Karte,
 	   nicht nur an den auffälligsten. */
 	it('markiert jeden Detail-Link mit der Herkunft „Eingang"', async () => {
-		const screen = render(SightingInboxCard, {
+		const screen = await render(SightingInboxCard, {
 			sighting: basisSichtung,
 			images: [],
 			busy: false,
@@ -261,7 +261,7 @@ describe('SightingInboxCard', () => {
 	/* Die Sortierung muss mit auf die Reise: Sie gehört dem Eingang, nicht der
 	   Tabelle, und ohne sie steht die Liste nach dem Rückweg wieder auf `desc`. */
 	it('nimmt die Sortierung des Eingangs in den Detail-Link auf', async () => {
-		const screen = render(SightingInboxCard, {
+		const screen = await render(SightingInboxCard, {
 			sighting: basisSichtung,
 			images: [],
 			order: 'asc' as const,
@@ -277,7 +277,7 @@ describe('SightingInboxCard', () => {
 	});
 
 	it('rendert Bild-Vorschauen über /api/media', async () => {
-		const screen = render(SightingInboxCard, {
+		const screen = await render(SightingInboxCard, {
 			sighting: basisSichtung,
 			images: [{ id: 1, filePath: '2026/08/foo.jpg', originalName: 'foo.jpg' }],
 			busy: false,
@@ -289,7 +289,7 @@ describe('SightingInboxCard', () => {
 	});
 
 	it('zeigt die Melder-Historie neben dem Spam-Badge', async () => {
-		render(SightingInboxCard, {
+		await render(SightingInboxCard, {
 			...basisProps(),
 			reporterHistory: { approved: 23, rejected: 0, open: 1, since: '2019-03-04T08:00:00Z' }
 		});
@@ -302,7 +302,7 @@ describe('SightingInboxCard', () => {
 	/* Die Historie ist Zusatzinformation und wird fail-open geladen: Ohne sie
 	   muss die Karte vollständig bedienbar bleiben. */
 	it('bleibt ohne Melder-Historie vollständig', async () => {
-		render(SightingInboxCard, { ...basisProps(), reporterHistory: null });
+		await render(SightingInboxCard, { ...basisProps(), reporterHistory: null });
 
 		await expect.element(page.getByTestId('reporter-badge')).not.toBeInTheDocument();
 		// Literal 'Freigeben' träfe nicht: die Datei mockt den Beschriftungstext

@@ -50,12 +50,12 @@ function findeAnsichtenLabel(container: HTMLElement): HTMLElement | undefined {
 }
 
 describe('Sichtungstabelle — Ansichten-Zeile', () => {
-	afterEach(() => {
+	afterEach(async () => {
 		window.localStorage.removeItem(FILTER_PRESETS_STORAGE_KEY);
 	});
 
 	it('zeigt das Label „Ansichten:“ nicht, solange es weder Presets noch ein offenes Formular gibt', async () => {
-		const screen = render(SichtungenSeite, { data: daten() });
+		const screen = await render(SichtungenSeite, { data: daten() });
 
 		// „Ansicht speichern" ist der Einstieg ins Feature und bleibt sichtbar —
 		// nur das Label davor wäre ohne Inhalt ein Torso.
@@ -69,14 +69,14 @@ describe('Sichtungstabelle — Ansichten-Zeile', () => {
 		   Wert, der gar nicht filtert, wäre eine Fixture, die etwas zusichert,
 		   was der Code nicht tut. */
 		seedPresets([{ id: 'id-1', name: 'Offene Totfunde', params: { deadFinding: '1' } }]);
-		const screen = render(SichtungenSeite, { data: daten() });
+		const screen = await render(SichtungenSeite, { data: daten() });
 
 		await expect.element(screen.getByRole('button', { name: 'Offene Totfunde' })).toBeVisible();
 		expect(findeAnsichtenLabel(screen.container)).toBeDefined();
 	});
 
 	it('zeigt das Label, während das Speichern-Formular offen ist', async () => {
-		const screen = render(SichtungenSeite, { data: daten() });
+		const screen = await render(SichtungenSeite, { data: daten() });
 
 		await screen.getByRole('button', { name: 'Ansicht speichern' }).click();
 

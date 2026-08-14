@@ -4,7 +4,7 @@ import SightingStatusControl from './SightingStatusControl.svelte';
 
 describe('SightingStatusControl', () => {
 	it('markiert den aktuellen Zustand als ausgewählt', async () => {
-		const screen = render(SightingStatusControl, {
+		const screen = await render(SightingStatusControl, {
 			status: 'approved',
 			sightingId: 1,
 			onchange: vi.fn()
@@ -19,7 +19,7 @@ describe('SightingStatusControl', () => {
 	   einander ausschließenden Optionen. Ein Screenreader meldet damit
 	   „Freigegeben, ausgewählt, 2 von 3" statt dreimal „Schaltfläche". */
 	it('ist eine benannte Radiogruppe', async () => {
-		const screen = render(SightingStatusControl, {
+		const screen = await render(SightingStatusControl, {
 			status: 'open',
 			sightingId: 1,
 			onchange: vi.fn()
@@ -30,7 +30,7 @@ describe('SightingStatusControl', () => {
 
 	it('meldet je Segment das Verdict, das den Zustand herstellt', async () => {
 		const onchange = vi.fn();
-		const screen = render(SightingStatusControl, { status: 'open', sightingId: 1, onchange });
+		const screen = await render(SightingStatusControl, { status: 'open', sightingId: 1, onchange });
 
 		await screen.getByRole('radio', { name: 'Freigegeben' }).click();
 		expect(onchange).toHaveBeenCalledWith('approve');
@@ -46,7 +46,7 @@ describe('SightingStatusControl', () => {
 	   ist dann eine Korrektur und muss durchgehen, nicht verschluckt werden. */
 	it('meldet die Korrektur, wenn DOM und status-Prop auseinanderlaufen', async () => {
 		const onchange = vi.fn();
-		const screen = render(SightingStatusControl, { status: 'open', sightingId: 1, onchange });
+		const screen = await render(SightingStatusControl, { status: 'open', sightingId: 1, onchange });
 
 		// Simuliert den gescheiterten Wechsel: Der Klick setzt das DOM-Radio auf
 		// "Freigegeben", das onchange-Callback (analog zum fehlschlagenden
@@ -61,7 +61,7 @@ describe('SightingStatusControl', () => {
 
 	it('sperrt alle Segmente, solange ein Wechsel läuft', async () => {
 		const onchange = vi.fn();
-		const screen = render(SightingStatusControl, {
+		const screen = await render(SightingStatusControl, {
 			status: 'open',
 			sightingId: 1,
 			busy: true,
@@ -79,7 +79,7 @@ describe('SightingStatusControl', () => {
 	/* Zwei Controls auf einer Seite (Tabellenzeilen) dürfen sich nicht
 	   gegenseitig entwählen — jede Gruppe braucht einen eigenen `name`. */
 	it('vergibt je Sichtung einen eigenen Gruppennamen', async () => {
-		const screen = render(SightingStatusControl, {
+		const screen = await render(SightingStatusControl, {
 			status: 'open',
 			sightingId: 42,
 			onchange: vi.fn()
@@ -103,7 +103,7 @@ describe('SightingStatusControl', () => {
 	   Advance-Sprung nach. */
 	it('meldet einen zweiten Klick nach einem Advance auf eine andere, ebenfalls offene Sichtung', async () => {
 		const onchange = vi.fn();
-		const screen = render(SightingStatusControl, { status: 'open', sightingId: 42, onchange });
+		const screen = await render(SightingStatusControl, { status: 'open', sightingId: 42, onchange });
 
 		await screen.getByRole('radio', { name: 'Freigegeben' }).click();
 		expect(onchange).toHaveBeenCalledWith('approve');
@@ -132,7 +132,7 @@ describe('SightingStatusControl', () => {
 	   `submitVerdict` `false` liefert). */
 	it('setzt die Fläche nach einem gescheiterten Verdict auf den tatsächlichen Status zurück', async () => {
 		const onchange = vi.fn();
-		const screen = render(SightingStatusControl, { status: 'open', sightingId: 1, onchange });
+		const screen = await render(SightingStatusControl, { status: 'open', sightingId: 1, onchange });
 
 		await screen.getByRole('radio', { name: 'Freigegeben' }).click();
 		expect(onchange).toHaveBeenCalledWith('approve');
@@ -158,7 +158,7 @@ describe('SightingStatusControl', () => {
 	   Sync-Effekt muss den Sprung deshalb allein über `sightingId` erkennen. */
 	it('synchronisiert auch ohne begleitende busy-Flanke, wenn nur sightingId springt', async () => {
 		const onchange = vi.fn();
-		const screen = render(SightingStatusControl, { status: 'open', sightingId: 1, onchange });
+		const screen = await render(SightingStatusControl, { status: 'open', sightingId: 1, onchange });
 
 		await screen.getByRole('radio', { name: 'Freigegeben' }).click();
 		await expect.element(screen.getByRole('radio', { name: 'Freigegeben' })).toBeChecked();
@@ -171,7 +171,7 @@ describe('SightingStatusControl', () => {
 	});
 
 	it('zeigt in der kompakten Größe keinen sichtbaren Text', async () => {
-		const screen = render(SightingStatusControl, {
+		const screen = await render(SightingStatusControl, {
 			status: 'open',
 			sightingId: 1,
 			size: 'sm',

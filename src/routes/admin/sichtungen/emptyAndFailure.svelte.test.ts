@@ -74,7 +74,7 @@ function daten(rows: SightingSelect[]): PageData {
 }
 
 describe('Sichtungstabelle — Leer-Zustand', () => {
-	beforeEach(() => {
+	beforeEach(async () => {
 		submitVerdict.mockClear();
 		invalidateAll.mockClear();
 		goto.mockClear();
@@ -82,7 +82,7 @@ describe('Sichtungstabelle — Leer-Zustand', () => {
 	});
 
 	it('sagt ohne aktiven Filter, dass noch nichts erfasst ist — ohne Ausweg', async () => {
-		const screen = render(SichtungenSeite, { data: daten([]) });
+		const screen = await render(SichtungenSeite, { data: daten([]) });
 
 		await expect
 			.element(screen.getByText('Noch keine Sichtungen erfasst').first())
@@ -95,14 +95,14 @@ describe('Sichtungstabelle — Leer-Zustand', () => {
 	});
 
 	it('steht in beiden Darstellungen — Kartenliste und Tabelle', async () => {
-		const screen = render(SichtungenSeite, { data: daten([]) });
+		const screen = await render(SichtungenSeite, { data: daten([]) });
 
 		expect(await screen.getByText('Noch keine Sichtungen erfasst').all()).toHaveLength(2);
 	});
 
 	it('nennt bei aktivem Filter den Filter als Ursache und bietet das Zurücksetzen an', async () => {
 		pageUrl = new URL('https://localhost:4000/admin/sichtungen?q=orca');
-		const screen = render(SichtungenSeite, { data: daten([]) });
+		const screen = await render(SichtungenSeite, { data: daten([]) });
 
 		await expect
 			.element(screen.getByText('Keine Sichtung passt zu den aktiven Filtern').first())
@@ -122,7 +122,7 @@ describe('Sichtungstabelle — Leer-Zustand', () => {
 	   Treffer" ist nicht „noch keine Sichtungen erfasst". */
 	it('zählt auch den Statusreiter als Filter', async () => {
 		pageUrl = new URL('https://localhost:4000/admin/sichtungen?verified=rejected');
-		const screen = render(SichtungenSeite, { data: daten([]) });
+		const screen = await render(SichtungenSeite, { data: daten([]) });
 
 		await expect
 			.element(screen.getByText('Keine Sichtung passt zu den aktiven Filtern').first())
@@ -130,7 +130,7 @@ describe('Sichtungstabelle — Leer-Zustand', () => {
 	});
 
 	it('zeigt gar keinen Leer-Zustand, solange Zeilen da sind', async () => {
-		const screen = render(SichtungenSeite, { data: daten([sichtung()]) });
+		const screen = await render(SichtungenSeite, { data: daten([sichtung()]) });
 
 		expect(await screen.getByText('Noch keine Sichtungen erfasst').all()).toEqual([]);
 		expect(await screen.getByText('Keine Sichtung passt zu den aktiven Filtern').all()).toEqual([]);
@@ -138,7 +138,7 @@ describe('Sichtungstabelle — Leer-Zustand', () => {
 });
 
 describe('Sichtungstabelle — Fehlerfläche statt Toast', () => {
-	beforeEach(() => {
+	beforeEach(async () => {
 		submitVerdict.mockClear();
 		invalidateAll.mockClear();
 		goto.mockClear();
@@ -147,7 +147,7 @@ describe('Sichtungstabelle — Fehlerfläche statt Toast', () => {
 
 	it('stellt einen gescheiterten Statuswechsel stehend dar, mit Wiederholung', async () => {
 		submitVerdict.mockResolvedValueOnce(false);
-		const screen = render(SichtungenSeite, { data: daten([sichtung({ id: 7 })]) });
+		const screen = await render(SichtungenSeite, { data: daten([sichtung({ id: 7 })]) });
 
 		await screen
 			.getByRole('table')
@@ -165,7 +165,7 @@ describe('Sichtungstabelle — Fehlerfläche statt Toast', () => {
 	});
 
 	it('zeigt nach einem erfolgreichen Wechsel keine Fehlerfläche', async () => {
-		const screen = render(SichtungenSeite, { data: daten([sichtung({ id: 7 })]) });
+		const screen = await render(SichtungenSeite, { data: daten([sichtung({ id: 7 })]) });
 
 		await screen
 			.getByRole('table')

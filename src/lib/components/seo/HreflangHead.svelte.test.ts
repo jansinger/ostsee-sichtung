@@ -38,7 +38,7 @@ describe('HreflangHead', () => {
 		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
 		overwriteGetLocale(() => 'de');
 
-		render(HreflangHead, props);
+		await render(HreflangHead, props);
 
 		expect(hreflangLink('de')?.href).toBe('https://ostsee-tiere.example.com/about');
 		expect(hreflangLink('en')?.href).toBe('https://ostsee-tiere.example.com/en/about');
@@ -49,7 +49,7 @@ describe('HreflangHead', () => {
 		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
 		overwriteGetLocale(() => 'de');
 
-		render(HreflangHead, props);
+		await render(HreflangHead, props);
 
 		expect(ogLocaleMeta()).toBe('de_DE');
 		expect(ogLocaleAlternateMetas()).toEqual(['en_GB']);
@@ -59,7 +59,7 @@ describe('HreflangHead', () => {
 		const { overwriteGetLocale } = await import('$lib/paraglide/runtime');
 		overwriteGetLocale(() => 'en');
 
-		render(HreflangHead, props);
+		await render(HreflangHead, props);
 
 		expect(ogLocaleMeta()).toBe('en_GB');
 		expect(ogLocaleAlternateMetas()).toEqual(['de_DE']);
