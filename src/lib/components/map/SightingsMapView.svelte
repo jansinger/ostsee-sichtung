@@ -1,5 +1,6 @@
 <script lang="ts">
 	import * as m from '$lib/paraglide/messages';
+	import { onMount } from 'svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import { MapCountManager, type CountData } from '$lib/map/countManager';
 	import { getDaysInYear } from '$lib/map/dateUtils';
@@ -120,8 +121,17 @@
 	let isAdmin = $derived(page.data.showAdminMenu === true);
 
 	/* Nicht-Admins bekommen die URL-Auswahl gar nicht erst zu sehen — sonst
-	   liefe eine geteilte Admin-URL bei ihnen in einen 403 und die Karte bliebe leer. */
-	let statuses = $state<SightingStatus[]>([...DEFAULT_MAP_STATUSES]);
+	   liefe eine geteilte Admin-URL bei ihnen in einen 403 und die Karte bliebe leer.
+
+	   Die URL-Auswahl gehört in den Initialwert, nicht in den Aufbau-Block: Sie gilt
+	   nur für den ersten Render (danach führt der Controller, siehe `urlSyncEnabled`),
+	   und eine Zuweisung dort las sich selbst wieder ein. Hergang und Symptom stehen
+	   im Test „ein geteilter Link mit Statusauswahl lädt die Karte“. */
+	let statuses = $state<SightingStatus[]>(
+		page.data.showAdminMenu === true && urlFilterState.statuses?.length
+			? [...urlFilterState.statuses]
+			: [...DEFAULT_MAP_STATUSES]
+	);
 
 	// Bisheriges Fallback-Jahr, synchron verfügbar für den allerersten Render
 	// (bevor GET /api/map/sightings/years geladen ist). Als Konstante erfasst,
@@ -583,8 +593,14 @@
 		return `${day}.${month}.`;
 	}
 
-	// Modern $effect for map initialization and cleanup
-	$effect(() => {
+	/* Aufbau und Abbau der Karte — `onMount` und ausdrücklich NICHT `$effect`.
+	   Der Block liest `statuses` synchron und führte es als `$effect` damit als
+	   Abhängigkeit: Jeder Statuswechsel baute die Karte neu auf, eine Zuweisung
+	   darin machte den Effekt sogar sich selbst ungültig. `onMount` sagt die
+	   Einmaligkeit im Konstrukt zu, statt einzelne Lesezugriffe per `untrack`
+	   auszunehmen. Rückgabe bleibt die Aufräumfunktion (läuft beim Zerstören).
+	   Belegt durch „ein Statuswechsel lädt nach, statt die Karte neu aufzubauen“. */
+	onMount(() => {
 		// Check if we have the required DOM element
 		const mapElement = document.getElementById(mapContainerId);
 		if (!mapElement) {
@@ -598,10 +614,8 @@
 			// QW2b: Verfügbare Jahre vor Karteninitialisierung laden, damit die
 			// Karte direkt mit einem Jahr startet, das tatsächlich Daten hat.
 			// M4: Ein Jahr aus der URL hat Vorrang vor dem ermittelten Default.
-			// URL-Auswahl nur für Admins übernehmen (siehe oben).
-			if (isAdmin && urlFilterState.statuses?.length) {
-				statuses = [...urlFilterState.statuses];
-			}
+			// Die URL-Auswahl steht bereits im Initialwert von `statuses` — hier
+			// darf sie nicht noch einmal zugewiesen werden (Begründung dort).
 			const loadedDefaultYear = await loadAvailableYears();
 			if (cancelled) return;
 

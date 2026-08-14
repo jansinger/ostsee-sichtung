@@ -28,6 +28,7 @@ import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
 import { clampExtentToBaltic, type Extent } from './extentUtils';
 import { areExtentsColocated, type MapTranslations } from './mapUtils';
 import {
+	aggregateClusterStatus,
 	clearStyleCache,
 	createClusterStyle,
 	createFeatureStyle,
@@ -1156,6 +1157,9 @@ export class SichtungenMap {
 	): Style | null {
 		// Zähle nur die sichtbaren Features im Cluster
 		let visibleCount = 0;
+		// Bearbeitungsstand nur der sichtbaren Features — ein durch den Filter
+		// ausgeblendetes Feature darf den Ring des Clusters nicht mitbestimmen.
+		const visibleStatuses: SightingStatus[] = [];
 
 		features.forEach((feature) => {
 			const properties = feature.getProperties() as SightingProperties;
@@ -1177,6 +1181,7 @@ export class SichtungenMap {
 
 			if (!isHiddenBySpecies && !isHiddenByColor && !isHiddenByTime) {
 				visibleCount++;
+				visibleStatuses.push(properties.st ?? 'approved');
 			}
 		});
 
@@ -1186,6 +1191,6 @@ export class SichtungenMap {
 		}
 
 		// Gemeinsame Cluster-Skala aus styleUtils — identisch mit der Legende
-		return createClusterStyle(visibleCount);
+		return createClusterStyle(visibleCount, aggregateClusterStatus(visibleStatuses));
 	}
 }

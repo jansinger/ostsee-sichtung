@@ -349,6 +349,13 @@
 					<span class="text-base-content/70 text-xs">{entry.description}</span>
 				</div>
 			{/each}
+			<!-- Ein Cluster ist eine Menge, kein Einzelfall: Der durchgezogene Ring
+			     sagt „alle hier sind freigegeben", nicht „die meisten". Die Muster
+			     darüber zeigen den Einzelmarker; ohne diesen Satz liest sich ein
+			     gestrichelter Cluster als „diese Sichtungen sind offen". -->
+			<p class="text-base-content/70 text-xs">
+				{m.components_map_panel_legendpanel_text_status_cluster_erklaerung()}
+			</p>
 		</div>
 	{/if}
 </MapPanel>

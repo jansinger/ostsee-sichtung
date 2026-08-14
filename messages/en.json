@@ -114,6 +114,7 @@
 	"components_map_panel_legendpanel_text_seezeichen_tonnen_openseamap": "Navigation marks & buoys (OpenSeaMap)",
 	"components_map_panel_legendpanel_text_so_lesen_sie_die_karte": "How to read the map:",
 	"components_map_panel_legendpanel_text_status_abgelehnt_erklaerung": "not published",
+	"components_map_panel_legendpanel_text_status_cluster_erklaerung": "A cluster carries the pattern as soon as not all of the sightings it contains are approved — a solid ring therefore means \u201call approved\u201d, not \u201cmost of them\u201d.",
 	"components_map_panel_legendpanel_text_status_freigegeben_erklaerung": "publicly visible",
 	"components_map_panel_legendpanel_text_status_offen_erklaerung": "not yet processed",
 	"components_map_panel_legendpanel_title_legende": "Legend",
