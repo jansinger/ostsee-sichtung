@@ -120,8 +120,26 @@
 	let isAdmin = $derived(page.data.showAdminMenu === true);
 
 	/* Nicht-Admins bekommen die URL-Auswahl gar nicht erst zu sehen — sonst
-	   liefe eine geteilte Admin-URL bei ihnen in einen 403 und die Karte bliebe leer. */
-	let statuses = $state<SightingStatus[]>([...DEFAULT_MAP_STATUSES]);
+	   liefe eine geteilte Admin-URL bei ihnen in einen 403 und die Karte bliebe leer.
+
+	   Die URL-Auswahl gehört in den Initialwert und NICHT in den Init-Effekt: Dort
+	   stand sie bis 2026-08-14 als Zuweisung, und weil `loadAvailableYears()` im
+	   selben synchronen Durchlauf `statuses` wieder liest, machte der Effekt sich
+	   selbst ungültig — `effect_update_depth_exceeded`, die Jahres-Abfrage lief
+	   endlos, das Lade-Overlay blieb stehen. Betroffen war ausschließlich der
+	   Admin-Deeplink, also genau der Fall, für den die URL überhaupt geschrieben
+	   wird. Als Initialwert wird der Zustand einmal gesetzt und nie gelesen-und-
+	   geschrieben; das ist zugleich die richtige Semantik, denn die URL gilt nur
+	   für den ersten Render (danach führt der Controller, siehe `urlSyncEnabled`).
+
+	   `page.data` statt des `$derived` `isAdmin`: Der Initialwert läuft einmal beim
+	   Aufbau der Komponente, eine Ableitung brächte hier nichts als eine weitere
+	   Abhängigkeit. */
+	let statuses = $state<SightingStatus[]>(
+		page.data.showAdminMenu === true && urlFilterState.statuses?.length
+			? [...urlFilterState.statuses]
+			: [...DEFAULT_MAP_STATUSES]
+	);
 
 	// Bisheriges Fallback-Jahr, synchron verfügbar für den allerersten Render
 	// (bevor GET /api/map/sightings/years geladen ist). Als Konstante erfasst,
@@ -598,10 +616,8 @@
 			// QW2b: Verfügbare Jahre vor Karteninitialisierung laden, damit die
 			// Karte direkt mit einem Jahr startet, das tatsächlich Daten hat.
 			// M4: Ein Jahr aus der URL hat Vorrang vor dem ermittelten Default.
-			// URL-Auswahl nur für Admins übernehmen (siehe oben).
-			if (isAdmin && urlFilterState.statuses?.length) {
-				statuses = [...urlFilterState.statuses];
-			}
+			// Die URL-Auswahl steht bereits im Initialwert von `statuses` — hier
+			// darf sie nicht noch einmal zugewiesen werden (Begründung dort).
 			const loadedDefaultYear = await loadAvailableYears();
 			if (cancelled) return;
 
