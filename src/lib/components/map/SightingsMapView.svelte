@@ -1,5 +1,6 @@
 <script lang="ts">
 	import * as m from '$lib/paraglide/messages';
+	import { onMount } from 'svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import { MapCountManager, type CountData } from '$lib/map/countManager';
 	import { getDaysInYear } from '$lib/map/dateUtils';
@@ -601,8 +602,21 @@
 		return `${day}.${month}.`;
 	}
 
-	// Modern $effect for map initialization and cleanup
-	$effect(() => {
+	/* Aufbau und Abbau der Karte — `onMount` und ausdrücklich NICHT `$effect`.
+	   Der Block liest `statuses` synchron (über `loadAvailableYears()`) und würde
+	   es als `$effect` damit als Abhängigkeit führen: Jeder Statuswechsel im
+	   Filterpanel schreibt `statuses`, der Effekt liefe erneut, die Cleanup-
+	   Funktion verwürfe die Karteninstanz und es entstünde eine neue — Zoom und
+	   Ausschnitt sprängen zurück, während `setStatuses()` daneben genau dieses
+	   Nachladen bereits inkrementell erledigt.
+
+	   Dass eine Zuweisung an `statuses` innerhalb dieses Blocks den Effekt sogar
+	   sich selbst ungültig machen ließ, war der Deeplink-Fehler eine Ebene tiefer.
+	   `onMount` beseitigt beide Fälle an der Wurzel, statt einzelne Lesezugriffe
+	   per `untrack` auszunehmen: Der Aufbau ist einmalig, und diese Zusage steht
+	   hier jetzt im Konstrukt selbst. Die Rückgabe bleibt die Aufräumfunktion,
+	   `onMount` ruft sie beim Zerstören der Komponente auf. */
+	onMount(() => {
 		// Check if we have the required DOM element
 		const mapElement = document.getElementById(mapContainerId);
 		if (!mapElement) {

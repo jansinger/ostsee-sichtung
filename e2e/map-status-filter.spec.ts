@@ -95,6 +95,44 @@ test.describe('Statusfilter der Sichtungskarte', () => {
 		expect(yearRequests).toBeLessThan(5);
 	});
 
+	/**
+	 * Der Statuswechsel ist ein Nachladen, kein Neuaufbau: `setStatuses()` tauscht
+	 * den Bestand im laufenden Controller aus. Der Karten-Init-Effekt las
+	 * `statuses` jedoch synchron (über `loadAvailableYears()`) und führte ihn
+	 * damit als Abhängigkeit — jeder Haken riss die Karte ab und baute sie neu
+	 * auf, wodurch Zoom und Ausschnitt zurücksprangen.
+	 *
+	 * Geprüft wird über die Identität des DOM-Knotens statt über Zoomwerte: Ein
+	 * Neuaufbau ersetzt das von OpenLayers erzeugte `.ol-viewport`, ein
+	 * Nachladen lässt es stehen. Eine Zoom-Assertion wäre indirekt und würde
+	 * auch bei einer bloßen View-Rücksetzung anschlagen.
+	 */
+	test('ein Statuswechsel lädt nach, statt die Karte neu aufzubauen', async ({
+		page,
+		context,
+		baseURL
+	}) => {
+		test.setTimeout(180_000);
+		await seedAdminSession(context, baseURL!, ['admin']);
+		await page.goto('/map');
+		await page.getByTestId('map-loading-content').waitFor({ state: 'detached', timeout: 120_000 });
+
+		const viewport = page.locator('.ol-viewport').first();
+		await viewport.waitFor();
+		await viewport.evaluate((el) => el.setAttribute('data-vor-statuswechsel', '1'));
+		await expect(page.locator('.ol-viewport[data-vor-statuswechsel]')).toHaveCount(1);
+
+		await page.getByRole('button', { name: 'Filter', exact: true }).click();
+		const request = page.waitForRequest(
+			(req) => req.url().includes('/api/map/sightings?') && req.url().includes('status=')
+		);
+		await page.getByRole('checkbox', { name: 'Offen', exact: true }).click();
+		await request;
+
+		// Derselbe Knoten wie vorher — die Karteninstanz hat den Wechsel überlebt.
+		await expect(page.locator('.ol-viewport[data-vor-statuswechsel]')).toHaveCount(1);
+	});
+
 	test('Admins können die Auswahl nicht leeren', async ({ page, context, baseURL }) => {
 		await seedAdminSession(context, baseURL!, ['admin']);
 		await page.goto('/map');
