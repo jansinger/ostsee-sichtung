@@ -4,7 +4,7 @@
  * und blob: steht dort nicht — der Ladefehler landet in einem leeren catch,
  * es gibt weder Thumbnail noch Meldung.
  *
- * Siehe docs/VIDEO_UPLOAD_KONZEPT_2026-07-31.md, Abschnitt 1.3 c.
+ * Siehe docs/archive/VIDEO_UPLOAD_KONZEPT_2026-07-31.md, Abschnitt 1.3 c.
  *
  * WICHTIG: Dieser Test importiert `svelte.config.js` bewusst NICHT als Modul.
  * SvelteKits `Csp.Source`-Typ erwartet CSP-Schlüsselwörter ohne innere

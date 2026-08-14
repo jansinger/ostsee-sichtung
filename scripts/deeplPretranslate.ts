@@ -20,7 +20,7 @@
  *  - `messages/de.json` (die Quelle) und `germanBaseline.json`.
  *  - Den Datenschutz-Abschnitt auf `/about` (`routes_about_page_privacy_*`).
  *    Diese Sätze wurden mehrfach gegen die Datenschutzerklärung des Museums
- *    korrigiert (`docs/DATENSCHUTZ_ABGLEICH_DMM_2026-08-02.md`); eine
+ *    korrigiert (`docs/archive/DATENSCHUTZ_ABGLEICH_DMM_2026-08-02.md`); eine
  *    Maschinenübersetzung ist dort genauso ungeprüft wie eine von Hand und
  *    braucht dieselbe rechtliche Abnahme. Bewusst ausgeschlossen, nicht
  *    vergessen — mit `--include-privacy` trotzdem möglich.

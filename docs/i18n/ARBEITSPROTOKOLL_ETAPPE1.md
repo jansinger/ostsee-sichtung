@@ -1784,7 +1784,7 @@ und übersetzen — anders als die ursprüngliche Entscheidung vom 2026-08-11
 Sicherheit" bekommt eine **Entwurfsübersetzung**, klar als solche markiert,
 weil diese Formulierungen bereits mehrfach gegen die offizielle
 DMM-Datenschutzerklärung korrigiert werden mussten
-(`docs/DATENSCHUTZ_ABGLEICH_DMM_2026-08-02.md`) — eine zweite unabhängige
+(`docs/archive/DATENSCHUTZ_ABGLEICH_DMM_2026-08-02.md`) — eine zweite unabhängige
 Formulierung ungeprüft auszuliefern wäre dasselbe Fehlermuster auf Englisch.
 
 ## Umsetzung

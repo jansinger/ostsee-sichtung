@@ -7,7 +7,7 @@
  * Das galt bisher nur für die Größe — hier kommt die Typliste dazu, weil
  * `image/gif` genau so auseinandergelaufen ist.
  *
- * Siehe docs/VIDEO_UPLOAD_KONZEPT_2026-07-31.md, Abschnitt 1.3 d.
+ * Siehe docs/archive/VIDEO_UPLOAD_KONZEPT_2026-07-31.md, Abschnitt 1.3 d.
  */
 import { describe, expect, it, vi } from 'vitest';
 import {

@@ -58,7 +58,7 @@ const config = {
 				// Ohne diese Direktive greift default-src ['self'] und blockiert die
 				// blob:-URL, über die createVideoThumbnail() das Video lädt. Der
 				// Ladefehler wird still verschluckt — es gibt dann weder Thumbnail
-				// noch Fehlermeldung. Siehe docs/VIDEO_UPLOAD_KONZEPT_2026-07-31.md.
+				// noch Fehlermeldung. Siehe docs/archive/VIDEO_UPLOAD_KONZEPT_2026-07-31.md.
 				'media-src': ["'self'", 'blob:', 'data:'],
 				'img-src': [
 					"'self'",

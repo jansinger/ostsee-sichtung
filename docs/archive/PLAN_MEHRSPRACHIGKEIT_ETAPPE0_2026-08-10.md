@@ -16,7 +16,7 @@ auf `/`.
 
 **Tech Stack:** SvelteKit 5, `@inlang/paraglide-js`, Vitest, Playwright.
 
-**Vorlage:** [DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md](DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md),
+**Vorlage:** [DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md](../i18n/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md),
 Abschnitte 2, 4 und 5.6. Bei Widerspruch gewinnt der Entwurf; Abweichungen dort
 nachtragen.
 
@@ -957,7 +957,7 @@ git commit -m "test(test): guard the locale routing exclusions"
 - Ändern: nichts — dieser Task ist ein Guard, keine Umstellung.
 
 **Warum kein Umbau.** `formatLocalDateTime` in
-[dateTime.ts:49](../src/lib/utils/format/dateTime.ts#L49) nimmt bereits einen
+[dateTime.ts:49](../../src/lib/utils/format/dateTime.ts#L49) nimmt bereits einen
 `locale`-Parameter (`locale: string = APP_LOCALE`). Es ist also nichts
 umzustellen — die Aufrufstellen bekommen in **Etappe 2** die aktive Locale
 durchgereicht. Was hier fehlt, ist die Absicherung: dass ein zweisprachiger
@@ -1136,11 +1136,11 @@ git commit -m "feat(ui): localize internal links so a locale survives navigation
 - Test neu: `src/lib/components/LanguageSwitcher.svelte.test.ts`
 
 **Erwartungshaltung dämpfen.** Der Umschalter sitzt in der Navigation und ist
-damit **im iframe unsichtbar** ([PublicNavbar.svelte:63](../src/lib/components/PublicNavbar.svelte#L63)).
+damit **im iframe unsichtbar** ([PublicNavbar.svelte:63](../../src/lib/components/PublicNavbar.svelte#L63)).
 Er ist Bequemlichkeit für Direktaufrufer, ausdrücklich **kein** tragender Weg zur
 englischen Fassung — den liefert die Einbettung der Elternseite. Genau an dieser
 Fehlannahme ist `/bestimmungshilfe` schon einmal gescheitert
-([IFRAME_EINBETTUNG.md](IFRAME_EINBETTUNG.md)).
+([IFRAME_EINBETTUNG.md](../IFRAME_EINBETTUNG.md)).
 
 - [ ] **Schritt 1: Fehlschlagenden Komponententest schreiben**
 
@@ -1224,7 +1224,7 @@ git commit -m "feat(ui): add a language switcher to the public navbar"
 
 - [x] **Dokumentation nachgezogen** (Commit `7dafd5e7`). In
       `src/lib/legacy-api/languagePrefix.ts` und
-      [LEGACY_API_SPECIFICATION.md](LEGACY_API_SPECIFICATION.md) stand die
+      [LEGACY_API_SPECIFICATION.md](../LEGACY_API_SPECIFICATION.md) stand die
       Begründung „`/en/` vor der Startseite bleibt 404, weil die Anwendung
       einsprachig deutsch ist" — die Prämisse galt nicht mehr und wurde
       umgeschrieben. Die Begründung zu `/en/admin` wurde im selben Commit

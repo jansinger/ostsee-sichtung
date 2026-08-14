@@ -7,8 +7,8 @@
 > geänderten Annahmen.
 >
 > **Historisches Artefakt.** Der Stand ist der von Etappe 0. Wo es Zahlen nennt,
-> gelten die gemessenen aus `docs/i18n-inventory.md`; wo es Planaussagen nennt,
-> gilt `docs/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md`. Nicht nachpflegen.
+> gelten die gemessenen aus `docs/i18n/i18n-inventory.md`; wo es Planaussagen nennt,
+> gilt `docs/i18n/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md`. Nicht nachpflegen.
 >
 > **Wofür es nützlich ist.** Es benennt neun Fehler im Plan und acht Tests, die
 > auch bei entfernter Funktion grün geblieben wären — jeweils mit Fundstelle und
@@ -18,7 +18,7 @@
 
 # Etappe 0 — Mehrsprachigkeit DE/EN
 
-Plan: docs/PLAN_MEHRSPRACHIGKEIT_ETAPPE0_2026-08-10.md (9 Tasks)
+Plan: docs/archive/PLAN_MEHRSPRACHIGKEIT_ETAPPE0_2026-08-10.md (9 Tasks)
 Branch: claude/multi-language-support-f32fa0, rebased auf origin/main 8b9c8079
 Modelle: Implementierung Sonnet, Reviews Opus.
 

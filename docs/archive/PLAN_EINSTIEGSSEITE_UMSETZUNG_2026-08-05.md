@@ -25,7 +25,7 @@ würde ein unsichtbares Feld weiter validieren lassen.
 
 **Tech-Stack:** SvelteKit 5 (Runes), TypeScript, Yup, Vitest, Playwright, DaisyUI v5.
 
-**Grundlage:** [docs/PLAN_EINSTIEGSSEITE_MELDEFORMULAR_2026-08-05.md](PLAN_EINSTIEGSSEITE_MELDEFORMULAR_2026-08-05.md)
+**Grundlage:** [docs/archive/PLAN_EINSTIEGSSEITE_MELDEFORMULAR_2026-08-05.md](PLAN_EINSTIEGSSEITE_MELDEFORMULAR_2026-08-05.md)
 (Spezifikation, Fassung 2). Bei Widerspruch gilt die Spezifikation.
 
 ---
@@ -173,7 +173,7 @@ er bringt zwei Folgen mit, die mitgelöst werden müssen:
    Feld deshalb abhängig davon, dass eine Aufnahme vorliegt** (Task 14).
 2. **Ein Nachweis für nichts.** `mapFormToSighting` stempelt `mediaConsentAt` und
    `mediaConsentVersion`, sobald `formData.mediaConsent` wahr ist
-   ([mapFormToSighting.ts:342–344](../src/lib/server/db/mapFormToSighting.ts)). Wer
+   ([mapFormToSighting.ts:342–344](../../src/lib/server/db/mapFormToSighting.ts)). Wer
    zustimmt und die Datei danach wieder entfernt, erzeugt einen datierten,
    versionierten Einwilligungsnachweis ohne Bezugsgegenstand. **Der Plan leert
    `mediaConsent` beim Entfernen der letzten Aufnahme** (Task 15).
@@ -1318,7 +1318,7 @@ Wetter-Abruf im Totfund-Zweig) explizit im Browser nachsehen — kein Test deckt
 
 ```bash
 git push -u origin HEAD
-gh pr create --title "feat(report): add the entry choice before the report form" --body "Setzt Punkt C1 des Museumsdokuments um. Spezifikation: docs/PLAN_EINSTIEGSSEITE_MELDEFORMULAR_2026-08-05.md"
+gh pr create --title "feat(report): add the entry choice before the report form" --body "Setzt Punkt C1 des Museumsdokuments um. Spezifikation: docs/archive/PLAN_EINSTIEGSSEITE_MELDEFORMULAR_2026-08-05.md"
 ```
 
 ---
@@ -1561,7 +1561,7 @@ Aus Abschnitt 12 der Spezifikation einzeln abhaken.
 git add e2e/form-from-land.spec.ts
 git commit -m "test(e2e): cover the from-land branch"
 git push -u origin HEAD
-gh pr create --title "feat(report): show own-vessel fields only when reporting from a boat" --body "Umsetzung von R6 aus docs/PLAN_EINSTIEGSSEITE_MELDEFORMULAR_2026-08-05.md"
+gh pr create --title "feat(report): show own-vessel fields only when reporting from a boat" --body "Umsetzung von R6 aus docs/archive/PLAN_EINSTIEGSSEITE_MELDEFORMULAR_2026-08-05.md"
 ```
 
 ---

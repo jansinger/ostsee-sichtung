@@ -73,7 +73,7 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress, 
 		// Die Konfiguration ist die einzige Autorität für Größen — dieselbe
 		// Quelle, aus der /api/config/upload die Dropzone speist. Zwei getrennte
 		// Zahlen (anonym/angemeldet) waren nur nötig, solange die öffentliche
-		// Auskunft statisch war; siehe docs/VIDEO_UPLOAD_KONZEPT_2026-07-31.md.
+		// Auskunft statisch war; siehe docs/archive/VIDEO_UPLOAD_KONZEPT_2026-07-31.md.
 		const uploadConfig = await ServerConfigService.getUploadConfig();
 		const maxSize = maxUploadSizeFor(file.type, {
 			maxFileSize: uploadConfig.maxFileSizeBytes,

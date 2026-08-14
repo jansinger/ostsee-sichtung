@@ -510,7 +510,7 @@ describe('EmailService', () => {
 			expect(callArg?.sightingDate).not.toBe('2024-07-14');
 		});
 
-		it('ruft formatSightingForDisplay mit baseLocale auf — die Mail geht ans Museum, nicht an den Melder (siehe docs/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md, 5.4)', async () => {
+		it('ruft formatSightingForDisplay mit baseLocale auf — die Mail geht ans Museum, nicht an den Melder (siehe docs/i18n/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md, 5.4)', async () => {
 			vi.mocked(db.select).mockReturnValue({
 				from: vi.fn().mockReturnValue({
 					where: vi.fn().mockReturnValue({

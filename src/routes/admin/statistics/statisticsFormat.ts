@@ -1,5 +1,5 @@
 /**
- * @fileoverview Zahlenformat der Statistik-Seite (X4, siehe `docs/ADMIN_IMPROVEMENTS_SPEC.md`).
+ * @fileoverview Zahlenformat der Statistik-Seite (X4, siehe `docs/archive/ADMIN_IMPROVEMENTS_SPEC_2026-08-08.md`).
  *
  * `formatPercentage` gab bis 2026-08-08 `9.2%` mit Dezimalpunkt zurück, direkt neben
  * den deutsch formatierten Zahlen aus `formatNumber` (`19.284`) — ein Bruch mitten auf

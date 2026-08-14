@@ -9,7 +9,7 @@ export async function GET({ cookies, locals }: { cookies: Cookies; locals: App.L
 
 	/* destroySession statt nur das Cookie zu loeschen: Bis zum Session-Store blieb das
 	   signierte JWT nach dem Logout gueltig — wer es behielt, war weiter angemeldet (B7
-	   aus docs/SESSION_STORE_SPEC_2026-07-31.md). Jetzt ist der Wert serverseitig tot. */
+	   aus docs/archive/SESSION_STORE_SPEC_2026-07-31.md). Jetzt ist der Wert serverseitig tot. */
 	await destroySession(cookies);
 
 	void logAuditEvent({

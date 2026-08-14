@@ -20,7 +20,7 @@ const FORM_OPTIONS_DIR = 'src/lib/report/formOptions';
 /**
  * Der Umfang für Schicht C (Aufgabe 2.2/Befund): `.svelte`-Dateien unter
  * `src/`, öffentlicher Bereich — siehe `docs/i18n/PLAN_ETAPPE2.md` und
- * `docs/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md` Abschnitt 4.2.
+ * `docs/i18n/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md` Abschnitt 4.2.
  */
 const SVELTE_SCOPE_ROOT = 'src';
 

@@ -7,7 +7,7 @@
  * `getSpeciesLabel()`, `getAnimalBehaviorLabel()`, `getDistanceLabel()` und
  * `getAnimalConditionLabel()` durch. `emailService.ts` ruft die Funktion seit
  * der Pinnung mit explizitem `baseLocale` auf (siehe Kommentar dort und
- * docs/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md, Abschnitt 5.4) — die Mail geht
+ * docs/i18n/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md, Abschnitt 5.4) — die Mail geht
  * ans Deutsche Meeresmuseum, nicht an den Melder, und bleibt deshalb von
  * jedem Sprachwechsel ausgenommen.
  *

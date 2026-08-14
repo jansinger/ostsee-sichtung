@@ -25,7 +25,7 @@ Inhaltsseiten `/about` und `/bestimmungshilfe` einschließlich
 | Admin-Bereich                                                   | Das bearbeitende Team arbeitet deutsch. Rund 1.500 Textzeilen ohne Nutzen.                                                                                            |
 | Legacy-API (`/rest_sichtungen`, `/sichtungen/showreports.json`) | Deutscher Wertevertrag, ein iOS-Client hängt live daran. Siehe Abschnitt 6.                                                                                           |
 | Exportformate (CSV, XML, KML, JSON)                             | Gehen an die Wissenschaft. Stabile deutsche Kopfzeilen sind dort ein Merkmal, keine Nachlässigkeit.                                                                   |
-| Benachrichtigungs-E-Mail                                        | Geht an genau einen konfigurierten Empfänger — das Museum, nicht den Melder ([emailService.ts:534](../src/lib/server/services/emailService.ts#L534)). Bleibt deutsch. |
+| Benachrichtigungs-E-Mail                                        | Geht an genau einen konfigurierten Empfänger — das Museum, nicht den Melder ([emailService.ts:534](../../src/lib/server/services/emailService.ts#L534)). Bleibt deutsch. |
 
 ---
 
@@ -78,7 +78,7 @@ Datumsformat wären in sich widersprüchlich. **Entscheidung: `en-GB` für die
 gesamte Locale-Formatierung, nicht nur für die Artnamen.**
 
 **Konsequenz für den Bestand:** Der Charakterisierungstest
-[dateTime.test.ts](../src/lib/utils/format/dateTime.test.ts) hält für Locale
+[dateTime.test.ts](../../src/lib/utils/format/dateTime.test.ts) hält für Locale
 `'en'` derzeit ausdrücklich die US-Formatierung fest (`07/16/2026`, Zeile
 ~730) — er beschreibt den heutigen Zustand, nicht die Zielformatierung. Er
 muss in Etappe 2 auf `en-GB` umgestellt werden, zusammen mit der übrigen
@@ -93,8 +93,8 @@ großer Teil der nutzersichtbaren Sprache liegt zentral, nicht verstreut.
 
 | Schicht                       | Ort                                                               | Umfang                             |
 | ----------------------------- | ----------------------------------------------------------------- | ---------------------------------- |
-| **A** Formular-Metadaten      | [sightingSchema.ts](../src/lib/form/validation/sightingSchema.ts) | **286** Botschaften, 1 Datei       |
-| **B** Domänen-Labels          | [`src/lib/report/formOptions/`](../src/lib/report/formOptions/)   | **118** Botschaften, 16 Dateien    |
+| **A** Formular-Metadaten      | [sightingSchema.ts](../../src/lib/form/validation/sightingSchema.ts) | **286** Botschaften, 1 Datei       |
+| **B** Domänen-Labels          | [`src/lib/report/formOptions/`](../../src/lib/report/formOptions/)   | **118** Botschaften, 16 Dateien    |
 | **C** Markup in Komponenten   | 118 `.svelte`-Dateien                                             | **448** Botschaften öffentlich     |
 | **D** Serverseitige Texte     | `src/lib/server/`, plus DB-Konfiguration                          | ~75 Zeichenketten + 3 DB-Schlüssel |
 | **E** Fachliche Inhaltsseiten | `/about`, `/bestimmungshilfe`, `SpeciesIdentificationHelp`        | ~1.280 Zeilen Fachtext             |
@@ -104,12 +104,12 @@ Truth für Beschriftungen, Platzhalter, Hilfetexte, `valueText` **und**
 Fehlermeldungen; Formular, Admin-Maske und `FormField` hängen alle daran.
 
 **Schicht B kommt mehrfach zum Tragen.** Karte, Popups, Listenansicht und
-Statistik lesen dieselben `formOptions` ([popupContent.ts](../src/lib/map/popupContent.ts),
-[listViewUtils.ts](../src/lib/map/listViewUtils.ts)). Wer B übersetzt, übersetzt
+Statistik lesen dieselben `formOptions` ([popupContent.ts](../../src/lib/map/popupContent.ts),
+[listViewUtils.ts](../../src/lib/map/listViewUtils.ts)). Wer B übersetzt, übersetzt
 diese Flächen mit.
 
 **Die Zahlen in A–C sind jetzt gemessen, nicht mehr geschätzt.** Das
-Inventar-Werkzeug [i18n-inventory.ts](../src/tools/i18n-inventory.ts) scannt
+Inventar-Werkzeug [i18n-inventory.ts](../../src/tools/i18n-inventory.ts) scannt
 öffentliches `.svelte`-Markup über den Svelte-Compiler-AST (nicht per Grep),
 `formOptions`-Records und `sightingSchema.ts` und klassifiziert jeden Fund als
 `uebersetzbar`, `technisch` (kein Schlüssel, siehe Abschnitt 8.3) oder `unklar`
@@ -145,7 +145,7 @@ Paraglide ohnehin vorsieht.
 ### 4.1 Der eine `reroute`-Export
 
 SvelteKit erlaubt genau **einen** `reroute`-Export. Er ist bereits belegt
-([hooks.ts](../src/hooks.ts)) und Paraglide beansprucht ihn ebenfalls. Die beiden
+([hooks.ts](../../src/hooks.ts)) und Paraglide beansprucht ihn ebenfalls. Die beiden
 Bedeutungen des Präfixes sind dabei gegenläufig: Für die Legacy-API ist `/en/`
 reine Routenkosmetik mit **deutscher** Antwort, für Seitenrouten ist es ein
 Sprachversprechen.
@@ -233,7 +233,7 @@ Die andere dort dokumentierte Begründung fällt dagegen weg: „`/en/` vor der
 Startseite bleibt 404, weil die Anwendung einsprachig deutsch ist." Die Prämisse
 gilt nicht mehr. `/en` allein zeigte in CakePHP auf das Meldeformular — mit der
 englischen Fassung stellt sich genau das wieder her. Kommentar und
-[LEGACY_API_SPECIFICATION.md](LEGACY_API_SPECIFICATION.md) sind entsprechend
+[LEGACY_API_SPECIFICATION.md](../LEGACY_API_SPECIFICATION.md) sind entsprechend
 umzuschreiben; eine stehengelassene Begründung, die nicht mehr trägt, ist
 schlimmer als keine.
 
@@ -279,10 +279,10 @@ Infrastruktur besonders schwer zu durchschauen. Präfixlos heißt deshalb
   unbeeinflusst und voll cachebar. Greift auch, falls die Museumsseite unverändert
   bleibt.
 - **Zusätzlich:** ein Umschalter in der Navigation. Der ist im iframe unsichtbar
-  ([PublicNavbar.svelte:63](../src/lib/components/PublicNavbar.svelte#L63)) und
+  ([PublicNavbar.svelte:63](../../src/lib/components/PublicNavbar.svelte#L63)) und
   deshalb ausdrücklich **kein** tragender Weg — nur Bequemlichkeit für die
   Direktaufrufer. Genau an dieser Fehlannahme ist `/bestimmungshilfe` schon
-  einmal gescheitert (siehe [IFRAME_EINBETTUNG.md](IFRAME_EINBETTUNG.md)).
+  einmal gescheitert (siehe [IFRAME_EINBETTUNG.md](../IFRAME_EINBETTUNG.md)).
 
 Das Cookie merkt eine ausdrückliche Wahl und schlägt den Header danach. Es ist
 für den Betrieb der gewählten Funktion erforderlich und damit **nicht
@@ -297,7 +297,7 @@ Betrifft den Umschalter und jeden Verweis, der die Sprache wechselt.
 ### 4.6 SEO und statische Metadaten
 
 - `<html lang>` wird über den `%lang%`-Platzhalter dynamisch (Abschnitt 4.4);
-  `<meta name="language">` in [app.html](../src/app.html) entfällt ersatzlos —
+  `<meta name="language">` in [app.html](../../src/app.html) entfällt ersatzlos —
   es ist ohnehin kein von Suchmaschinen ausgewertetes Merkmal und wäre nur eine
   zweite, potenziell widersprüchliche Quelle.
 - `hreflang`-Verweise je Seite, im Kopf-Block der jeweiligen Route — umgesetzt
@@ -360,7 +360,7 @@ mechanisch über einen Grep laufen kann.
 ### 5.4 Schicht D — Serverseitige und DB-gepflegte Texte
 
 Paraglide kennt nur Schlüssel zur Buildzeit. Drei Texte liegen aber in der
-Datenbank ([configService.ts](../src/lib/services/configService.ts)):
+Datenbank ([configService.ts](../../src/lib/services/configService.ts)):
 
 | Schlüssel                     | Umgang                                         |
 | ----------------------------- | ---------------------------------------------- |
@@ -392,25 +392,25 @@ Hinweis. Das ist ein bewusster, sichtbarer Zwischenstand, kein stiller Rückfall
 Das ist die wichtigste Regel dieses Abschnitts, weil ihr Bruch keine kaputte
 Oberfläche erzeugt, sondern **falsche Daten**. Der Sichtungstag ist fachlich
 immer Berliner Ortszeit; `sichtungsdatum` mischt im Bestand ohnehin schon
-Ortszeit und UTC (siehe [ENVIRONMENT.md](ENVIRONMENT.md), Abschnitt `TZ`).
+Ortszeit und UTC (siehe [ENVIRONMENT.md](../ENVIRONMENT.md), Abschnitt `TZ`).
 
 Die 25 harten `'de-DE'`-Fundstellen sind deshalb **nicht** gleichartig:
 
 | Art der Fundstelle                                                                                                                                   | Umgang                             |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
 | **Darstellung** — `toLocaleDateString`, `Intl.NumberFormat` in der Oberfläche                                                                        | folgt der Locale                   |
-| **Rechnung** — `berlinToday()` in [sightingSchema.ts](../src/lib/form/validation/sightingSchema.ts), das `sv-SE` bewusst für ISO-Reihenfolge benutzt | **unverändert**                    |
+| **Rechnung** — `berlinToday()` in [sightingSchema.ts](../../src/lib/form/validation/sightingSchema.ts), das `sv-SE` bewusst für ISO-Reihenfolge benutzt | **unverändert**                    |
 | **Datenformate** — Export, Legacy-API, `sqlTimeZone.ts`                                                                                              | **unverändert**, siehe Abschnitt 6 |
 
 Die rechnenden Aufrufe sind im Umsetzungsplan namentlich aufzuführen, bevor
 jemand die Liste mechanisch abarbeitet. `display.dateFormat` in der
 Konfiguration ist ausdrücklich **nicht** betroffen: Der Schlüssel wird laut
-[configLabels.ts:109](../src/routes/admin/settings/configLabels.ts#L109) nirgends
+[configLabels.ts:109](../../src/routes/admin/settings/configLabels.ts#L109) nirgends
 gelesen.
 
 **„Folgt der Locale" heißt für Englisch konkret `en-GB`, nicht Paraglides
 Standard `en`** — Begründung und die betroffene Bestandslücke in
-[dateTime.test.ts](../src/lib/utils/format/dateTime.test.ts) stehen in
+[dateTime.test.ts](../../src/lib/utils/format/dateTime.test.ts) stehen in
 Abschnitt 2.2.
 
 **Plurale gehören in ICU-Botschaften, nicht in Verkettungen.** Betroffen sind
@@ -425,8 +425,8 @@ Admin-Bereich zeigt dann englische Freitexte — das ist richtig so und keine
 Lücke.
 
 **Formularentwürfe im `localStorage` müssen den Sprachwechsel überleben.**
-Gespeichert werden Werte, keine Beschriftungen ([localStorage.ts](../src/lib/storage/localStorage.ts),
-[reportKind.ts](../src/lib/report/reportKind.ts)) — das trägt, ist aber beim
+Gespeichert werden Werte, keine Beschriftungen ([localStorage.ts](../../src/lib/storage/localStorage.ts),
+[reportKind.ts](../../src/lib/report/reportKind.ts)) — das trägt, ist aber beim
 Umschalter ausdrücklich zu prüfen, weil `data-sveltekit-reload` (Abschnitt 4.5)
 einen vollen Seitenaufbau auslöst.
 
@@ -438,7 +438,7 @@ Drei Pfade dürfen sich unter englischer Locale **nicht** ändern. Alle drei sin
 von hier aus nicht mehr reparierbar, wenn sie einmal brechen:
 
 1. **Legacy-API.** Deutscher Wertevertrag. Laut
-   [LEGACY_API_SPECIFICATION.md](LEGACY_API_SPECIFICATION.md) normalisiert die
+   [LEGACY_API_SPECIFICATION.md](../LEGACY_API_SPECIFICATION.md) normalisiert die
    Anwendung eingehende englische Windrichtungs-Abkürzungen bereits **auf die
    deutsche Form** — die Antwortrichtung ist damit erst recht festgelegt. Ein
    iOS-Client (`OstSeeTiere/8`) sendet aktiv.
@@ -457,7 +457,7 @@ ein Kommentar allein die Fassung nicht gehalten hat.
 
 Art. 7 Abs. 1 DSGVO verlangt, dass sich eine Einwilligung nachweisen lässt —
 wann und **wozu** zugestimmt wurde. Die Anwendung löst das heute über
-Fassungskennungen in [consentVersions.ts](../src/lib/form/consent/consentVersions.ts),
+Fassungskennungen in [consentVersions.ts](../../src/lib/form/consent/consentVersions.ts),
 deren Geltungsbereich ausdrücklich die **gelesene Fläche** ist, nicht die
 Zeichenkette im Schema; `consentSurfaces.svelte.test.ts` pinnt dazu Hashes der
 gerenderten Flächen.
@@ -469,7 +469,7 @@ abbilden.
 ### 7.2 Lösung: Sprachsuffix an der Fassungskennung
 
 Die vier Nachweisspalten sind `varchar(32)`
-([schema.ts:78](../src/lib/server/db/schema.ts#L78) ff.) und tragen heute Werte
+([schema.ts:78](../../src/lib/server/db/schema.ts#L78) ff.) und tragen heute Werte
 wie `2026-08-04`. Künftig tragen sie `2026-08-04-de` beziehungsweise
 `2026-08-04-en`.
 
@@ -569,7 +569,7 @@ das englische Formular deutsche Brocken zeigt, ohne dass irgendetwas rot wird.
 **Der Scan gehört in die vorhandene Bauart.** Das Projekt hat vier Guards dieses
 Typs (`approvalPredicateScan`, `verifiedReadScan`, `statusLogWriteScan`,
 `openQueueOrderScan`) und eine geteilte Utility
-[sourceScan.testutil.ts](../src/lib/testing/sourceScan.testutil.ts) mit
+[sourceScan.testutil.ts](../../src/lib/testing/sourceScan.testutil.ts) mit
 `sourceFiles`, `stripComments`, `collectHits`. Entscheidend hier: `stripComments`
 behandelt `<!-- … -->` in Svelte-Markup bereits. Da dieses Projekt Begründungen
 ausdrücklich **ins Markup** schreibt (`CLAUDE.md`), wäre ein Scan ohne diesen
@@ -677,7 +677,7 @@ Riegel zu entfernen, ohne `hreflang` nachzuziehen, kippt das Problem in die
 andere Richtung: Google indexiert dann die englische Fassung, aber ohne
 Sprachzuordnung zur deutschen — wieder Duplicate-Content-Risiko, nur
 andersherum. Die Entfernungsbedingung ist auch im Quelltext festgehalten
-([noindexEnglishPages.ts](../src/lib/server/middleware/noindexEnglishPages.ts)).
+([noindexEnglishPages.ts](../../src/lib/server/middleware/noindexEnglishPages.ts)).
 
 Etappe 4 (Inhaltsseiten) darf unabhängig davon folgen: Bis englische Fachtexte
 vorliegen, zeigen `/en/about` und `/en/bestimmungshilfe` die deutsche Fassung

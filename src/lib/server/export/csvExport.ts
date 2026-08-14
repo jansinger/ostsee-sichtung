@@ -108,7 +108,7 @@ export function generateCsvData(sightings: FrontendSighting[]): string {
 
 		// Enum-Werte in lesbare Labels konvertieren
 		// Tierart bewusst auf baseLocale ('de') gepinnt: laut
-		// docs/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md Abschnitt 6 bleiben
+		// docs/i18n/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md Abschnitt 6 bleiben
 		// Exportformate (CSV/XML/KML/JSON) deutsch — sie gehen an die
 		// Wissenschaft, stabile deutsche Kopfzeilen/Werte sind dort ein
 		// Merkmal. `getSpeciesLabel()` würde ohne diesen Parameter sonst die

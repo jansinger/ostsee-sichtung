@@ -1,6 +1,6 @@
 /**
  * Gemeinsamer Schalter für Etappe 0 der Mehrsprachigkeit
- * (`docs/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md`).
+ * (`docs/i18n/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md`).
  *
  * **Auf `true` seit 2026-08-13 (Entscheidung Jan).** Die drei Riegel, die
  * diese Konstante bündelt, sind damit gelöst:
@@ -27,7 +27,7 @@
  * Text — bewusst, nicht vergessen (Begründung im Code-Kommentar dort). Diese
  * Formulierungen wurden mehrfach gegen die offizielle Datenschutzerklärung
  * des Deutschen Meeresmuseums korrigiert
- * (`docs/DATENSCHUTZ_ABGLEICH_DMM_2026-08-02.md`), und eine unabhängig
+ * (`docs/archive/DATENSCHUTZ_ABGLEICH_DMM_2026-08-02.md`), und eine unabhängig
  * übersetzte englische Fassung ohne denselben Abgleich auszuliefern hätte
  * dasselbe Fehlermuster auf Englisch wiederholt. Das ist eine bewusst
  * akzeptierte Lücke, keine vollständige Übersetzung — sobald das Museum eine

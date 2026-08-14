@@ -1,6 +1,6 @@
 # Empfehlung für die 44 „unklar"-Fälle im i18n-Inventar
 
-Unabhängiger Abgleich zu `docs/i18n-inventory-unklar.md` / `docs/i18n-inventory.json`
+Unabhängiger Abgleich zu `docs/i18n/i18n-inventory-unklar.md` / `docs/i18n/i18n-inventory.json`
 (Kategorie `unklar`). Jeder Fall wurde im Quellkontext geöffnet — Rohtext allein hat
 nicht gereicht, siehe Begründungen unten. Diese Datei überschreibt die parallel von
 Hand geprüfte Liste **nicht**.

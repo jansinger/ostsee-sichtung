@@ -2,7 +2,7 @@
  * Feldnamen auflösen und Botschaftsschlüssel vergeben.
  *
  * Das Schlüsselschema stammt aus `i18n-inventory.ts`, damit
- * `docs/i18n-inventory.md` als Nachschlagewerk lesbar bleibt — mit einer
+ * `docs/i18n/i18n-inventory.md` als Nachschlagewerk lesbar bleibt — mit einer
  * behobenen Schwäche: `findEnclosingFieldName` (i18n-inventory.ts:589) läuft zum
  * NÄCHSTEN umschließenden `PropertyAssignment` hoch. Innerhalb von
  * `.when('hasPosition', { is: true, then: … })` heißt der `then`, nicht
@@ -91,7 +91,7 @@ function sveltePathPrefix(relativeFilePath: string): string {
 /**
  * Schlüssel für eine Svelte-Markup-Fundstelle: Pfadpräfix + Aspekt (`text` oder
  * Attributname) + Slug der ersten Wörter — dasselbe Schema wie
- * `suggestKeyForSvelte()` in `i18n-inventory.ts`, damit `docs/i18n-inventory.md`
+ * `suggestKeyForSvelte()` in `i18n-inventory.ts`, damit `docs/i18n/i18n-inventory.md`
  * als Nachschlagewerk lesbar bleibt (Auftrag, Schritt 3).
  */
 export function svelteMessageKey(

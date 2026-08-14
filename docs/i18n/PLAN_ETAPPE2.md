@@ -6,7 +6,7 @@ siehe `ARBEITSPROTOKOLL_ETAPPE1.md`.
 ## Umfang — gemessen, nicht aus dem Entwurf übernommen
 
 Der Entwurf nennt für Schicht C **448 Botschaften über rund 72 Dateien**. Gemessen
-über `docs/i18n-inventory.json`, ohne `/styleguide`, `/docs` und
+über `docs/i18n/i18n-inventory.json`, ohne `/styleguide`, `/docs` und
 `ApiDocumentation.svelte` (Entwurf 4.2):
 
 |                                                           |   Funde | Dateien |
@@ -233,7 +233,7 @@ Ihre <strong>Meldung</strong>!` zerfällt in drei Knoten; sie einzeln zu
       `analyzeSvelteSource` es im Inventar-Werkzeug bereits tut — die dortige
       Traversierung ist die Vorlage, nicht der Import.
 - [x] **3. Schlüsselschema** wie in Etappe 1 beibehalten, damit
-      `docs/i18n-inventory.md` lesbar bleibt: Pfadpräfix plus Aspekt plus Slug,
+      `docs/i18n/i18n-inventory.md` lesbar bleibt: Pfadpräfix plus Aspekt plus Slug,
       z. B. `report_components_submissionsuccess_text_vielen_dank`. Kollisionen
       mit Zählsuffix, Vergabe in Quelltextreihenfolge (zwei Durchgänge, wie in
       `collectSchemaSites`).

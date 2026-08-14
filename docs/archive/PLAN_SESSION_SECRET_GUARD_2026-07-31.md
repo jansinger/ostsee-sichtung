@@ -41,7 +41,7 @@ sie nur noch auf.
   - `'0'.repeat(64)` für `ENCRYPTION_KEY` (bereits als `PLACEHOLDER_ENCRYPTION_KEY` in
     `src/hooks.server.ts:21`)
 
-**Spec:** `docs/SESSION_STORE_SPEC_2026-07-31.md`, Abschnitt 4.
+**Spec:** `docs/archive/SESSION_STORE_SPEC_2026-07-31.md`, Abschnitt 4.
 
 ---
 
@@ -677,7 +677,7 @@ diesem Fall als eigenen Befund festhalten, nicht stillschweigend umbauen.
 gh pr create --fill --base main
 ```
 
-Im PR-Text auf `docs/SESSION_STORE_SPEC_2026-07-31.md` Abschnitt 4 verweisen und festhalten,
+Im PR-Text auf `docs/archive/SESSION_STORE_SPEC_2026-07-31.md` Abschnitt 4 verweisen und festhalten,
 dass dies Paket A ist — Paket D (Session-Store) folgt separat und entfernt `SESSION_SECRET`
 dann vollständig.
 

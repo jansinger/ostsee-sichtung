@@ -35,7 +35,7 @@ export const handle = sequence(
 ```
 
 Die drei letzten Glieder gehören zur Mehrsprachigkeits-Umstellung (siehe
-`docs/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md`) und stehen bewusst nach `authentication`:
+`docs/i18n/DESIGN_MEHRSPRACHIGKEIT_2026-08-10.md`) und stehen bewusst nach `authentication`:
 Die Auth-Prüfung hängt an `event.url.pathname`, das keines der drei verschiebt.
 
 **Schlüsseldateien:**

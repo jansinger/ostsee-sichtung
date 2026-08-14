@@ -69,14 +69,14 @@ Stand 2026-08-05, Branch `main`, Commit `343fc883`.
 
 | Ort                                                                                   | Zustand                                                                                  |
 | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| [src/routes/+page.svelte](../src/routes/+page.svelte)                                 | rendert direkt `ModernReportForm`; keine Zwischenseite                                   |
-| [sections/AnimalInfo.svelte](../src/lib/report/components/sections/AnimalInfo.svelte) | `isDead` ist seit PR #746 erstes Feld der Karte „Tierinformationen" auf Schritt 2        |
-| [src/lib/report/wording.ts](../src/lib/report/wording.ts)                             | trägt die Zuordnung Sichtung/Fund für drei Texte; ausdrücklich für diesen Umbau angelegt |
-| [src/lib/report/formConfig.ts:49](../src/lib/report/formConfig.ts)                    | `formStepsConfig` — vier Schritte, index-basiert                                         |
-| [stepValidation.ts](../src/lib/form/validation/stepValidation.ts)                     | **importiert** `formStepsConfig` selbst und liest `[currentStep].fields`                 |
-| [findStepForErrors.ts](../src/lib/report/findStepForErrors.ts)                        | **reine Funktion** — bekommt `steps` als Parameter, importiert nichts                    |
+| [src/routes/+page.svelte](../../src/routes/+page.svelte)                                 | rendert direkt `ModernReportForm`; keine Zwischenseite                                   |
+| [sections/AnimalInfo.svelte](../../src/lib/report/components/sections/AnimalInfo.svelte) | `isDead` ist seit PR #746 erstes Feld der Karte „Tierinformationen" auf Schritt 2        |
+| [src/lib/report/wording.ts](../../src/lib/report/wording.ts)                             | trägt die Zuordnung Sichtung/Fund für drei Texte; ausdrücklich für diesen Umbau angelegt |
+| [src/lib/report/formConfig.ts:49](../../src/lib/report/formConfig.ts)                    | `formStepsConfig` — vier Schritte, index-basiert                                         |
+| [stepValidation.ts](../../src/lib/form/validation/stepValidation.ts)                     | **importiert** `formStepsConfig` selbst und liest `[currentStep].fields`                 |
+| [findStepForErrors.ts](../../src/lib/report/findStepForErrors.ts)                        | **reine Funktion** — bekommt `steps` als Parameter, importiert nichts                    |
 | `resolveServerFieldErrors`                                                            | ebenso parametrisiert; wird aus `ModernReportForm` gefüttert                             |
-| [localStorage.ts:41](../src/lib/storage/localStorage.ts)                              | `STORAGE_KEYS` — `CURRENT_STEP` und `FORM_DATA` getrennt persistiert                     |
+| [localStorage.ts:41](../../src/lib/storage/localStorage.ts)                              | `STORAGE_KEYS` — `CURRENT_STEP` und `FORM_DATA` getrennt persistiert                     |
 
 `isDead` steuert im Schema drei bedingte Felder (`deadCondition`, `deadSize`,
 `deadPhoneContact`). `deadSex` ist seit dem 2026-08-04 nur noch in der Admin-Maske.
@@ -88,10 +88,10 @@ Sie haben keine Bedingung, an die sie sich hängen könnten:
 
 | Datei                                                                                       | Heute                                     | Beim Totfund            |
 | ------------------------------------------------------------------------------------------- | ----------------------------------------- | ----------------------- |
-| [PositionAndTime.svelte](../src/lib/report/components/sections/PositionAndTime.svelte)      | Kartentitel „Datum und Uhrzeit"           | „Funddatum"             |
-| [VerifyLocation.svelte:~154](../src/lib/report/components/form/VerifyLocation.svelte)       | Ostsee-Hinweis in Lebendtier-Fassung      | eigener Text, siehe 7.3 |
-| [PositionPanel.svelte:185](../src/lib/report/components/form/position/PositionPanel.svelte) | „Wo haben Sie das Tier gesehen?"          | „…gefunden?"            |
-| [OLMap.svelte:55–63](../src/lib/components/map/OLMap.svelte)                                | Marker-Erklärung, zweimal „gesehen haben" | „gefunden haben"        |
+| [PositionAndTime.svelte](../../src/lib/report/components/sections/PositionAndTime.svelte)      | Kartentitel „Datum und Uhrzeit"           | „Funddatum"             |
+| [VerifyLocation.svelte:~154](../../src/lib/report/components/form/VerifyLocation.svelte)       | Ostsee-Hinweis in Lebendtier-Fassung      | eigener Text, siehe 7.3 |
+| [PositionPanel.svelte:185](../../src/lib/report/components/form/position/PositionPanel.svelte) | „Wo haben Sie das Tier gesehen?"          | „…gefunden?"            |
+| [OLMap.svelte:55–63](../../src/lib/components/map/OLMap.svelte)                                | Marker-Erklärung, zweimal „gesehen haben" | „gefunden haben"        |
 
 **Korrektur vom 2026-08-05 (bei der Umsetzung aufgefallen):** Die erste Zeile nannte
 ursprünglich `DateTime.svelte:7` mit dem Titel „Zeitpunkt der Sichtung". Diese Datei
@@ -227,12 +227,12 @@ Auswahlseite; danach das Formular. Texte und Felder hängen an `isDead`.
 - **iframe.** Auf meeresmuseum.de läuft die App im iframe, Navbar und Footer sind dort
   ausgeblendet (`isNotIFrame`). Eine Seite auf der Formularroute ist im iframe erreichbar
   — anders als jede über die Navigation verlinkte Seite. Der Einbettungscode auf
-  meeresmuseum.de bleibt unverändert. Siehe [docs/IFRAME_EINBETTUNG.md](IFRAME_EINBETTUNG.md).
+  meeresmuseum.de bleibt unverändert. Siehe [docs/IFRAME_EINBETTUNG.md](../IFRAME_EINBETTUNG.md).
 - **`wording.ts` existiert bereits für diesen Weg.**
 - **Die Admin-Maske bleibt unberührt.** `AdminSightingEditForm.svelte` bindet dieselben
   Sektionen mit `adminMode={true}` ein; `isDead` kommt dort aus dem Datensatz.
 - **Der Schreibpfad bleibt unberührt.** Verifiziert in
-  [field-mapping.ts:152](../src/lib/legacy-api/field-mapping.ts): Die Regel
+  [field-mapping.ts:152](../../src/lib/legacy-api/field-mapping.ts): Die Regel
   `anzahl_gesamt = 0` → Totfund wirkt **eingehend** (Legacy → Modell). Die
   Einstiegsseite setzt nur einen Formularwert und fasst diesen Pfad nicht an.
 
@@ -669,7 +669,7 @@ betreten die Formularroute.
 
 | Gruppe                                 | Anzahl | Aufwand                                                                |
 | -------------------------------------- | ------ | ---------------------------------------------------------------------- |
-| über `FormPage.goto()` / `fillStep1()` | 12     | **eine Zeile** in [e2e/pages/FormPage.ts:29](../e2e/pages/FormPage.ts) |
+| über `FormPage.goto()` / `fillStep1()` | 12     | **eine Zeile** in [e2e/pages/FormPage.ts:29](../../e2e/pages/FormPage.ts) |
 | direktes `page.goto('/')`              | 6      | Parameter anhängen, je 1 Zeile                                         |
 | neuer Spec für die Einstiegsseite      | 1      | 0,2 Tag                                                                |
 | Durchsicht `form-autosave.spec.ts`     | —      | Migrationspfad, 0,1 Tag                                                |
@@ -714,7 +714,7 @@ Die 6 direkten Aufrufe: `auth.spec.ts`, `bestimmungshilfe.spec.ts`,
 | 8   | **Admin-Maske verliert den `isDead`-Schalter**                                                                                       | **Mittel**                                   | Admins können den Status nicht mehr korrigieren               | `adminMode`-Fallunterscheidung (6.6); bestehende Admin-E2E-Specs decken das ab                                                                                                                |
 | 9   | **Lebendmelder empfinden den Klick als Hürde**                                                                                       | **Niedrig–mittel**                           | Höhere Abbruchrate auf Seite 1                                | Erläuterungssatz (7.1); nach Launch beobachten (**R4**)                                                                                                                                       |
 | 10  | **iframe-Höhe springt**, weil die Einstiegsseite kürzer ist                                                                          | **Niedrig**                                  | Sichtbarer Sprung auf meeresmuseum.de                         | Vor dem Release im echten iframe prüfen; ggf. Mindesthöhe                                                                                                                                     |
-| 11  | **Legacy-API-Schreibpfad berührt**                                                                                                   | **Sehr niedrig**                             | Datenverlust bei der angebundenen iOS-App                     | Verifiziert: `anzahl_gesamt = 0` → Totfund wirkt nur **eingehend** ([field-mapping.ts:152](../src/lib/legacy-api/field-mapping.ts)). Bei der Umsetzung `.claude/rules/legacy-api.md` beachten |
+| 11  | **Legacy-API-Schreibpfad berührt**                                                                                                   | **Sehr niedrig**                             | Datenverlust bei der angebundenen iOS-App                     | Verifiziert: `anzahl_gesamt = 0` → Totfund wirkt nur **eingehend** ([field-mapping.ts:152](../../src/lib/legacy-api/field-mapping.ts)). Bei der Umsetzung `.claude/rules/legacy-api.md` beachten |
 
 ---
 
@@ -951,6 +951,6 @@ eingezogen statt von vornherein vorgesehen. Das kostet laut Schätzung 0,5–0,6
 - [NN/g — Wizards: Definition and Design Recommendations](https://www.nngroup.com/articles/wizards/)
 - [Smashing Magazine — Better Form Design: One Thing Per Page](https://www.smashingmagazine.com/2017/05/better-form-design-one-thing-per-page/)
 
-**Projektinterne Bezüge:** [docs/IFRAME_EINBETTUNG.md](IFRAME_EINBETTUNG.md),
-[docs/LEGACY_API_SPECIFICATION.md](LEGACY_API_SPECIFICATION.md),
+**Projektinterne Bezüge:** [docs/IFRAME_EINBETTUNG.md](../IFRAME_EINBETTUNG.md),
+[docs/LEGACY_API_SPECIFICATION.md](../LEGACY_API_SPECIFICATION.md),
 `.claude/rules/design-system.md`, `.claude/rules/testing.md`, `.claude/rules/legacy-api.md`
