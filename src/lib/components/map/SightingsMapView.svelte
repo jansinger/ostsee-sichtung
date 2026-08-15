@@ -56,7 +56,7 @@
 		title = 'Sichtungskarte',
 		showLogo = true,
 		containerClass = 'relative h-screen w-screen overflow-hidden',
-		titleClass = 'glass text-base-content text-sm z-raised rounded-lg px-3 py-1.5 font-bold shadow-floating backdrop-blur-md flex items-center gap-2'
+		titleClass = 'bg-base-100 text-base-content text-sm z-raised rounded-lg px-3 py-1.5 font-bold shadow-floating flex items-center gap-2'
 	} = $props<{
 		mapContainerId?: string;
 		showTitle?: boolean;
@@ -214,8 +214,16 @@
 	 *
 	 * Die 44px Trefferfläche bleiben — `min-h-11` ist WCAG 2.5.5 und nicht
 	 * verhandelbar. Zurückgenommen wird ausschließlich das Gewicht: halbtransparent
-	 * und mit `backdrop-blur` wie der Kartentitel statt deckendem `bg-base-100`,
-	 * `shadow-lg` entfällt, Beschriftung auf `text-support` in normaler Schriftstärke.
+	 * und mit `backdrop-blur` statt deckendem `bg-base-100`, `shadow-lg` entfällt,
+	 * Beschriftung auf `text-support` in normaler Schriftstärke.
+	 *
+	 * „wie der Kartentitel" stand hier bis 2026-08-14 als Vergleich — das trifft
+	 * nicht mehr zu: Der Titel ist inzwischen deckend, weil er mit `glass` über
+	 * einer dunklen Kachel nur 1,07:1 erreichte. Die Chips bleiben trotzdem
+	 * halbtransparent, und das ist kein übersehener Rest: `bg-base-100/80` ist
+	 * über einer schwarzen Kachel rgb(171, 175, 180), `text-base-content` darauf
+	 * 8,91:1. Der Unterschied zum Titel ist die Deckkraft — `glass` hat gar keine
+	 * eigene Fläche, `/80` sehr wohl.
 	 *
 	 * Der eigentliche Platzfresser war aber nicht das Gewicht, sondern der Umbruch:
 	 * mit `flex-wrap` wuchs das Band bei mehreren aktiven Filtern auf zwei bis drei
@@ -871,7 +879,22 @@
 				     Prop trägt das Aussehen. Ein Aufrufer, der titleClass setzt —
 				     wofür der Prop existiert —, würde sie sonst stillschweigend
 				     mit entfernen; der Titel quetschte dann ab md auf wenige
-				     Zeichen pro Zeile bzw. würde klickdurchlässig. -->
+				     Zeichen pro Zeile bzw. würde klickdurchlässig.
+
+				     Die Platte im Default ist deckendes `bg-base-100` und NICHT
+				     `glass`: Glass lässt die Kachel durch, und
+				     `text-base-content` darauf misst über heller See 12,25:1,
+				     über dunklem Land aber 1,07:1 (gemessen 2026-08-14). Jetzt
+				     16,50:1, unabhängig von der Kachel.
+
+				     Das ist derselbe Flächenbedarf wie bei der Logo-Platte
+				     weiter unten — eine helle Fläche des Themes, kein Schleier;
+				     ein `bg-scrim` gehörte hierher nur, wenn die Kachel
+				     durchscheinen SOLL. Anders als dort aber ohne /95-Suffix:
+				     Die Logo-Platte trägt keinen Text, hier hängt an der vollen
+				     Deckung, ob axe den Knoten überhaupt entscheiden kann.
+				     Abgesichert in e2e/design-tokens.spec.ts → „Kontrast über
+				     fremdem Bildmaterial". -->
 				<h1 class="pointer-events-auto shrink-0 {titleClass}">
 					<Icon icon="lucide:map" width="24" height="24" class="text-primary" />
 					<span>{title} {currentDisplayedYear}</span>

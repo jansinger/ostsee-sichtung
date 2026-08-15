@@ -6,6 +6,7 @@ import {
 	type BrowserContext,
 	type Page
 } from '@playwright/test';
+import { setupMapPage } from './fixtures/mapSetup';
 import { seedAdminSession } from './helpers/adminSession';
 import {
 	BELOW_OPACITY_FLOOR,
@@ -203,6 +204,195 @@ test.describe('Design-Tokens — Kontrast', () => {
 			expect(probe.ratio, `${probe.name}: ${formatRatio(probe.ratio)}:1`).toBeGreaterThanOrEqual(
 				AA_GRAPHIC
 			);
+		}
+	});
+});
+
+/**
+ * Kontrast an den Aufrufstellen, an denen axe aufgibt.
+ *
+ * **Warum diese Gruppe nicht gegen /styleguide läuft.** Die Gruppe oben misst
+ * Token-Kombinationen; dort steht jede genau einmal, losgelöst von ihrem Ort.
+ * Hier geht es um das Gegenteil: um Stellen, deren Kontrast **vom Ort abhängt**,
+ * weil hinter dem Text etwas liegt, das die App nicht kennt — OSM-Kacheln.
+ * Ein Messpunkt auf /styleguide könnte darüber nichts aussagen.
+ *
+ * **Wer diese Stellen benennt.** `axe-scan.spec.ts` legt sie unter `incomplete`
+ * ab und deckelt ihre Zahl; die Begründung dort sagt ausdrücklich, dass der
+ * Deckel eine Farbänderung *innerhalb* einer gelisteten Gruppe nicht bemerkt.
+ * Diese Gruppe ist die andere Hälfte der dort benannten Arbeitsteilung: axe
+ * zählt die unentscheidbaren Stellen, hier werden sie entschieden.
+ *
+ * **Zweistufig gemessen, und das ist der Kern.** `measureContrast` komponiert
+ * die *eigene* Fläche eines Elements über den `backdrop`. Der Text sitzt hier
+ * aber nicht auf seiner eigenen Fläche, sondern auf einer Platte darüber
+ * (`h1`, Umschalter-Button, `.ol-attribution`) — der Text selbst ist
+ * durchsichtig. Gemessen wird deshalb erst die **Platte** über der Kachel, und
+ * ihr Ergebnis wird zum `backdrop` des Textes. Das ist nicht nur genauer,
+ * sondern der eigentliche Wächter: Wird die Platte wieder durchscheinend,
+ * dunkelt sie über der Kachel ein und der Text fällt durch — genau die
+ * Regression, um die es geht.
+ *
+ * **Warum Schwarz als Kachel.** Die Vorgabe ist die dunkelste Stelle des
+ * Bildes, nicht der Mittelwert. Im Startausschnitt ist die dunkelste Kachel
+ * Ostseewasser (`rgb(170, 211, 223)`) und alles sähe grün aus; die Karte lässt
+ * sich aber auf Land mit schwarzer Beschriftung schieben. Gemessen am
+ * 2026-08-14 stand `text-base-content` auf der Glass-Platte des Titel-Badges
+ * über einer Wasserkachel bei 12,25:1 und über einer schwarzen bei **1,07:1**.
+ * Ein Wert aus dem Startausschnitt hätte diesen Befund verdeckt.
+ */
+const KACHEL_SCHLIMMSTENFALLS = 'rgb(0, 0, 0)';
+
+test.describe('Design-Tokens — Kontrast über fremdem Bildmaterial', () => {
+	/**
+	 * Text auf einer Platte über der schlimmstenfalls schwarzen Kachel.
+	 * Rückgabe ist der Textwert; die Platte steht in der Fehlermeldung, weil sie
+	 * bei einem Fehlschlag die Ursache ist und nicht der Text.
+	 */
+	async function aufPlatte(
+		page: Page,
+		name: string,
+		platteSelector: string,
+		textSelector: string
+	): Promise<{ ratio: number; meldung: string }> {
+		const [platte] = await measureContrast(page, [
+			{ name: `${name} — Platte`, selector: platteSelector, backdrop: KACHEL_SCHLIMMSTENFALLS }
+		]);
+		const [text] = await measureContrast(page, [
+			{ name, selector: textSelector, backdrop: platte.background }
+		]);
+		return {
+			ratio: text.ratio,
+			meldung:
+				`${name}: ${formatRatio(text.ratio)}:1 (${text.foreground} auf ${text.background}). ` +
+				`Die Platte „${platteSelector}" misst über einer schwarzen Kachel ${platte.background}. ` +
+				'Ist sie wieder durchscheinend (glass, /-Suffix), ist sie die Ursache — dann dort beheben, ' +
+				'nicht die Schwelle senken.'
+		};
+	}
+
+	test.beforeEach(async ({ page }) => {
+		await setupMapPage(page);
+	});
+
+	/* Bis 2026-08-14 trugen Titel-Badge und die beiden Umschalter `glass`:
+	   durchsichtiger Grund plus Weiß-Verlauf, dazu `text-base-content`. Über
+	   heller See sah das gut aus (12,25:1), über dunklem Land waren es 1,07:1.
+	   Ersetzt durch deckendes `bg-base-100` — ein Flächenbedarf, kein Schleier;
+	   die Begründung steht im Markup dort. Gemessen seither 16,50:1, und zwar
+	   unabhängig von der Kachel: Genau das ist die Aussage dieser Gruppe. */
+	for (const fall of [
+		{ name: 'Titel-Badge der Karte', platte: 'h1', text: 'h1 > span' },
+		{
+			name: 'FILTER-Umschalter',
+			platte: 'button[aria-controls="filter-panel"]',
+			text: 'button[aria-controls="filter-panel"] > div'
+		},
+		{
+			name: 'LEGENDE-Umschalter',
+			platte: 'button[aria-controls="legend-panel"]',
+			text: 'button[aria-controls="legend-panel"] > div'
+		}
+	]) {
+		test(`${fall.name}: Text über der dunkelsten Kachel ≥ ${AA_TEXT}:1`, async ({ page }) => {
+			const { ratio, meldung } = await aufPlatte(page, fall.name, fall.platte, fall.text);
+			expect(ratio, meldung).toBeGreaterThanOrEqual(AA_TEXT);
+		});
+	}
+
+	/* Die Attribution ist fremdes Markup, aber ihre Platte und ihre Textfarben
+	   sind es nicht: `.ol-attribution` bekommt Fläche und Farben in
+	   `src/lib/map/mapStyles.css`. Der Link stand dort bis 2026-08-14 auf
+	   OpenLayers' eigenem #666 und erreichte über der Startkachel 3,72:1, über
+	   einer schwarzen 2,60:1 — der einzige echte Verstoß, den diese Untersuchung
+	   zutage gefördert hat. Seither Fließtext 16,50:1 (base-content) und Link
+	   9,24:1 (primary). */
+	for (const fall of [
+		{ name: 'Attribution — Fließtext', text: '.ol-attribution ul li' },
+		{ name: 'Attribution — Link', text: '.ol-attribution ul li a' }
+	]) {
+		test(`${fall.name} über der dunkelsten Kachel ≥ ${AA_TEXT}:1`, async ({ page }) => {
+			const { ratio, meldung } = await aufPlatte(page, fall.name, '.ol-attribution', fall.text);
+			expect(ratio, meldung).toBeGreaterThanOrEqual(AA_TEXT);
+		});
+	}
+});
+
+/**
+ * Die Gegenprobe: Stellen, die axe ebenfalls nicht entscheiden konnte, hinter
+ * denen aber gar kein fremdes Bildmaterial liegt.
+ *
+ * axe meldet sie mit `messageKey: "bgImage"` — und das klingt nach einem Foto,
+ * ist aber DaisyUIs `--depth`-Rausch-SVG, das an **jedem** `.btn` und `.badge`
+ * als zweite Hintergrund-Ebene hängt. Die Fläche darunter ist eine deckende
+ * Theme-Farbe. Die Einträge in `axe-scan.spec.ts` behaupteten bis zum
+ * 2026-08-14 das Gegenteil („liegen über den Artfotos"); nachgesehen ist das
+ * Artfoto ein **Geschwister** im Flex-Kopf, kein Untergrund, und einer der zehn
+ * Knoten auf /bestimmungshilfe ist überhaupt kein Badge, sondern der
+ * Rückweg-Knopf am Seitenende.
+ *
+ * Deshalb steht hier ein `backdrop` von Schwarz: Wäre die Fläche doch
+ * durchscheinend, käme sie an der Schwelle heraus. So ist der Messwert zugleich
+ * der Beleg, dass sie es nicht ist.
+ */
+test.describe('Design-Tokens — Kontrast auf deckenden Flächen unter axes bgImage', () => {
+	test('Artbadges und Rückweg-Knopf auf /bestimmungshilfe', async ({ page }) => {
+		await page.goto('/bestimmungshilfe');
+		const gemessen = await measureContrast(page, [
+			/* Gemessen 2026-08-14: 4,56 / 7,20 / 6,05 / 4,65 / 11,00. success und
+			   info liegen konstruktionsbedingt knapp über der Schwelle — die harte
+			   Grenze dazu steht in design-system.md („--color-info und
+			   --color-success dürfen nie heller werden"). */
+			{
+				name: 'badge-success',
+				selector: '.badge.badge-success',
+				backdrop: KACHEL_SCHLIMMSTENFALLS
+			},
+			{ name: 'badge-error', selector: '.badge.badge-error', backdrop: KACHEL_SCHLIMMSTENFALLS },
+			{
+				name: 'badge-warning',
+				selector: '.badge.badge-warning',
+				backdrop: KACHEL_SCHLIMMSTENFALLS
+			},
+			{ name: 'badge-info', selector: '.badge.badge-info', backdrop: KACHEL_SCHLIMMSTENFALLS },
+			{
+				name: 'Rückweg-Knopf (btn-primary btn-lg)',
+				selector: 'a.btn.btn-primary',
+				backdrop: KACHEL_SCHLIMMSTENFALLS
+			}
+		]);
+		for (const probe of gemessen) {
+			expect(
+				probe.ratio,
+				`${probe.name}: ${formatRatio(probe.ratio)}:1 (${probe.foreground} auf ${probe.background}). ` +
+					'Gemessen wird über Schwarz — kommt hier ein niedriger Wert heraus, ist die Fläche ' +
+					'durchscheinend geworden und die Annahme „deckende Theme-Farbe" gilt nicht mehr.'
+			).toBeGreaterThanOrEqual(AA_TEXT);
+		}
+	});
+
+	test('Umschalter Karte/Liste auf /map', async ({ page }) => {
+		await setupMapPage(page);
+		/* Gemessen 2026-08-14: 11,00 (gedrückt, btn-primary) / 13,65 (nicht
+		   gedrückt). Beide liegen mitten auf der Karte, ihre Fläche ist aber
+		   deckend — die Kachel steht nicht hinter dem Text. */
+		const gemessen = await measureContrast(page, [
+			{
+				name: 'Umschalter „Karte" (gedrückt)',
+				selector: 'button[aria-pressed="true"].join-item',
+				backdrop: KACHEL_SCHLIMMSTENFALLS
+			},
+			{
+				name: 'Umschalter „Liste" (nicht gedrückt)',
+				selector: 'button[aria-pressed="false"].join-item',
+				backdrop: KACHEL_SCHLIMMSTENFALLS
+			}
+		]);
+		for (const probe of gemessen) {
+			expect(
+				probe.ratio,
+				`${probe.name}: ${formatRatio(probe.ratio)}:1 (${probe.foreground} auf ${probe.background})`
+			).toBeGreaterThanOrEqual(AA_TEXT);
 		}
 	});
 });

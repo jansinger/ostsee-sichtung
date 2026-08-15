@@ -195,13 +195,61 @@
 	animation: pulse 1.5s infinite;
 }
 
-/* Attribution Control */
+/* Attribution Control
+ *
+ * Die Platte stand bis 2026-08-14 auf 80 % base-100, die Textfarben kamen aus
+ * OpenLayers' eigenem ol.css (#333 für den Fließtext, #666 für die Links).
+ * Beides zusammen ergab über den Kacheln einen Wert, den niemand kannte: axe
+ * legt die vier Knoten unter `incomplete` ab („element contains an image
+ * node"), und der Deckel in axe-scan.spec.ts zählt sie nur. Nachgemessen mit
+ * e2e/helpers/contrast.ts erreichte der Link über der hellen Startkachel
+ * 3,72:1 und über einer schwarzen Kachel 2,60:1 — WCAG 1.4.3 verlangt 4,5:1.
+ *
+ * Die Platte ist deshalb voll deckend (eine helle Fläche des Themes, kein
+ * Schleier — ein `bg-scrim` gehörte hierher nur, wenn die Kachel durchscheinen
+ * SOLL), und beide Textfarben kommen aus Tokens statt aus ol.css. Der Link
+ * bleibt als Link erkennbar, weil primary der Markenton ist und nicht nur
+ * dunkler: Fließtext 16,50:1, Link 9,24:1.
+ *
+ * Die volle Deckung ist dabei nicht nur eine Zahl mehr. Bei 95 % blieb axe bei
+ * „unentscheidbar" (es sieht den Canvas dahinter), und die Knoten zählten
+ * weiter gegen den Deckel in axe-scan.spec.ts. Deckend fallen sie aus
+ * `incomplete` heraus — /map ging dadurch von 9 auf 2.
+ *
+ * Abgesichert in e2e/design-tokens.spec.ts → „Kontrast über fremdem
+ * Bildmaterial"; dort wird die Platte über einer schwarzen Kachel gemessen und
+ * ihr Ergebnis zum Untergrund des Textes gemacht.
+ */
 .ol-attribution {
 	bottom: 0.5rem;
 	right: 0.5rem;
-	background-color: color-mix(in oklab, var(--color-base-100) 80%, transparent) !important;
+	background-color: var(--color-base-100) !important;
 	border-radius: 4px !important;
 	font-size: 0.75rem !important;
+}
+
+.ol-attribution ul,
+.ol-attribution li {
+	color: var(--color-base-content) !important;
+}
+
+/* Die Unterstreichung ist kein Zierat, sondern die Bedingung für die Farbe.
+ * ol.css setzt an dieser Stelle `text-decoration: none` (Zeile 237 in 10.x) —
+ * damit hing die Erkennbarkeit des Links allein am Farbunterschied zum
+ * umgebenden Satz („© OpenStreetMap contributors"), und WCAG 1.4.1 verlangt
+ * dafür 3:1. Erreicht wurden mit OpenLayers' eigenen Tönen 2,20:1 (#666 gegen
+ * #333); primary gegen base-content wären sogar nur 1,79:1 — der Wechsel auf
+ * ein besser lesbares Blau hätte diesen zweiten Wert also verschlechtert,
+ * während er den ersten reparierte. Mit Unterstreichung trägt die
+ * Unterscheidung nicht mehr die Farbe, und beide Kriterien sind erfüllt.
+ *
+ * Die axe-Regel, die genau das prüft (`link-in-text-block`), kann es hier
+ * nicht: Sie steht für /map in UNENTSCHIEDEN, weil sie die Fläche wegen
+ * überlappender Steuerelemente nicht bestimmen kann (`bgOverlap`).
+ */
+.ol-attribution a {
+	color: var(--color-primary) !important;
+	text-decoration: underline;
 }
 
 /* Cursor Styles für verschiebbare Marker */

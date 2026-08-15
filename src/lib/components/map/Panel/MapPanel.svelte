@@ -69,11 +69,23 @@
 </script>
 
 <!-- Toggle Button (always visible) — H6: auf Mobile 44px breit (Touch-Target)
-     und ortsfest; nur auf md+ wandert er mit dem Panel nach links. -->
+     und ortsfest; nur auf md+ wandert er mit dem Panel nach links.
+
+     Die Fläche ist deckendes `bg-base-100` und NICHT `glass`: Der Umschalter
+     steht mit seiner Beschriftung (FILTER/LEGENDE) über den OSM-Kacheln, und
+     Glass lässt sie durch. `text-base-content` darauf misst über heller See
+     12,25:1, über dunklem Land aber 1,07:1 (gemessen 2026-08-14) — WCAG 1.4.3
+     verlangt 4,5:1. Jetzt 16,50:1, unabhängig von der Kachel.
+
+     Eine helle Fläche des Themes, kein Schleier: `bg-scrim` gehörte hierher
+     nur, wenn die Kachel durchscheinen SOLL. Und deckend statt /95, weil axe
+     bei 95 % weiter „unentscheidbar" meldet — der Unterschied entscheidet, ob
+     die Knoten gegen den Deckel in axe-scan.spec.ts zählen. Abgesichert in
+     e2e/design-tokens.spec.ts → „Kontrast über fremdem Bildmaterial". -->
 <button
 	bind:this={toggleEl}
 	onclick={togglePanel}
-	class="glass text-base-content hover:bg-base-200 {accentBorderClass} {togglePositionClass} z-nav shadow-floating duration-panel fixed right-0 flex h-32 w-11 cursor-pointer flex-col items-center justify-center rounded-l-lg border-2 border-r-0 backdrop-blur-sm transition-all md:w-8 {isOpen
+	class="bg-base-100 text-base-content hover:bg-base-200 {accentBorderClass} {togglePositionClass} z-nav shadow-floating duration-panel fixed right-0 flex h-32 w-11 cursor-pointer flex-col items-center justify-center rounded-l-lg border-2 border-r-0 transition-all md:w-8 {isOpen
 		? 'md:-translate-x-80'
 		: ''} {toggleHidden ? 'max-md:hidden' : ''}"
 	aria-label={title}
