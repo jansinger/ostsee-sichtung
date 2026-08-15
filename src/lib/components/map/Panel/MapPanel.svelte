@@ -108,12 +108,30 @@
      Fake-Dialog; inert nimmt das geschlossene (nur verschobene) Panel samt
      seiner fokussierbaren Elemente aus Tab-Zyklus und Accessibility-Tree.
      H6: < md als Bottom-Sheet (Peek/Expanded), ab md als 320px-Seitenpanel,
-     dessen Höhe den top-20-Versatz berücksichtigt. -->
+     dessen Höhe den top-20-Versatz berücksichtigt.
+
+     Deckendes `bg-base-100` und NICHT `glass` — dieselbe Begründung wie am
+     Umschalter oben, nur eine Ebene tiefer: Das Panel steht `position: fixed`
+     über den OSM-Kacheln und trägt Überschrift und Fließtext in
+     `text-base-content`. Mit Glass war der Grund `rgba(0, 0, 0, 0)` plus
+     Weiß-Verlauf; über einer schwarzen Kachel gemessen 1,07:1 statt der von
+     WCAG 1.4.3 verlangten 4,5:1.
+
+     Der axe-Scan konnte das strukturell nicht finden: Ein geschlossenes Panel
+     trägt `inert`, axe überspringt es, und `e2e/axe-scan.spec.ts` öffnet die
+     Panels nicht — der Scan sah nie etwas anderes als den geschlossenen
+     Zustand. Gewacht wird das deshalb messend in `e2e/design-tokens.spec.ts`
+     → „Kontrast über fremdem Bildmaterial", mit geöffnetem Panel.
+
+     `backdrop-blur-sm` ist mit der Deckung entfallen: Es weichzeichnet, was
+     hinter der Fläche liegt, und hinter einer deckenden Fläche ist das
+     nichts. Deckend statt /95 aus demselben Grund wie am Umschalter — axe
+     meldet bei 95 % weiter „unentscheidbar". -->
 <div
 	bind:this={panelEl}
 	id={panelId}
 	data-sheet-state={sheetExpanded ? 'expanded' : 'peek'}
-	class="glass {accentBorderClass} z-panel shadow-floating duration-panel fixed overflow-hidden backdrop-blur-sm transition-[transform,height] max-md:inset-x-0 max-md:bottom-0 max-md:rounded-t-2xl max-md:border-t-2 md:top-20 md:right-0 md:h-[calc(100%-5rem)] md:w-80 md:border-l-2 {sheetExpanded
+	class="bg-base-100 {accentBorderClass} z-panel shadow-floating duration-panel fixed overflow-hidden transition-[transform,height] max-md:inset-x-0 max-md:bottom-0 max-md:rounded-t-2xl max-md:border-t-2 md:top-20 md:right-0 md:h-[calc(100%-5rem)] md:w-80 md:border-l-2 {sheetExpanded
 		? 'max-md:h-[85dvh]'
 		: 'max-md:h-[45dvh]'} {isOpen
 		? 'translate-x-0 translate-y-0'
