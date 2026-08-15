@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.21.0](https://github.com/jansinger/ostsee-tiere/compare/v2.20.0...v2.21.0) (2026-08-15)
+
+
+### Features
+
+* **a11y:** accessibility statement, axe e2e guard, contrast fixes on /about ([#886](https://github.com/jansinger/ostsee-tiere/issues/886)) ([f694179](https://github.com/jansinger/ostsee-tiere/commit/f6941798c9c67e09dba1847b54d3f1769a0e9150))
+
+
+### Bug Fixes
+
+* **a11y:** decide the axe-incomplete contrast cases on /map and /bestimmungshilfe ([#888](https://github.com/jansinger/ostsee-tiere/issues/888)) ([12030fd](https://github.com/jansinger/ostsee-tiere/commit/12030fd015f85ef2f83aa0930bb7745f334a8dcb))
+* **a11y:** opaque panel container on /map instead of glass ([#889](https://github.com/jansinger/ostsee-tiere/issues/889)) ([6623e98](https://github.com/jansinger/ostsee-tiere/commit/6623e987dd880483eb1e8f67ac377e3d1a9d5a69))
+* **a11y:** status colors on outline/soft components, evaluate axe incomplete ([#887](https://github.com/jansinger/ostsee-tiere/issues/887)) ([087c8fe](https://github.com/jansinger/ostsee-tiere/commit/087c8fed6222e01b364564dd76dbf77533a5abf0))
+* **ci:** fail on sbom generation errors and pin npm 11.14.1 (npm/cli[#9873](https://github.com/jansinger/ostsee-tiere/issues/9873)) ([#882](https://github.com/jansinger/ostsee-tiere/issues/882)) ([a18a569](https://github.com/jansinger/ostsee-tiere/commit/a18a56934504cbc96da42e98bad9dada2d9589ec))
+* **map:** tighten filter chips, anchor logo, activate sheet handle ([#885](https://github.com/jansinger/ostsee-tiere/issues/885)) ([ec383f2](https://github.com/jansinger/ostsee-tiere/commit/ec383f2f609820ee9fb9edf79b4833bb65da43b1))
+* **ui:** Design-System-Korrekturen aus dem Review vom 2026-08-14 ([#877](https://github.com/jansinger/ostsee-tiere/issues/877)) ([45068de](https://github.com/jansinger/ostsee-tiere/commit/45068dedf29180d36e0e5f325bd203f601397e67))
+
+
+### Documentation
+
+* **docs:** archive completed plans and consolidate i18n docs ([#884](https://github.com/jansinger/ostsee-tiere/issues/884)) ([d0abd6b](https://github.com/jansinger/ostsee-tiere/commit/d0abd6b6a3f21cdb424b131818ae776ac4e01236))
+
+
+### Dependencies
+
+* **deps:** apply npm audit fix and minor dependency updates ([#876](https://github.com/jansinger/ostsee-tiere/issues/876)) ([1817dfe](https://github.com/jansinger/ostsee-tiere/commit/1817dfebf5f6e0d737f52a13e66c2aefbae92585))
+* **deps:** update commitlint to v21 and cyclonedx-npm to v6 ([#881](https://github.com/jansinger/ostsee-tiere/issues/881)) ([47ae7fe](https://github.com/jansinger/ostsee-tiere/commit/47ae7fe9655b5faf8ece2e2ff40c0df474881473))
+* **deps:** update html-to-text to v10 ([#883](https://github.com/jansinger/ostsee-tiere/issues/883)) ([24019c4](https://github.com/jansinger/ostsee-tiere/commit/24019c484aeb2bc513ca1c31f1e7261350e39a4f))
+* **deps:** update prettier-plugin-svelte to v4 ([#879](https://github.com/jansinger/ostsee-tiere/issues/879)) ([66c56c2](https://github.com/jansinger/ostsee-tiere/commit/66c56c26d914afa5e699074a90c8e3cb1bd06420))
+
 ## [2.20.0](https://github.com/jansinger/ostsee-tiere/compare/v2.19.0...v2.20.0) (2026-08-14)
 
 
