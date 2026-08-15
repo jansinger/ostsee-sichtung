@@ -120,8 +120,9 @@
      Der axe-Scan konnte das strukturell nicht finden: Ein geschlossenes Panel
      trägt `inert`, axe überspringt es, und `e2e/axe-scan.spec.ts` öffnet die
      Panels nicht — der Scan sah nie etwas anderes als den geschlossenen
-     Zustand. Gewacht wird das deshalb messend in `e2e/design-tokens.spec.ts`
-     → „Kontrast über fremdem Bildmaterial", mit geöffnetem Panel.
+     Zustand. Der Wächter ist deshalb eine Messung in
+     `e2e/design-tokens.spec.ts` → „Kontrast über fremdem Bildmaterial",
+     mit geöffnetem Panel.
 
      `backdrop-blur-sm` ist mit der Deckung entfallen: Es weichzeichnet, was
      hinter der Fläche liegt, und hinter einer deckenden Fläche ist das
