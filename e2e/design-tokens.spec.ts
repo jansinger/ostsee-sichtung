@@ -7,6 +7,7 @@ import {
 	type Page
 } from '@playwright/test';
 import { setupMapPage } from './fixtures/mapSetup';
+import { MapPage } from './pages/MapPage';
 import { seedAdminSession } from './helpers/adminSession';
 import {
 	BELOW_OPACITY_FLOOR,
@@ -299,6 +300,30 @@ test.describe('Design-Tokens — Kontrast über fremdem Bildmaterial', () => {
 			expect(ratio, meldung).toBeGreaterThanOrEqual(AA_TEXT);
 		});
 	}
+
+	/* Das Panel selbst trug den Fehler bis 2026-08-15 weiter — derselbe `glass`
+	   wie zuvor Badge und Umschalter, nur eine Ebene tiefer und deshalb vom
+	   axe-Scan nie gesehen: Ein geschlossenes Panel ist `inert`, axe überspringt
+	   es, und geöffnet wird es dort nicht. Die Fläche ist `position: fixed` über
+	   dem Karten-Canvas; über einer schwarzen Kachel misst `text-base-content`
+	   darauf 1,07:1.
+
+	   Gemessen wird das Panel im geöffneten Zustand — geschlossen steht es zwar
+	   im DOM, aber `inert` und aus dem Sichtfeld geschoben; die Kachel darunter
+	   wäre dann keine Aussage über das, was der Nutzer sieht. */
+	test(`Filter-Panel: Überschrift über der dunkelsten Kachel ≥ ${AA_TEXT}:1`, async ({ page }) => {
+		const mapPage = new MapPage(page);
+		await mapPage.openFilter();
+		await expect(mapPage.getFilterPanel()).toBeVisible();
+
+		const { ratio, meldung } = await aufPlatte(
+			page,
+			'Filter-Panel',
+			'#filter-panel',
+			'#filter-title'
+		);
+		expect(ratio, meldung).toBeGreaterThanOrEqual(AA_TEXT);
+	});
 
 	/* Die Attribution ist fremdes Markup, aber ihre Platte und ihre Textfarben
 	   sind es nicht: `.ol-attribution` bekommt Fläche und Farben in
