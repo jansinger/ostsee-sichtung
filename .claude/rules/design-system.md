@@ -533,6 +533,21 @@ Das Formular wird an Deck und am Strand ausgefüllt — nass, in der Sonne, mit 
 
 Die Arbeitsteilung dabei ist ausdrücklich benannt, weil sie sonst unterstellt würde: Der Deckel bemerkt **neue** unentscheidbare Stellen, nicht eine Farbänderung **innerhalb** einer bereits gelisteten (`/about` steht mit und ohne die fehlerhaften Klassen bei 25 Knoten). Farbe und Klassenkombination entscheiden die eigenen Messungen in `design-tokens.spec.ts` — nicht axe.
 
+### Ein `incomplete`-Eintrag ist eine offene Frage, keine Ausnahme
+
+Die Begründungen in `UNENTSCHIEDEN` sind beim Anlegen aus dem Selektor geraten worden, und zwei von ihnen waren falsch — nachgesehen am 2026-08-14 anhand von axes eigenem `data.messageKey`:
+
+| Behauptet                                                  | Tatsächlich                                                                                                                                                                                                 |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| „Artbadges liegen über den Artfotos" (`/bestimmungshilfe`) | `bgImage` = DaisyUIs `--depth`-Rausch-SVG an **jedem** `.btn`/`.badge`. Das Artfoto ist ein Geschwister im Flex-Kopf, kein Untergrund. Einer der zehn Knoten ist gar kein Badge, sondern der Rückweg-Knopf. |
+| „Kartenkacheln und Attribution" (`/map`, 9 Knoten)         | Nur 7 lagen über Kacheln; 2 waren `btn`-Flächen mit demselben Rausch-SVG.                                                                                                                                   |
+
+**Der praktische Unterschied zwischen `bgImage` und `imgNode`/`bgGradient` ist der ganze Befund.** Bei `bgImage` an einem `.btn`/`.badge` liegt darunter eine **deckende** Theme-Farbe — der Fall ist ausrechenbar und braucht nur eine Messung. `imgNode` und `bgGradient` heißen dagegen, dass wirklich etwas Fremdes durchscheint; nur dort ist eine Entscheidung nötig.
+
+Beim Nachmessen ist die **Platte** zu messen, nicht der Text: `measureContrast` komponiert die _eigene_ Fläche eines Elements über den `backdrop`, und ein Text auf einer Platte ist selbst durchsichtig. Erst die Platte über der dunkelsten denkbaren Kachel messen, dann deren Ergebnis als `backdrop` des Textes verwenden (so gebaut in `design-tokens.spec.ts` → „Kontrast über fremdem Bildmaterial").
+
+**Und: deckend ist nicht dasselbe wie fast deckend.** `bg-base-100/95` bestand den Kontrast mühelos (14,77:1), blieb für axe aber unentscheidbar — es sieht den Canvas dahinter. Erst die volle Deckung nahm die Knoten aus `incomplete` und ließ den `/map`-Deckel von 9 auf 2 sinken. Wo eine Platte Text trägt, ist das `/`-Suffix deshalb kein Geschmacksdetail.
+
 ---
 
 ## Zustands-Optik der Auswahl-Controls

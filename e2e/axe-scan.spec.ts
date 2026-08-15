@@ -81,7 +81,10 @@ const UNENTSCHIEDEN: Record<string, { regel: string; hoechstens: number; grund: 
 		{
 			regel: 'color-contrast',
 			hoechstens: 10,
-			grund: 'Artbadges in den Disclosure-Köpfen liegen über den Artfotos.'
+			grund:
+				'DaisyUIs --depth-Rausch-SVG als zweite Hintergrundebene an .badge/.btn; die Fläche darunter ' +
+				'ist deckend. Neun Artbadges plus der Rückweg-Knopf am Seitenende. Gemessen in ' +
+				'design-tokens.spec.ts → „Kontrast auf deckenden Flächen unter axes bgImage": 4,56 bis 11,00:1.'
 		}
 	],
 	'/about': [
@@ -96,15 +99,30 @@ const UNENTSCHIEDEN: Record<string, { regel: string; hoechstens: number; grund: 
 	'/map': [
 		{
 			regel: 'color-contrast',
-			hoechstens: 9,
-			grund: 'Kartenkacheln und OpenLayers-Attribution — fremdes Bildmaterial hinter dem Text.'
-		},
-		{
-			regel: 'link-in-text-block',
 			hoechstens: 2,
 			grund:
-				'Attributionslinks von OpenLayers/OpenSeaMap, überlappende Steuerelemente. Fremdes Markup.'
+				'Die beiden Umschalter Karte/Liste — dasselbe --depth-Rausch-SVG wie auf /bestimmungshilfe, ' +
+				'Fläche darunter deckend, gemessen 11,00 und 13,65:1. Bis 2026-08-14 standen hier 9: ' +
+				'Titel-Badge, FILTER- und LEGENDE-Umschalter trugen `glass` und die Attribution eine ' +
+				'80-%-Platte — alle vier ließen die Kachel durch und waren deshalb unentscheidbar. ' +
+				'Sie sind auf deckende Flächen umgestellt (siehe design-tokens.spec.ts → „Kontrast über ' +
+				'fremdem Bildmaterial"), womit axe sie selbst entscheiden kann und sie hier herausfallen.'
 		}
+		/* `link-in-text-block` stand hier bis 2026-08-14 mit `hoechstens: 2`
+		   („Attributionslinks von OpenLayers/OpenSeaMap, überlappende
+		   Steuerelemente. Fremdes Markup.") und ist ersatzlos entfallen — nicht
+		   weil die Knoten verschwunden wären, sondern weil die Regel nichts mehr
+		   zu entscheiden hat: Die Attributionslinks tragen seit derselben
+		   Änderung `text-decoration: underline` (`src/lib/map/mapStyles.css`).
+		   Damit hängt ihre Erkennbarkeit nicht mehr an der Farbe, und die Regel
+		   greift gar nicht erst.
+
+		   Die Begründung war übrigens auch inhaltlich schief: „fremdes Markup"
+		   legt nahe, hier sei nichts zu machen. Farbe und Unterstreichung dieser
+		   Links kommen aus dem eigenen Stylesheet, und nachgemessen erreichten
+		   sie gegen den umgebenden Satz 2,20:1 gegen die 3:1, die WCAG 1.4.1
+		   verlangt. Der Deckel deckte also einen echten Mangel ab — der Grund,
+		   warum diese Liste Begründungen trägt und keine bloßen Zahlen. */
 	]
 };
 
