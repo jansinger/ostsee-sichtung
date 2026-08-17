@@ -279,17 +279,28 @@ export async function sende({ basisUrl, speicher, fetchImpl = fetch, log = conso
 
 		const { body, contentType } = baueAnfrage(umschlag);
 
+		// Der ursprüngliche User-Agent macht die Meldung im Serverprotokoll
+		// als App-Meldung erkennbar, statt sie als Node-Aufruf erscheinen zu
+		// lassen — und landet seit der Einführung von `eingangs_client` auch
+		// an der Sichtung.
+		//
+		// Kennt der Umschlag keinen User-Agent (der Client schickte keinen,
+		// der Handler speichert dann ''), wird KEINER gesetzt: Der Server
+		// schreibt dann `unbekannt`. Ein Fallback-Name hier hielte einen
+		// Client ohne User-Agent dauerhaft für dieses Werkzeug.
+		// Fehlt dagegen `quelle` ganz, ist dieses Werkzeug tatsächlich der
+		// Ursprung — dann bleibt der Name stehen.
+		const kopfzeilen = { 'content-type': contentType };
+		const uebernommenerAgent = umschlag.quelle
+			? umschlag.quelle.user_agent?.trim()
+			: 'legacy-inbox-import';
+		if (uebernommenerAgent) kopfzeilen['user-agent'] = uebernommenerAgent;
+
 		let antwort;
 		try {
 			antwort = await fetchImpl(ziel, {
 				method: 'POST',
-				headers: {
-					'content-type': contentType,
-					// Der ursprüngliche User-Agent macht die Meldung im
-					// Serverprotokoll als App-Meldung erkennbar, statt sie als
-					// Node-Aufruf erscheinen zu lassen.
-					'user-agent': umschlag.quelle?.user_agent || 'legacy-inbox-import'
-				},
+				headers: kopfzeilen,
 				body
 			});
 		} catch (fehler) {
