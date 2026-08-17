@@ -3,6 +3,8 @@ import { env } from '$env/dynamic/private';
 import { getSightingSchema } from '$lib/form/validation/sightingSchema';
 import { createLogger } from '$lib/logger.server';
 import { getClientIp } from '$lib/server/utils/getClientIp';
+import { resolveEntryClient } from '$lib/server/utils/resolveEntryClient';
+import { getBuildInfo } from '$lib/server/startup/versionInfo';
 import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
 import { db } from '$lib/server/db';
 import { approvedOnly } from '$lib/server/db/approvalFilter';
@@ -284,7 +286,14 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress }
 			);
 		}
 
-		const { id } = await saveSighting(formDataWithDefaults, weatherData, spamCheck);
+		// Client-Kennung serverseitig aus dem eigenen Build, nicht aus dem Body:
+		// Der Melder soll nicht bestimmen können, als was seine Meldung gilt.
+		const entryClient = resolveEntryClient({
+			source: 'web',
+			appVersion: getBuildInfo().version
+		});
+
+		const { id } = await saveSighting(formDataWithDefaults, weatherData, spamCheck, entryClient);
 		const referenceId = formDataWithDefaults.referenceId || `REF-${id}`;
 
 		logger.info({ id, referenceId }, 'Sichtung erfolgreich gespeichert');

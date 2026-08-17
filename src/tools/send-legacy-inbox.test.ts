@@ -83,6 +83,35 @@ describe('sende', () => {
 		expect(fetchImpl.mock.calls[0]?.[1].headers['content-type']).toBe('application/json');
 	});
 
+	it('setzt den user-agent explizit auf Leerstring, wenn der Umschlag keinen kennt', async () => {
+		// Sonst schriebe der Server `legacy-inbox-import` in eingangs_client und
+		// hielte einen Client ohne User-Agent für unser eigenes Werkzeug.
+		//
+		// Weglassen genügt nicht: Node's globales fetch (undici) ergänzt bei
+		// fehlendem Header selbst `User-Agent: node` — das stünde dann in
+		// eingangs_client und sähe wie ein echter Client aus. Deshalb muss die
+		// Kopfzeile explizit auf '' stehen; der Server trimmt das zu `unbekannt`.
+		const speicher = speicherMit({
+			'000001__a.json': umschlag({ tierart: 0 }, { quelle: { ip: '1.2.3.4', user_agent: '' } })
+		});
+		const fetchImpl = vi.fn().mockResolvedValue(antwort(201));
+
+		await sende({ basisUrl: 'https://beispiel.test', speicher, fetchImpl, log: stumm });
+
+		expect(fetchImpl.mock.calls[0]?.[1].headers['user-agent']).toBe('');
+	});
+
+	it('behält den Werkzeugnamen, wenn der Umschlag gar keine Quelle trägt', async () => {
+		const speicher = speicherMit({
+			'000001__a.json': umschlag({ tierart: 0 }, { quelle: undefined })
+		});
+		const fetchImpl = vi.fn().mockResolvedValue(antwort(201));
+
+		await sende({ basisUrl: 'https://beispiel.test', speicher, fetchImpl, log: stumm });
+
+		expect(fetchImpl.mock.calls[0]?.[1].headers['user-agent']).toBe('legacy-inbox-import');
+	});
+
 	it('bricht bei einem 429 ab, ohne die Datei zu verschieben', async () => {
 		const speicher = speicherMit({
 			'000001__a.json': umschlag({ tierart: 0 }),

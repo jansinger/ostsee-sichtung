@@ -64,7 +64,11 @@ function rufeCliAuf(
 	});
 }
 
-async function legeUmschlagAn(name: string, payload: Record<string, unknown> | null) {
+async function legeUmschlagAn(
+	name: string,
+	payload: Record<string, unknown> | null,
+	extra: Record<string, unknown> = {}
+) {
 	await writeFile(
 		path.join(verzeichnis, 'posteingang', name),
 		JSON.stringify({
@@ -74,7 +78,8 @@ async function legeUmschlagAn(name: string, payload: Record<string, unknown> | n
 			roh: JSON.stringify(payload),
 			abgeschnitten: false,
 			payload,
-			validierung: { gueltig: payload !== null, fehler: {} }
+			validierung: { gueltig: payload !== null, fehler: {} },
+			...extra
 		})
 	);
 }
@@ -290,6 +295,40 @@ describe('importiere', () => {
 		]);
 
 		vi.restoreAllMocks();
+	});
+
+	it('reicht den User-Agent aus dem Umschlag als Client-Kennung an speichere durch', async () => {
+		// Sonst stünde bei jeder nachgespielten Meldung der Importer statt des
+		// Clients, der sie tatsächlich geschickt hat.
+		await legeUmschlagAn(
+			'000001__a.json',
+			{ anzahl_gesamt: 1 },
+			{
+				quelle: { ip: '1.2.3.4', user_agent: 'OstSeeTiere/8', content_type: 'application/json' }
+			}
+		);
+		const speichere = vi.fn().mockResolvedValue({ id: 4711 });
+
+		await importiere({
+			datenVerzeichnis: verzeichnis,
+			mappe: () => ({ totalCount: 1 }),
+			speichere
+		});
+
+		expect(speichere.mock.calls[0]?.[3]).toBe('OstSeeTiere/8');
+	});
+
+	it('setzt unbekannt, wenn der Umschlag keine Quelle trägt', async () => {
+		await legeUmschlagAn('000001__a.json', { anzahl_gesamt: 1 }, { quelle: undefined });
+		const speichere = vi.fn().mockResolvedValue({ id: 4711 });
+
+		await importiere({
+			datenVerzeichnis: verzeichnis,
+			mappe: () => ({ totalCount: 1 }),
+			speichere
+		});
+
+		expect(speichere.mock.calls[0]?.[3]).toBe('unbekannt');
 	});
 });
 

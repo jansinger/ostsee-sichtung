@@ -237,6 +237,52 @@ describe('sightingRepository', () => {
 			expect(capturedValues?.spamIndicators).toBeUndefined();
 		});
 
+		it('schreibt die Client-Kennung aus dem vierten Parameter in eingangs_client', async () => {
+			const mockDb = db as any;
+			let capturedValues: Record<string, unknown> | undefined;
+			mockDb.insert.mockReturnValue({
+				values: vi.fn().mockImplementation((data) => {
+					capturedValues = data;
+					return { returning: vi.fn().mockResolvedValue([{ id: 42 }]) };
+				})
+			});
+			mockDb.update.mockReturnValue({
+				set: vi.fn().mockReturnValue({
+					where: vi.fn().mockReturnValue({
+						returning: vi.fn().mockResolvedValue([{ id: 42 }])
+					})
+				})
+			});
+
+			await saveSighting(mockFormData, undefined, undefined, 'OstSeeTiere/8');
+
+			expect(capturedValues?.entryClient).toBe('OstSeeTiere/8');
+		});
+
+		it('lässt entryClient auf NULL, wenn kein Aufrufer eine Kennung liefert', async () => {
+			// NULL heißt „vor Einführung der Spalte". Ein Default hier würde diese
+			// Bedeutung auflösen, und jede Auswertung bräuchte wieder ein Datums-Gate.
+			const mockDb = db as any;
+			let capturedValues: Record<string, unknown> | undefined;
+			mockDb.insert.mockReturnValue({
+				values: vi.fn().mockImplementation((data) => {
+					capturedValues = data;
+					return { returning: vi.fn().mockResolvedValue([{ id: 42 }]) };
+				})
+			});
+			mockDb.update.mockReturnValue({
+				set: vi.fn().mockReturnValue({
+					where: vi.fn().mockReturnValue({
+						returning: vi.fn().mockResolvedValue([{ id: 42 }])
+					})
+				})
+			});
+
+			await saveSighting(mockFormData);
+
+			expect(capturedValues?.entryClient).toBeUndefined();
+		});
+
 		/**
 		 * Test: Erfolgreiche Speicherung mit Dateien
 		 */

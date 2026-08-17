@@ -9,6 +9,21 @@
  * Die Repository-Schicht abstrahiert Drizzle ORM-Operationen und bietet
  * typsichere CRUD-Funktionen für die Anwendungslogik.
  *
+ * **`entryClient`-Diagnose — bekannte Lücke im Guard (Review Runde 2).**
+ * `getSightingById()` und `getSightingByReferenceId()` nutzen `db.select()`
+ * ohne Argument und laden damit die ganze Zeile inklusive `entryClient`
+ * (Spalte `eingangs_client`, siehe `publicClientLeakScan.test.ts`). Heute
+ * folgenlos: Beide Aufrufer sind admin-gated
+ * (`api/admin/weather/[id]/refresh/+server.ts`,
+ * `api/sightings/ref/[refId]/+server.ts`, beide mit `requireUserRole`).
+ * Diese Datei ist absichtlich NICHT in die Scan-Liste des Guards
+ * aufgenommen — sie setzt `entryClient` weiter unten legitim
+ * (`sightingData.entryClient = entryClient`), ein textbasierter Scan träfe
+ * dort sofort ein Falsch-Positiv. **Wer künftig eine öffentliche Route baut,
+ * die `getSightingById`/`getSightingByReferenceId` aufruft und das Ergebnis
+ * direkt zurückgibt (`return json(sighting)`), muss die Spalten selbst
+ * explizit auswählen** — der Guard prüft diesen Pfad nicht.
+ *
  * @author Ostsee-Tiere Team
  * @since 1.0.0
  */
@@ -50,6 +65,7 @@ const logger = createLogger('db:sightingRepository');
  * @param formData Validierte Formulardaten aus dem Sichtungs-Formular
  * @param weatherData Optional: Wetterdaten für diese Sichtung (Issue #110)
  * @param spamCheck Optional: Spam-Heuristik zum Meldezeitpunkt (wird persistiert)
+ * @param entryClient Optional: Kennung der erzeugenden Software (`resolveEntryClient`)
  * @returns Objekt mit der generierten Sichtungs-ID
  *
  * @example
@@ -61,10 +77,18 @@ const logger = createLogger('db:sightingRepository');
 export const saveSighting = async (
 	formData: SightingFormValues,
 	weatherData?: StoredWeatherData,
-	spamCheck?: SpamCheckResult
+	spamCheck?: SpamCheckResult,
+	entryClient?: string
 ): Promise<{ id: number | undefined }> => {
 	// Konvertiere Formulardaten in das normalisierte Datenbankschema
 	const sightingData: NewSighting = mapFormToSighting(formData);
+
+	// Client-Kennung des Aufrufers festhalten. Ohne Angabe bleibt die Spalte
+	// NULL — das ist die Kennzeichnung für Zeilen aus der Zeit vor dieser
+	// Spalte und darf nicht durch einen Default überschrieben werden.
+	if (entryClient) {
+		sightingData.entryClient = entryClient;
+	}
 
 	// Spam-Heuristik zum Meldezeitpunkt festhalten. NULL bleibt für Altbestand,
 	// Eingänge ohne Bewertung UND fehlgeschlagene Prüfungen — deren Fail-Safe-

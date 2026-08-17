@@ -366,6 +366,43 @@ describe('/api/sightings POST endpoint', () => {
 			expect(mockedSaveSighting.mock.calls[0]?.[2]).toEqual(spamResult);
 		}, 15000);
 
+		it('übergibt die eigene Release-Version als vierten Parameter an saveSighting', async () => {
+			const response = await POST(createMockRequestEvent(validBody()));
+
+			expect(response.status).toBe(201);
+			expect(mockedSaveSighting.mock.calls[0]?.[3]).toMatch(/^web\/\d+\.\d+\.\d+/);
+		}, 15000);
+
+		it('leitet die Client-Kennung vom Aufrufer ab, nicht vom gemeldeten entryChannel', async () => {
+			// Kanal (entryChannel) und Erzeuger (Client-Kennung) beantworten verschiedene
+			// Fragen: entryChannel ist eine fachliche Angabe zur Meldung (hier: Post,
+			// MAIL = 2), die Client-Kennung beschreibt, über welchen Weg (dieses
+			// Webformular) sie technisch eingegangen ist. Eine Meldung, die als
+			// Post-Meldung deklariert ist, bekommt trotzdem `web/<version>`.
+			const response = await POST(createMockRequestEvent({ ...validBody(), entryChannel: 2 }));
+
+			expect(response.status).toBe(201);
+			expect(mockedSaveSighting.mock.calls[0]?.[3]).toMatch(/^web\/\d+\.\d+\.\d+/);
+		}, 15000);
+
+		it('weist ein im Request-Body mitgeschicktes entryClient als unbekanntes Feld ab', async () => {
+			// entryClient wird ausschließlich serverseitig aus dem Aufrufer
+			// abgeleitet (resolveEntryClient) — ein Client könnte sich sonst
+			// beliebig ausgeben. Der Endpunkt weist unbekannte Felder heute mit
+			// 400/INVALID_FIELDS ab; das ist der bestehende Schutz, den dieser
+			// Test festnagelt.
+			const response = await POST(
+				createMockRequestEvent({ ...validBody(), entryClient: 'gefälscht/1.0' })
+			);
+			const result = await response.json();
+
+			expect(response.status).toBe(400);
+			expect(result.success).toBe(false);
+			expect(result.code).toBe('INVALID_FIELDS');
+			expect(result.rejectedFields).toContain('entryClient');
+			expect(mockedSaveSighting).not.toHaveBeenCalled();
+		}, 15000);
+
 		it('meldet fehlendes Token als tokenStatus missing', async () => {
 			await POST(createMockRequestEvent(validBody()));
 

@@ -52,4 +52,11 @@ Boolean-Semantik wie das Badge (`isDeadFinding()`).
 - **KML:** Filtert Sichtungen ohne Koordinaten (`isNotNull`)
 - **XML:** Enthält Mercator-Projektion (X/Y statt Lat/Lng) -- Legacy-Kompatibilität
 - **CSV:** Header sind deutsche Labels, nicht DB-Feldnamen
+- **JSON gibt `entryClient` mit aus, die anderen drei Formate nicht.** `jsonExport.ts`
+  reicht die geladene Zeile roh durch, CSV/XML/KML bilden dagegen jedes Feld explizit
+  ab. Bewusst so belassen (Entscheidung des Nutzers, 2026-08-17): Der Endpunkt ist
+  admin-geschützt, und das Feld ist dort für Auswertungen ohne Datenbankzugang
+  nützlich. Ein neues Feld in `mapFormToSighting`/`schema.ts` landet also automatisch
+  im JSON-Export, ohne dass jemand das entscheiden muss — bei den anderen drei
+  Formaten nicht.
 - Fehler werden als Text/XML zurückgegeben (nicht JSON)
