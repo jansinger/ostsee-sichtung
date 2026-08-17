@@ -285,16 +285,21 @@ export async function sende({ basisUrl, speicher, fetchImpl = fetch, log = conso
 		// an der Sichtung.
 		//
 		// Kennt der Umschlag keinen User-Agent (der Client schickte keinen,
-		// der Handler speichert dann ''), wird KEINER gesetzt: Der Server
-		// schreibt dann `unbekannt`. Ein Fallback-Name hier hielte einen
-		// Client ohne User-Agent dauerhaft für dieses Werkzeug.
+		// der Handler speichert dann ''), wird die Kopfzeile explizit auf ''
+		// gesetzt statt weggelassen: Node's globales fetch (undici) ergänzt bei
+		// fehlendem Header selbst `User-Agent: node`, und genau DAS würde dann
+		// als eingangs_client in der DB landen — schlechter als der Name dieses
+		// Werkzeugs, weil es wie ein echter Client aussieht. Der Server trimmt
+		// einen expliziten Leerstring zu `unbekannt` (siehe resolveEntryClient.ts).
+		// Ein Fallback-Name hier hielte einen Client ohne User-Agent dauerhaft
+		// für dieses Werkzeug.
 		// Fehlt dagegen `quelle` ganz, ist dieses Werkzeug tatsächlich der
 		// Ursprung — dann bleibt der Name stehen.
 		const kopfzeilen = { 'content-type': contentType };
 		const uebernommenerAgent = umschlag.quelle
-			? umschlag.quelle.user_agent?.trim()
+			? (umschlag.quelle.user_agent?.trim() ?? '')
 			: 'legacy-inbox-import';
-		if (uebernommenerAgent) kopfzeilen['user-agent'] = uebernommenerAgent;
+		kopfzeilen['user-agent'] = uebernommenerAgent;
 
 		let antwort;
 		try {
