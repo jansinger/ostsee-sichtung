@@ -87,8 +87,9 @@ export const sightings = pgTable(
 		// dem Request-Body — sonst könnte ein Client sich beliebig ausgeben.
 		// Beantwortet eine ANDERE Frage als `eingangskanal`: Eine per Post
 		// eingegangene Meldung hat Kanal MAIL und Client `web/<version>`.
-		// NULL heißt ausschließlich „vor Einführung der Spalte"; fehlt der
-		// User-Agent, steht `unbekannt` drin (siehe `resolveEntryClient.ts`).
+		// NULL heißt „vor Einführung der Spalte" ODER vom Altsystem geschrieben
+		// (dieselbe Datenbank wird mitbenutzt); fehlt der User-Agent, steht
+		// `unbekannt` drin (siehe `resolveEntryClient.ts`).
 		entryClient: varchar('eingangs_client', { length: 128 }),
 		approvedAt: timestamp('freigegeben_am', { mode: 'date' }),
 		verified: integer('geprueft').default(0).notNull(),

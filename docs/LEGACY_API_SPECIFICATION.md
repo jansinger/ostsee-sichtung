@@ -227,7 +227,9 @@ keinen Text dazu.
 Seit 2.22.0 hält der Server den `User-Agent` einer eingehenden Meldung in der
 Spalte `sichtungen.eingangs_client` fest. Das ist **kein Vertragsfeld**: Es wird
 nicht angefordert, nicht validiert, nicht ausgegeben, und ein Client muss nichts
-dafür tun. Fehlt der Header, steht `unbekannt` in der Spalte.
+dafür tun. Fehlt der Header, steht `unbekannt` in der Spalte, nie NULL — `NULL`
+steht ausschließlich für Zeilen von vor Einführung der Spalte oder für Zeilen,
+die das Altsystem auf derselben Datenbank geschrieben hat.
 
 Der Wert ist die Datengrundlage für den Client-Zensus, den die CLAUDE.md bislang
 aus dem Zugriffsprotokoll auf hawking ableitet — er beantwortet vor einer
