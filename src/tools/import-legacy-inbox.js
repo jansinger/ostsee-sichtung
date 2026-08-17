@@ -21,6 +21,7 @@ import { mapLegacyToCurrentSchema } from '../lib/legacy-api/field-mapping.js';
 import { saveSighting } from '../lib/server/db/sightingRepository.js';
 import { EmailService } from '../lib/server/services/emailService.js';
 import { ServerConfigService } from '../lib/services/configService.js';
+import { resolveEntryClient } from '../lib/server/utils/resolveEntryClient.js';
 
 // Kleine, feste Obergrenze für Verschiebe-Versuche: Sie räumt transiente
 // Ursachen (kurzzeitig volle Platte, Race mit einem parallelen Aufräumjob)
@@ -109,7 +110,15 @@ export async function importiere({
 				continue;
 			}
 
-			gespeichert = await speichere(mappe(vereinheitliche(umschlag.payload)));
+			// Der ursprüngliche User-Agent aus dem Umschlag, nicht der dieses
+			// Werkzeugs: Sonst stünde bei jeder nachgespielten Meldung der
+			// Importer statt des Clients, der sie tatsächlich geschickt hat.
+			gespeichert = await speichere(
+				mappe(vereinheitliche(umschlag.payload)),
+				undefined,
+				undefined,
+				resolveEntryClient({ source: 'agent', userAgent: umschlag.quelle?.user_agent })
+			);
 
 			if (gespeichert.id === undefined) {
 				// speichere() kann laut eigenem Vertrag eine undefinierte ID
