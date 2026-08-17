@@ -222,6 +222,21 @@ keinen Text dazu.
 
 - **HTTP Status**: `500`
 
+### User-Agent wird gespeichert
+
+Seit 2.22.0 hält der Server den `User-Agent` einer eingehenden Meldung in der
+Spalte `sichtungen.eingangs_client` fest. Das ist **kein Vertragsfeld**: Es wird
+nicht angefordert, nicht validiert, nicht ausgegeben, und ein Client muss nichts
+dafür tun. Fehlt der Header, steht `unbekannt` in der Spalte.
+
+Der Wert ist die Datengrundlage für den Client-Zensus, den die CLAUDE.md bislang
+aus dem Zugriffsprotokoll auf hawking ableitet — er beantwortet vor einer
+Vertragsänderung die Frage, welche Clients ein Feld noch senden. Er ist vom
+Client frei wählbar und damit ein Hinweis, kein Beweis; auf ihm darf keine
+Entscheidung über Gültigkeit oder Zugriff beruhen.
+
+Die OpenAPI-Spec bleibt davon unberührt, weil sich keine Antwort ändert.
+
 ## 2. Retrieving Response Options
 
 Retrieves response options for numeric fields as JSON array.
