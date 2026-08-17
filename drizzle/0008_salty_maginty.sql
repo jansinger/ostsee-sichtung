@@ -1,0 +1,1 @@
+ALTER TABLE "sichtungen" ADD COLUMN "eingangs_client" varchar(128);

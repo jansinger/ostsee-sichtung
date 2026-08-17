@@ -57,6 +57,13 @@
       "when": 1786184950447,
       "tag": "0007_aspiring_meteorite",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1786975010282,
+      "tag": "0008_salty_maginty",
+      "breakpoints": true
     }
   ]
 }

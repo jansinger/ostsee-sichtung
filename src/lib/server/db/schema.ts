@@ -82,6 +82,14 @@ export const sightings = pgTable(
 		notes: text('bemerkungen'),
 		created: timestamp('created', { mode: 'date' }).notNull(),
 		entryChannel: integer('eingangskanal').default(0).notNull(),
+		// Welche Software diese Zeile erzeugt hat: `web/<version>` aus dem eigenen
+		// Build, sonst der User-Agent des Clients. Serverseitig gesetzt, nie aus
+		// dem Request-Body — sonst könnte ein Client sich beliebig ausgeben.
+		// Beantwortet eine ANDERE Frage als `eingangskanal`: Eine per Post
+		// eingegangene Meldung hat Kanal MAIL und Client `web/<version>`.
+		// NULL heißt ausschließlich „vor Einführung der Spalte"; fehlt der
+		// User-Agent, steht `unbekannt` drin (siehe `resolveEntryClient.ts`).
+		entryClient: varchar('eingangs_client', { length: 128 }),
 		approvedAt: timestamp('freigegeben_am', { mode: 'date' }),
 		verified: integer('geprueft').default(0).notNull(),
 		inBalticSea: integer('ostsee').default(0),
@@ -222,7 +230,10 @@ export const sightingStatusLog = pgTable(
 		// Die einzige Abfrage: alle Einträge einer Sichtung in zeitlicher
 		// Reihenfolge. Deshalb zusammengesetzt und nicht zwei einzelne Indizes.
 		index('idx_sichtung_status_log_sichtung').on(table.sightingId, table.recordedAt),
-		check('sichtung_status_log_verdict_check', sql`${table.verdict} IN ('approve', 'reject', 'reset')`)
+		check(
+			'sichtung_status_log_verdict_check',
+			sql`${table.verdict} IN ('approve', 'reject', 'reset')`
+		)
 	]
 );
 

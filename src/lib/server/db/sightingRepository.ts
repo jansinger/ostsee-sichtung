@@ -50,6 +50,7 @@ const logger = createLogger('db:sightingRepository');
  * @param formData Validierte Formulardaten aus dem Sichtungs-Formular
  * @param weatherData Optional: Wetterdaten für diese Sichtung (Issue #110)
  * @param spamCheck Optional: Spam-Heuristik zum Meldezeitpunkt (wird persistiert)
+ * @param entryClient Optional: Kennung der erzeugenden Software (`resolveEntryClient`)
  * @returns Objekt mit der generierten Sichtungs-ID
  *
  * @example
@@ -61,10 +62,18 @@ const logger = createLogger('db:sightingRepository');
 export const saveSighting = async (
 	formData: SightingFormValues,
 	weatherData?: StoredWeatherData,
-	spamCheck?: SpamCheckResult
+	spamCheck?: SpamCheckResult,
+	entryClient?: string
 ): Promise<{ id: number | undefined }> => {
 	// Konvertiere Formulardaten in das normalisierte Datenbankschema
 	const sightingData: NewSighting = mapFormToSighting(formData);
+
+	// Client-Kennung des Aufrufers festhalten. Ohne Angabe bleibt die Spalte
+	// NULL — das ist die Kennzeichnung für Zeilen aus der Zeit vor dieser
+	// Spalte und darf nicht durch einen Default überschrieben werden.
+	if (entryClient) {
+		sightingData.entryClient = entryClient;
+	}
 
 	// Spam-Heuristik zum Meldezeitpunkt festhalten. NULL bleibt für Altbestand,
 	// Eingänge ohne Bewertung UND fehlgeschlagene Prüfungen — deren Fail-Safe-
