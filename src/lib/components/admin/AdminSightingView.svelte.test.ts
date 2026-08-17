@@ -345,3 +345,21 @@ describe('AdminSightingView — Melder-Historie', () => {
 		await expect.element(page.getByTestId('reporter-history-block')).not.toBeInTheDocument();
 	});
 });
+
+describe('AdminSightingView — Client-Kennung', () => {
+	it('zeigt die Client-Kennung als eigene Zeile', async () => {
+		await render(AdminSightingView, {
+			sighting: baseSighting({ entryClient: 'OstSeeTiere/8' })
+		});
+
+		await expect.element(page.getByRole('row', { name: 'Client OstSeeTiere/8' })).toBeVisible();
+	});
+
+	it('lässt die Zeile bei Altbestand ohne Kennung weg', async () => {
+		// NULL heißt „vor Einführung der Spalte". Eine leere Zeile wäre eine
+		// Aussage, die die Daten nicht hergeben.
+		await render(AdminSightingView, { sighting: baseSighting({ entryClient: null }) });
+
+		expect(document.body.textContent).not.toContain('Client');
+	});
+});

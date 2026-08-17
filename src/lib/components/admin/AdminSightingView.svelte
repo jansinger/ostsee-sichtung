@@ -444,7 +444,8 @@
 		[
 			BooleanDataRow('Namensnennung', currentSighting.nameConsent),
 			BooleanDataRow('Schiffsnennung', currentSighting.shipNameConsent),
-			DataRow('Eingangskanal', getEntryChannelLabel(currentSighting.entryChannel))
+			DataRow('Eingangskanal', getEntryChannelLabel(currentSighting.entryChannel)),
+			DataRow('Client', currentSighting.entryClient)
 		].filter((row): row is DataRowType => row !== undefined)
 	);
 
