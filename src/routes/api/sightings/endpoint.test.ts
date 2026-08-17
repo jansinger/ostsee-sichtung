@@ -385,6 +385,24 @@ describe('/api/sightings POST endpoint', () => {
 			expect(mockedSaveSighting.mock.calls[0]?.[3]).toMatch(/^web\/\d+\.\d+\.\d+/);
 		}, 15000);
 
+		it('weist ein im Request-Body mitgeschicktes entryClient als unbekanntes Feld ab', async () => {
+			// entryClient wird ausschließlich serverseitig aus dem Aufrufer
+			// abgeleitet (resolveEntryClient) — ein Client könnte sich sonst
+			// beliebig ausgeben. Der Endpunkt weist unbekannte Felder heute mit
+			// 400/INVALID_FIELDS ab; das ist der bestehende Schutz, den dieser
+			// Test festnagelt.
+			const response = await POST(
+				createMockRequestEvent({ ...validBody(), entryClient: 'gefälscht/1.0' })
+			);
+			const result = await response.json();
+
+			expect(response.status).toBe(400);
+			expect(result.success).toBe(false);
+			expect(result.code).toBe('INVALID_FIELDS');
+			expect(result.rejectedFields).toContain('entryClient');
+			expect(mockedSaveSighting).not.toHaveBeenCalled();
+		}, 15000);
+
 		it('meldet fehlendes Token als tokenStatus missing', async () => {
 			await POST(createMockRequestEvent(validBody()));
 

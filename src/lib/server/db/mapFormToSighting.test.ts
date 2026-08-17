@@ -671,6 +671,25 @@ describe('mapFormToSighting', () => {
 		});
 	});
 
+	describe('entryClient wird nie aus den Formulardaten übernommen', () => {
+		it('übernimmt ein in den Formulardaten mitgeschicktes entryClient nicht ins Insert-Objekt', () => {
+			// entryClient wird ausschließlich vom Aufrufer (resolveEntryClient)
+			// bestimmt und als eigener Parameter an saveSighting durchgereicht —
+			// nie aus formData. Das ist heute nur dadurch sicher, dass diese
+			// Funktion ein explizites Objektliteral ohne Spread baut. Führte
+			// jemand hier ein `...formData` ein, würde dieser Test rot: Ein
+			// Angreifer könnte sich sonst über den Request-Body eine beliebige
+			// Client-Kennung ausdenken.
+			const formData = withRawValues(createMinimalFormData(), {
+				entryClient: 'gefälscht/1.0'
+			});
+
+			const result = mapFormToSighting(formData);
+
+			expect(result).not.toHaveProperty('entryClient');
+		});
+	});
+
 	describe('Edge Cases und Robustheit', () => {
 		it('sollte sehr große Zahlen handhaben', () => {
 			const formData = createMinimalFormData();
