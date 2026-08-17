@@ -300,33 +300,33 @@ describe('importiere', () => {
 	it('reicht den User-Agent aus dem Umschlag als Client-Kennung an speichere durch', async () => {
 		// Sonst stünde bei jeder nachgespielten Meldung der Importer statt des
 		// Clients, der sie tatsächlich geschickt hat.
-		// sichtungsdatum ist gesetzt, damit dieser Test die echte
-		// mapLegacyToCurrentSchema durchläuft (kein mappe-Stub wie in den
-		// anderen Tests dieser Datei) — ohne das Feld wirft die Funktion beim
-		// Parsen des Datums, bevor speichere() je aufgerufen wird.
 		await legeUmschlagAn(
 			'000001__a.json',
-			{ anzahl_gesamt: 1, sichtungsdatum: '2026-07-30 09:12' },
+			{ anzahl_gesamt: 1 },
 			{
 				quelle: { ip: '1.2.3.4', user_agent: 'OstSeeTiere/8', content_type: 'application/json' }
 			}
 		);
 		const speichere = vi.fn().mockResolvedValue({ id: 4711 });
 
-		await importiere({ datenVerzeichnis: verzeichnis, speichere });
+		await importiere({
+			datenVerzeichnis: verzeichnis,
+			mappe: () => ({ totalCount: 1 }),
+			speichere
+		});
 
 		expect(speichere.mock.calls[0]?.[3]).toBe('OstSeeTiere/8');
 	});
 
 	it('setzt unbekannt, wenn der Umschlag keine Quelle trägt', async () => {
-		await legeUmschlagAn(
-			'000001__a.json',
-			{ anzahl_gesamt: 1, sichtungsdatum: '2026-07-30 09:12' },
-			{ quelle: undefined }
-		);
+		await legeUmschlagAn('000001__a.json', { anzahl_gesamt: 1 }, { quelle: undefined });
 		const speichere = vi.fn().mockResolvedValue({ id: 4711 });
 
-		await importiere({ datenVerzeichnis: verzeichnis, speichere });
+		await importiere({
+			datenVerzeichnis: verzeichnis,
+			mappe: () => ({ totalCount: 1 }),
+			speichere
+		});
 
 		expect(speichere.mock.calls[0]?.[3]).toBe('unbekannt');
 	});
