@@ -56,6 +56,47 @@ import { collectHits, sourceFiles, stripComments } from '$lib/testing/sourceScan
  * Objekts (unmittelbar vor `}`, wie im Beispiel unten) zuverlässig. Derselbe
  * Kompromiss steht bereits in `sourceScan.testutil.ts` für `stripComments()`
  * dokumentiert.
+ *
+ * **Was dieser Guard NICHT sieht (Review, Runde 2).** Ein Guard über
+ * Quelltext-Muster ist nie lückenlos. Bekannt und bewusst nicht geschlossen:
+ *
+ *  1. **Antwortaufbau in einer Datei außerhalb der gescannten Liste.** Der
+ *     Critical-Fund aus Runde 2 war genau das: `api/map/sightings/+server.ts`
+ *     selektiert nur Spalten, die eigentliche Antwort baut
+ *     `sightingsToGeoJSON()` in `src/lib/map/mapUtils.ts` — eine Datei, die
+ *     weder in `PUBLIC_ROUTES` noch im `src/routes`-Baum steht. Sie ist
+ *     seither zusätzlich als eigener Eintrag aufgenommen (siehe
+ *     `MAP_RESPONSE_BUILDERS` unten), aber das Prinzip bleibt: **jeder**
+ *     Response-Builder, der aus `src/routes` heraus aufgerufen wird, muss von
+ *     Hand in die Scan-Liste, der Selbsttest unten prüft nur `src/routes`
+ *     selbst.
+ *  2. **Indirektion über das Repository.** `getSightingById` und
+ *     `getSightingByReferenceId` in `sightingRepository.ts` nutzen
+ *     `db.select()` ohne Argument und laden damit `entryClient` mit — heute
+ *     folgenlos, weil beide Aufrufer admin-gated sind. Bewusst NICHT in
+ *     diese Scan-Liste aufgenommen: Die Datei setzt `entryClient` an anderer
+ *     Stelle völlig legitim (Schreibpfad), ein Guard träfe dort sofort ein
+ *     Falsch-Positiv. Dokumentiert stattdessen im Dateikopf von
+ *     `sightingRepository.ts`.
+ *  3. **Namespace-Import.** `importsSightingsFromSchema()` (siehe „Bestand"
+ *     unten) erkennt `import * as schema from '.../schema'` nur, wenn
+ *     `schema.sightings` textuell im selben File auftaucht. Ein Re-Export des
+ *     Alias, ein Bracket-Zugriff (`schema['sightings']`) oder ein
+ *     dynamisches `import()` entkommen weiterhin.
+ *  4. **Ganze Zeile ohne Feldnamen jenseits von `.select()`/`.returning()`.**
+ *     `{ ...row }`, `Object.assign({}, row)` oder `JSON.stringify(row)` ohne
+ *     das Wort `entryClient` im selben Ausdruck erzeugen keinen Treffer —
+ *     `WIDE_SELECT_PATTERNS` kennt nur die leeren Klammern von
+ *     `.select()`/`.returning()`.
+ *  5. **Spaltenauswahl über `getTableColumns()` oder die relationale
+ *     Drizzle-API.** `select({ ...getTableColumns(sightings) })` liefert
+ *     ebenso alle Spalten wie ein leeres `.select()`, ist textuell aber
+ *     nicht `.select()` — genauso `db.query.sightings.findFirst()` /
+ *     `.findMany()` ohne `columns`-Option. Keines der beiden Muster ist
+ *     heute im Bestand, keines wird erkannt.
+ *
+ * Ein Guard muss die realistischen Fälle fangen und dort, wo er es nicht
+ * kann, es benennen — nicht eine Deckung behaupten, die es nicht gibt.
  */
 
 const REMEDIATION = [
@@ -122,6 +163,27 @@ const PUBLIC_ROUTES = [
 ];
 
 /**
+ * Response-Builder, die keine Route sind, aber die öffentliche Antwort einer
+ * `PUBLIC_ROUTES`-Route zusammensetzen (Critical-Fund, Runde 2).
+ *
+ * `api/map/sightings/+server.ts` selektiert nur Spalten; den eigentlichen
+ * Antwort-Body baut `sightingsToGeoJSON()` in `mapUtils.ts`, Alias-Form
+ * inklusive (`ct: dbSighting.totalCount, …` — exakt die Form, gegen die
+ * Critical 1 oben antritt). Diese Datei liegt außerhalb von `src/routes` und
+ * wird deshalb von keinem Scan hier automatisch gefunden — der
+ * Vollständigkeits-Selbsttest unten in „Bestand" sieht nur `src/routes`.
+ * Der einzige Schutz ist dieser von Hand gepflegte Eintrag.
+ *
+ * `readFileSync` braucht keinen Routen-Pfad — jede Datei, die eine
+ * öffentliche Antwort baut, gehört hierher, unabhängig davon, ob sie unter
+ * `src/routes` liegt.
+ */
+const MAP_RESPONSE_BUILDERS = ['src/lib/map/mapUtils.ts'];
+
+/** Alle Dateien, die auf `entryClient`/weite Selects gescannt werden. */
+const SCANNED_RESPONSE_FILES = [...PUBLIC_ROUTES, ...MAP_RESPONSE_BUILDERS];
+
+/**
  * Jede Schreibweise, mit der das Feld in eine Antwort geraten kann.
  *
  * 1. Objektschlüssel — Spaltenauswahl oder Response-Mapping:
@@ -162,13 +224,13 @@ const PATTERNS = [
 const WIDE_SELECT_PATTERNS = [/\.select\(\s*\)/g, /\.returning\(\s*\)/g];
 
 describe('Öffentliche Antworten geben die Client-Kennung nicht aus', () => {
-	it.each(PUBLIC_ROUTES)('%s nennt entryClient nicht', (datei) => {
+	it.each(SCANNED_RESPONSE_FILES)('%s nennt entryClient nicht', (datei) => {
 		const hits = collectHits(stripComments(readFileSync(datei, 'utf8')), PATTERNS);
 
 		expect(hits, `${datei}:\n${REMEDIATION}`).toEqual([]);
 	});
 
-	it.each(PUBLIC_ROUTES)('%s liest keine ganze Zeile ohne Spaltenauswahl', (datei) => {
+	it.each(SCANNED_RESPONSE_FILES)('%s liest keine ganze Zeile ohne Spaltenauswahl', (datei) => {
 		const hits = collectHits(stripComments(readFileSync(datei, 'utf8')), WIDE_SELECT_PATTERNS);
 
 		expect(hits, `${datei}:\n${REMEDIATION_WIDE_SELECT}`).toEqual([]);
@@ -317,19 +379,99 @@ describe('Bestand — jede lesende Route ist erfasst oder begründet ausgenommen
 	const ADMIN_PREFIX = 'src/routes/admin/';
 
 	/**
-	 * Erkennt den Schema-Import über den Namen, nicht über eine Import-Zeile
-	 * mit fester Reihenfolge — `import { sightings, type X } from …` und
-	 * `import type { sightings } from …` müssen beide treffen.
+	 * Jede Schreibweise des Schema-Modulpfads, die im Bestand vorkommt oder
+	 * vorkommen könnte: `$lib`-Alias oder relativer Pfad, mit oder ohne
+	 * `.js`-Endung, ein- oder doppelte Anführungszeichen. Nur `schema`
+	 * (lowercase) am Pfadende — `sightingSchema` (Yup, camelCase) trifft
+	 * dieses Muster nicht, siehe Gegenprobe unten.
+	 */
+	const SCHEMA_MODULE_PATH = String.raw`(?:'|")(?:\$lib\/server\/db\/schema(?:\.js)?|\.\.?\/[\w./-]*schema(?:\.js)?)(?:'|")`;
+
+	/**
+	 * Erkennt den benannten Schema-Import über den Namen, nicht über eine
+	 * Import-Zeile mit fester Reihenfolge — `import { sightings, type X }
+	 * from …` und `import type { sightings } from …` müssen beide treffen.
 	 * `[^}]*` frisst dabei auch Zeilenumbrüche (kein `.`, keine `s`-Flag nötig).
 	 */
-	const SCHEMA_IMPORT =
-		/import\s+(?:type\s+)?\{[^}]*\bsightings\b[^}]*\}\s*from\s*'\$lib\/server\/db\/schema'/;
+	const NAMED_SCHEMA_IMPORT = new RegExp(
+		String.raw`import\s+(?:type\s+)?\{[^}]*\bsightings\b[^}]*\}\s*from\s*` + SCHEMA_MODULE_PATH
+	);
+
+	/**
+	 * Namespace-Import (`import * as schema from '.../schema'`) — im Repo
+	 * bereits benutzt (`src/tools/generate-reference-ids.ts`,
+	 * `src/tools/migrate-old-uploads.ts`). Die Import-Zeile selbst nennt
+	 * `sightings` nicht; erst eine Fundstelle wie `schema.sightings`
+	 * anderswo in der Datei macht sie zu einer lesenden Route. Erkennt daher
+	 * nur den lokalen Alias-Namen, die eigentliche Prüfung erfolgt in
+	 * {@link importsSightingsFromSchema}. Bekannte Lücke: ein Re-Export des
+	 * Alias oder `schema['sightings']` entkommen weiterhin — siehe Dateikopf,
+	 * „Was dieser Guard NICHT sieht", Punkt 3.
+	 */
+	const NAMESPACE_SCHEMA_IMPORT = new RegExp(
+		String.raw`import\s+\*\s+as\s+(\w+)\s+from\s*` + SCHEMA_MODULE_PATH
+	);
+
+	function importsSightingsFromSchema(source: string): boolean {
+		if (NAMED_SCHEMA_IMPORT.test(source)) return true;
+
+		const namespaceMatch = source.match(NAMESPACE_SCHEMA_IMPORT);
+		if (!namespaceMatch) return false;
+
+		const alias = namespaceMatch[1];
+		return new RegExp(`\\b${alias}\\.sightings\\b`).test(source);
+	}
 
 	function sightingReadingRouteFiles(): string[] {
 		return sourceFiles('src/routes', /\.ts$/)
 			.filter((path) => !path.endsWith('.test.ts'))
-			.filter((path) => SCHEMA_IMPORT.test(readFileSync(path, 'utf8')));
+			.filter((path) => importsSightingsFromSchema(readFileSync(path, 'utf8')));
 	}
+
+	/**
+	 * Mustererkennung für `importsSightingsFromSchema` (Important 2, Review
+	 * Runde 2). Jede dieser Formen fiel vor der Erweiterung durch das alte,
+	 * einzeilige `SCHEMA_IMPORT`-Muster (feste `$lib`-Alias-Form, einfache
+	 * Anführungszeichen, kein Namespace-Import).
+	 */
+	describe('importsSightingsFromSchema — jede Schreibweise muss anschlagen', () => {
+		it.each([
+			[
+				'$lib-Alias, einfache Anführungszeichen (Bestand)',
+				"import { sightings } from '$lib/server/db/schema';"
+			],
+			['doppelte Anführungszeichen', 'import { sightings } from "$lib/server/db/schema";'],
+			['.js-Endung', "import { sightings } from '$lib/server/db/schema.js';"],
+			['relativer Pfad', "import { sightings } from '../db/schema';"],
+			[
+				'relativer Pfad mit .js-Endung',
+				"import { type SightingSelect, sightings } from '../../server/db/schema.js';"
+			],
+			[
+				'Namespace-Import mit Punktzugriff (Bestand: generate-reference-ids.ts, migrate-old-uploads.ts)',
+				"import * as schema from '$lib/server/db/schema';\nconst rows = await db.select().from(schema.sightings);"
+			]
+		])('%s', (_fall, code) => {
+			expect(importsSightingsFromSchema(code)).toBe(true);
+		});
+
+		it.each([
+			[
+				'Namespace-Import ohne Verwendung von .sightings',
+				"import * as schema from '$lib/server/db/schema';\nconst rows = await db.select().from(schema.sightingFiles);"
+			],
+			[
+				'ähnlicher, anderer Import (Yup-Schema, camelCase)',
+				"import { sightingSchema } from '$lib/form/validation/sightingSchema';"
+			],
+			[
+				'Import ohne sightings im selben Schlüsselwortblock',
+				"import { sightingFiles } from '$lib/server/db/schema';"
+			]
+		])('%s (darf NICHT anschlagen)', (_fall, code) => {
+			expect(importsSightingsFromSchema(code)).toBe(false);
+		});
+	});
 
 	/**
 	 * Dateien außerhalb von `admin/`, die aus `sightings` lesen können, ohne
@@ -367,7 +509,10 @@ describe('Bestand — jede lesende Route ist erfasst oder begründet ausgenommen
 		if (PUBLIC_ROUTES.includes(path)) return true;
 		if (path.startsWith(ADMIN_PREFIX)) return true;
 		if (ALLOWED_UNPROTECTED.has(path)) return true;
-		return /requireUserRole\(/.test(readFileSync(path, 'utf8'));
+		// stripComments: sonst zählt ein requireUserRole(...) in einem
+		// Kommentar (z. B. einer Begründung, warum eine Route KEINEN Guard
+		// braucht) fälschlich als Schutz (Minor-Fund, Review Runde 2).
+		return /requireUserRole\(/.test(stripComments(readFileSync(path, 'utf8')));
 	}
 
 	it('jede lesende Route ist geschützt, admin-gesperrt oder ausdrücklich ausgenommen', () => {
@@ -418,7 +563,8 @@ describe('Bestand — jede lesende Route ist erfasst oder begründet ausgenommen
 			).toContain(path);
 			expect(reason.length, `Ausnahme ohne Begründung: ${path}`).toBeGreaterThan(40);
 			expect(
-				readFileSync(path, 'utf8').includes('requireUserRole('),
+				// stripComments: siehe Begründung in isCovered() oben.
+				stripComments(readFileSync(path, 'utf8')).includes('requireUserRole('),
 				`${path} ruft requireUserRole(...) auf — gehört nicht mehr in ALLOWED_UNPROTECTED, der dynamische Nachweis greift bereits.`
 			).toBe(false);
 		}

@@ -9,6 +9,21 @@
  * Die Repository-Schicht abstrahiert Drizzle ORM-Operationen und bietet
  * typsichere CRUD-Funktionen für die Anwendungslogik.
  *
+ * **`entryClient`-Diagnose — bekannte Lücke im Guard (Review Runde 2).**
+ * `getSightingById()` und `getSightingByReferenceId()` nutzen `db.select()`
+ * ohne Argument und laden damit die ganze Zeile inklusive `entryClient`
+ * (Spalte `eingangs_client`, siehe `publicClientLeakScan.test.ts`). Heute
+ * folgenlos: Beide Aufrufer sind admin-gated
+ * (`api/admin/weather/[id]/refresh/+server.ts`,
+ * `api/sightings/ref/[refId]/+server.ts`, beide mit `requireUserRole`).
+ * Diese Datei ist absichtlich NICHT in die Scan-Liste des Guards
+ * aufgenommen — sie setzt `entryClient` weiter unten legitim
+ * (`sightingData.entryClient = entryClient`), ein textbasierter Scan träfe
+ * dort sofort ein Falsch-Positiv. **Wer künftig eine öffentliche Route baut,
+ * die `getSightingById`/`getSightingByReferenceId` aufruft und das Ergebnis
+ * direkt zurückgibt (`return json(sighting)`), muss die Spalten selbst
+ * explizit auswählen** — der Guard prüft diesen Pfad nicht.
+ *
  * @author Ostsee-Tiere Team
  * @since 1.0.0
  */
