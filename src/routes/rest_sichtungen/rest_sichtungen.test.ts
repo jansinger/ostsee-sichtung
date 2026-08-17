@@ -58,7 +58,11 @@ import { saveSighting } from '$lib/server/db/sightingRepository';
 import { checkBalticSeaFile } from '$lib/server/geo/checkBalticSeaFile';
 
 // Helper to create mock request event
-function createMockRequestEvent(body: LegacySightingRequest, userAgent?: string): RequestEvent {
+function createMockRequestEvent(
+	body: LegacySightingRequest,
+	userAgent?: string,
+	clientIp?: string
+): RequestEvent {
 	return {
 		request: {
 			json: () => Promise.resolve(body),
@@ -70,7 +74,7 @@ function createMockRequestEvent(body: LegacySightingRequest, userAgent?: string)
 				}
 			}
 		},
-		getClientAddress: () => '127.0.0.1'
+		getClientAddress: () => clientIp ?? '127.0.0.1'
 	} as any;
 }
 
@@ -139,7 +143,7 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 				}),
 				undefined,
 				expect.objectContaining({ score: expect.any(Number) }),
-				expect.any(String)
+				'unbekannt'
 			);
 		});
 
@@ -200,7 +204,7 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 				}),
 				undefined,
 				expect.objectContaining({ score: expect.any(Number) }),
-				expect.any(String)
+				'unbekannt'
 			);
 		});
 
@@ -223,7 +227,7 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 				expect.objectContaining({ otherObservations: 'Auffälliges Verhalten' }),
 				undefined,
 				expect.objectContaining({ score: expect.any(Number) }),
-				expect.any(String)
+				'unbekannt'
 			);
 		});
 
@@ -292,7 +296,7 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 				}),
 				undefined,
 				expect.objectContaining({ score: expect.any(Number) }),
-				expect.any(String)
+				'unbekannt'
 			);
 		});
 	});
@@ -504,22 +508,22 @@ describe('Client-Kennung (eingangs_client)', () => {
 		// Testdatei hinweg (kein Reset zwischen Tests), und die übrigen Tests
 		// hier schöpfen das Kontingent von 127.0.0.1 bereits bis an die Grenze
 		// aus. Ein eigener Schlüssel isoliert diesen Test davon.
-		const event = createMockRequestEvent(gueltigeMeldung(), 'OstSeeTiere/8');
-		(event as unknown as { getClientAddress: () => string }).getClientAddress = () =>
-			'203.0.113.10';
-		await POST(event);
+		const event = createMockRequestEvent(gueltigeMeldung(), 'OstSeeTiere/8', '203.0.113.10');
+		const response = await POST(event);
 
+		expect(response.status).toBe(201);
 		expect(vi.mocked(saveSighting).mock.calls[0]?.[3]).toBe('OstSeeTiere/8');
 	});
 
 	it('speichert unbekannt, wenn der Client keinen User-Agent schickt', async () => {
 		// NULL ist dem Altbestand vorbehalten — ein neuer Datensatz ohne
-		// User-Agent muss davon unterscheidbar bleiben.
-		const event = createMockRequestEvent(gueltigeMeldung());
-		(event as unknown as { getClientAddress: () => string }).getClientAddress = () =>
-			'203.0.113.11';
-		await POST(event);
+		// User-Agent muss davon unterscheidbar bleiben. Dieselbe eigene
+		// Client-IP wie im vorigen Test: Das Kontingent von 20 Anfragen pro IP
+		// trägt beide Aufrufe problemlos.
+		const event = createMockRequestEvent(gueltigeMeldung(), undefined, '203.0.113.10');
+		const response = await POST(event);
 
+		expect(response.status).toBe(201);
 		expect(vi.mocked(saveSighting).mock.calls[0]?.[3]).toBe('unbekannt');
 	});
 });
