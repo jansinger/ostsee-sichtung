@@ -366,6 +366,25 @@ describe('/api/sightings POST endpoint', () => {
 			expect(mockedSaveSighting.mock.calls[0]?.[2]).toEqual(spamResult);
 		}, 15000);
 
+		it('übergibt die eigene Release-Version als vierten Parameter an saveSighting', async () => {
+			const response = await POST(createMockRequestEvent(validBody()));
+
+			expect(response.status).toBe(201);
+			expect(mockedSaveSighting.mock.calls[0]?.[3]).toMatch(/^web\/\d+\.\d+\.\d+/);
+		}, 15000);
+
+		it('lehnt eine im Body mitgeschickte Client-Kennung als unbekanntes Feld ab', async () => {
+			// Der Endpunkt weist unbekannte Felder ohnehin mit 400 ab (siehe
+			// 'should reject requests with unknown fields') — das belegt hier dieselbe
+			// Eigenschaft wie ein Wertvergleich: Der Body kann `entryClient` nicht setzen.
+			const response = await POST(
+				createMockRequestEvent({ ...validBody(), entryClient: 'gefälscht/1.0' })
+			);
+
+			expect(response.status).toBe(400);
+			expect(mockedSaveSighting).not.toHaveBeenCalled();
+		}, 15000);
+
 		it('meldet fehlendes Token als tokenStatus missing', async () => {
 			await POST(createMockRequestEvent(validBody()));
 
