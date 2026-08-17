@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { collectHits, stripComments } from '$lib/testing/sourceScan.testutil';
+import { collectHits, sourceFiles, stripComments } from '$lib/testing/sourceScan.testutil';
 
 /**
  * @fileoverview `entryClient` darf in keiner öffentlichen Antwort auftauchen.
@@ -28,10 +28,25 @@ import { collectHits, stripComments } from '$lib/testing/sourceScan.testutil';
  * ersten Lauf an rot — nicht wegen eines Lecks, sondern wegen des Schreibpfads
  * im selben Modul. Die Muster hier sind deshalb an die Form gebunden, in der
  * ein Wert tatsächlich in eine JSON-Antwort geraten kann: als Objektschlüssel
- * (Spaltenauswahl, Response-Objekt) oder als Shorthand-Property/Destructuring
- * am Rand eines Objektliterals (`{ …, entryClient }` / `{ entryClient }`) —
- * nicht als bloße Variable in einer Zuweisung oder einem Funktionsargument.
- * Beleg dafür steht unten unter „Gegenproben — der echte Schreibpfad".
+ * (Spaltenauswahl, Response-Objekt), als Punktzugriff/Bracket-Zugriff auf ein
+ * Objekt (`row.entryClient`, `row['entryClient']`), als Stringliteral (SQL,
+ * Spaltenlisten) oder als Shorthand-Property/Destructuring am Rand eines
+ * Objektliterals (`{ …, entryClient }` / `{ entryClient }`) — nicht als bloße
+ * Variable in einer Zuweisung oder einem Funktionsargument. Beleg dafür steht
+ * unten unter „Gegenproben — der echte Schreibpfad".
+ *
+ * **Fund aus dem Review (Critical 1).** Die ursprüngliche Fassung kannte nur
+ * `\bentryClient\b\s*:` — einen Doppelpunkt HINTER dem Bezeichner. In den
+ * gescannten Dateien heißt aber kein Antwortschlüssel `entryClient`: Sie
+ * benutzen durchweg Kurzformen (`ts`, `dt`, `lat`, `ct`, …). Ein reales Leck
+ * sähe deshalb so aus:
+ *
+ *   cl: sightings.entryClient,
+ *
+ * — der Doppelpunkt steht vor dem Alias, nicht hinter der Spalte. Das alte
+ * Muster hätte das nicht gesehen. Der Punktzugriff (`\.\s*entryClient\b`)
+ * schlägt hier an, ohne den Schreibpfad zu treffen: Dort steht vor
+ * `entryClient` nie ein Punkt, nur `const `, `, ` oder `(`.
  *
  * **Bekannte Unschärfe.** Eine Shorthand-Property mitten in einem
  * Objektliteral (`{ entryClient, other }`) sieht textuell identisch aus wie
@@ -47,6 +62,31 @@ const REMEDIATION = [
 	'`entryClient` (Spalte `eingangs_client`) ist eine interne Diagnosegröße.',
 	'Sie gehört nicht in eine öffentliche Antwort — weder in die Spaltenauswahl',
 	'noch in ein Mapping. Für den Admin liest sie AdminSightingView direkt.'
+].join('\n');
+
+/**
+ * Zweite, eigenständige Regel derselben Datei (Critical 2): Eine Zeile ohne
+ * Feldnamen entkommt jedem Muster oben, weil `entryClient` im Quelltext gar
+ * nicht vorkommt:
+ *
+ *   const rows = await db.select().from(sightings);  return json(rows);
+ *   const [row] = await db.insert(sightings).values(v).returning();
+ *
+ * `db.select()` ohne Argument steht im Repo an mehreren Stellen (siehe
+ * `src/routes/admin/sichtungen/listColumns.ts`, dessen Datei-Doc genau davor
+ * warnt: „ein zurückgedrehtes db.select() ohne Argument fällt sonst erst beim
+ * Nutzer auf"). Geprüft wurde vor dieser Ergänzung, ob eine der fünf
+ * geschützten Dateien das heute legitim tut — keine tut es: Alle Selects dort
+ * benennen ihre Spalten explizit (siehe `Bestand` unten, „öffentliche Routen
+ * wählen ihre Spalten explizit").
+ */
+const REMEDIATION_WIDE_SELECT = [
+	'Eine öffentliche Route wählt ihre Spalten immer explizit aus — nie die',
+	'ganze Zeile. `db.select()`/`.returning()` ohne Argument liefern alle',
+	'Spalten, auch `entryClient`, und entkommen damit jedem Muster, das nach',
+	'dem Feldnamen sucht. Stattdessen:',
+	'  db.select({ id: sightings.id, … }).from(sightings)',
+	'  db.insert(sightings).values(v).returning({ id: sightings.id })'
 ].join('\n');
 
 /**
@@ -68,6 +108,10 @@ const REMEDIATION = [
  * `rest_sichtungen/inBaltic.json/+server.ts` (prüft nur eine Koordinate,
  * berührt die `sightings`-Tabelle nicht). Beide bauen keine Antwort aus einer
  * Sichtungszeile und sind damit kein Leckpfad für dieses Feld.
+ *
+ * Ob diese Liste **vollständig** ist — also ob es noch eine sechste
+ * ungeschützte, lesende Route gibt —, prüft nicht diese Liste selbst, sondern
+ * der Vollständigkeits-Selbsttest unten in „Bestand" (Important 3).
  */
 const PUBLIC_ROUTES = [
 	'src/routes/api/sightings/+server.ts',
@@ -88,8 +132,34 @@ const PUBLIC_ROUTES = [
  *    Erkannt an `{`/`,` davor und `}` danach — das schließt Zuweisungen
  *    (`= resolveEntryClient(`) und Funktionsargumente (`, entryClient);`) aus,
  *    weil dort kein `}` unmittelbar folgt.
+ * 4. Punktzugriff auf ein Objekt: `row.entryClient`, `sightings.entryClient`.
+ *    Das ist die Form aus dem Critical-1-Fund — der reale Leckpfad in diesem
+ *    Bestand, weil hier die Spalte immer über einen Alias läuft
+ *    (`cl: sightings.entryClient`) und nie unter ihrem eigenen Namen als
+ *    Objektschlüssel steht.
+ * 5. Bracket-Zugriff: `row['entryClient']`.
+ * 6. Stringliteral: `'entryClient'` — z. B. in einer ausgelagerten
+ *    Spaltenliste oder einem `pick()`/`omit()`-Aufruf. Deckt Nummer 5 zwar
+ *    mit ab, steht aber als eigenes Muster mit eigenem konstruierten Beispiel,
+ *    weil der Bracket-Zugriff der konkretere und wahrscheinlichere Fall ist
+ *    (Vorbild: `verifiedReadScan.test.ts` nennt ihn als eine von drei Lücken
+ *    seiner ersten Fassung).
  */
-const PATTERNS = [/\bentryClient\b\s*:/g, /\beingangs_client\b/g, /[{,]\s*\bentryClient\b\s*\}/g];
+const DOT_ACCESS = /\.\s*entryClient\b/g;
+const BRACKET_ACCESS = /\[\s*(['"`])entryClient\1\s*\]/g;
+const STRING_LITERAL = /(['"`])entryClient\1/g;
+
+const PATTERNS = [
+	/\bentryClient\b\s*:/g,
+	/\beingangs_client\b/g,
+	/[{,]\s*\bentryClient\b\s*\}/g,
+	DOT_ACCESS,
+	BRACKET_ACCESS,
+	STRING_LITERAL
+];
+
+/** Argumentloses `.select()`/`.returning()` — Critical 2, eigenes Muster und eigene Meldung. */
+const WIDE_SELECT_PATTERNS = [/\.select\(\s*\)/g, /\.returning\(\s*\)/g];
 
 describe('Öffentliche Antworten geben die Client-Kennung nicht aus', () => {
 	it.each(PUBLIC_ROUTES)('%s nennt entryClient nicht', (datei) => {
@@ -98,24 +168,69 @@ describe('Öffentliche Antworten geben die Client-Kennung nicht aus', () => {
 		expect(hits, `${datei}:\n${REMEDIATION}`).toEqual([]);
 	});
 
+	it.each(PUBLIC_ROUTES)('%s liest keine ganze Zeile ohne Spaltenauswahl', (datei) => {
+		const hits = collectHits(stripComments(readFileSync(datei, 'utf8')), WIDE_SELECT_PATTERNS);
+
+		expect(hits, `${datei}:\n${REMEDIATION_WIDE_SELECT}`).toEqual([]);
+	});
+
 	describe('Mustererkennung — jede Schreibweise muss anschlagen', () => {
 		it.each([
 			['Spaltenauswahl', 'select({ id: sightings.id, entryClient: sightings.entryClient })'],
 			['Shorthand-Property am Rand des Objekts', 'return { ...row, entryClient }'],
 			['Destructuring am Rand des Objekts', 'const { id, entryClient } = row;'],
 			['roher Spaltenname in SQL', 'sql`SELECT eingangs_client FROM sichtungen`'],
-			['roher Spaltenname als Stringliteral', "const column = 'eingangs_client';"]
+			['roher Spaltenname als Stringliteral', "const column = 'eingangs_client';"],
+			// Critical 1: der reale Leckpfad — Punktzugriff über einen Alias.
+			['Punktzugriff über Alias (Critical-1-Fund)', 'cl: sightings.entryClient,'],
+			['Punktzugriff auf eine geladene Zeile', 'return json({ cl: row.entryClient });'],
+			// Important 1: Bracket-Zugriff und Stringliteral.
+			['Bracket-Zugriff', "const cl = row['entryClient'];"],
+			['Stringliteral in einer Spaltenliste', "const publicFields = ['id', 'entryClient'];"]
 		])('%s', (_fall, code) => {
 			expect(collectHits(stripComments(code), PATTERNS)).not.toEqual([]);
+		});
+
+		it.each([
+			['db.select() ohne Argument', 'const rows = await db.select().from(sightings);'],
+			[
+				'db.select() ohne Argument, mit anschließendem Rückgabewert',
+				'const rows = await db.select().from(sightings); return json(rows);'
+			],
+			[
+				'.returning() ohne Argument',
+				'const [row] = await db.insert(sightings).values(v).returning();'
+			],
+			[
+				'.returning() ohne Argument nach mehreren Zeilen',
+				'const rows = await db.update(sightings).set(v).where(cond).returning();'
+			]
+		])('%s (Critical 2)', (_fall, code) => {
+			expect(collectHits(stripComments(code), WIDE_SELECT_PATTERNS)).not.toEqual([]);
 		});
 	});
 
 	describe('Gegenproben — das darf NICHT anschlagen', () => {
 		it.each([
 			['Kommentar mit Begründung', '// entryClient bleibt intern'],
-			['ähnlicher, anderer Bezeichner', 'const entryClientLabel = 1;']
+			// Important 4: echte Trennschärfe-Gegenprobe. `entryClientLabel` ist
+			// kein `entryClient` — an keinem Muster oben, weder Wortgrenze noch
+			// Anführungszeichen noch Punktzugriff.
+			['ähnlicher, anderer Bezeichner', 'const entryClientLabel = 1;'],
+			['ähnlicher Bezeichner als Objektschlüssel', 'return { entryClientLabel: 1 };'],
+			['ähnlicher Bezeichner als Stringliteral', "const x = 'entryClientLabel';"]
 		])('%s', (_fall, code) => {
 			expect(collectHits(stripComments(code), PATTERNS)).toEqual([]);
+		});
+
+		it.each([
+			['explizite Spaltenauswahl', 'db.select({ id: sightings.id }).from(sightings)'],
+			[
+				'explizites .returning() mit Spaltenliste',
+				'await tx.delete(sightingFiles).where(cond).returning({ filePath: sightingFiles.filePath });'
+			]
+		])('%s (Critical 2)', (_fall, code) => {
+			expect(collectHits(stripComments(code), WIDE_SELECT_PATTERNS)).toEqual([]);
 		});
 	});
 
@@ -143,9 +258,16 @@ describe('Öffentliche Antworten geben die Client-Kennung nicht aus', () => {
 
 		it('der tatsächliche Schreibpfad in api/sightings/+server.ts bleibt unauffällig', () => {
 			const source = readFileSync('src/routes/api/sightings/+server.ts', 'utf8');
+			// Minor-Fund: Ein Filter auf `\bentryClient\b` behauptet bei einem
+			// echten Leck fälschlich „das Muster ist wieder zu weit geworden" —
+			// das Wort steht auch im legitimen Schreibpfad. Eingegrenzt auf die
+			// beiden Funktionsnamen, die den Schreibpfad tatsächlich ausmachen,
+			// bleibt die Diagnose richtig: Bricht dieser Test, ist entweder einer
+			// dieser Aufrufe verschwunden (Selbsttest unten), oder eine NEUE Zeile
+			// mit `resolveEntryClient`/`saveSighting` enthält einen echten Treffer.
 			const writePathLines = stripComments(source)
 				.split('\n')
-				.filter((line) => /\bentryClient\b/.test(line));
+				.filter((line) => /resolveEntryClient|saveSighting/.test(line));
 
 			// Selbsttest: Es MUSS Schreibpfad-Zeilen geben, sonst prüft dieser
 			// Test nichts (die Datei hätte den Bezeichner entfernt).
@@ -155,5 +277,150 @@ describe('Öffentliche Antworten geben die Client-Kennung nicht aus', () => {
 				expect(collectHits(line, PATTERNS)).toEqual([]);
 			}
 		});
+	});
+});
+
+/**
+ * Vollständigkeits-Selbsttest (Important 3).
+ *
+ * `PUBLIC_ROUTES` oben ist eine von Hand gepflegte Liste — fünf Pfade, die
+ * jemand als „die öffentlichen, lesenden Routen" erkannt hat. Eine neue Route,
+ * die aus `sightings` liest und ohne Anmeldung erreichbar ist, wäre ab Tag
+ * eins ungeschützt, ohne dass etwas rot wird — genau die falsche Polarität,
+ * die die beiden Vorbilder (`verifiedReadScan.test.ts`,
+ * `approvalPredicateScan.test.ts`) vermeiden, indem sie über `sourceFiles(...)`
+ * den ganzen Baum einlesen und eine ALLOWED-Liste pflegen statt einer
+ * geschützten Liste.
+ *
+ * Diese Gruppe dreht die Polarität um: Sie findet **jede** `.ts`-Datei unter
+ * `src/routes`, die `sightings` aus dem Schema importiert (also potenziell
+ * eine Zeile der Tabelle lesen kann), und verlangt für jede von ihnen einen
+ * von drei Nachweisen:
+ *
+ *  1. Sie steht in `PUBLIC_ROUTES` — oben durch die Mustererkennung geschützt.
+ *  2. Sie liegt unter `src/routes/admin/` — der Auth-Guard sitzt zentral in
+ *     `admin/+layout.server.ts` (`.claude/rules/admin.md`, „Auth Pattern"),
+ *     einzelne Routen prüfen bewusst nicht noch einmal.
+ *  3. Sie ruft `requireUserRole(...)` selbst auf (Routen außerhalb `admin/`,
+ *     die trotzdem admin-geschützt sind, z. B. `/api/sightings/[id]`) — oder
+ *     sie steht mit Begründung in `ALLOWED_UNPROTECTED` (Helfer, die selbst
+ *     keinen Header senden, oder öffentliche Routen, die nachweislich nur
+ *     aggregierte bzw. bereits freigegebene Felder ausgeben).
+ *
+ * Was das nicht ersetzt: Ein Eintrag in `ALLOWED_UNPROTECTED` behauptet nur
+ * „diese Datei ist kein Leckpfad", er scannt sie nicht auf `entryClient`. Wer
+ * eine Datei dort einträgt, die doch Zeilenfelder ausgibt, muss das selbst
+ * begründen — der Selbsttest erzwingt nur, dass niemand eine neue Route
+ * lautlos an allen drei Nachweisen vorbeischreibt.
+ */
+describe('Bestand — jede lesende Route ist erfasst oder begründet ausgenommen', () => {
+	const ADMIN_PREFIX = 'src/routes/admin/';
+
+	/**
+	 * Erkennt den Schema-Import über den Namen, nicht über eine Import-Zeile
+	 * mit fester Reihenfolge — `import { sightings, type X } from …` und
+	 * `import type { sightings } from …` müssen beide treffen.
+	 * `[^}]*` frisst dabei auch Zeilenumbrüche (kein `.`, keine `s`-Flag nötig).
+	 */
+	const SCHEMA_IMPORT =
+		/import\s+(?:type\s+)?\{[^}]*\bsightings\b[^}]*\}\s*from\s*'\$lib\/server\/db\/schema'/;
+
+	function sightingReadingRouteFiles(): string[] {
+		return sourceFiles('src/routes', /\.ts$/)
+			.filter((path) => !path.endsWith('.test.ts'))
+			.filter((path) => SCHEMA_IMPORT.test(readFileSync(path, 'utf8')));
+	}
+
+	/**
+	 * Dateien außerhalb von `admin/`, die aus `sightings` lesen können, ohne
+	 * selbst `requireUserRole(...)` aufzurufen — je mit Begründung, warum sie
+	 * trotzdem kein Leckpfad für `entryClient` sind.
+	 */
+	const ALLOWED_UNPROTECTED: ReadonlyMap<string, string> = new Map([
+		[
+			'src/routes/about/+page.server.ts',
+			'Öffentlich, aber liest nur COUNT()/MIN()-Aggregate (Gesamtzahl, Melderzahl, frühestes Jahr) — nie eine Zeile, nie eine Spalte namens entryClient.'
+		],
+		[
+			'src/routes/api/media/[...path]/+server.ts',
+			'Öffentlich erreichbar für freigegebene Medien (docs/DESIGN_GUIDE.md, Privacy-Review), selektiert für die Freigabeprüfung aber ausschließlich approvedAt — nie die ganze Zeile, nie entryClient.'
+		],
+		[
+			'src/routes/uploads/[...path]/+server.ts',
+			'Gleiche Konstruktion wie api/media: öffentlich, selektiert nur approvedAt für den Freigabe-Check.'
+		],
+		[
+			'src/routes/api/map/sightings/publicMapConditions.ts',
+			'Baut nur WHERE-Bedingungen (mapSightingConditions) für die beiden PUBLIC_ROUTES-Karten-Endpunkte — liest keine Zeile und gibt keine Antwort zurück, kann die Spalte also nicht ausliefern.'
+		],
+		[
+			'src/routes/api/sightings/export/toFrontendSighting.ts',
+			'Reiner Zeilen-Mapper für den Export, aufgerufen ausschließlich von den fünf Export-Routen unter api/sightings/export/**, die alle requireUserRole(admin) aufrufen. Der Typ-Import von sightings dient nur InferSelectModel, es gibt keinen HTTP-Handler in dieser Datei.'
+		],
+		[
+			'src/routes/api/sightings/export/exportFilterParams.ts',
+			'Baut nur WHERE-Bedingungen für den Export-Filter, aufgerufen ausschließlich von den admin-geschützten Export-Routen (requireUserRole). Kein HTTP-Handler, keine Zeilenauswahl, keine Antwort.'
+		]
+	]);
+
+	function isCovered(path: string): boolean {
+		if (PUBLIC_ROUTES.includes(path)) return true;
+		if (path.startsWith(ADMIN_PREFIX)) return true;
+		if (ALLOWED_UNPROTECTED.has(path)) return true;
+		return /requireUserRole\(/.test(readFileSync(path, 'utf8'));
+	}
+
+	it('jede lesende Route ist geschützt, admin-gesperrt oder ausdrücklich ausgenommen', () => {
+		const offenders = sightingReadingRouteFiles().filter((path) => !isCovered(path));
+
+		expect(
+			offenders,
+			`Neue Route liest aus sightings, ohne durch PUBLIC_ROUTES, admin/-Layout,\n` +
+				`requireUserRole(...) oder ALLOWED_UNPROTECTED gedeckt zu sein:\n\n` +
+				offenders.join('\n')
+		).toEqual([]);
+	});
+
+	/* Zwei Selbsttests. Ein Scan, der nichts liest oder nichts erkennt, ist grün
+	   und beweist nichts — das ist die Sorte Deckung, die keine ist. */
+	it('findet überhaupt lesende Routen', () => {
+		expect(sightingReadingRouteFiles().length).toBeGreaterThan(10);
+	});
+
+	/**
+	 * `antworten.json/+server.ts` fehlt hier bewusst: Es liefert eine statische
+	 * Dropdown-Optionsliste aus Enum-Labeln und importiert `sightings` nirgends
+	 * — der Schema-Import-Scan findet es also korrekt nicht. Es bleibt trotzdem
+	 * in `PUBLIC_ROUTES` (Verteidigung in der Tiefe, falls die Route später
+	 * einmal Zeilenfelder ausliefert), nur eben ohne diesen Nachweis.
+	 */
+	it('findet die vier Sichtungszeilen lesenden PUBLIC_ROUTES wieder — sonst schützt die Liste die falschen Pfade', () => {
+		const found = sightingReadingRouteFiles();
+		const readsTable = PUBLIC_ROUTES.filter(
+			(route) => route !== 'src/routes/rest_sichtungen/antworten.json/+server.ts'
+		);
+
+		expect(readsTable.length).toBeGreaterThan(0);
+		for (const route of readsTable) {
+			expect(found, `${route} taucht im Scan nicht auf — Pfad falsch geschrieben?`).toContain(
+				route
+			);
+		}
+	});
+
+	it('nennt für jede Ausnahme eine Begründung — und jede Ausnahme wird gebraucht', () => {
+		const found = sightingReadingRouteFiles();
+
+		for (const [path, reason] of ALLOWED_UNPROTECTED) {
+			expect(
+				found,
+				`Ausnahme zeigt auf eine Datei, die den Schema-Import nicht (mehr) hat: ${path}`
+			).toContain(path);
+			expect(reason.length, `Ausnahme ohne Begründung: ${path}`).toBeGreaterThan(40);
+			expect(
+				readFileSync(path, 'utf8').includes('requireUserRole('),
+				`${path} ruft requireUserRole(...) auf — gehört nicht mehr in ALLOWED_UNPROTECTED, der dynamische Nachweis greift bereits.`
+			).toBe(false);
+		}
 	});
 });
