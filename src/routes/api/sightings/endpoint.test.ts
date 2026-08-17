@@ -373,16 +373,16 @@ describe('/api/sightings POST endpoint', () => {
 			expect(mockedSaveSighting.mock.calls[0]?.[3]).toMatch(/^web\/\d+\.\d+\.\d+/);
 		}, 15000);
 
-		it('lehnt eine im Body mitgeschickte Client-Kennung als unbekanntes Feld ab', async () => {
-			// Der Endpunkt weist unbekannte Felder ohnehin mit 400 ab (siehe
-			// 'should reject requests with unknown fields') — das belegt hier dieselbe
-			// Eigenschaft wie ein Wertvergleich: Der Body kann `entryClient` nicht setzen.
-			const response = await POST(
-				createMockRequestEvent({ ...validBody(), entryClient: 'gefälscht/1.0' })
-			);
+		it('leitet die Client-Kennung vom Aufrufer ab, nicht vom gemeldeten entryChannel', async () => {
+			// Kanal (entryChannel) und Erzeuger (Client-Kennung) beantworten verschiedene
+			// Fragen: entryChannel ist eine fachliche Angabe zur Meldung (hier: Post,
+			// MAIL = 2), die Client-Kennung beschreibt, über welchen Weg (dieses
+			// Webformular) sie technisch eingegangen ist. Eine Meldung, die als
+			// Post-Meldung deklariert ist, bekommt trotzdem `web/<version>`.
+			const response = await POST(createMockRequestEvent({ ...validBody(), entryChannel: 2 }));
 
-			expect(response.status).toBe(400);
-			expect(mockedSaveSighting).not.toHaveBeenCalled();
+			expect(response.status).toBe(201);
+			expect(mockedSaveSighting.mock.calls[0]?.[3]).toMatch(/^web\/\d+\.\d+\.\d+/);
 		}, 15000);
 
 		it('meldet fehlendes Token als tokenStatus missing', async () => {
