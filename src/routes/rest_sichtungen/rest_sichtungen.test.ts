@@ -58,12 +58,16 @@ import { saveSighting } from '$lib/server/db/sightingRepository';
 import { checkBalticSeaFile } from '$lib/server/geo/checkBalticSeaFile';
 
 // Helper to create mock request event
-function createMockRequestEvent(body: LegacySightingRequest): RequestEvent {
+function createMockRequestEvent(body: LegacySightingRequest, userAgent?: string): RequestEvent {
 	return {
 		request: {
 			json: () => Promise.resolve(body),
 			headers: {
-				get: (name: string) => (name === 'content-type' ? 'application/json' : null)
+				get: (name: string) => {
+					if (name === 'content-type') return 'application/json';
+					if (name === 'user-agent') return userAgent ?? null;
+					return null;
+				}
 			}
 		},
 		getClientAddress: () => '127.0.0.1'
@@ -134,7 +138,8 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 					entryChannel: 4 // APP channel
 				}),
 				undefined,
-				expect.objectContaining({ score: expect.any(Number) })
+				expect.objectContaining({ score: expect.any(Number) }),
+				expect.any(String)
 			);
 		});
 
@@ -194,7 +199,8 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 					otherObservations: 'Perfect weather conditions'
 				}),
 				undefined,
-				expect.objectContaining({ score: expect.any(Number) })
+				expect.objectContaining({ score: expect.any(Number) }),
+				expect.any(String)
 			);
 		});
 
@@ -216,7 +222,8 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 			expect(mockSave).toHaveBeenCalledWith(
 				expect.objectContaining({ otherObservations: 'Auffälliges Verhalten' }),
 				undefined,
-				expect.objectContaining({ score: expect.any(Number) })
+				expect.objectContaining({ score: expect.any(Number) }),
+				expect.any(String)
 			);
 		});
 
@@ -284,7 +291,8 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 					deadSex: 1
 				}),
 				undefined,
-				expect.objectContaining({ score: expect.any(Number) })
+				expect.objectContaining({ score: expect.any(Number) }),
+				expect.any(String)
 			);
 		});
 	});
@@ -466,5 +474,52 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 			const responseData = await response.json();
 			expect(responseData.error).toBe('Failed to save sighting');
 		});
+	});
+});
+
+describe('Client-Kennung (eingangs_client)', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		vi.mocked(saveSighting).mockResolvedValue({ id: 42 });
+		vi.mocked(checkBalticSeaFile).mockReturnValue({
+			inBaltic: true,
+			inChartArea: true,
+			longitude: 13.5,
+			latitude: 54.5
+		});
+	});
+
+	/** Eine Meldung, die die Validierung passiert und saveSighting erreicht. */
+	const gueltigeMeldung = (): LegacySightingRequest =>
+		({
+			sichtungsdatum: '2024-03-15 12:00',
+			anzahl_gesamt: 1,
+			vorname: 'Client',
+			name: 'Test',
+			email: 'client-test@example.com'
+		}) as unknown as LegacySightingRequest;
+
+	it('speichert den User-Agent des Clients als vierten Parameter', async () => {
+		// Eigene Client-IP: der Rate-Limiter zählt prozessweit über die ganze
+		// Testdatei hinweg (kein Reset zwischen Tests), und die übrigen Tests
+		// hier schöpfen das Kontingent von 127.0.0.1 bereits bis an die Grenze
+		// aus. Ein eigener Schlüssel isoliert diesen Test davon.
+		const event = createMockRequestEvent(gueltigeMeldung(), 'OstSeeTiere/8');
+		(event as unknown as { getClientAddress: () => string }).getClientAddress = () =>
+			'203.0.113.10';
+		await POST(event);
+
+		expect(vi.mocked(saveSighting).mock.calls[0]?.[3]).toBe('OstSeeTiere/8');
+	});
+
+	it('speichert unbekannt, wenn der Client keinen User-Agent schickt', async () => {
+		// NULL ist dem Altbestand vorbehalten — ein neuer Datensatz ohne
+		// User-Agent muss davon unterscheidbar bleiben.
+		const event = createMockRequestEvent(gueltigeMeldung());
+		(event as unknown as { getClientAddress: () => string }).getClientAddress = () =>
+			'203.0.113.11';
+		await POST(event);
+
+		expect(vi.mocked(saveSighting).mock.calls[0]?.[3]).toBe('unbekannt');
 	});
 });

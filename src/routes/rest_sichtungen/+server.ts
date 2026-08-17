@@ -31,6 +31,7 @@ import { ServerConfigService } from '$lib/services/configService';
 import { json, isHttpError, type RequestEvent } from '@sveltejs/kit';
 import { getClientIp } from '$lib/server/utils/getClientIp';
 import { enforceRateLimit, RATE_LIMITS } from '$lib/server/middleware/rateLimit';
+import { resolveEntryClient } from '$lib/server/utils/resolveEntryClient';
 
 const logger = createLogger('api:legacy:rest_sichtungen:pdf-compliant');
 
@@ -186,10 +187,18 @@ export async function POST(event: RequestEvent): Promise<Response> {
 			recentDuplicates
 		});
 
+		// Der User-Agent ist die einzige Herkunftsangabe, die ein Legacy-Client
+		// mitbringt. Er ist frei wählbar und damit ein Hinweis, kein Beweis —
+		// er darf keine Entscheidung über Gültigkeit oder Zugriff tragen.
+		const entryClient = resolveEntryClient({
+			source: 'agent',
+			userAgent: event.request.headers.get('user-agent')
+		});
+
 		// Save sighting using existing repository
 		let savedSighting;
 		try {
-			savedSighting = await saveSighting(transformedData, undefined, spamCheck);
+			savedSighting = await saveSighting(transformedData, undefined, spamCheck, entryClient);
 
 			logger.info(
 				{
