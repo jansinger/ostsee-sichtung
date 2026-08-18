@@ -308,6 +308,7 @@ describe('sightingRepository', () => {
 			const overlong = 'A'.repeat(200);
 			await saveSighting(mockFormData, undefined, undefined, overlong);
 
+			expect(typeof capturedValues?.entryClient).toBe('string');
 			const stored = capturedValues?.entryClient as string;
 			expect(stored.length).toBeLessThanOrEqual(128);
 			expect(stored).toBe(`${'A'.repeat(127)}…`);
