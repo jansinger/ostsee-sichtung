@@ -766,11 +766,14 @@ describe('Bestand — jede lesende Route ist erfasst oder begründet ausgenommen
  * `$app/…` und `$env/…`. Keines davon kann die Sichtungstabelle lesen, und
  * `./$types` ließe sich ohne `.svelte-kit/`-Lauf nicht einmal auflösen.
  *
- * **Reine Typ-Importe sind ausgenommen** — und zwar nicht aus Bequemlichkeit:
- * `import type { … } from '…'` wird beim Kompilieren restlos entfernt und kann
- * zur Laufzeit nichts in eine Antwort schreiben. Das ist die einzige
- * Unterscheidung hier, die sich mechanisch treffen lässt; alles andere ist
- * Nachweis oder Waiver.
+ * **Importe ohne Wertbindung sind ausgenommen** — `import type { … }` ebenso
+ * wie die Liste, in der jeder Specifier sein eigenes `type` trägt
+ * (`import { type Foo } from '…'`). Nicht, weil „Typen ohnehin verschwinden":
+ * Mit `verbatimModuleSyntax: true` bleibt bei der zweiten Form ein
+ * `import {} from '…'` stehen, das Modul wird also geladen. Es entsteht nur
+ * kein Name im Gültigkeitsbereich, und ohne Bindung kann die Datei aus dem
+ * Modul kein Antwortfeld holen. Das ist die einzige Unterscheidung hier, die
+ * sich mechanisch treffen lässt; alles andere ist Nachweis oder Waiver.
  */
 describe('Abhängigkeiten — jeder Import einer gescannten Datei ist gedeckt', () => {
 	/**
@@ -807,13 +810,56 @@ describe('Abhängigkeiten — jeder Import einer gescannten Datei ist gedeckt', 
 	 * `$lib/legacy-api/date-utils` (so schreibt es `api/sightings/+server.ts`)
 	 * derselbe Eintrag sind — sonst bräuchte dieselbe Datei zwei Waiver.
 	 */
+	/**
+	 * Ob ein Import-Clause **keine** Wertbindung erzeugt.
+	 *
+	 * Zwei Formen zählen dazu (Review Copilot, Runde 4): das vorangestellte
+	 * `import type { … }` und die Liste, in der **jeder** Specifier sein
+	 * eigenes `type` trägt — `import { type Foo } from '…'`,
+	 * `export { type Foo } from '…'`. Die zweite fehlte und hätte einen
+	 * Waiver für ein Modul verlangt, aus dem gar nichts gebunden wird.
+	 *
+	 * Wichtig ist dabei die Begründung, nicht die Faustregel „Typen sind
+	 * weg": `.svelte-kit/tsconfig.json` setzt `verbatimModuleSyntax: true`,
+	 * und damit bleibt aus `import { type Foo } from 'x'` sehr wohl ein
+	 * `import {} from 'x'` stehen — das Modul wird geladen. Was es nicht
+	 * gibt, ist eine **Bindung**: Ohne Namen im Gültigkeitsbereich kann die
+	 * Datei aus diesem Modul kein Antwortfeld holen. Ein reiner
+	 * Seiteneffekt-Import ist für diesen Scan ohnehin unsichtbar (kein
+	 * `from`), die Behandlung ist also konsistent.
+	 *
+	 * Gemischt heißt Wert-Import: `{ buildBody, type Body }` bindet
+	 * `buildBody`, ebenso `rb, { type Body }` (Default-Bindung außerhalb der
+	 * Klammern). Deshalb muss der Clause **vollständig** aus einem
+	 * Klammerblock bestehen.
+	 *
+	 * Bewusst konservativ bleibt die Grammatik-Ecke `{ type as T }` — das
+	 * importiert eine Bindung namens `type` unter dem Namen `T` und ist
+	 * damit ein Wert-Import; `{ type }` ebenso. Beide fordern hier weiterhin
+	 * einen Waiver, was die richtige Richtung ist: lieber ein Eintrag zu
+	 * viel als eine unbemerkte Bindung.
+	 */
+	function isTypeOnlyClause(clause: string): boolean {
+		if (/^\s*type\b/.test(clause)) return true;
+
+		const braced = clause.match(/^\s*\{([^}]*)\}\s*$/);
+		if (!braced) return false;
+
+		const specifiers = (braced[1] ?? '')
+			.split(',')
+			.map((entry) => entry.trim())
+			.filter(Boolean);
+
+		return specifiers.length > 0 && specifiers.every((entry) => /^type\s+(?!as\b)\w/.test(entry));
+	}
+
 	function valueImportSpecifiers(source: string): string[] {
 		const specifiers = new Set<string>();
 
 		for (const match of stripComments(source).matchAll(MODULE_IMPORT)) {
 			const clause = match[1] ?? '';
 			const specifier = match[3] ?? '';
-			if (/^\s*type\b/.test(clause)) continue;
+			if (isTypeOnlyClause(clause)) continue;
 			if (FRAMEWORK_MODULES.test(specifier)) continue;
 			if (!specifier.startsWith('$lib/') && !specifier.startsWith('.')) continue;
 			specifiers.add(specifier.replace(/\.js$/, ''));
@@ -971,6 +1017,21 @@ describe('Abhängigkeiten — jeder Import einer gescannten Datei ist gedeckt', 
 				'$lib/map/responseBuilder'
 			],
 			[
+				'Default-Bindung neben einem Inline-Typ ist ein Wert-Import',
+				"import builder, { type Body } from '$lib/map/responseBuilder';",
+				'$lib/map/responseBuilder'
+			],
+			[
+				'Bindung, die literal `type` heißt, ist ein Wert-Import',
+				"import { type } from '$lib/map/responseBuilder';",
+				'$lib/map/responseBuilder'
+			],
+			[
+				'Bindung `type` unter neuem Namen (Grammatik-Ecke) bleibt Wert-Import',
+				"import { type as T } from '$lib/map/responseBuilder';",
+				'$lib/map/responseBuilder'
+			],
+			[
 				'neue Datei im waiver-freien Verzeichnis ist NICHT vom Präfix gedeckt',
 				"import { readRow } from '$lib/server/db/rowReader';",
 				'$lib/server/db/rowReader'
@@ -1025,6 +1086,23 @@ describe('Abhängigkeiten — jeder Import einer gescannten Datei ist gedeckt', 
 				KARTEN_ROUTE,
 				'reiner Typ-Re-Export',
 				"export type { StoredWeatherData } from '$lib/services/weatherService';"
+			],
+			[
+				// Review Copilot, Runde 4: bindet nichts, verlangt deshalb keinen
+				// Waiver — auch wenn verbatimModuleSyntax das Modul noch lädt.
+				KARTEN_ROUTE,
+				'Inline-type-Specifier als einziger Eintrag',
+				"import { type DBSighting } from '$lib/map/mapUtilsV2';"
+			],
+			[
+				KARTEN_ROUTE,
+				'mehrere Inline-type-Specifier, mit Alias und über mehrere Zeilen',
+				"import {\n\ttype DBSighting,\n\ttype GeoJSONResponse as Response\n} from '$lib/map/mapUtilsV2';"
+			],
+			[
+				KARTEN_ROUTE,
+				'Inline-type-Re-Export',
+				"export { type DBSighting } from '$lib/map/mapUtilsV2';"
 			],
 			[
 				// Runde 3: die Gegenprobe, die die [^;]-Grenze im MODULE_IMPORT
