@@ -137,10 +137,25 @@ nicht testen lassen und ihre Nutzer von einem Fehlschlag nichts erfahren. Beide
 Zeitpläne liegen auf `hawking` (Plesk, serverweit) und melden sich **nur bei
 Auffälligkeiten**:
 
-| Aufgabe                                  | Takt          | prüft                                               |
-| ---------------------------------------- | ------------- | --------------------------------------------------- |
-| `legacy-sync/sync.sh` (ID 3090)          | alle 15 min   | überträgt den Posteingang nach Produktion           |
-| `legacy-sync/client-report.sh` (ID 3097) | täglich 07:20 | ob jede gestrige Meldung mit `201` angenommen wurde |
+| Aufgabe                                         | Takt          | prüft                                               |
+| ----------------------------------------------- | ------------- | --------------------------------------------------- |
+| `/usr/local/sbin/legacy-inbox-sync` (ID 3090)   | alle 15 min   | überträgt den Posteingang nach Produktion           |
+| `/usr/local/sbin/legacy-inbox-report` (ID 3097) | täglich 07:20 | ob jede gestrige Meldung mit `201` angenommen wurde |
+
+**Die Skripte liegen NICHT unter `legacy-sync/`.** Dort steht nur die `config`;
+`install.sh` legt die ausführbaren Teile root-eigen nach `/usr/local/sbin/` und
+benennt sie dabei um: `sync-root.sh` → `legacy-inbox-sync`, `client-report.sh` →
+`legacy-inbox-report`, `melde.sh` → `legacy-inbox-melde`. Grund ist die
+Rechtetrennung: root darf nichts einbinden, was der Dienstbenutzer schreiben
+kann. Wer den Repo-Pfaden folgt, bekommt „No such file or directory" und hält
+die Überwachung womöglich für nicht deployt — sie läuft aber.
+
+> **Abweichung, Stand 2026-08-18:** Auf dem Server liegt zusätzlich
+> `/usr/local/sbin/legacy-inbox-status`, zu dem es in diesem Repo **keine
+> Quelle** gibt; `install.sh` kennt es nicht. Es ist damit weder versionierbar
+> noch nach einem Serverwechsel wiederherstellbar. Wer es anfasst, sollte es bei
+> der Gelegenheit nach `legacy-inbox/deploy/` holen und in `install.sh`
+> aufnehmen.
 
 Der Bericht liest das **Zugriffsprotokoll**, nicht den Posteingang. Das ist der
 Kern der Lehre aus dem Ausfall: Der Posteingang kann nur zeigen, was ankam. Was
@@ -151,8 +166,29 @@ nie ankam, steht ausschließlich im Protokoll — und zwar in
 Nachsehen lässt sich jeder vergangene Tag von Hand:
 
 ```bash
-ssh hawking "sudo -n /var/www/vhosts/schweinswalsichtung.de/legacy-sync/client-report.sh 31/Jul/2026"
+ssh hawking "sudo -n /usr/local/sbin/legacy-inbox-report 31/Jul/2026"
 ```
+
+**Der schnellste Einstieg ist aber `legacy-inbox-status`** (siehe Abweichung
+oben) — es beantwortet in einem Aufruf, was man bei einer Störungsfrage wissen
+will: Posteingangsstand, Meldungen der letzten sieben Tage je Client, ob beide
+Zeitpläne aktiv sind, und ob die Rechte noch stimmen.
+
+```bash
+ssh hawking "sudo -n /usr/local/sbin/legacy-inbox-status"
+```
+
+**Ein stiller Lauf ist kein Beweis, dass die Kette funktioniert.** Der Bericht
+meldet sich nur bei Auffälligkeiten; ein ausgefallener Wächter sieht von außen
+genauso aus. Deshalb gelegentlich mit einem Tag prüfen, an dem es nachweislich
+Fehlschläge gab (`31/Jul/2026`) — dann muss auch eine Mail ankommen.
+
+Zuletzt geprüft am **2026-08-18**: beide Zeitpläne aktiv, der Testlauf meldete
+die 60 gescheiterten POSTs des 31.07. korrekt, und die Mail wurde zugestellt
+(`status=sent`, danach per dovecot in die INBOX). Der Meldeweg läuft bewusst
+nicht über die Plesk-Benachrichtigung, die nachweislich nicht ankam, sondern
+über `legacy-inbox-melde` an die in `config` unter `MELDE_AN` hinterlegte
+Adresse.
 
 **Vor Ablauf der Beobachtung** den Stand oben mit frischen Zahlen erneuern oder
 die Frist verlängern. Ein Datumsstand, den niemand nachzieht, wird zur
