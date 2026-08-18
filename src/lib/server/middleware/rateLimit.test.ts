@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { checkRateLimit, createRateLimitIdentifier, enforceRateLimit } from './rateLimit';
+import {
+	checkRateLimit,
+	createRateLimitIdentifier,
+	enforceRateLimit,
+	resetRateLimits
+} from './rateLimit';
 
 vi.mock('$lib/logger.server', () => ({
 	createLogger: () => ({
@@ -139,5 +144,22 @@ describe('enforceRateLimit', () => {
 			expect(httpError.status).toBe(429);
 			expect(httpError.body.message).toMatch(/Rate limit exceeded/);
 		}
+	});
+});
+
+describe('resetRateLimits', () => {
+	it('gibt einem ausgeschöpften Schlüssel das volle Kontingent zurück', () => {
+		const endpoint = 'test-reset-store';
+		const id = 'ip:127.0.0.1';
+		const config = { windowMs: 60_000, maxRequests: 1 };
+
+		checkRateLimit(id, config, endpoint);
+		expect(checkRateLimit(id, config, endpoint).allowed).toBe(false);
+
+		resetRateLimits();
+
+		const nachReset = checkRateLimit(id, config, endpoint);
+		expect(nachReset.allowed).toBe(true);
+		expect(nachReset.remaining).toBe(0); // 1 max - 1 genutzt: Zähler startet neu
 	});
 });

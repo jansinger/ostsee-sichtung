@@ -276,3 +276,17 @@ export function buildRateLimitHeaders(
 		'X-RateLimit-Window': Math.ceil(config.windowMs / 1000).toString()
 	};
 }
+
+/**
+ * Leert den prozessweiten Zähler-Speicher. Nur für Tests.
+ *
+ * Der Speicher lebt am Modul, nicht am Request — ohne Reset zählen alle Tests
+ * einer Datei gemeinsam gegen dasselbe Kontingent. Wer den 21. Test mit
+ * derselben Client-IP ergänzt, bekommt dann einen 429 statt der erwarteten
+ * Antwort, und der Fehler zeigt auf den neuen Test statt auf die Ursache.
+ * Deshalb gehört dieser Aufruf in ein `beforeEach` jeder Testdatei, die einen
+ * ratenbegrenzten Endpunkt mehrfach aufruft.
+ */
+export function resetRateLimits(): void {
+	rateLimitStore.clear();
+}
