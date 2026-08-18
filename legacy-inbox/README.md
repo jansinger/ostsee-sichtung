@@ -320,7 +320,8 @@ abschalten — und danach wieder ein.
 ### Betrieb als Zeitplan: welcher Abbruch einen Menschen braucht
 
 Auf `hawking` läuft der Versand alle 15 Minuten über einen Plesk-Zeitplan
-(`legacy-sync/sync.sh`, ruft dieses Werkzeug aus dem deployten Repo). Der
+(`/usr/local/sbin/legacy-inbox-sync`, ruft dieses Werkzeug aus dem deployten
+Repo — der Name im Repo ist `sync-root.sh`, `install.sh` benennt ihn um). Der
 Wrapper dort beantwortet genau eine Frage — **muss jemand hinsehen?** — und
 die drei Abbruchgründe sind dafür ausdrücklich nicht gleichwertig:
 
@@ -376,9 +377,19 @@ Geprüft wird das, indem man einen Fehlerfall wirklich auslöst und danach ins
 Mail-Log sieht — nicht, indem man den Exit-Code liest:
 
 ```bash
-ssh hawking "sudo -n /var/www/vhosts/schweinswalsichtung.de/legacy-sync/client-report.sh 31/Jul/2026"
+ssh hawking "sudo -n /usr/local/sbin/legacy-inbox-report 31/Jul/2026"
 ssh hawking "sudo -n grep 'to=<…>' /var/log/maillog | tail -2"
 ```
+
+Der Pfad ist bewusst `/usr/local/sbin/` und nicht das Deploy-Verzeichnis:
+`install.sh` legt die root-Einstiege dorthin und benennt sie dabei um
+(`sync-root.sh` → `legacy-inbox-sync`, `client-report.sh` →
+`legacy-inbox-report`, `melde.sh` → `legacy-inbox-melde`). Unter `legacy-sync/`
+steht nur die `config`.
+
+Zuletzt so geprüft am **2026-08-18**: Der Lauf meldete die 60 gescheiterten
+POSTs des 31.07. und die Mail wurde zugestellt (`status=sent`, danach per
+dovecot in die INBOX).
 
 ### Einrichtung auf dem Server
 
