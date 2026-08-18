@@ -147,7 +147,7 @@ Auffälligkeiten**:
 benennt sie dabei um: `sync-root.sh` → `legacy-inbox-sync`, `client-report.sh` →
 `legacy-inbox-report`, `melde.sh` → `legacy-inbox-melde`. Grund ist die
 Rechtetrennung: root darf nichts einbinden, was der Dienstbenutzer schreiben
-kann. Wer den Repo-Pfaden folgt, bekommt „No such file or directory" und hält
+kann. Wer den Repo-Pfaden folgt, bekommt `No such file or directory` und hält
 die Überwachung womöglich für nicht deployt — sie läuft aber.
 
 > **Abweichung, Stand 2026-08-18:** Auf dem Server liegt zusätzlich
