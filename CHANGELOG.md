@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.22.0](https://github.com/jansinger/ostsee-tiere/compare/v2.21.0...v2.22.0) (2026-08-18)
+
+
+### Features
+
+* **db:** client-kennung pro sichtung erfassen (eingangs_client) ([#891](https://github.com/jansinger/ostsee-tiere/issues/891)) ([e387d3e](https://github.com/jansinger/ostsee-tiere/commit/e387d3e3eb3f537797737e1616e3324866631e70))
+
+
+### Bug Fixes
+
+* **db:** truncate entryClient in saveSighting instead of trusting callers ([#893](https://github.com/jansinger/ostsee-tiere/issues/893)) ([c304043](https://github.com/jansinger/ostsee-tiere/commit/c3040435ea37464105a8d7902db127a7d04fd1a0))
+
+
+### Documentation
+
+* **api:** correct deployed paths of the legacy monitoring scripts ([#895](https://github.com/jansinger/ostsee-tiere/issues/895)) ([ce9c92e](https://github.com/jansinger/ostsee-tiere/commit/ce9c92e1bc5ebfc66c80bb1fa9958d9a969765a3))
+
+
+### Dependencies
+
+* **deps:** bump github/codeql-action in the github-actions group ([#890](https://github.com/jansinger/ostsee-tiere/issues/890)) ([b265e81](https://github.com/jansinger/ostsee-tiere/commit/b265e81897520ad3fd80588f542feffadd6727cc))
+
 ## [2.21.0](https://github.com/jansinger/ostsee-tiere/compare/v2.20.0...v2.21.0) (2026-08-15)
 
 
