@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { posix } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { collectHits, sourceFiles, stripComments } from '$lib/testing/sourceScan.testutil';
 
@@ -60,16 +61,40 @@ import { collectHits, sourceFiles, stripComments } from '$lib/testing/sourceScan
  * **Was dieser Guard NICHT sieht (Review, Runde 2).** Ein Guard über
  * Quelltext-Muster ist nie lückenlos. Bekannt und bewusst nicht geschlossen:
  *
- *  1. **Antwortaufbau in einer Datei außerhalb der gescannten Liste.** Der
- *     Critical-Fund aus Runde 2 war genau das: `api/map/sightings/+server.ts`
- *     selektiert nur Spalten, die eigentliche Antwort baut
- *     `sightingsToGeoJSON()` in `src/lib/map/mapUtils.ts` — eine Datei, die
- *     weder in `PUBLIC_ROUTES` noch im `src/routes`-Baum steht. Sie ist
- *     seither zusätzlich als eigener Eintrag aufgenommen (siehe
- *     `MAP_RESPONSE_BUILDERS` unten), aber das Prinzip bleibt: **jeder**
- *     Response-Builder, der aus `src/routes` heraus aufgerufen wird, muss von
- *     Hand in die Scan-Liste, der Selbsttest unten prüft nur `src/routes`
- *     selbst.
+ *  1. ~~**Antwortaufbau in einer Datei außerhalb der gescannten Liste.**~~
+ *     **Geschlossen** (Runde 3). Der Critical-Fund aus Runde 2 war genau das:
+ *     `api/map/sightings/+server.ts` selektiert nur Spalten, die eigentliche
+ *     Antwort baut `sightingsToGeoJSON()` in `src/lib/map/mapUtils.ts` — eine
+ *     Datei, die weder in `PUBLIC_ROUTES` noch im `src/routes`-Baum steht.
+ *     Sie war seither als Eintrag in `MAP_RESPONSE_BUILDERS` aufgenommen,
+ *     aber eben von Hand: Ein **zweiter** solcher Helfer wäre wieder lautlos
+ *     ungeschützt gewesen. Statt die Liste zu pflegen, gleicht sie jetzt
+ *     `Abhängigkeiten` unten mechanisch ab — es liest die `$lib`-Importe
+ *     jeder gescannten Datei und verlangt für jeden davon entweder, dass er
+ *     selbst gescannt wird, oder einen begründeten Eintrag in
+ *     `LIB_IMPORT_WAIVERS`. Dieselbe Polaritätsumkehr wie im
+ *     Vollständigkeits-Selbsttest für Routen: Default ist „nicht gedeckt",
+ *     nicht „nicht bemerkt".
+ *
+ *     Mitgeprüft werden **beide** Importformen: `$lib/…` und der relative
+ *     Nachbarpfad. Die erste Fassung dieses Abgleichs las nur `$lib` — und
+ *     hätte damit dieselbe Lücke offen gelassen, nur über einen anderen
+ *     Pfad: `api/map/sightings/+server.ts` holt sich `./publicMapConditions`
+ *     und `./statusFilter` relativ, und ein nach
+ *     `src/routes/api/map/sightings/toGeoJSON.ts` verschobenes
+ *     `sightingsToGeoJSON()` wäre weder hier noch im Bestand-Selbsttest
+ *     aufgefallen (ein reiner Zeilen-Mapper importiert `sightings` nicht aus
+ *     dem Schema — `statusFilter.ts` belegt, dass es solche Route-Helfer
+ *     ohne Schema-Import gibt).
+ *
+ *     Was daran Judgement bleibt: Ein Waiver behauptet „dieses Modul kann
+ *     kein Antwortfeld beisteuern", und **dessen** Importe werden dann nicht
+ *     weiterverfolgt. Wer ein Modul einträgt, das doch Zeilenfelder ausgibt,
+ *     schaltet den Abgleich für dessen ganzen Teilbaum ab. Ebenfalls nicht
+ *     erfasst: ein dynamisches `await import('…')` — es hat kein `from` und
+ *     fällt durch dasselbe Loch wie Punkt 3 — und die virtuellen Module des
+ *     Frameworks (`./$types`, `$app/…`, `$env/…`), die keine Tabelle lesen
+ *     können und deshalb bewusst außen vor bleiben.
  *  2. **Indirektion über das Repository.** `getSightingById` und
  *     `getSightingByReferenceId` in `sightingRepository.ts` nutzen
  *     `db.select()` ohne Argument und laden damit `entryClient` mit — heute
@@ -172,7 +197,12 @@ const PUBLIC_ROUTES = [
  * Critical 1 oben antritt). Diese Datei liegt außerhalb von `src/routes` und
  * wird deshalb von keinem Scan hier automatisch gefunden — der
  * Vollständigkeits-Selbsttest unten in „Bestand" sieht nur `src/routes`.
- * Der einzige Schutz ist dieser von Hand gepflegte Eintrag.
+ * Dass dieser Eintrag existiert, erzwingt seit Runde 3 der Abgleich in
+ * `Abhängigkeiten` unten: `api/map/sightings/+server.ts` importiert
+ * `$lib/map/mapUtils`, und jeder `$lib`-Import einer gescannten Datei muss
+ * entweder selbst gescannt sein oder in `LIB_IMPORT_WAIVERS` stehen. Nähme
+ * jemand `mapUtils.ts` hier heraus, würde dieser Abgleich rot — die Liste
+ * wird also nicht mehr nur gepflegt, sie wird nachgerechnet.
  *
  * `readFileSync` braucht keinen Routen-Pfad — jede Datei, die eine
  * öffentliche Antwort baut, gehört hierher, unabhängig davon, ob sie unter
@@ -182,6 +212,136 @@ const MAP_RESPONSE_BUILDERS = ['src/lib/map/mapUtils.ts'];
 
 /** Alle Dateien, die auf `entryClient`/weite Selects gescannt werden. */
 const SCANNED_RESPONSE_FILES = [...PUBLIC_ROUTES, ...MAP_RESPONSE_BUILDERS];
+
+/**
+ * `$lib`-Module, die eine gescannte Datei importiert, die aber selbst **nicht**
+ * gescannt werden — je mit Begründung, warum sie kein Antwortfeld beisteuern
+ * können.
+ *
+ * Schlüssel ist bei `$lib`-Modulen der Modulpfad, wie er im `import` steht,
+ * ohne `.js`-Endung (`$lib/legacy-api/date-utils.js` und
+ * `$lib/legacy-api/date-utils` sind derselbe Eintrag). Bei **relativ**
+ * importierten Nachbarmodulen ist der Schlüssel der aufgelöste Pfad im Repo
+ * (`src/routes/api/map/sightings/statusFilter.ts`) — derselbe Helfer heißt aus
+ * `sightings/` `./statusFilter` und aus `sightings/years/` `../statusFilter`,
+ * über den Specifier bräuchte er zwei Einträge und die zweite Schreibweise
+ * wäre beim Anlegen leicht zu vergessen. Ein Schlüssel mit `/` am Ende deckt das ganze
+ * Verzeichnis — bewusst nur für die zwei Verzeichnisse, deren Dateien
+ * gleichförmig sind und in denen eine neue Datei denselben Charakter hat:
+ * generierte i18n-Artefakte und die Enum-/Label-Tabellen des Formulars. Für
+ * alles andere gilt der exakte Pfad, damit ein neues Modul im selben
+ * Verzeichnis nicht stillschweigend mitgedeckt ist.
+ */
+const LIB_IMPORT_WAIVERS: ReadonlyMap<string, string> = new Map([
+	[
+		'$lib/paraglide/',
+		'Von Paraglide generierte i18n-Artefakte (Messages, Runtime, baseLocale). Kennen weder Datenbank noch Schema; liefern Übersetzungen und Locale-Namen, nie Zeilenfelder.'
+	],
+	[
+		'$lib/report/formOptions/',
+		'Enum-Definitionen und Label-Tabellen des Formulars (Art, Seegang, Windrichtung, …). Reine Konstanten und Label-Funktionen ohne Datenbankzugriff — sie können nur ausgeben, was ihnen übergeben wird.'
+	],
+	[
+		'$lib/logger.server',
+		'Pino-Logger. Schreibt ins Log, nicht in die Antwort — ein hier geloggter Wert erreicht keinen HTTP-Body.'
+	],
+	[
+		'$lib/form/validation/sightingSchema',
+		'Yup-Schema für die Eingabevalidierung im POST-Pfad. Prüft eingehende Formulardaten und kennt die Datenbankzeile nicht.'
+	],
+	[
+		'$lib/legacy-api/date-utils',
+		'Datums-/Zeitformatierung für die Legacy-Antwort (formatDateDDMMYY, toUnixTimestamp, getYearRange). Nimmt einzelne Datumswerte entgegen, nie eine Zeile.'
+	],
+	[
+		'$lib/utils/format/dateTime',
+		'Formatiert einen einzelnen Datumswert (berlinCalendarDayIso). Nimmt ein Date entgegen und gibt einen String zurück — keine Zeile, kein Feldname.'
+	],
+	[
+		'$lib/server/datetime/berlinDayRange',
+		'Rechnet einen Berliner Kalendertag in ein UTC-Intervall um. Reine Datumsarithmetik für den WHERE-Filter, ohne Datenbankzugriff.'
+	],
+	[
+		'$lib/server/db',
+		'Die Drizzle-Verbindung selbst (Lazy-Proxy). Führt aus, was die Route formuliert; die Spaltenauswahl steht in der Route und wird dort gescannt.'
+	],
+	[
+		'$lib/server/db/schema',
+		'Die Tabellendefinition. Dass sie `entryClient` kennt, ist der Grund für diesen Guard — ausgeliefert wird die Spalte erst durch eine Auswahl in der Route, und die steht im Scan.'
+	],
+	[
+		'$lib/server/db/approvalFilter',
+		'Baut nur das Freigabe-Prädikat (approvedOnly) für die WHERE-Klausel. Wählt keine Spalten aus und gibt keine Antwort zurück.'
+	],
+	[
+		'$lib/server/db/consentGatedSearch',
+		'Baut nur Suchbedingungen für die WHERE-Klausel (consentGatedNameSearch, containsPattern) — keine Spaltenauswahl, keine Antwort.'
+	],
+	[
+		'$lib/server/db/sqlTimeZone',
+		'Liefert SQL-Fragmente für die Zeitzonenumrechnung einer bestimmten Datumsspalte (berlinToChar, berlinDatePart). Ein Fragment kann keine zusätzliche Spalte in die Auswahl holen.'
+	],
+	[
+		'$lib/server/db/sightingRepository',
+		'Schreibpfad und Duplikatszählung (saveSighting, countRecentDuplicateSignals). Gibt der Route eine Id bzw. Zahlen zurück, nie eine Zeile — die bekannte Unschärfe der breiten Selects dort steht im Dateikopf jener Datei (Punkt 2 oben).'
+	],
+	[
+		'$lib/server/db/mapFormToSighting',
+		'Bildet Formulardaten auf eine Insert-Zeile ab — Richtung Datenbank, nicht Richtung Antwort.'
+	],
+	[
+		'$lib/server/utils/getClientIp',
+		'Liest die Client-IP aus den Request-Headern für Rate-Limit und Spam-Prüfung. Berührt die Sichtungszeile nicht.'
+	],
+	[
+		'$lib/server/utils/resolveEntryClient',
+		'Berechnet den Wert dieser Spalte — aber nur für den Schreibpfad: Das Ergebnis geht an saveSighting(), nicht in die Antwort. Genau diese Stelle belegen die Gegenproben unter „der echte Schreibpfad".'
+	],
+	[
+		'$lib/server/startup/versionInfo',
+		'Liefert Build-Metadaten (Version, Commit) für den Antwort-Header bzw. die Spam-Prüfung. Kennt die Sichtungstabelle nicht.'
+	],
+	[
+		'$lib/server/spam/spamDetector',
+		'Bewertet eine eingehende Meldung im POST-Pfad. Arbeitet auf den Formulardaten, nicht auf einer gelesenen Zeile.'
+	],
+	[
+		'$lib/server/spam/formToken',
+		'Prüft das Formular-Token einer eingehenden Meldung. Reine Token-Verifikation ohne Zeilenzugriff.'
+	],
+	[
+		'$lib/server/services/emailService',
+		'Versendet Benachrichtigungen per SMTP. Was dort hineingeht, verlässt die Anwendung per Mail an den Betreiber und nicht als HTTP-Antwort an den Melder.'
+	],
+	[
+		'$lib/server/validation/requestValidation',
+		'Validiert eingehende Requests (checkForbiddenAdminFields, validateSightingFormData). Richtung Eingang, nicht Richtung Antwort.'
+	],
+	[
+		'$lib/server/middleware/rateLimit',
+		'Rate-Limit-Prüfung und deren Header. Gibt Zähler und Limits aus, nie Felder einer Sichtungszeile.'
+	],
+	[
+		'$lib/server/auth/auth',
+		'Erkennt die Admin-Session (isAdminUser) für den breiteren Suchzweig. Entscheidet über die Menge der Zeilen, nicht über die Auswahl der Spalten.'
+	],
+	[
+		'$lib/services/configService',
+		'Laufzeit-Konfiguration (ServerConfigService). Liefert Einstellungswerte, keine Sichtungsfelder.'
+	],
+	[
+		'src/routes/api/map/sightings/statusFilter.ts',
+		'Nachbarmodul beider Karten-Routen, relativ importiert. Parst den status-Parameter und entscheidet, wer ihn setzen darf — ohne DB-Import und ohne Zeilenzugriff (siehe Dateikopf dort: „bewusst rein funktional und ohne SvelteKit- oder DB-Import").'
+	],
+	[
+		'src/routes/api/map/sightings/publicMapConditions.ts',
+		'Nachbarmodul beider Karten-Routen, relativ importiert. Baut nur WHERE-Bedingungen (mapSightingConditions) — dieselbe Begründung wie in ALLOWED_UNPROTECTED weiter unten: liest keine Zeile, gibt keine Antwort zurück.'
+	],
+	[
+		'$lib/components/admin/sightingStatus',
+		'Leitet den Anzeigestatus aus approvedAt/rejectedAt ab (Import aus mapUtils.ts). Bekommt genau diese zwei Werte übergeben und gibt einen Statusnamen zurück.'
+	]
+]);
 
 /**
  * Jede Schreibweise, mit der das Feld in eine Antwort geraten kann.
@@ -568,5 +728,500 @@ describe('Bestand — jede lesende Route ist erfasst oder begründet ausgenommen
 				`${path} ruft requireUserRole(...) auf — gehört nicht mehr in ALLOWED_UNPROTECTED, der dynamische Nachweis greift bereits.`
 			).toBe(false);
 		}
+	});
+});
+
+/**
+ * Abhängigkeiten — der Abgleich der Scan-Liste selbst (Runde 3, Gap 1).
+ *
+ * `SCANNED_RESPONSE_FILES` war eine von Hand gepflegte Liste, und genau das war
+ * der Critical-Fund der zweiten Review-Runde: Die Karten-Route stand darin, der
+ * Antwortbauer `mapUtils.ts` nicht. Der Eintrag wurde nachgetragen — aber ein
+ * nachgetragener Eintrag schützt nur den einen Fall, den jemand gesehen hat.
+ * Importiert eine geschützte Route morgen einen zweiten Helfer, entsteht
+ * dieselbe Lücke lautlos.
+ *
+ * Diese Gruppe dreht die Polarität um — dieselbe Bewegung, die der
+ * Vollständigkeits-Selbsttest oben für Routen macht: Sie liest die Importe
+ * **jeder** gescannten Datei und verlangt für jeden davon einen von zwei
+ * Nachweisen:
+ *
+ *  1. Das Modul wird selbst gescannt (steht in `SCANNED_RESPONSE_FILES`).
+ *  2. Es steht mit Begründung in `LIB_IMPORT_WAIVERS`.
+ *
+ * Weil auch die Builder aus `MAP_RESPONSE_BUILDERS` mitgeprüft werden, ist der
+ * Abgleich über die gescannte Menge geschlossen: Wer `mapUtils.ts` in die Liste
+ * holt, holt damit auch dessen Importe in die Nachweispflicht.
+ *
+ * **Beide Importformen, nicht nur `$lib`.** Ein `$lib`-Import ist im Bestand
+ * der übliche Weg zu einem Helfer, aber nicht der einzige: Die Karten-Route
+ * holt sich `./publicMapConditions` und `./statusFilter` relativ. Ein nur auf
+ * `$lib` schauender Abgleich hätte den Gap-1-Fall damit bloß verschoben — ein
+ * Response-Builder als Nachbardatei der Route wäre weiterhin unsichtbar
+ * gewesen. Relative Pfade werden deshalb gegen das Verzeichnis der
+ * importierenden Datei aufgelöst und mit demselben Maß gemessen.
+ *
+ * **Was bewusst draußen bleibt.** Die virtuellen Module des Frameworks:
+ * `./$types` (von SvelteKit generiert, existiert im Quellbaum gar nicht),
+ * `$app/…` und `$env/…`. Keines davon kann die Sichtungstabelle lesen, und
+ * `./$types` ließe sich ohne `.svelte-kit/`-Lauf nicht einmal auflösen.
+ *
+ * **Importe ohne Wertbindung sind ausgenommen** — `import type { … }` ebenso
+ * wie die Liste, in der jeder Specifier sein eigenes `type` trägt
+ * (`import { type Foo } from '…'`). Nicht, weil „Typen ohnehin verschwinden":
+ * Mit `verbatimModuleSyntax: true` bleibt bei der zweiten Form ein
+ * `import {} from '…'` stehen, das Modul wird also geladen. Es entsteht nur
+ * kein Name im Gültigkeitsbereich, und ohne Bindung kann die Datei aus dem
+ * Modul kein Antwortfeld holen. Das ist die einzige Unterscheidung hier, die
+ * sich mechanisch treffen lässt; alles andere ist Nachweis oder Waiver.
+ */
+describe('Abhängigkeiten — jeder Import einer gescannten Datei ist gedeckt', () => {
+	/**
+	 * Ein `import`/`export … from '…'` mit allem, was dazwischen stehen darf.
+	 *
+	 * `[^;]*?` statt `[\s\S]*?` — und der Grund ist ein anderer als der zuerst
+	 * hier notierte (Review Runde 3). Nachgemessen unterscheiden sich die
+	 * beiden Fassungen **nicht** darin, welche Pfade sie finden: Ein
+	 * Seiteneffekt-Import (`import '…';`) hat kein `from` und ist für beide
+	 * unsichtbar, doppelt gezählt wird auch nichts. Der Unterschied liegt
+	 * allein im eingefangenen Clause, und der entscheidet über die
+	 * Typ-Erkennung: Ohne die Semikolon-Grenze beginnt der Clause von
+	 * `import '$lib/polyfill';\nimport type { T } from '$lib/b';` mit dem
+	 * Seiteneffekt-Import statt mit `type`, `/^\s*type\b/` greift nicht, und
+	 * ein reiner Typ-Import wird als Wert-Import gemeldet. Die Gegenprobe
+	 * „Seiteneffekt-Import vor einem reinen Typ-Import" unten fixiert genau
+	 * das; sie wird rot, wenn jemand die Grenze wieder aufweicht.
+	 *
+	 * Zeilenumbrüche frisst `[^;]` weiterhin, deshalb trifft das Muster auch
+	 * den mehrzeiligen Klammerblock, wie ihn Prettier in
+	 * `antworten.json/+server.ts` erzeugt.
+	 */
+	const MODULE_IMPORT = /(?:import|export)\b([^;]*?)\bfrom\s*(['"])([^'"]+)\2/g;
+
+	/** Von SvelteKit generiert bzw. virtuell — kein Quelltext, keine Tabelle. */
+	const FRAMEWORK_MODULES = /^(?:\$app\/|\$env\/)|\$types$/;
+
+	/**
+	 * Alle Module, die `source` zur **Laufzeit** lädt — `$lib`-Alias und
+	 * relative Nachbarpfade, ohne die virtuellen Framework-Module.
+	 *
+	 * `.js`-Endung wird abgeschnitten, damit `$lib/legacy-api/date-utils.js`
+	 * (so schreibt es `showreports.json/+server.ts`) und
+	 * `$lib/legacy-api/date-utils` (so schreibt es `api/sightings/+server.ts`)
+	 * derselbe Eintrag sind — sonst bräuchte dieselbe Datei zwei Waiver.
+	 */
+	/**
+	 * Ob ein Import-Clause **keine** Wertbindung erzeugt.
+	 *
+	 * Zwei Formen zählen dazu (Review Copilot, Runde 4): das vorangestellte
+	 * `import type { … }` und die Liste, in der **jeder** Specifier sein
+	 * eigenes `type` trägt — `import { type Foo } from '…'`,
+	 * `export { type Foo } from '…'`. Die zweite fehlte und hätte einen
+	 * Waiver für ein Modul verlangt, aus dem gar nichts gebunden wird.
+	 *
+	 * Wichtig ist dabei die Begründung, nicht die Faustregel „Typen sind
+	 * weg": `.svelte-kit/tsconfig.json` setzt `verbatimModuleSyntax: true`,
+	 * und damit bleibt aus `import { type Foo } from 'x'` sehr wohl ein
+	 * `import {} from 'x'` stehen — das Modul wird geladen. Was es nicht
+	 * gibt, ist eine **Bindung**: Ohne Namen im Gültigkeitsbereich kann die
+	 * Datei aus diesem Modul kein Antwortfeld holen. Ein reiner
+	 * Seiteneffekt-Import ist für diesen Scan ohnehin unsichtbar (kein
+	 * `from`), die Behandlung ist also konsistent.
+	 *
+	 * Gemischt heißt Wert-Import: `{ buildBody, type Body }` bindet
+	 * `buildBody`, ebenso `rb, { type Body }` (Default-Bindung außerhalb der
+	 * Klammern). Deshalb muss der Clause **vollständig** aus einem
+	 * Klammerblock bestehen.
+	 *
+	 * Bewusst konservativ bleibt die Grammatik-Ecke `{ type as T }` — das
+	 * importiert eine Bindung namens `type` unter dem Namen `T` und ist
+	 * damit ein Wert-Import; `{ type }` ebenso. Beide fordern hier weiterhin
+	 * einen Waiver, was die richtige Richtung ist: lieber ein Eintrag zu
+	 * viel als eine unbemerkte Bindung.
+	 */
+	function isTypeOnlyClause(clause: string): boolean {
+		if (/^\s*type\b/.test(clause)) return true;
+
+		const braced = clause.match(/^\s*\{([^}]*)\}\s*$/);
+		if (!braced) return false;
+
+		const specifiers = (braced[1] ?? '')
+			.split(',')
+			.map((entry) => entry.trim())
+			.filter(Boolean);
+
+		return specifiers.length > 0 && specifiers.every((entry) => /^type\s+(?!as\b)\w/.test(entry));
+	}
+
+	function valueImportSpecifiers(source: string): string[] {
+		const specifiers = new Set<string>();
+
+		for (const match of stripComments(source).matchAll(MODULE_IMPORT)) {
+			const clause = match[1] ?? '';
+			const specifier = match[3] ?? '';
+			if (isTypeOnlyClause(clause)) continue;
+			if (FRAMEWORK_MODULES.test(specifier)) continue;
+			if (!specifier.startsWith('$lib/') && !specifier.startsWith('.')) continue;
+			specifiers.add(specifier.replace(/\.js$/, ''));
+		}
+
+		return [...specifiers].sort();
+	}
+
+	/**
+	 * Der Pfad im Repo, den ein Specifier meint — `undefined`, wenn dort keine
+	 * Datei liegt.
+	 *
+	 * `.js` und `.svelte.ts` stehen neben `.ts` in der Kandidatenliste, weil
+	 * nicht jedes Modul unter `src/lib` eine `.ts`-Datei ist: `$lib/paraglide/`
+	 * enthält ausschließlich generierte `.js`-Dateien. Ohne diese Kandidaten
+	 * meldete die Waiver-Hygiene unten für einen völlig korrekten Eintrag
+	 * „Modul umbenannt oder Pfad vertippt" (Review Runde 3).
+	 */
+	function resolveModule(importer: string, specifier: string): string | undefined {
+		// posix.normalize statt eigener `../`-Arithmetik: Ein einzelner
+		// Regex-Durchlauf löst aufeinanderfolgende Aufstiege nicht auf
+		// (`a/b/../../c` bleibt halb stehen) — nachgemessen an
+		// `../../../../lib/map/mapUtils`, das damit nicht auf mapUtils.ts zeigte.
+		const base = specifier.startsWith('$lib/')
+			? `src/lib/${specifier.slice('$lib/'.length)}`
+			: posix.normalize(posix.join(posix.dirname(importer), specifier));
+
+		return [
+			`${base}.ts`,
+			`${base}/index.ts`,
+			`${base}.js`,
+			`${base}/index.js`,
+			`${base}.svelte.ts`
+		].find((path) => existsSync(path));
+	}
+
+	/**
+	 * Der Waiver-Eintrag — `$lib`-Module stehen unter ihrem Specifier, relative
+	 * Nachbarmodule unter ihrem aufgelösten Pfad (siehe Doc der Map).
+	 */
+	function waiverFor(specifier: string, resolved: string | undefined): string | undefined {
+		const exact =
+			LIB_IMPORT_WAIVERS.get(specifier) ?? (resolved && LIB_IMPORT_WAIVERS.get(resolved));
+		if (exact !== undefined) return exact;
+
+		for (const [key, reason] of LIB_IMPORT_WAIVERS) {
+			if (key.endsWith('/') && specifier.startsWith(key)) return reason;
+		}
+		return undefined;
+	}
+
+	/**
+	 * Die eigentliche Regel: Importe ohne einen der beiden Nachweise.
+	 *
+	 * Ein relativer Import, der auf keine Datei zeigt, gilt als **nicht**
+	 * gedeckt und nicht als „nicht vorhanden, also egal": Er ist entweder ein
+	 * Tippfehler oder ein Modul, das dieser Abgleich nicht sieht — beides will
+	 * man wissen, und beides ist billiger als ein stilles Durchwinken.
+	 */
+	function uncoveredImports(importer: string, source: string): string[] {
+		return valueImportSpecifiers(source).filter((specifier) => {
+			const resolved = resolveModule(importer, specifier);
+			if (resolved !== undefined && SCANNED_RESPONSE_FILES.includes(resolved)) return false;
+			return waiverFor(specifier, resolved) === undefined;
+		});
+	}
+
+	const REMEDIATION_IMPORT = [
+		'Eine gescannte Datei importiert ein Modul, das weder selbst gescannt',
+		'wird noch begründet ausgenommen ist. Genau so entstand der',
+		'Critical-Fund aus Runde 2: Die Route stand in der Liste, der',
+		'Antwortbauer (mapUtils.ts) nicht. Zwei Wege:',
+		'  • Das Modul baut Antwortfelder → in MAP_RESPONSE_BUILDERS aufnehmen,',
+		'    damit es auf entryClient und weite Selects gescannt wird.',
+		'  • Es kann kein Antwortfeld beisteuern → in LIB_IMPORT_WAIVERS mit',
+		'    einer Begründung eintragen, die sagt WARUM (nicht: „ist harmlos").',
+		'Schlüssel ist der $lib-Specifier bzw. — bei relativem Import — der',
+		'aufgelöste Pfad im Repo. Zeigt ein relativer Import ins Leere, ist er',
+		'hier ebenfalls ein Befund: Tippfehler oder unsichtbares Modul.'
+	].join('\n');
+
+	it.each(SCANNED_RESPONSE_FILES)('%s importiert nur Gedecktes', (datei) => {
+		const offenders = uncoveredImports(datei, readFileSync(datei, 'utf8'));
+
+		expect(offenders, `${datei}:\n${REMEDIATION_IMPORT}\n\n${offenders.join('\n')}`).toEqual([]);
+	});
+
+	/**
+	 * Selbsttest: Ein Import-Scanner, der nichts findet, ist grün und beweist
+	 * nichts — dieselbe Sorte Deckung, die keine ist, gegen die auch die
+	 * Selbsttests unter „Bestand" stehen.
+	 */
+	it.each(SCANNED_RESPONSE_FILES)('%s liefert überhaupt Importe', (datei) => {
+		expect(valueImportSpecifiers(readFileSync(datei, 'utf8')).length).toBeGreaterThan(0);
+	});
+
+	/** Die Route, aus deren Sicht die konstruierten Beispiele importiert werden. */
+	const KARTEN_ROUTE = 'src/routes/api/map/sightings/+server.ts';
+
+	describe('Import-Erkennung — jede Schreibweise muss anschlagen', () => {
+		it.each([
+			[
+				'der Gap-1-Fall: ein zweiter, ungescannter Response-Builder',
+				"import { sightingsToGeoJSON } from '$lib/map/mapUtilsV2';",
+				'$lib/map/mapUtilsV2'
+			],
+			[
+				'derselbe Fall über einen relativen Nachbarpfad (Review Runde 3)',
+				"import { toGeoJSON } from './toGeoJSON';",
+				'./toGeoJSON'
+			],
+			[
+				'relativer Ausbruch nach src/lib',
+				"import { toRow } from '../../../../lib/map/mapUtilsV2';",
+				'../../../../lib/map/mapUtilsV2'
+			],
+			[
+				'relativer Import auf eine existierende, ungedeckte Datei',
+				"import { toFrontendSighting } from '../../sightings/export/toFrontendSighting';",
+				'../../sightings/export/toFrontendSighting'
+			],
+			[
+				'doppelte Anführungszeichen',
+				'import { buildBody } from "$lib/map/responseBuilder";',
+				'$lib/map/responseBuilder'
+			],
+			[
+				'mehrzeiliger Klammerblock (Prettier-Umbruch)',
+				"import {\n\tbuildBody,\n\tbuildHeader\n} from '$lib/map/responseBuilder';",
+				'$lib/map/responseBuilder'
+			],
+			[
+				'Namespace-Import',
+				"import * as builder from '$lib/map/responseBuilder';",
+				'$lib/map/responseBuilder'
+			],
+			[
+				'Default-Import',
+				"import builder from '$lib/map/responseBuilder';",
+				'$lib/map/responseBuilder'
+			],
+			[
+				're-exportierter Antwortbauer',
+				"export { buildBody } from '$lib/map/responseBuilder';",
+				'$lib/map/responseBuilder'
+			],
+			[
+				'.js-Endung wird normalisiert (derselbe Eintrag wie ohne)',
+				"import { buildBody } from '$lib/map/responseBuilder.js';",
+				'$lib/map/responseBuilder'
+			],
+			[
+				'gemischter Import mit Inline-type-Schlüsselwort ist ein Wert-Import',
+				"import { buildBody, type Body } from '$lib/map/responseBuilder';",
+				'$lib/map/responseBuilder'
+			],
+			[
+				'Default-Bindung neben einem Inline-Typ ist ein Wert-Import',
+				"import builder, { type Body } from '$lib/map/responseBuilder';",
+				'$lib/map/responseBuilder'
+			],
+			[
+				'Bindung, die literal `type` heißt, ist ein Wert-Import',
+				"import { type } from '$lib/map/responseBuilder';",
+				'$lib/map/responseBuilder'
+			],
+			[
+				'Bindung `type` unter neuem Namen (Grammatik-Ecke) bleibt Wert-Import',
+				"import { type as T } from '$lib/map/responseBuilder';",
+				'$lib/map/responseBuilder'
+			],
+			[
+				'neue Datei im waiver-freien Verzeichnis ist NICHT vom Präfix gedeckt',
+				"import { readRow } from '$lib/server/db/rowReader';",
+				'$lib/server/db/rowReader'
+			]
+		])('%s', (_fall, code, erwartet) => {
+			expect(uncoveredImports(KARTEN_ROUTE, code)).toContain(erwartet);
+		});
+	});
+
+	describe('Gegenproben — das darf NICHT anschlagen', () => {
+		it.each([
+			[
+				KARTEN_ROUTE,
+				'gescanntes Modul (mapUtils, der Fund aus Runde 2)',
+				"import { sightingsToGeoJSON, type DBSighting } from '$lib/map/mapUtils';"
+			],
+			[
+				KARTEN_ROUTE,
+				'gescanntes Modul über einen relativen Pfad',
+				"import { sightingsToGeoJSON } from '../../../../lib/map/mapUtils';"
+			],
+			[KARTEN_ROUTE, 'exakter Waiver', "import { createLogger } from '$lib/logger.server';"],
+			[
+				KARTEN_ROUTE,
+				'exakter Waiver mit .js-Endung',
+				"import { getYearRange } from '$lib/legacy-api/date-utils.js';"
+			],
+			[
+				KARTEN_ROUTE,
+				'Verzeichnis-Waiver (formOptions)',
+				"import { SpeciesEnum, getSpeciesLabel } from '$lib/report/formOptions/species';"
+			],
+			[
+				KARTEN_ROUTE,
+				'relativer Nachbar, über den aufgelösten Pfad gewaivert',
+				"import { resolveMapStatuses } from './statusFilter';"
+			],
+			[
+				// Derselbe Helfer, andere Schreibweise, ein Waiver — das ist der
+				// Grund für die Pfad- statt Specifier-Schlüssel bei relativen
+				// Importen.
+				'src/routes/api/map/sightings/years/+server.ts',
+				'derselbe Nachbar aus dem Unterverzeichnis (../statusFilter)',
+				"import { resolveMapStatuses } from '../statusFilter';"
+			],
+			[
+				KARTEN_ROUTE,
+				'reiner Typ-Import — verschwindet beim Kompilieren',
+				"import type { StoredWeatherData } from '$lib/services/weatherService';"
+			],
+			[
+				KARTEN_ROUTE,
+				'reiner Typ-Re-Export',
+				"export type { StoredWeatherData } from '$lib/services/weatherService';"
+			],
+			[
+				// Review Copilot, Runde 4: bindet nichts, verlangt deshalb keinen
+				// Waiver — auch wenn verbatimModuleSyntax das Modul noch lädt.
+				KARTEN_ROUTE,
+				'Inline-type-Specifier als einziger Eintrag',
+				"import { type DBSighting } from '$lib/map/mapUtilsV2';"
+			],
+			[
+				KARTEN_ROUTE,
+				'mehrere Inline-type-Specifier, mit Alias und über mehrere Zeilen',
+				"import {\n\ttype DBSighting,\n\ttype GeoJSONResponse as Response\n} from '$lib/map/mapUtilsV2';"
+			],
+			[
+				KARTEN_ROUTE,
+				'Inline-type-Re-Export',
+				"export { type DBSighting } from '$lib/map/mapUtilsV2';"
+			],
+			[
+				// Runde 3: die Gegenprobe, die die [^;]-Grenze im MODULE_IMPORT
+				// tatsächlich belegt — mit [\s\S] beginnt der Clause hier mit dem
+				// Seiteneffekt-Import statt mit `type`, und $lib/b würde gemeldet.
+				KARTEN_ROUTE,
+				'Seiteneffekt-Import vor einem reinen Typ-Import',
+				"import '$lib/polyfill';\nimport type { T } from '$lib/b';"
+			],
+			[KARTEN_ROUTE, 'SvelteKit-Typen', "import type { RequestHandler } from './$types';"],
+			[
+				KARTEN_ROUTE,
+				'virtuelles Framework-Modul',
+				"import { env } from '$env/dynamic/private';\nimport { page } from '$app/state';"
+			],
+			[KARTEN_ROUTE, 'Paket-Import', "import { and, gte, lt, sql } from 'drizzle-orm';"],
+			[
+				KARTEN_ROUTE,
+				'Import im Kommentar',
+				"// import { sightingsToGeoJSON } from '$lib/map/mapUtilsV2';\nconst x = 1;"
+			]
+		])('%s: %s', (importer, _fall, code) => {
+			expect(uncoveredImports(importer, code)).toEqual([]);
+		});
+	});
+
+	describe('Pfadauflösung', () => {
+		it.each([
+			['$lib mit .ts', KARTEN_ROUTE, '$lib/logger.server', 'src/lib/logger.server.ts'],
+			['$lib als Verzeichnis', KARTEN_ROUTE, '$lib/server/db', 'src/lib/server/db/index.ts'],
+			// Runde 3: generierte Paraglide-Module sind .js — ohne diesen
+			// Kandidaten meldete die Waiver-Hygiene einen korrekten Eintrag als
+			// Tippfehler.
+			[
+				'$lib mit .js (Paraglide)',
+				KARTEN_ROUTE,
+				'$lib/paraglide/runtime',
+				'src/lib/paraglide/runtime.js'
+			],
+			[
+				'relativer Nachbar',
+				KARTEN_ROUTE,
+				'./statusFilter',
+				'src/routes/api/map/sightings/statusFilter.ts'
+			],
+			[
+				'relativer Aufstieg aus dem Unterverzeichnis',
+				'src/routes/api/map/sightings/years/+server.ts',
+				'../statusFilter',
+				'src/routes/api/map/sightings/statusFilter.ts'
+			],
+			[
+				'relativer Ausbruch nach src/lib',
+				KARTEN_ROUTE,
+				'../../../../lib/map/mapUtils',
+				'src/lib/map/mapUtils.ts'
+			]
+		])('%s', (_fall, importer, specifier, erwartet) => {
+			expect(resolveModule(importer, specifier)).toBe(erwartet);
+		});
+
+		it('meldet ein nicht existierendes Modul als unauflösbar', () => {
+			expect(resolveModule(KARTEN_ROUTE, './toGeoJSON')).toBeUndefined();
+			expect(resolveModule(KARTEN_ROUTE, '$lib/map/mapUtilsV2')).toBeUndefined();
+		});
+	});
+
+	describe('Waiver-Hygiene', () => {
+		const exactWaivers = [...LIB_IMPORT_WAIVERS.keys()].filter((key) => !key.endsWith('/'));
+
+		it.each([...LIB_IMPORT_WAIVERS.entries()])('%s nennt eine Begründung', (pfad, grund) => {
+			expect(grund.length, `Ausnahme ohne Begründung: ${pfad}`).toBeGreaterThan(40);
+		});
+
+		it.each(exactWaivers)('%s zeigt auf ein existierendes Modul', (pfad) => {
+			// Ein Pfad-Schlüssel (relativer Nachbar) steht schon als Repo-Pfad da,
+			// ein $lib-Schlüssel muss erst aufgelöst werden.
+			const vorhanden = pfad.startsWith('$lib/')
+				? resolveModule(KARTEN_ROUTE, pfad) !== undefined
+				: existsSync(pfad);
+
+			expect(
+				vorhanden,
+				`Waiver zeigt ins Leere — Modul umbenannt oder Pfad vertippt: ${pfad}`
+			).toBe(true);
+		});
+
+		it('jeder Waiver wird gebraucht', () => {
+			const genutzt = new Set<string>();
+			for (const datei of SCANNED_RESPONSE_FILES) {
+				for (const specifier of valueImportSpecifiers(readFileSync(datei, 'utf8'))) {
+					const resolved = resolveModule(datei, specifier);
+					genutzt.add(specifier);
+					if (resolved) genutzt.add(resolved);
+				}
+			}
+
+			const ungenutzt = [...LIB_IMPORT_WAIVERS.keys()].filter((key) =>
+				key.endsWith('/')
+					? ![...genutzt].some((specifier) => specifier.startsWith(key))
+					: !genutzt.has(key)
+			);
+
+			expect(
+				ungenutzt,
+				`Waiver ohne Importeur — der Import ist weg, der Eintrag sollte es auch sein:\n${ungenutzt.join('\n')}`
+			).toEqual([]);
+		});
+
+		it('kein Waiver deckt eine gescannte Datei ab', () => {
+			const beschattet = exactWaivers.filter((key) => {
+				const resolved = key.startsWith('$lib/') ? resolveModule(KARTEN_ROUTE, key) : key;
+				return resolved !== undefined && SCANNED_RESPONSE_FILES.includes(resolved);
+			});
+
+			expect(
+				beschattet,
+				`Diese Module werden gescannt UND freigestellt — der Waiver ist irreführend:\n${beschattet.join('\n')}`
+			).toEqual([]);
+		});
 	});
 });
