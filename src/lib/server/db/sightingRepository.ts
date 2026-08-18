@@ -35,6 +35,7 @@ import { db } from '$lib/server/db';
 import { sightingFiles, sightings, type SightingSelect } from '$lib/server/db/schema';
 import { getCachedWeatherData } from '$lib/server/services/weatherDeduplication';
 import { getUploadPath } from '$lib/server/uploads';
+import { truncateEntryClient } from '$lib/server/utils/resolveEntryClient';
 import type { ExifData, UploadedFileInfo } from '$lib/types';
 import type { SightingFormValues } from '$lib/types/Form';
 import type { NewSighting, UpdateSighting } from '$lib/types/sighting';
@@ -65,7 +66,7 @@ const logger = createLogger('db:sightingRepository');
  * @param formData Validierte Formulardaten aus dem Sichtungs-Formular
  * @param weatherData Optional: Wetterdaten für diese Sichtung (Issue #110)
  * @param spamCheck Optional: Spam-Heuristik zum Meldezeitpunkt (wird persistiert)
- * @param entryClient Optional: Kennung der erzeugenden Software (`resolveEntryClient`)
+ * @param entryClient Optional: Kennung der erzeugenden Software (`resolveEntryClient`); wird auf die Spaltenbreite gekürzt
  * @returns Objekt mit der generierten Sichtungs-ID
  *
  * @example
@@ -86,8 +87,11 @@ export const saveSighting = async (
 	// Client-Kennung des Aufrufers festhalten. Ohne Angabe bleibt die Spalte
 	// NULL — das ist die Kennzeichnung für Zeilen aus der Zeit vor dieser
 	// Spalte und darf nicht durch einen Default überschrieben werden.
+	// Die Kürzung steht hier und nicht nur bei den Aufrufern: Ein ungekürzter
+	// User-Agent ließe den Insert an der Spaltenbreite scheitern und damit die
+	// ganze Meldung verlorengehen — statt nur die Herkunftsnotiz zu kürzen.
 	if (entryClient) {
-		sightingData.entryClient = entryClient;
+		sightingData.entryClient = truncateEntryClient(entryClient);
 	}
 
 	// Spam-Heuristik zum Meldezeitpunkt festhalten. NULL bleibt für Altbestand,

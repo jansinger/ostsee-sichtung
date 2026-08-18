@@ -283,6 +283,36 @@ describe('sightingRepository', () => {
 			expect(capturedValues?.entryClient).toBeUndefined();
 		});
 
+		it('kürzt eine überlange Client-Kennung auf die Spaltenbreite', async () => {
+			// Die 128-Zeichen-Grenze der Spalte `eingangs_client` wird hier an der
+			// Schreibgrenze durchgesetzt, nicht erst bei den Aufrufern: Ein roher
+			// User-Agent, der ungekürzt durchgereicht wird, ließe sonst den Insert
+			// mit einem DB-Fehler scheitern — und dabei ginge die ganze Meldung
+			// verloren, nicht bloß die Herkunftsnotiz.
+			const mockDb = db as any;
+			let capturedValues: Record<string, unknown> | undefined;
+			mockDb.insert.mockReturnValue({
+				values: vi.fn().mockImplementation((data) => {
+					capturedValues = data;
+					return { returning: vi.fn().mockResolvedValue([{ id: 42 }]) };
+				})
+			});
+			mockDb.update.mockReturnValue({
+				set: vi.fn().mockReturnValue({
+					where: vi.fn().mockReturnValue({
+						returning: vi.fn().mockResolvedValue([{ id: 42 }])
+					})
+				})
+			});
+
+			const overlong = 'A'.repeat(200);
+			await saveSighting(mockFormData, undefined, undefined, overlong);
+
+			const stored = capturedValues?.entryClient as string;
+			expect(stored.length).toBeLessThanOrEqual(128);
+			expect(stored).toBe(`${'A'.repeat(127)}…`);
+		});
+
 		/**
 		 * Test: Erfolgreiche Speicherung mit Dateien
 		 */

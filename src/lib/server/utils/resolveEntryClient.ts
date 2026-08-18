@@ -26,7 +26,7 @@ export function resolveEntryClient(input: EntryClientInput): string {
 	const value =
 		input.source === 'web' ? fromAppVersion(input.appVersion) : fromUserAgent(input.userAgent);
 
-	return truncate(value);
+	return truncateEntryClient(value);
 }
 
 function fromAppVersion(appVersion: string): string {
@@ -42,7 +42,14 @@ function fromUserAgent(userAgent: string | null | undefined): string {
 	return agent === '' ? UNKNOWN_ENTRY_CLIENT : agent;
 }
 
-function truncate(value: string): string {
+/**
+ * Kürzt einen Wert auf die Breite der Spalte `eingangs_client`.
+ *
+ * Exportiert, damit `saveSighting` dieselbe Regel an der Schreibgrenze
+ * anwenden kann, statt sich auf die Disziplin seiner Aufrufer zu verlassen —
+ * eine zweite Kopie der Regel würde irgendwann auseinanderlaufen.
+ */
+export function truncateEntryClient(value: string): string {
 	return value.length <= MAX_ENTRY_CLIENT_LENGTH
 		? value
 		: `${value.slice(0, MAX_ENTRY_CLIENT_LENGTH - 1)}…`;
