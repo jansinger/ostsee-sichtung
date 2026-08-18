@@ -11,6 +11,7 @@
 import type { LegacySightingRequest } from '$lib/legacy-api/types';
 import type { RequestEvent } from '@sveltejs/kit';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { resetRateLimits } from '$lib/server/middleware/rateLimit';
 import { DELETE, POST, PUT } from './+server';
 
 // Mock dependencies - these need to be hoisted before any imports
@@ -58,11 +59,7 @@ import { saveSighting } from '$lib/server/db/sightingRepository';
 import { checkBalticSeaFile } from '$lib/server/geo/checkBalticSeaFile';
 
 // Helper to create mock request event
-function createMockRequestEvent(
-	body: LegacySightingRequest,
-	userAgent?: string,
-	clientIp?: string
-): RequestEvent {
+function createMockRequestEvent(body: LegacySightingRequest, userAgent?: string): RequestEvent {
 	return {
 		request: {
 			json: () => Promise.resolve(body),
@@ -74,7 +71,7 @@ function createMockRequestEvent(
 				}
 			}
 		},
-		getClientAddress: () => clientIp ?? '127.0.0.1'
+		getClientAddress: () => '127.0.0.1'
 	} as any;
 }
 
@@ -86,6 +83,11 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 	beforeEach(() => {
 		// Clear all mocks but don't reset implementations
 		vi.clearAllMocks();
+
+		// Der Rate-Limiter zählt prozessweit am Modul, nicht am Request: Ohne
+		// diesen Reset teilen sich alle Tests dieser Datei das Kontingent von
+		// 20 Meldungen pro Stunde und IP, und der 21. Test scheitert mit 429.
+		resetRateLimits();
 
 		// Default geo validation to return valid Baltic Sea location
 		mockCheckBalticSea.mockReturnValue({
@@ -484,6 +486,7 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 describe('Client-Kennung (eingangs_client)', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		resetRateLimits();
 		vi.mocked(saveSighting).mockResolvedValue({ id: 42 });
 		vi.mocked(checkBalticSeaFile).mockReturnValue({
 			inBaltic: true,
@@ -504,11 +507,7 @@ describe('Client-Kennung (eingangs_client)', () => {
 		}) as unknown as LegacySightingRequest;
 
 	it('speichert den User-Agent des Clients als vierten Parameter', async () => {
-		// Eigene Client-IP: der Rate-Limiter zählt prozessweit über die ganze
-		// Testdatei hinweg (kein Reset zwischen Tests), und die übrigen Tests
-		// hier schöpfen das Kontingent von 127.0.0.1 bereits bis an die Grenze
-		// aus. Ein eigener Schlüssel isoliert diesen Test davon.
-		const event = createMockRequestEvent(gueltigeMeldung(), 'OstSeeTiere/8', '203.0.113.10');
+		const event = createMockRequestEvent(gueltigeMeldung(), 'OstSeeTiere/8');
 		const response = await POST(event);
 
 		expect(response.status).toBe(201);
@@ -517,10 +516,8 @@ describe('Client-Kennung (eingangs_client)', () => {
 
 	it('speichert unbekannt, wenn der Client keinen User-Agent schickt', async () => {
 		// NULL ist dem Altbestand vorbehalten — ein neuer Datensatz ohne
-		// User-Agent muss davon unterscheidbar bleiben. Dieselbe eigene
-		// Client-IP wie im vorigen Test: Das Kontingent von 20 Anfragen pro IP
-		// trägt beide Aufrufe problemlos.
-		const event = createMockRequestEvent(gueltigeMeldung(), undefined, '203.0.113.10');
+		// User-Agent muss davon unterscheidbar bleiben.
+		const event = createMockRequestEvent(gueltigeMeldung(), undefined);
 		const response = await POST(event);
 
 		expect(response.status).toBe(201);
