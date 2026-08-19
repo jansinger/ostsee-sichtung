@@ -11,6 +11,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { InboxPollerOptions } from '$lib/components/admin/inboxPoller';
 import type { PageData } from './$types';
 
+const navigiereZuSessionEnde = vi.fn();
+vi.mock('./inboxSessionEnde', () => ({ navigiereZuSessionEnde }));
+
 const invalidateAll = vi.fn(() => Promise.resolve());
 vi.mock('$app/navigation', () => ({
 	goto: vi.fn(() => Promise.resolve()),
@@ -62,6 +65,7 @@ describe('Eingangsseite — Hinweis auf neue Meldungen', () => {
 		invalidateAll.mockClear();
 		start.mockClear();
 		stop.mockClear();
+		navigiereZuSessionEnde.mockClear();
 	});
 
 	it('startet den Poller mit der Baseline aus dem Load', async () => {
@@ -86,6 +90,17 @@ describe('Eingangsseite — Hinweis auf neue Meldungen', () => {
 
 		await expect.element(screen.getByRole('button', { name: 'Neu laden' })).toBeInTheDocument();
 		expect(screen.container.textContent).toContain('Neue Meldungen eingegangen');
+	});
+
+	it('meldet eine abgelaufene Sitzung über den Login-Weg des Eingangs, nicht über Logout', async () => {
+		// Nicht der Logout-Weg (`/api/auth/logout`): Der zerstört serverseitig nichts
+		// mehr (die Sitzung ist ja bereits weg), hängt aber den Auth0-SSO-Logout an —
+		// alle anderen offenen Admin-Tabs würden mit abgemeldet. Der Login-Weg führt
+		// oft still durch und landet zurück auf dem Eingang. Siehe inboxSessionEnde.ts.
+		await render(AdminInbox, { data: daten(12) });
+		(await pollerOptionen()).onSessionEnde();
+
+		expect(navigiereZuSessionEnde).toHaveBeenCalledOnce();
 	});
 
 	it('lädt beim Klick neu und nimmt den Hinweis zurück', async () => {

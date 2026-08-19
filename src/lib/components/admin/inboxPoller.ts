@@ -11,6 +11,13 @@
  * Runes: Es meldet per Callback, die Seite hält ihr `$state`. Damit stellt sich
  * die Frage nach globalem `$state` in einem Modul (SSR-Datenleck, siehe
  * `.claude/rules/architecture.md`) gar nicht erst.
+ *
+ * Stillschweigende Annahme: Sichtungs-IDs steigen monoton — der Vergleich unten
+ * ist ausschließlich `maxOpenId > baseline`. Das Projekt hat dazu eine
+ * dokumentierte Altlast (`db-transfer-nach-prod-2026-07-31`): Beim Prod-Transfer
+ * fehlte `sichtungen_seq` im `pg_dump` und kollidierte bei 1840. Fiele die
+ * Sequenz je wieder zurück, bliebe der Hinweis still aus — nicht falsch, nur
+ * verspätet —, bis sie ihren alten Höchststand erneut überholt.
  */
 
 /** Der Teil von `document`, den der Poller liest — im Test ein Doppelgänger. */

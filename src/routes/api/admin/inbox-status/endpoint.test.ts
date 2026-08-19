@@ -16,7 +16,12 @@ import { GET } from './+server';
 const ADMIN = { sub: 'u1', email: 'admin@example.com', roles: ['admin'] };
 
 function event(user?: unknown) {
-	return { locals: { user } } as never;
+	const headers: Record<string, string> = {};
+	return {
+		locals: { user },
+		setHeaders: (neu: Record<string, string>) => Object.assign(headers, neu),
+		_headers: headers
+	} as never;
 }
 
 /** Ein `db.select(...).from(...).where(...)`, das `rows` liefert. */
@@ -63,5 +68,17 @@ describe('GET /api/admin/inbox-status', () => {
 		const response = await GET(event(ADMIN));
 
 		expect(await response.json()).toEqual({ maxOpenId: 0 });
+	});
+
+	it('setzt Cache-Control: private, no-store — ohne Last-Modified/ETag cachte ein Proxy sonst den Poll-Stand', async () => {
+		// Fehlermodus ohne den Header: der Banner erscheint nie, still — genau wie
+		// bei /api/map/sightings (Muster dort übernommen).
+		const ev = event(ADMIN);
+
+		await GET(ev);
+
+		expect((ev as unknown as { _headers: Record<string, string> })._headers['Cache-Control']).toBe(
+			'private, no-store'
+		);
 	});
 });

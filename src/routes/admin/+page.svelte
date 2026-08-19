@@ -5,6 +5,7 @@
 	import SightingInboxCard from '$lib/components/admin/SightingInboxCard.svelte';
 	import { inboxAnchor } from '$lib/components/admin/adminReturn';
 	import { createInboxPoller } from '$lib/components/admin/inboxPoller';
+	import { navigiereZuSessionEnde } from './inboxSessionEnde';
 	import {
 		nextActionableIndex,
 		resolveInboxShortcut,
@@ -73,15 +74,21 @@
 
 		const poller = createInboxPoller({
 			baseline: data.maxOpenId,
-			fetchStatus: () => fetch('/api/admin/inbox-status'),
+			// Der Endpunkt setzt `Cache-Control: private, no-store`, aber ohne
+			// `Last-Modified`/`ETag` cachte ein Browser sonst heuristisch — `no-store`
+			// hier verhindert das unabhängig vom Server-Header.
+			fetchStatus: () => fetch('/api/admin/inbox-status', { cache: 'no-store' }),
 			onNeueMeldungen: () => (neueMeldungen = true),
 			/* Der Endpunkt antwortet mit 401, sobald die Auth0-Sitzung abgelaufen
 			   ist — bei einem über Nacht offenen Tab der Regelfall. Statt still zu
-			   verstummen, meldet die Seite sauber ab: `/api/auth/logout` zerstört
-			   die Server-Sitzung und geht durch den Auth0-Logout. Auf dem Eingang
-			   ist der Sprung gefahrlos, weil Entscheidungen sofort per PATCH
-			   herausgehen und es keinen ungespeicherten Zustand gibt. */
-			onSessionEnde: () => window.location.assign('/api/auth/logout')
+			   verstummen, führt die Seite zurück zum Login (`inboxSessionEnde.ts`):
+			   Ein Roundtrip durch Auth0 meldet oft still wieder an (SSO-Sitzung
+			   bleibt bestehen, anders als beim Logout-Weg, der sie beendet und damit
+			   jeden anderen offenen Admin-Tab mit abmeldete), und der Bearbeiter
+			   landet wieder auf dem Eingang. Der Sprung dorthin ist gefahrlos, weil
+			   Entscheidungen sofort per PATCH herausgehen und es keinen
+			   ungespeicherten Zustand gibt. */
+			onSessionEnde: navigiereZuSessionEnde
 		});
 		poller.start();
 		return () => poller.stop();
@@ -290,18 +297,24 @@
 		</button>
 	</div>
 
-	<!-- `role="status"` ist hier nicht Zierde: Der Hinweis erscheint ohne Zutun
-	     des Nutzers, und ohne Live-Region erführe ein Screenreader-Nutzer nie
-	     davon. `polite` und nicht `assertive` — die Meldung ist nicht dringend.
-	     Bewusst ohne Autofokus: Der Bearbeiter navigiert per J und K, ein
-	     Fokussprung würde ihn aus der Arbeit werfen. -->
-	{#if neueMeldungen}
-		<div class="alert alert-info mb-4" role="status">
-			<Info width="20" height="20" class="shrink-0" aria-hidden="true" />
-			<span class="grow">Neue Meldungen eingegangen.</span>
-			<button type="button" class="btn btn-sm" onclick={neuLaden}>Neu laden</button>
-		</div>
-	{/if}
+	<!-- `role="status"`/`aria-live="polite"` sitzen am äußeren Container und NICHT
+	     am `{#if}` — eine Live-Region muss im Accessibility-Tree stehen, BEVOR sich
+	     ihr Inhalt ändert. Entstehen Region und Inhalt gleichzeitig (Container erst
+	     mit `neueMeldungen`), bekommen Screenreader die Ansage je nach Browser gar
+	     nicht mit, weil es nichts zu beobachten gab, als der Knoten erschien. Der
+	     Container bleibt deshalb immer im DOM, nur sein Inhalt ist bedingt. `polite`
+	     und nicht `assertive` — die Meldung ist nicht dringend. Bewusst ohne
+	     Autofokus: Der Bearbeiter navigiert per J und K, ein Fokussprung würde ihn
+	     aus der Arbeit werfen. -->
+	<div role="status" aria-live="polite">
+		{#if neueMeldungen}
+			<div class="alert alert-info mb-4">
+				<Info width="20" height="20" class="shrink-0" aria-hidden="true" />
+				<span class="grow">Neue Meldungen eingegangen.</span>
+				<button type="button" class="btn btn-sm" onclick={neuLaden}>Neu laden</button>
+			</div>
+		{/if}
+	</div>
 
 	<!-- Der Hinweis steht über der Liste und nicht in einem Tooltip: Ein Kürzel,
 	     das man erst durch Ausprobieren findet, benutzt niemand. Die Taste selbst
