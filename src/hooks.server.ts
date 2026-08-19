@@ -4,6 +4,7 @@ import { zielFuerStartseite } from '$lib/i18n/startseitenWeiterleitung';
 import { createLogger } from '$lib/logger.server';
 import { paraglideMiddleware } from '$lib/paraglide/server';
 import { resolveSessionUser } from '$lib/server/auth/sessionRepository';
+import { verlaengertSession } from '$lib/server/auth/sessionTouchExemption';
 import { assertProductionSecrets } from '$lib/server/config/secretGuard';
 import { closeDb } from '$lib/server/db';
 import { databaseCheck } from '$lib/server/middleware/databaseCheck';
@@ -67,7 +68,11 @@ const authentication: Handle = async ({ event, resolve }) => {
 	/* Die Ableitung Cookie -> Benutzer steht bewusst in sessionRepository.ts und nicht hier:
 	   Der Modul-Scope dieser Datei (Startup-Guards, sequence()) macht sie sonst untestbar,
 	   und genau diese Ableitung ist der Punkt, an dem #635 bewiesen wird. */
-	const session = await resolveSessionUser(event.cookies);
+	// `verlaengertSession` hält die einzige Ausnahmeliste (aktuell: der Admin-Inbox-Poll)
+	// fest — siehe sessionTouchExemption.ts für die Begründung.
+	const session = await resolveSessionUser(event.cookies, {
+		verlaengern: verlaengertSession(url.pathname)
+	});
 	if (session) {
 		logger.debug({ userSub: session.user.sub }, 'Authenticated user');
 		event.locals.user = session.user;

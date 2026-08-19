@@ -434,6 +434,39 @@ describe('touchSession (über resolveSessionUser)', () => {
 		expect(resolved?.user.sub).toBe(USER.sub);
 		expect(mockError).toHaveBeenCalled();
 	});
+
+	it('schreibt trotz überschrittenem Schwellwert nicht fort, wenn { verlaengern: false } übergeben wird', async () => {
+		// Für den Poll-Pfad des Admin-Eingangs (siehe sessionTouchExemption.ts): Sein
+		// 60-s-Takt träfe sonst fast immer die Touch-Schwelle und verlängerte die
+		// Sitzung bei jedem Poll um eine weitere Stunde.
+		const cookies = mockCookies();
+		cookies.get.mockReturnValue('the-token');
+		const row = sessionRow({
+			lastSeenAt: new Date(NOW.getTime() - (SESSION_TOUCH_THRESHOLD_SECONDS + 5) * 1000)
+		});
+		stubSelect([row]);
+
+		const resolved = await resolveSessionUser(cookies, { verlaengern: false });
+
+		expect(mockDb.update).not.toHaveBeenCalled();
+		expect(cookies.set).not.toHaveBeenCalled();
+		// Die gültige Session wird trotzdem aufgelöst — nur die Verlängerung entfällt.
+		expect(resolved?.user.sub).toBe(USER.sub);
+		expect(resolved?.expiresAt.getTime()).toBe(row.expiresAt.getTime());
+	});
+
+	it('löscht eine abgelaufene Session auch mit { verlaengern: false } (Ablaufprüfung bleibt aktiv)', async () => {
+		const cookies = mockCookies();
+		cookies.get.mockReturnValue('the-token');
+		stubSelect([sessionRow({ expiresAt: new Date(NOW.getTime() - 1000) })]);
+		const del = stubDelete();
+
+		const resolved = await resolveSessionUser(cookies, { verlaengern: false });
+
+		expect(resolved).toBeNull();
+		expect(del.where).toHaveBeenCalled();
+		expect(cookies.delete).toHaveBeenCalled();
+	});
 });
 
 describe('destroySession', () => {
