@@ -1,5 +1,6 @@
 import { env } from '$env/dynamic/private';
 import pino from 'pino';
+import { LOG_SERIALIZERS } from './serializers';
 
 const VALID_PINO_LEVELS = ['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent'] as const;
 
@@ -14,6 +15,10 @@ export const createServerLogger = (context: string) => {
 	return pino({
 		level: resolveLogLevel(env.LOG_LEVEL),
 		base: { pid: process.pid, context },
+		// Ohne diese Zeile fällt `logger.error({ error }, ...)` auf die
+		// aufzählbaren Eigenschaften zusammen und verliert `message` und
+		// `stack` — siehe `serializers.ts`.
+		serializers: LOG_SERIALIZERS,
 		// Globale Redaction: personenbezogene/geheime Felder werden aus allen Logs
 		// entfernt (Defense-in-Depth gegen versehentliches Loggen von PII/Secrets).
 		// `*.<feld>` deckt jeweils eine Verschachtelungsebene ab (z.B. { data: { email } }).

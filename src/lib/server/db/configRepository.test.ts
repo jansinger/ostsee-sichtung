@@ -624,6 +624,49 @@ describe('ConfigRepository', () => {
 				const result = await ConfigRepository.getBoolean('present', true);
 				expect(result).toBe(false);
 			});
+
+			it.each(['false', 'False', 'FALSE', '0', 'no', 'off', ''])(
+				'liest %o als false statt als true',
+				async (stored) => {
+					// `Boolean('false')` ist `true` — jeder nichtleere String war damit
+					// eingeschaltet. Die Spalte ist zwar `jsonb` und die Oberfläche
+					// schreibt echte Booleans, aber `PUT /api/config` nimmt jeden
+					// JSON-Wert entgegen, und Altbestand sowie SQL von Hand ebenso.
+					// Bei `email.smtp.secure` hätte das den Transport auf sofortiges
+					// TLS gestellt und den Versand mit einem Fehler abbrechen lassen,
+					// der wie ein Netzwerkproblem aussieht.
+					mockGetOnce(stored);
+					const result = await ConfigRepository.getBoolean('present', true);
+					expect(result).toBe(false);
+				}
+			);
+
+			it.each(['true', 'True', '1', 'yes', 'on'])(
+				'liest %o als true',
+				async (stored) => {
+					mockGetOnce(stored);
+					const result = await ConfigRepository.getBoolean('present', false);
+					expect(result).toBe(true);
+				}
+			);
+
+			it('fällt bei unverständlichen Werten auf den Default zurück', async () => {
+				// Weder wahr noch falsch: „irgendwas" als `true` zu lesen wäre die
+				// gleiche stille Fehlinterpretation, die hier gerade behoben wird.
+				// Unterschiedliche Schlüssel je Aufruf: `get()` cacht pro Schlüssel,
+				// ein zweiter Aufruf mit demselben Namen käme nie an der Mock-Zeile an.
+				mockGetOnce('vielleicht');
+				expect(await ConfigRepository.getBoolean('unklar-a', false)).toBe(false);
+				mockGetOnce('vielleicht');
+				expect(await ConfigRepository.getBoolean('unklar-b', true)).toBe(true);
+			});
+
+			it('liest Zahlen weiterhin nach JavaScript-Regel', async () => {
+				mockGetOnce(1);
+				expect(await ConfigRepository.getBoolean('zahl-eins', false)).toBe(true);
+				mockGetOnce(0);
+				expect(await ConfigRepository.getBoolean('zahl-null', true)).toBe(false);
+			});
 		});
 
 		describe('getObject', () => {

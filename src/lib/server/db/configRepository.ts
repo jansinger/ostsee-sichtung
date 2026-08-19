@@ -325,9 +325,51 @@ export class ConfigRepository {
 		return value !== null ? Number(value) : defaultValue;
 	}
 
+	/**
+	 * Liest einen Wahrheitswert und versteht dabei auch die String-Schreibweisen.
+	 *
+	 * Das schlichte `Boolean(value)` von früher war eine Falle: Jeder nichtleere
+	 * String ist wahr, der gespeicherte String `'false'` also **`true`**. Die
+	 * Spalte ist zwar `jsonb` und die Einstellungs-Oberfläche schreibt echte
+	 * Booleans — `PUT /api/config` nimmt aber jeden JSON-Wert entgegen, und
+	 * Altbestand wie von Hand abgesetztes SQL erst recht.
+	 *
+	 * Was der Fall kostet, zeigte das SMTP-Debugging am 2026-08-19: Ein so
+	 * verdrehtes `email.smtp.secure` hätte nodemailer auf sofortiges TLS gegen
+	 * einen Klartext-Port gestellt, und der Abbruch wäre als `ESOCKET`/`CONN`
+	 * im Log gelandet — ununterscheidbar von einem Netzwerkfehler.
+	 *
+	 * Unverständliche Werte ergeben den Default, nicht `true`: Sie als „an" zu
+	 * lesen wäre dieselbe stille Fehlinterpretation in Grün.
+	 */
 	static async getBoolean(key: string, defaultValue: boolean): Promise<boolean> {
 		const value = await this.get(key);
-		return value !== null ? Boolean(value) : defaultValue;
+
+		if (value === null) {
+			return defaultValue;
+		}
+
+		if (typeof value === 'string') {
+			const normalized = value.trim().toLowerCase();
+
+			if (['true', '1', 'yes', 'on'].includes(normalized)) {
+				return true;
+			}
+
+			if (['false', '0', 'no', 'off', ''].includes(normalized)) {
+				return false;
+			}
+
+			// Nur der Schlüssel, nicht der Wert: Diese Methode ist generisch, und
+			// unter den Konfigurationsschlüsseln stehen Geheimnisse
+			// (`email.smtp.password`, `integration.*ApiKey`). Der Schlüssel sagt
+			// genau, wo nachzusehen ist — das Feld hieße hier `value` und würde
+			// von der Redaction in `logger/serverLogger.ts` nicht erfasst.
+			logger.warn({ key }, 'Konfigurationswert ist kein Wahrheitswert — Default wird verwendet');
+			return defaultValue;
+		}
+
+		return Boolean(value);
 	}
 
 	static async getObject<T extends Record<string, unknown>>(

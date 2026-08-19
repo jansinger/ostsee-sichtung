@@ -25,6 +25,7 @@ import { emailColorContext } from '$lib/server/templates/emailTokens';
 import { NOTIFICATION_EMAIL_DEFAULT_TEMPLATE } from '$lib/server/templates/notificationEmailDefault';
 import { countFilesForSighting } from '$lib/server/db/sightingFilesRepository';
 import { isPhotoAnnouncementPending } from '$lib/utils/media/photoAnnouncement';
+import { SMTP_CA_BUNDLE } from './smtpRootCertificates';
 
 // Dynamic environment variables for Docker runtime
 const NODE_ENV = env.NODE_ENV ?? 'development';
@@ -180,7 +181,14 @@ export class EmailService {
 				},
 				connectionTimeout: 5000, // max. 5s für den Verbindungsaufbau
 				greetingTimeout: 5000, // max. 5s auf das SMTP-Greeting warten
-				socketTimeout: 10000 // max. 10s Inaktivität auf dem Socket
+				socketTimeout: 10000, // max. 10s Inaktivität auf dem Socket
+				// Nodes eingebauter Satz plus der Root, den Microsofts
+				// Connector-Kette braucht und den Node 24 nicht mehr mitbringt.
+				// Ohne ihn bricht STARTTLS mit `unable to get local issuer
+				// certificate` ab — gemeldet als `ESOCKET`/`CONN`, also wie ein
+				// Netzwerkfehler. Herkunft und Widerrufsbedingung des Zertifikats:
+				// `smtpRootCertificates.ts`.
+				tls: { ca: SMTP_CA_BUNDLE }
 			});
 
 			// Verify connection
