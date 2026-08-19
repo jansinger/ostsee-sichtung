@@ -9,7 +9,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
 	createInboxPoller,
 	type InboxPollerOptions,
-	type SichtbarkeitsQuelle
+	type SichtbarkeitsQuelle,
+	type StatusAntwort
 } from './inboxPoller';
 
 const INTERVALL = 60_000;
@@ -195,5 +196,47 @@ describe('createInboxPoller', () => {
 		await vi.advanceTimersByTimeAsync(INTERVALL * 2);
 
 		expect(fetchStatus).not.toHaveBeenCalled();
+	});
+
+	it('löst onSessionEnde nicht aus, wenn eine 401-Antwort erst nach stop() eintrifft', async () => {
+		let aufloesen: ((wert: StatusAntwort) => void) | undefined;
+		const { poller, onSessionEnde } = bauen({
+			fetchStatus: vi.fn(
+				() =>
+					new Promise<StatusAntwort>((resolve) => {
+						aufloesen = resolve;
+					})
+			)
+		});
+
+		poller.start();
+		await vi.advanceTimersByTimeAsync(INTERVALL);
+
+		poller.stop();
+		aufloesen?.(antwort(401, { error: 'unauthorized' }));
+		await vi.advanceTimersByTimeAsync(0);
+
+		expect(onSessionEnde).not.toHaveBeenCalled();
+	});
+
+	it('löst onNeueMeldungen nicht aus, wenn eine höhere ID erst nach stop() eintrifft', async () => {
+		let aufloesen: ((wert: StatusAntwort) => void) | undefined;
+		const { poller, onNeueMeldungen } = bauen({
+			fetchStatus: vi.fn(
+				() =>
+					new Promise<StatusAntwort>((resolve) => {
+						aufloesen = resolve;
+					})
+			)
+		});
+
+		poller.start();
+		await vi.advanceTimersByTimeAsync(INTERVALL);
+
+		poller.stop();
+		aufloesen?.(antwort(200, { maxOpenId: 11 }));
+		await vi.advanceTimersByTimeAsync(0);
+
+		expect(onNeueMeldungen).not.toHaveBeenCalled();
 	});
 });

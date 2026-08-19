@@ -68,6 +68,10 @@ export function createInboxPoller(options: InboxPollerOptions): InboxPoller {
 			return;
 		}
 
+		// stop() kann während der Abfrage aufgerufen worden sein — dann darf die
+		// inzwischen eingetroffene Antwort keinen Callback mehr auslösen.
+		if (!aktiv) return;
+
 		if (antwort.status === 401) {
 			stop();
 			options.onSessionEnde();
@@ -82,6 +86,9 @@ export function createInboxPoller(options: InboxPollerOptions): InboxPoller {
 		} catch {
 			return;
 		}
+
+		// Derselbe Grund wie oben: stop() kann während des Parsens dazwischengekommen sein.
+		if (!aktiv) return;
 
 		if (!Number.isFinite(maxOpenId) || maxOpenId <= options.baseline) return;
 
