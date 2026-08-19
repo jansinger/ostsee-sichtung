@@ -363,7 +363,7 @@
 		{#if neueMeldungen}
 			<div class="alert alert-info mb-4">
 				<Info width="20" height="20" class="shrink-0" aria-hidden="true" />
-				<span class="grow">Neue Meldungen eingegangen.</span>
+				<span class="grow">Neue Meldungen im Eingang.</span>
 				<button type="button" class="btn btn-sm" onclick={neuLaden}>Neu laden</button>
 			</div>
 		{/if}

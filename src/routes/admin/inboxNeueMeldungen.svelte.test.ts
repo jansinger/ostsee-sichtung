@@ -107,7 +107,7 @@ describe('Eingangsseite — Hinweis auf neue Meldungen', () => {
 		const screen = await render(AdminInbox, { data: daten(12) });
 		await pollerOptionen();
 
-		expect(screen.container.textContent).not.toContain('Neue Meldungen eingegangen');
+		expect(screen.container.textContent).not.toContain('Neue Meldungen im Eingang');
 	});
 
 	it('rendert die Live-Region bereits im leeren Zustand', async () => {
@@ -130,7 +130,7 @@ describe('Eingangsseite — Hinweis auf neue Meldungen', () => {
 		(await pollerOptionen()).onNeueMeldungen();
 
 		await expect.element(screen.getByRole('button', { name: 'Neu laden' })).toBeInTheDocument();
-		expect(screen.container.textContent).toContain('Neue Meldungen eingegangen');
+		expect(screen.container.textContent).toContain('Neue Meldungen im Eingang');
 	});
 
 	it('meldet eine abgelaufene Sitzung über den Login-Weg des Eingangs, nicht über Logout', async () => {
@@ -151,7 +151,7 @@ describe('Eingangsseite — Hinweis auf neue Meldungen', () => {
 		await screen.getByRole('button', { name: 'Neu laden' }).click();
 
 		expect(invalidateAll).toHaveBeenCalledTimes(1);
-		expect(screen.container.textContent).not.toContain('Neue Meldungen eingegangen');
+		expect(screen.container.textContent).not.toContain('Neue Meldungen im Eingang');
 	});
 
 	// Befund 1: Ein fehlgeschlagener Reload legt den Poller nicht dauerhaft still —
@@ -166,7 +166,7 @@ describe('Eingangsseite — Hinweis auf neue Meldungen', () => {
 		// in `neuLaden()` sicher durchgelaufen ist, bevor geprüft wird.
 		await vi.waitFor(() => expect(invalidateAll).toHaveBeenCalledTimes(1));
 
-		expect(screen.container.textContent).toContain('Neue Meldungen eingegangen.');
+		expect(screen.container.textContent).toContain('Neue Meldungen im Eingang.');
 		await expect.element(screen.getByRole('button', { name: 'Neu laden' })).toBeInTheDocument();
 	});
 

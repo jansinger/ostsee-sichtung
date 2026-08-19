@@ -1,5 +1,5 @@
 /**
- * Poller für den Hinweis „Neue Meldungen eingegangen" auf `/admin`.
+ * Poller für den Hinweis „Neue Meldungen im Eingang" auf `/admin`.
  *
  * Alle Abhängigkeiten sind hineingereicht (HTTP, Sichtbarkeit), damit dieser
  * Test weder Netz noch DOM braucht — und damit die 401-Behandlung im geprüften

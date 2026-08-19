@@ -1,5 +1,13 @@
 /**
- * @fileoverview Poller hinter dem Hinweis „Neue Meldungen eingegangen" auf `/admin`.
+ * @fileoverview Poller hinter dem Hinweis „Neue Meldungen im Eingang" auf `/admin`.
+ *
+ * Die Beschriftung sagt bewusst „im Eingang" und nicht „eingegangen": Der
+ * Vergleich unten erkennt jede Vergrößerung der offenen Menge, nicht nur neu
+ * erstellte Meldungen. Nimmt ein zweiter Bearbeiter eine Freigabe per `reset`
+ * zurück, kehrt ihre Sichtung in die offene Menge zurück und kann dabei eine
+ * höhere `id` als die Baseline tragen — der Hinweis erscheint dann zu Recht
+ * (es gibt neue offene Arbeit), obwohl nichts „eingegangen" ist. „im Eingang"
+ * beschreibt beide Fälle richtig, „eingegangen" nur den ersten.
  *
  * Warum Abfragen statt einer stehenden Verbindung: Die gemessene Meldefrequenz
  * liegt im Spitzenmonat bei rund 0,9 Meldungen pro Stunde. Eine SSE- oder
