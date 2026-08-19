@@ -61,6 +61,19 @@
 	/** Steht ein Hinweis auf neu eingegangene Meldungen? Gesetzt vom Poller. */
 	let neueMeldungen = $state(false);
 
+	/* Erhöht sich bei jedem `neuLaden()` — noch vor dessen eigenem `await`. Ein
+	   `entscheiden()`/`rueckgaengig()`, dessen PATCH zu diesem Zeitpunkt bereits
+	   läuft, merkt sich den Stand vor seinem eigenen `await` und vergleicht danach
+	   erneut: Weicht er ab, ist zwischenzeitlich neu geladen worden — `timers`,
+	   `done` und `busy` sind dann bereits abgeräumt (oder ein Reload-Versuch läuft),
+	   und ein nachträglicher Aufbau griffe auf eine Karte zu, die es in `data.open`
+	   nach dem Reload gar nicht mehr gibt (oder deren Zustand nicht mehr zum
+	   Undo-Fenster passt). Die Entscheidung selbst ist serverseitig bereits
+	   passiert — nur ihre lokale Spiegelung entfällt, der Reload zeigt sie über
+	   `data.open` ohnehin. Reine Buchhaltung, nicht Teil des Renderns — deshalb
+	   kein `$state`. */
+	let ladeGeneration = 0;
+
 	/* Der Poller hängt an `data.maxOpenId`: Nach einem Reload liefert der Load
 	   eine neue Baseline, der Effekt läuft erneut und startet mit ihr — der alte
 	   wird über die Aufräumfunktion sauber gestoppt. */
@@ -95,19 +108,40 @@
 	});
 
 	async function neuLaden(): Promise<void> {
+		// Zählt vor jedem anderen Schritt hoch — siehe Kommentar bei `ladeGeneration`.
+		ladeGeneration += 1;
+
 		/* Offene Undo-Fenster erst abräumen: Ihre Karten verschwinden durch den
 		   Reload, und ein später zündender Timer griffe auf Einträge zu, die es
 		   nicht mehr gibt. Die Entscheidungen selbst stehen bereits in der
 		   Datenbank — nur das Zurücknehmen entfällt. Bewusst so entschieden:
-		   Der Klick ist eine Handlung des Bearbeiters, kein automatischer Reload. */
+		   Der Klick ist eine Handlung des Bearbeiters, kein automatischer Reload.
+		   Das gilt unabhängig davon, ob der Reload gleich gelingt: Ein Timer, der
+		   mitten in den `await` hinein feuert, griffe auf `data.open` zu, während
+		   dessen Inhalt gerade unbestimmt ist. */
 		for (const timer of timers.values()) clearTimeout(timer);
 		timers.clear();
 		abgelaufen.clear();
+
+		try {
+			await invalidateAll();
+		} catch {
+			/* Scheitert der Reload, bleibt `neueMeldungen` unverändert (also weiter
+			   `true`) — der Hinweis steht dann weiter, und ein zweiter Klick ist der
+			   Wiederholungsversuch. Genau deshalb dürfen `done`, `busy` und
+			   `letzteEntscheidungId` erst NACH einem erfolgreichen `invalidateAll()`
+			   zurückgesetzt werden, nicht davor: Ohne den Reload steht `data.open`
+			   unverändert, und die noch angezeigten Undo-Zeilen entsprechen weiterhin
+			   dem tatsächlichen Zustand. Der Poller selbst muss dafür nicht neu
+			   starten — der Hinweis steht ja bereits, ein laufender Poller könnte
+			   daran nichts verbessern. */
+			return;
+		}
+
 		done = {};
 		busy = {};
 		letzteEntscheidungId = null;
 		neueMeldungen = false;
-		await invalidateAll();
 	}
 
 	/** Welche Positionen noch eine Entscheidung brauchen — Grundlage des Nachrückens. */
@@ -223,8 +257,23 @@
 	async function entscheiden(id: number, verdict: Exclude<SightingVerdict, 'reset'>) {
 		if (busy[id]) return;
 		busy[id] = true;
+		// Vor dem PATCH gemerkt — siehe Kommentar bei `ladeGeneration`.
+		const generation = ladeGeneration;
 		const ok = await submitVerdict(id, verdict);
+		// `busy[id] = false` immer zuerst, unabhängig von der Generation: Ein
+		// zurückbleibendes `busy[id] = true` sperrte die Karte dauerhaft, auch wenn
+		// das dazwischengekommene `neuLaden()` selbst fehlschlug (Befund 1) und
+		// `busy` deshalb NICHT geleert wurde. Den Key in einem frisch geleerten
+		// `busy` erneut auf `false` zu setzen ist dagegen folgenlos — das ist von
+		// „Key fehlt" nicht zu unterscheiden.
 		busy[id] = false;
+		if (generation !== ladeGeneration) {
+			/* `neuLaden()` ist dazwischengekommen: `timers`/`done` sind bereits
+			   abgeräumt (oder ein Reload-Versuch läuft gerade). Ab hier nichts mehr
+			   aufbauen — die Entscheidung selbst steht längst auf dem Server, der
+			   Reload zeigt sie über `data.open`. */
+			return;
+		}
 		if (!ok) return;
 		done[id] = verdict;
 		letzteEntscheidungId = id;
@@ -259,8 +308,12 @@
 		if (timer) clearTimeout(timer);
 		timers.delete(id);
 		busy[id] = true;
+		// Dieselbe Absicherung wie in `entscheiden()` — Begründung dort.
+		const generation = ladeGeneration;
 		const ok = await submitVerdict(id, 'reset');
+		// Reihenfolge wie in `entscheiden()` — Begründung dort.
 		busy[id] = false;
+		if (generation !== ladeGeneration) return;
 		if (!ok) return;
 		delete done[id];
 		// Zurückgenommen ist nichts mehr zurückzunehmen — ein zweites U darf nicht

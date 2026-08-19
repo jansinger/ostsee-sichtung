@@ -9,6 +9,7 @@
 import { render } from 'vitest-browser-svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { InboxPollerOptions } from '$lib/components/admin/inboxPoller';
+import type { SightingSelect } from '$lib/server/db/schema';
 import type { PageData } from './$types';
 
 const navigiereZuSessionEnde = vi.fn();
@@ -21,6 +22,11 @@ vi.mock('$app/navigation', () => ({
 }));
 vi.mock('$app/state', () => ({
 	page: { url: new URL('https://localhost:4000/admin') }
+}));
+
+const submitVerdict = vi.fn(() => Promise.resolve(true));
+vi.mock('$lib/components/admin/sightingVerdict', () => ({
+	submitVerdict
 }));
 
 /* Der Mock hält fest, mit welchen Optionen die Seite den Poller gebaut hat —
@@ -38,12 +44,32 @@ vi.mock('$lib/components/admin/inboxPoller', () => ({
 // Erst nach den Mocks importieren, sonst zieht die Seite die echten Module.
 const AdminInbox = (await import('./+page.svelte')).default;
 
-/* Leere Liste: Für den Hinweis ist gleichgültig, was darunter steht — so
-   braucht dieser Test kein vollständiges Sichtungs-Fixture. */
-function daten(maxOpenId: number): PageData {
+/* Für die meisten Tests hier ist gleichgültig, was unter dem Hinweis steht —
+   deshalb bleibt `open` per Default leer und braucht kein vollständiges
+   Sichtungs-Fixture. Der Generationszähler-Test (Befund 2) braucht dagegen
+   eine echte Karte, um „Freigeben" klicken zu können. */
+function sichtung(id: number): SightingSelect {
 	return {
-		open: [],
-		openTotal: 0,
+		id,
+		created: new Date('2026-08-01T10:00:00Z'),
+		sightingDate: new Date('2026-07-30T08:00:00Z'),
+		species: 0,
+		totalCount: 1,
+		juvenileCount: 0,
+		isDead: 0,
+		email: `melder${id}@example.com`,
+		firstName: 'Kim',
+		lastName: 'Muster',
+		spamScore: null,
+		inBalticSea: 1,
+		inBalticSeaGeo: 1
+	} as unknown as SightingSelect;
+}
+
+function daten(maxOpenId: number, offeneIds: number[] = []): PageData {
+	return {
+		open: offeneIds.map(sichtung),
+		openTotal: offeneIds.length,
 		order: 'desc' as const,
 		imagesBySighting: {},
 		pendingPhotoAnnouncements: 0,
@@ -62,7 +88,8 @@ async function pollerOptionen(): Promise<InboxPollerOptions> {
 describe('Eingangsseite — Hinweis auf neue Meldungen', () => {
 	beforeEach(() => {
 		letzteOptionen = null;
-		invalidateAll.mockClear();
+		invalidateAll.mockReset().mockImplementation(() => Promise.resolve());
+		submitVerdict.mockReset().mockImplementation(() => Promise.resolve(true));
 		start.mockClear();
 		stop.mockClear();
 		navigiereZuSessionEnde.mockClear();
@@ -125,5 +152,59 @@ describe('Eingangsseite — Hinweis auf neue Meldungen', () => {
 
 		expect(invalidateAll).toHaveBeenCalledTimes(1);
 		expect(screen.container.textContent).not.toContain('Neue Meldungen eingegangen');
+	});
+
+	// Befund 1: Ein fehlgeschlagener Reload legt den Poller nicht dauerhaft still —
+	// der Hinweis bleibt stehen, und ein zweiter Klick ist der Wiederholungsversuch.
+	it('lässt den Hinweis stehen, wenn `invalidateAll` fehlschlägt', async () => {
+		invalidateAll.mockRejectedValueOnce(new Error('netzwerk kaputt'));
+		const screen = await render(AdminInbox, { data: daten(12) });
+		(await pollerOptionen()).onNeueMeldungen();
+
+		await screen.getByRole('button', { name: 'Neu laden' }).click();
+		// Wartet auf das Settlen der abgelehnten Promise, damit der `catch`-Zweig
+		// in `neuLaden()` sicher durchgelaufen ist, bevor geprüft wird.
+		await vi.waitFor(() => expect(invalidateAll).toHaveBeenCalledTimes(1));
+
+		expect(screen.container.textContent).toContain('Neue Meldungen eingegangen.');
+		await expect.element(screen.getByRole('button', { name: 'Neu laden' })).toBeInTheDocument();
+	});
+
+	// Befund 2: Ein `entscheiden()`, dessen PATCH noch fliegt, darf nach einem
+	// zwischenzeitlichen `neuLaden()` keinen lokalen Zustand mehr aufbauen — sonst
+	// legt sein Undo-Timer acht Sekunden später einen zweiten, unerwarteten Reload
+	// für eine Karte an, die es nach dem Reload nicht mehr gibt.
+	it('bricht `entscheiden()` ab, wenn `neuLaden()` währenddessen dazwischenkommt', async () => {
+		let aufloesen: ((ok: boolean) => void) | undefined;
+		submitVerdict.mockImplementationOnce(
+			() =>
+				new Promise<boolean>((resolve) => {
+					aufloesen = resolve;
+				})
+		);
+
+		const screen = await render(AdminInbox, { data: daten(12, [1]) });
+		const optionen = await pollerOptionen();
+
+		await screen.getByRole('button', { name: 'Freigeben' }).click();
+		// Der PATCH für Sichtung #1 hängt jetzt — noch keine Antwort.
+
+		optionen.onNeueMeldungen();
+		await screen.getByRole('button', { name: 'Neu laden' }).click();
+		expect(invalidateAll).toHaveBeenCalledTimes(1);
+
+		// Jetzt erst löst der PATCH auf. Ohne den Generationszähler baute
+		// `entscheiden()` hier `done`/`busy`/den Undo-Timer für eine Karte auf,
+		// die der Reload bereits abgeräumt hat.
+		vi.useFakeTimers();
+		try {
+			aufloesen?.(true);
+			await vi.advanceTimersByTimeAsync(8000);
+		} finally {
+			vi.useRealTimers();
+		}
+
+		expect(invalidateAll).toHaveBeenCalledTimes(1);
+		expect(screen.container.textContent).not.toContain('Rückgängig');
 	});
 });
