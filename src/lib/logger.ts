@@ -8,6 +8,8 @@
 // into shared modules that are bundled for the browser.
 import pino from 'pino';
 import { createClientLogger } from './logger/clientLogger';
+import { LOG_REDACTION } from './logger/redaction';
+import { LOG_SERIALIZERS } from './logger/serializers';
 
 const VALID_PINO_LEVELS = ['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent'] as const;
 
@@ -22,7 +24,14 @@ export function createLogger(context: string) {
 	if (typeof window === 'undefined') {
 		return pino({
 			level: resolveLogLevel(process.env.LOG_LEVEL),
-			base: { pid: process.pid, context }
+			base: { pid: process.pid, context },
+			// Siehe `logger/serializers.ts`: ohne die Serializer verliert Pino
+			// `message` und `stack` des geloggten Fehlers.
+			serializers: LOG_SERIALIZERS,
+			// Dieser Zweig läuft auch beim SSR von Komponenten, die `$lib/logger`
+			// importieren — er braucht dieselbe Redaction wie der dedizierte
+			// Server-Logger. Siehe `logger/redaction.ts`.
+			redact: LOG_REDACTION
 		});
 	}
 	return createClientLogger(context);

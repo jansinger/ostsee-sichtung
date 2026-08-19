@@ -107,6 +107,7 @@ import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 import { NOTIFICATION_EMAIL_DEFAULT_TEMPLATE } from '$lib/server/templates/notificationEmailDefault';
 import { detectSpamIndicators } from '$lib/server/spam/spamDetector';
 import { EmailService } from './emailService';
+import { SMTP_CA_BUNDLE } from './smtpRootCertificates';
 
 // Hilfsfunktionen zum Erstellen von Mocks
 function createMockTransporter(sendMailResult = { messageId: 'test-id-123' }) {
@@ -300,6 +301,22 @@ describe('EmailService', () => {
 				})
 			);
 			expect(mockTransporter.verify).toHaveBeenCalled();
+		});
+
+		it('reicht den fehlenden DigiCert-Root an den TLS-Kontext durch', async () => {
+			// Ohne diesen Root scheitert STARTTLS gegen den Exchange-Online-Connector
+			// des Museums mit `unable to get local issuer certificate` — nodemailer
+			// meldet das als `ESOCKET`/`CONN`, also wie einen Netzwerkfehler.
+			// Begründung und Widerrufsbedingung: `smtpRootCertificates.ts`.
+			setupConfigRepositoryMocks({ enabled: true, smtpHost: 'smtp.example.com' });
+
+			await EmailService.initialize(false);
+
+			expect(nodemailer.createTransport).toHaveBeenCalledWith(
+				expect.objectContaining({
+					tls: expect.objectContaining({ ca: SMTP_CA_BUNDLE })
+				})
+			);
 		});
 
 		it('setzt Transporter auf null wenn verify() fehlschlägt', async () => {
