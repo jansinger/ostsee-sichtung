@@ -83,6 +83,20 @@ describe('Eingangsseite — Hinweis auf neue Meldungen', () => {
 		expect(screen.container.textContent).not.toContain('Neue Meldungen eingegangen');
 	});
 
+	it('rendert die Live-Region bereits im leeren Zustand', async () => {
+		// Kein Styling-Detail: Eine role="status"/aria-live="polite"-Region muss im
+		// Accessibility-Tree stehen, BEVOR sich ihr Inhalt ändert — sonst kündigen
+		// manche Screenreader die spätere Meldung gar nicht an. Deshalb liegt das
+		// {#if neueMeldungen} im Markup INNERHALB des Containers und nicht außen
+		// um ihn herum (siehe Kommentar in +page.svelte). Zöge jemand das {#if}
+		// wieder nach außen, fiele der Container hier weg, bevor der Poller
+		// überhaupt etwas gemeldet hat — und dieser Test schlägt fehl.
+		const screen = await render(AdminInbox, { data: daten(12) });
+		await pollerOptionen();
+
+		await expect.element(screen.getByRole('status')).toBeInTheDocument();
+	});
+
 	it('zeigt den Hinweis, sobald der Poller meldet', async () => {
 		const screen = await render(AdminInbox, { data: daten(12) });
 
