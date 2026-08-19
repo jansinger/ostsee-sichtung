@@ -1277,10 +1277,17 @@ paths:
         - Admin
       summary: Höchste offene Sichtungs-ID
       description: >
-        Liefert die höchste ID einer noch offenen Sichtung. Die Eingangsseite
-        merkt sich den Wert beim Laden und fragt hier minütlich nach, ob es
-        inzwischen eine höhere gibt — daraus entsteht der Hinweis auf neu
-        eingegangene Meldungen.
+        Liefert die höchste ID einer noch offenen Sichtung (weder freigegeben
+        noch abgelehnt). Die Eingangsseite merkt sich den Wert beim Laden und
+        fragt hier minütlich nach, ob es inzwischen eine höhere gibt — daraus
+        entsteht der Hinweis auf neue offene Arbeit im Eingang.
+
+
+        Bewusst **nicht** ausschließlich neu eingegangene Meldungen: Wird eine
+        Entscheidung zurückgenommen (`PATCH /api/sightings/{id}/verify` mit
+        `verdict: reset`), kehrt die Sichtung in die offene Menge zurück und
+        zählt mit. Der Hinweis im Eingang ist deshalb mit „Neue Meldungen im
+        Eingang" beschriftet und nicht mit „eingegangen".
 
 
         Antwortet bei fehlender Admin-Session mit 401 und ausdrücklich nicht mit
