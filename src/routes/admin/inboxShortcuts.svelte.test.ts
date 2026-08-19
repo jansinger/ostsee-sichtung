@@ -54,6 +54,10 @@ function daten(ids: number[]): PageData {
 		order: 'asc' as const,
 		imagesBySighting: {},
 		pendingPhotoAnnouncements: 0,
+		/* Baseline des Neue-Meldungen-Pollers. `0` heißt: Es gibt nichts Neues.
+		   Der Poller fragt beim Start noch nicht, sondern erst nach 60 s — in
+		   der Laufzeit dieser Tests also nie. */
+		maxOpenId: 0,
 		duplicatesBySighting: {},
 		reporterHistoryBySighting: {}
 	} as unknown as PageData;

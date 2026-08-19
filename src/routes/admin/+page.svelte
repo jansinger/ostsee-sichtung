@@ -4,6 +4,7 @@
 	import InboxShortcutHelp from '$lib/components/admin/InboxShortcutHelp.svelte';
 	import SightingInboxCard from '$lib/components/admin/SightingInboxCard.svelte';
 	import { inboxAnchor } from '$lib/components/admin/adminReturn';
+	import { createInboxPoller } from '$lib/components/admin/inboxPoller';
 	import {
 		nextActionableIndex,
 		resolveInboxShortcut,
@@ -56,6 +57,51 @@
 	let kartenElemente = $state<(HTMLLIElement | null)[]>([]);
 	/** Ziel des Fokus-Rückwegs, wenn das Overlay ohne fokussierte Karte geöffnet wurde. */
 	let hinweisKnopf = $state<HTMLButtonElement | null>(null);
+	/** Steht ein Hinweis auf neu eingegangene Meldungen? Gesetzt vom Poller. */
+	let neueMeldungen = $state(false);
+
+	/* Der Poller hängt an `data.maxOpenId`: Nach einem Reload liefert der Load
+	   eine neue Baseline, der Effekt läuft erneut und startet mit ihr — der alte
+	   wird über die Aufräumfunktion sauber gestoppt. */
+	$effect(() => {
+		/* Zurücksetzen gehört hierher und nicht nur in `neuLaden()`: Auch der
+		   **automatische** Reload nach Ablauf des letzten Undo-Fensters (siehe
+		   `entscheiden`) liefert eine neue Baseline. Ohne diese Zeile bliebe der
+		   Hinweis danach stehen, obwohl die Liste die neuen Meldungen längst
+		   enthält. */
+		neueMeldungen = false;
+
+		const poller = createInboxPoller({
+			baseline: data.maxOpenId,
+			fetchStatus: () => fetch('/api/admin/inbox-status'),
+			onNeueMeldungen: () => (neueMeldungen = true),
+			/* Der Endpunkt antwortet mit 401, sobald die Auth0-Sitzung abgelaufen
+			   ist — bei einem über Nacht offenen Tab der Regelfall. Statt still zu
+			   verstummen, meldet die Seite sauber ab: `/api/auth/logout` zerstört
+			   die Server-Sitzung und geht durch den Auth0-Logout. Auf dem Eingang
+			   ist der Sprung gefahrlos, weil Entscheidungen sofort per PATCH
+			   herausgehen und es keinen ungespeicherten Zustand gibt. */
+			onSessionEnde: () => window.location.assign('/api/auth/logout')
+		});
+		poller.start();
+		return () => poller.stop();
+	});
+
+	async function neuLaden(): Promise<void> {
+		/* Offene Undo-Fenster erst abräumen: Ihre Karten verschwinden durch den
+		   Reload, und ein später zündender Timer griffe auf Einträge zu, die es
+		   nicht mehr gibt. Die Entscheidungen selbst stehen bereits in der
+		   Datenbank — nur das Zurücknehmen entfällt. Bewusst so entschieden:
+		   Der Klick ist eine Handlung des Bearbeiters, kein automatischer Reload. */
+		for (const timer of timers.values()) clearTimeout(timer);
+		timers.clear();
+		abgelaufen.clear();
+		done = {};
+		busy = {};
+		letzteEntscheidungId = null;
+		neueMeldungen = false;
+		await invalidateAll();
+	}
 
 	/** Welche Positionen noch eine Entscheidung brauchen — Grundlage des Nachrückens. */
 	const bedienbar = $derived(
@@ -243,6 +289,19 @@
 			{/if}
 		</button>
 	</div>
+
+	<!-- `role="status"` ist hier nicht Zierde: Der Hinweis erscheint ohne Zutun
+	     des Nutzers, und ohne Live-Region erführe ein Screenreader-Nutzer nie
+	     davon. `polite` und nicht `assertive` — die Meldung ist nicht dringend.
+	     Bewusst ohne Autofokus: Der Bearbeiter navigiert per J und K, ein
+	     Fokussprung würde ihn aus der Arbeit werfen. -->
+	{#if neueMeldungen}
+		<div class="alert alert-info mb-4" role="status">
+			<Info width="20" height="20" class="shrink-0" aria-hidden="true" />
+			<span class="grow">Neue Meldungen eingegangen.</span>
+			<button type="button" class="btn btn-sm" onclick={neuLaden}>Neu laden</button>
+		</div>
+	{/if}
 
 	<!-- Der Hinweis steht über der Liste und nicht in einem Tooltip: Ein Kürzel,
 	     das man erst durch Ausprobieren findet, benutzt niemand. Die Taste selbst
