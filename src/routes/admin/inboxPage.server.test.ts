@@ -39,7 +39,7 @@ type RecordedSelect = {
 };
 
 let recordedSelects: RecordedSelect[] = [];
-/** Rückgabewerte in Aufrufreihenfolge: Liste, Zähler, Foto-Zähler, Bilddateien. */
+/** Rückgabewerte in Aufrufreihenfolge: Liste, Zähler, Foto-Zähler, maxOpenId, Bilddateien. */
 let resolvedRows: unknown[][] = [];
 
 function createRecordingBuilder(record: RecordedSelect) {
@@ -119,6 +119,7 @@ type InboxData = {
 	order: 'asc' | 'desc';
 	imagesBySighting: Record<number, { id: number; filePath: string; originalName: string }[]>;
 	pendingPhotoAnnouncements: number;
+	maxOpenId: number;
 	duplicatesBySighting: Record<number, unknown[]>;
 	reporterHistoryBySighting: Record<
 		number,
@@ -145,6 +146,9 @@ describe('Eingangs-Load', () => {
 			],
 			[{ count: 7 }],
 			[{ count: 3 }],
+			// Neu an Position 3: max(id) der offenen Sichtungen. Der Bild-Query
+			// läuft erst im `.then()` der Liste und rückt damit auf 4.
+			[{ max: 42 }],
 			[]
 		];
 		findDuplicateCandidates.mockClear();
@@ -281,6 +285,7 @@ describe('Eingangs-Load', () => {
 			[{ id: 1 }, { id: 2 }],
 			[{ count: 7 }],
 			[{ count: 3 }],
+			[{ max: 2 }],
 			[
 				{ id: 10, sightingId: 1, filePath: 'a.jpg', originalName: 'A.jpg' },
 				{ id: 11, sightingId: 1, filePath: 'b.jpg', originalName: 'B.jpg' },
@@ -359,5 +364,36 @@ describe('Eingangs-Load', () => {
 		expect(typeof result.openTotal).toBe('number');
 		expect(result.pendingPhotoAnnouncements).toBe(1);
 		expect(typeof result.pendingPhotoAnnouncements).toBe('number');
+	});
+
+	/*
+	 * Die Baseline für den Hinweis auf neue Meldungen darf **nicht** aus
+	 * `data.open` stammen: Die Liste ist auf INBOX_LIMIT begrenzt und nach
+	 * `order` sortiert. Bei `?order=asc` enthält sie die 50 ältesten offenen
+	 * Meldungen — die höchste ID im Bestand fehlt darin, und der Hinweis ginge
+	 * sofort nach jedem Laden an. Genau diesen stillen Fehler pinnt der Test:
+	 * Die Liste liefert hier die IDs 1 und 2, der eigene Query die 42.
+	 */
+	it('meldet als maxOpenId die höchste offene ID im Bestand, nicht die der geladenen Seite', async () => {
+		const data = await runLoad(makeUrl({ order: 'asc' }));
+
+		expect(data.maxOpenId).toBe(42);
+	});
+
+	it('bildet maxOpenId ohne Limit über genau die offenen Sichtungen', async () => {
+		await runLoad(makeUrl({ order: 'asc' }));
+
+		const record = recordedSelects[3];
+		expect(record?.limit).toBeUndefined();
+		expect(record?.whereSql).toBe(toSqlText(openOnly()));
+	});
+
+	it('meldet maxOpenId als 0, wenn keine Sichtung offen ist', async () => {
+		// max() über eine leere Menge ist NULL.
+		resolvedRows[3] = [{ max: null }];
+
+		const data = await runLoad(makeUrl());
+
+		expect(data.maxOpenId).toBe(0);
 	});
 });

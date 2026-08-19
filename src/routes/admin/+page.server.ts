@@ -57,6 +57,17 @@ export const load: PageServerLoad = async ({ url }) => {
 		.from(sightings)
 		.where(and(mediaUploadCondition(MEDIA_UPLOAD_ANNOUNCED_MISSING), openOnly()));
 
+	// Baseline für den Hinweis auf neu eingegangene Meldungen (`/api/admin/inbox-status`
+	// vergleicht dagegen). Bewusst ein eigener Query und nicht `max(id)` über
+	// `open`: Jene Liste ist auf INBOX_LIMIT begrenzt und nach `order` sortiert
+	// — bei `?order=asc` enthält sie die 50 ältesten offenen Meldungen, die
+	// höchste ID im Bestand fehlt darin. Der Hinweis ginge dann sofort nach
+	// jedem Laden an.
+	const maxOpenIdQuery = db
+		.select({ max: sql<number | null>`max(${sightings.id})` })
+		.from(sightings)
+		.where(openOnly());
+
 	// Bild-Vorschauen für genau die gelisteten Sichtungen — ein Query, in JS
 	// gruppiert. Nur Bilder: Videos brauchen einen Player, das leistet die
 	// Detailansicht. Per `.then()` an die Liste gekettet statt danach awaited:
@@ -105,8 +116,9 @@ export const load: PageServerLoad = async ({ url }) => {
 	const [
 		{ open, imageRows, duplicatesBySighting, reporterHistoryBySighting },
 		openCountResult,
-		pendingPhotoResult
-	] = await Promise.all([openWithImagesQuery, openCountQuery, pendingPhotoQuery]);
+		pendingPhotoResult,
+		maxOpenIdResult
+	] = await Promise.all([openWithImagesQuery, openCountQuery, pendingPhotoQuery, maxOpenIdQuery]);
 
 	const imagesBySighting: Record<number, { id: number; filePath: string; originalName: string }[]> =
 		{};
@@ -129,6 +141,7 @@ export const load: PageServerLoad = async ({ url }) => {
 		order,
 		imagesBySighting,
 		pendingPhotoAnnouncements: Number(pendingPhotoResult[0]?.count ?? 0),
+		maxOpenId: Number(maxOpenIdResult[0]?.max ?? 0),
 		duplicatesBySighting,
 		reporterHistoryBySighting
 	};
