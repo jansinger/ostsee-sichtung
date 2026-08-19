@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.22.1](https://github.com/jansinger/ostsee-tiere/compare/v2.22.0...v2.22.1) (2026-08-19)
+
+
+### Bug Fixes
+
+* **config:** repair SMTP handshake against the museum's Exchange connector ([#897](https://github.com/jansinger/ostsee-tiere/issues/897)) ([2e464ea](https://github.com/jansinger/ostsee-tiere/commit/2e464eaa265a005445974f73d49a14fa55d37ef4))
+
 ## [2.22.0](https://github.com/jansinger/ostsee-tiere/compare/v2.21.0...v2.22.0) (2026-08-18)
 
 
