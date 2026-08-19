@@ -662,6 +662,10 @@ describe('Bestand — jede lesende Route ist erfasst oder begründet ausgenommen
 		[
 			'src/routes/api/sightings/export/exportFilterParams.ts',
 			'Baut nur WHERE-Bedingungen für den Export-Filter, aufgerufen ausschließlich von den admin-geschützten Export-Routen (requireUserRole). Kein HTTP-Handler, keine Zeilenauswahl, keine Antwort.'
+		],
+		[
+			'src/routes/api/admin/inbox-status/+server.ts',
+			'Admin-geschützt über isAdminUser(...) statt requireUserRole(...): Letzteres wirft redirect(302), und der Poller der Eingangsseite würde die Weiterleitung samt Login-HTML als Erfolg werten. Liest ausschließlich max(id) über openOnly() — nie eine Zeile, nie eine Spalte namens entryClient.'
 		]
 	]);
 
