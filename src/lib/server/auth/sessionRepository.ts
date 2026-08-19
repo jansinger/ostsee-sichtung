@@ -24,6 +24,11 @@ const logger = createLogger('auth:session');
  * Festgelegt auf 1 Stunde (Entscheidung 2026-07-31). Der Wert muss kürzer sein als die
  * _ID Token Expiration_ der Auth0-Application (Default 10 h) — sonst greift er nie, weil
  * `absolute_expires_at` vorher zuschlägt.
+ *
+ * Ausnahme seit dem Admin-Eingang-Poller (#Realtime-Notifications): `resolveSessionUser`
+ * kann die Verlängerung pro Aufruf abschalten (`{ verlaengern: false }`). Sonst hebelte ein
+ * offener `/admin`-Tab dieses Fenster faktisch aus — siehe `sessionTouchExemption.ts` für
+ * die Pfadliste und die ausführliche Begründung.
  */
 export const SESSION_IDLE_SECONDS = 60 * 60;
 
@@ -163,6 +168,21 @@ export async function createSession(cookies: Cookies, user: User): Promise<void>
 	cookies.set(getCookieName(), token, cookieOptions(cookieMaxAge(expiresAt, now)));
 }
 
+export interface ResolveSessionUserOptions {
+	/**
+	 * `false` überspringt `touchSession` — die Zeile bleibt mit ihrem bisherigen
+	 * `expires_at` stehen, obwohl sie gültig ist. Für Pfade gedacht, deren Aufruf-Takt
+	 * zufällig die Touch-Schwelle trifft (siehe `sessionTouchExemption.ts`); ohne diese
+	 * Ausnahme verlängert ein solcher Pfad die Session bei praktisch jedem Aufruf.
+	 *
+	 * Die Ablaufprüfung selbst wird davon NICHT berührt: Eine bereits abgelaufene oder
+	 * widerrufene Zeile wird unabhängig von dieser Option gelöscht und liefert `null`.
+	 *
+	 * Default `true` — Fortschreiben ist der Normalfall.
+	 */
+	verlaengern?: boolean;
+}
+
 /**
  * Löst das Session-Cookie in einen Benutzer auf — der einzige Weg von Cookie zu Identität.
  *
@@ -170,7 +190,10 @@ export async function createSession(cookies: Cookies, user: User): Promise<void>
  * dort (Startup-Guards, `sequence()`) ist nicht testbar, und genau diese Ableitung ist der
  * Punkt, an dem #635 bewiesen wird.
  */
-export async function resolveSessionUser(cookies: Cookies): Promise<ResolvedSession | null> {
+export async function resolveSessionUser(
+	cookies: Cookies,
+	options: ResolveSessionUserOptions = {}
+): Promise<ResolvedSession | null> {
 	const token = cookies.get(getCookieName());
 	if (!token) {
 		return null;
@@ -201,7 +224,8 @@ export async function resolveSessionUser(cookies: Cookies): Promise<ResolvedSess
 		return null;
 	}
 
-	const expiresAt = await touchSession(row, token, cookies, now);
+	const expiresAt =
+		options.verlaengern === false ? row.expiresAt : await touchSession(row, token, cookies, now);
 
 	return {
 		user: {

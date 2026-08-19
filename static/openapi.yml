@@ -1271,6 +1271,46 @@ paths:
         '500':
           description: Unerwarteter Fehler
 
+  /api/admin/inbox-status:
+    get:
+      tags:
+        - Admin
+      summary: Höchste offene Sichtungs-ID
+      description: >
+        Liefert die höchste ID einer noch offenen Sichtung (weder freigegeben
+        noch abgelehnt). Die Eingangsseite merkt sich den Wert beim Laden und
+        fragt hier minütlich nach, ob es inzwischen eine höhere gibt — daraus
+        entsteht der Hinweis auf neue offene Arbeit im Eingang.
+
+
+        Bewusst **nicht** ausschließlich neu eingegangene Meldungen: Wird eine
+        Entscheidung zurückgenommen (`PATCH /api/sightings/{id}/verify` mit
+        `verdict: reset`), kehrt die Sichtung in die offene Menge zurück und
+        zählt mit. Der Hinweis im Eingang ist deshalb mit „Neue Meldungen im
+        Eingang" beschriftet und nicht mit „eingegangen".
+
+
+        Antwortet bei fehlender Admin-Session mit 401 und ausdrücklich nicht mit
+        einer Weiterleitung: Ein `fetch` folgte der Weiterleitung und wertete
+        das Login-HTML als Erfolg.
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Aktueller Stand des Eingangs
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [maxOpenId]
+                properties:
+                  maxOpenId:
+                    type: integer
+                    description: Höchste offene Sichtungs-ID; 0, wenn nichts offen ist.
+                    example: 20431
+        '401':
+          description: Keine Admin-Session
+
   /api/admin/spam-rescore:
     post:
       tags:

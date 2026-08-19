@@ -4,6 +4,8 @@
 	import InboxShortcutHelp from '$lib/components/admin/InboxShortcutHelp.svelte';
 	import SightingInboxCard from '$lib/components/admin/SightingInboxCard.svelte';
 	import { inboxAnchor } from '$lib/components/admin/adminReturn';
+	import { createInboxPoller } from '$lib/components/admin/inboxPoller';
+	import { navigiereZuSessionEnde } from './inboxSessionEnde';
 	import {
 		nextActionableIndex,
 		resolveInboxShortcut,
@@ -56,6 +58,91 @@
 	let kartenElemente = $state<(HTMLLIElement | null)[]>([]);
 	/** Ziel des Fokus-Rückwegs, wenn das Overlay ohne fokussierte Karte geöffnet wurde. */
 	let hinweisKnopf = $state<HTMLButtonElement | null>(null);
+	/** Steht ein Hinweis auf neu eingegangene Meldungen? Gesetzt vom Poller. */
+	let neueMeldungen = $state(false);
+
+	/* Erhöht sich bei jedem `neuLaden()` — noch vor dessen eigenem `await`. Ein
+	   `entscheiden()`/`rueckgaengig()`, dessen PATCH zu diesem Zeitpunkt bereits
+	   läuft, merkt sich den Stand vor seinem eigenen `await` und vergleicht danach
+	   erneut: Weicht er ab, ist zwischenzeitlich neu geladen worden — `timers`,
+	   `done` und `busy` sind dann bereits abgeräumt (oder ein Reload-Versuch läuft),
+	   und ein nachträglicher Aufbau griffe auf eine Karte zu, die es in `data.open`
+	   nach dem Reload gar nicht mehr gibt (oder deren Zustand nicht mehr zum
+	   Undo-Fenster passt). Die Entscheidung selbst ist serverseitig bereits
+	   passiert — nur ihre lokale Spiegelung entfällt, der Reload zeigt sie über
+	   `data.open` ohnehin. Reine Buchhaltung, nicht Teil des Renderns — deshalb
+	   kein `$state`. */
+	let ladeGeneration = 0;
+
+	/* Der Poller hängt an `data.maxOpenId`: Nach einem Reload liefert der Load
+	   eine neue Baseline, der Effekt läuft erneut und startet mit ihr — der alte
+	   wird über die Aufräumfunktion sauber gestoppt. */
+	$effect(() => {
+		/* Zurücksetzen gehört hierher und nicht nur in `neuLaden()`: Auch der
+		   **automatische** Reload nach Ablauf des letzten Undo-Fensters (siehe
+		   `entscheiden`) liefert eine neue Baseline. Ohne diese Zeile bliebe der
+		   Hinweis danach stehen, obwohl die Liste die neuen Meldungen längst
+		   enthält. */
+		neueMeldungen = false;
+
+		const poller = createInboxPoller({
+			baseline: data.maxOpenId,
+			// Der Endpunkt setzt `Cache-Control: private, no-store`, aber ohne
+			// `Last-Modified`/`ETag` cachte ein Browser sonst heuristisch — `no-store`
+			// hier verhindert das unabhängig vom Server-Header.
+			fetchStatus: () => fetch('/api/admin/inbox-status', { cache: 'no-store' }),
+			onNeueMeldungen: () => (neueMeldungen = true),
+			/* Der Endpunkt antwortet mit 401, sobald die Auth0-Sitzung abgelaufen
+			   ist — bei einem über Nacht offenen Tab der Regelfall. Statt still zu
+			   verstummen, führt die Seite zurück zum Login (`inboxSessionEnde.ts`):
+			   Ein Roundtrip durch Auth0 meldet oft still wieder an (SSO-Sitzung
+			   bleibt bestehen, anders als beim Logout-Weg, der sie beendet und damit
+			   jeden anderen offenen Admin-Tab mit abmeldete), und der Bearbeiter
+			   landet wieder auf dem Eingang. Der Sprung dorthin ist gefahrlos, weil
+			   Entscheidungen sofort per PATCH herausgehen und es keinen
+			   ungespeicherten Zustand gibt. */
+			onSessionEnde: navigiereZuSessionEnde
+		});
+		poller.start();
+		return () => poller.stop();
+	});
+
+	async function neuLaden(): Promise<void> {
+		// Zählt vor jedem anderen Schritt hoch — siehe Kommentar bei `ladeGeneration`.
+		ladeGeneration += 1;
+
+		/* Offene Undo-Fenster erst abräumen: Ihre Karten verschwinden durch den
+		   Reload, und ein später zündender Timer griffe auf Einträge zu, die es
+		   nicht mehr gibt. Die Entscheidungen selbst stehen bereits in der
+		   Datenbank — nur das Zurücknehmen entfällt. Bewusst so entschieden:
+		   Der Klick ist eine Handlung des Bearbeiters, kein automatischer Reload.
+		   Das gilt unabhängig davon, ob der Reload gleich gelingt: Ein Timer, der
+		   mitten in den `await` hinein feuert, griffe auf `data.open` zu, während
+		   dessen Inhalt gerade unbestimmt ist. */
+		for (const timer of timers.values()) clearTimeout(timer);
+		timers.clear();
+		abgelaufen.clear();
+
+		try {
+			await invalidateAll();
+		} catch {
+			/* Scheitert der Reload, bleibt `neueMeldungen` unverändert (also weiter
+			   `true`) — der Hinweis steht dann weiter, und ein zweiter Klick ist der
+			   Wiederholungsversuch. Genau deshalb dürfen `done`, `busy` und
+			   `letzteEntscheidungId` erst NACH einem erfolgreichen `invalidateAll()`
+			   zurückgesetzt werden, nicht davor: Ohne den Reload steht `data.open`
+			   unverändert, und die noch angezeigten Undo-Zeilen entsprechen weiterhin
+			   dem tatsächlichen Zustand. Der Poller selbst muss dafür nicht neu
+			   starten — der Hinweis steht ja bereits, ein laufender Poller könnte
+			   daran nichts verbessern. */
+			return;
+		}
+
+		done = {};
+		busy = {};
+		letzteEntscheidungId = null;
+		neueMeldungen = false;
+	}
 
 	/** Welche Positionen noch eine Entscheidung brauchen — Grundlage des Nachrückens. */
 	const bedienbar = $derived(
@@ -170,8 +257,23 @@
 	async function entscheiden(id: number, verdict: Exclude<SightingVerdict, 'reset'>) {
 		if (busy[id]) return;
 		busy[id] = true;
+		// Vor dem PATCH gemerkt — siehe Kommentar bei `ladeGeneration`.
+		const generation = ladeGeneration;
 		const ok = await submitVerdict(id, verdict);
+		// `busy[id] = false` immer zuerst, unabhängig von der Generation: Ein
+		// zurückbleibendes `busy[id] = true` sperrte die Karte dauerhaft, auch wenn
+		// das dazwischengekommene `neuLaden()` selbst fehlschlug (Befund 1) und
+		// `busy` deshalb NICHT geleert wurde. Den Key in einem frisch geleerten
+		// `busy` erneut auf `false` zu setzen ist dagegen folgenlos — das ist von
+		// „Key fehlt" nicht zu unterscheiden.
 		busy[id] = false;
+		if (generation !== ladeGeneration) {
+			/* `neuLaden()` ist dazwischengekommen: `timers`/`done` sind bereits
+			   abgeräumt (oder ein Reload-Versuch läuft gerade). Ab hier nichts mehr
+			   aufbauen — die Entscheidung selbst steht längst auf dem Server, der
+			   Reload zeigt sie über `data.open`. */
+			return;
+		}
 		if (!ok) return;
 		done[id] = verdict;
 		letzteEntscheidungId = id;
@@ -206,8 +308,12 @@
 		if (timer) clearTimeout(timer);
 		timers.delete(id);
 		busy[id] = true;
+		// Dieselbe Absicherung wie in `entscheiden()` — Begründung dort.
+		const generation = ladeGeneration;
 		const ok = await submitVerdict(id, 'reset');
+		// Reihenfolge wie in `entscheiden()` — Begründung dort.
 		busy[id] = false;
+		if (generation !== ladeGeneration) return;
 		if (!ok) return;
 		delete done[id];
 		// Zurückgenommen ist nichts mehr zurückzunehmen — ein zweites U darf nicht
@@ -242,6 +348,25 @@
 				<ArrowDown width="16" height="16" aria-hidden="true" /> Neueste zuerst
 			{/if}
 		</button>
+	</div>
+
+	<!-- `role="status"`/`aria-live="polite"` sitzen am äußeren Container und NICHT
+	     am `{#if}` — eine Live-Region muss im Accessibility-Tree stehen, BEVOR sich
+	     ihr Inhalt ändert. Entstehen Region und Inhalt gleichzeitig (Container erst
+	     mit `neueMeldungen`), bekommen Screenreader die Ansage je nach Browser gar
+	     nicht mit, weil es nichts zu beobachten gab, als der Knoten erschien. Der
+	     Container bleibt deshalb immer im DOM, nur sein Inhalt ist bedingt. `polite`
+	     und nicht `assertive` — die Meldung ist nicht dringend. Bewusst ohne
+	     Autofokus: Der Bearbeiter navigiert per J und K, ein Fokussprung würde ihn
+	     aus der Arbeit werfen. -->
+	<div role="status" aria-live="polite">
+		{#if neueMeldungen}
+			<div class="alert alert-info mb-4">
+				<Info width="20" height="20" class="shrink-0" aria-hidden="true" />
+				<span class="grow">Neue Meldungen im Eingang.</span>
+				<button type="button" class="btn btn-sm" onclick={neuLaden}>Neu laden</button>
+			</div>
+		{/if}
 	</div>
 
 	<!-- Der Hinweis steht über der Liste und nicht in einem Tooltip: Ein Kürzel,
