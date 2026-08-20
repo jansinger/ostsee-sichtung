@@ -164,7 +164,32 @@ Legacy-Routen mit durchgängigem try/catch + Ergebnis-Limit 1000; CI deckt Lint/
 ### LOW
 
 - In-Memory-Rate-Limit nicht Multi-Instanz-fähig (siehe Security #3).
-- Kein Index auf `sightings.verified` trotz häufigem Filter.
+- ~~Kein Index auf `sightings.verified` trotz häufigem Filter.~~ **Geprüft 2026-08-20 —
+  bewusst nicht angelegt.** Der Punkt nannte die falsche Spalte: `geprueft` wird seit
+  2026-08 nicht mehr gelesen (Guard: `verifiedReadScan.test.ts`); der öffentliche Filter
+  ist `freigegeben_am IS NOT NULL`. Auf **diese** Spalte trägt ein Index nicht — gemessen
+  mit `EXPLAIN (ANALYZE, BUFFERS)` gegen die lokale DB (19.953 Zeilen, 14 MB Heap):
+  - **Das Prädikat ist nicht selektiv.** 19.289 von 19.953 Zeilen (96,7 %) sind
+    freigegeben; die Karten-Grundmenge liefert 18.892 von 19.953 (94,7 %). Einen Btree
+    über ein Prädikat, das fast jede Zeile trifft, wählt kein kostenbasierter Planner.
+  - **Der Plan ändert sich nicht.** Mit angelegtem Kandidaten — partiell
+    (`(freigegeben_am) WHERE freigegeben_am IS NOT NULL`) wie zusammengesetzt
+    (`(sichtungsdatum) WHERE freigegeben_am IS NOT NULL`) — bleibt die Abfrage hinter
+    `GET /api/map/sightings` ein **Seq Scan**: 1.805 Buffer, ~11–16 ms.
+  - **Erzwungen wird es schlechter.** Mit `enable_seqscan = off` wählt der Planner einen
+    Bitmap Heap Scan (12,5 ms gegen 11,5 ms). Als geordneter Index Scan — der einzige
+    Weg, der den Sort sparen würde — kostet er 17.391 statt 1.805 Buffer, also 9,6× so
+    viel I/O. Der Planner-Cost sagt dasselbe: 7.908 gegen 3.391.
+  - **Der scheinbare Gewinn beim Jahresfilter war Bloat, nicht der Index.** Der
+    zusammengesetzte Kandidat sah bei `?year=2025` zunächst 2,7× schneller aus (0,40 ms
+    gegen 1,1–2,5 ms). Ursache ist nicht der neue Index, sondern der vorhandene
+    `idx_sichtungsdatum`: Ein bloßes `REINDEX` darauf liefert dieselben 0,44 ms. Der
+    Kandidat wäre das Duplikat eines Index, der lediglich Wartung braucht (896 kB
+    gegen 440 kB frisch gebaut, also gut 2× aufgebläht).
+
+  Folge: keine Schema-Änderung, keine Migration. Neu zu bewerten, sobald der Anteil
+  nicht freigegebener Meldungen deutlich steigt — erst dann wird das Prädikat selektiv.
+
 - `RUN_MIGRATIONS`/`drizzle-kit migrate` im Entrypoint läuft mangels Migrationsverzeichnis ins Leere.
 - `SKIP_DB_CHECK` nicht in `docs/ENVIRONMENT.md`.
 
@@ -229,3 +254,20 @@ grüne Häkchen steuert (`touched && hasValue && !hasError` in `FieldRenderer`).
 **Blocker (vor Go-Live):** Security HIGH 1–3, UX HIGH 1–4, Produktion HIGH 1, Tailwind-4-Altlasten
 (`bg-opacity-*`, `*-focus`). **Kurz danach:** Security MEDIUM 4–9, Produktion MEDIUM 2–7,
 UX MEDIUM 5–8. **Backlog:** restliche MEDIUM/LOW + Dev-Dependency-Updates.
+
+### Stand dieser Reihenfolge am 2026-08-20
+
+Diese Tabelle hält nur fest, was **tatsächlich nachgeprüft** wurde. Punkte ohne Zeile
+sind damit nicht als offen oder erledigt behauptet — sie wurden in diesem Durchgang
+schlicht nicht angefasst.
+
+| Punkt                                                  | Stand 2026-08-20       | Beleg                                                                                                                             |
+| ------------------------------------------------------ | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Produktion LOW — „Kein Index auf `sightings.verified`" | **Geprüft, verworfen** | Spalte überholt (`geprueft` wird nicht mehr gelesen); auf `freigegeben_am` misst der Index keinen Gewinn — siehe Abschnitt 3, LOW |
+
+Nebenbefund aus derselben Messung, **nicht** Teil dieses Punktes und hier nicht
+behoben: `idx_sichtungsdatum` ist auf der lokalen DB rund 2× aufgebläht (896 kB gegen
+440 kB frisch gebaut) und kostet dadurch beim Jahresfilter etwa 1–2 ms. Ein
+`REINDEX INDEX CONCURRENTLY idx_sichtungsdatum` wäre eine reine Wartungsmaßnahme auf
+der jeweiligen Instanz, keine Schema-Änderung — ob die Produktionsdatenbank denselben
+Bloat trägt, ist von hier aus nicht gemessen (Port dort nicht freigegeben).
