@@ -289,7 +289,6 @@
 	"components_ui_dialog_confirmdialog_aria_label_dialog_schliessen": "Close dialogue box",
 	"components_ui_dialog_deletedialog_aria_label_dialog_schliessen": "Close dialogue box",
 	"components_ui_dialog_deletedialog_text_abbrechen": "Cancel",
-	"components_ui_dialog_deletedialog_text_dialog_schliessen": "Close dialogue box",
 	"components_ui_dialog_deletedialog_text_loeschen": "Delete",
 	"components_ui_dialog_deletedialog_text_sichtung_loeschen": "Delete sighting",
 	"components_ui_dialog_deletedialog_text_sind_sie_sicher_dass_sie": "Are you sure you want to delete this sighting? This action cannot be\n            undone.",

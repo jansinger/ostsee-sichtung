@@ -83,7 +83,18 @@
 			onCancel?.();
 		}
 		show = false;
-		triggerElement?.focus();
+		// `isConnected`: Ein `onConfirm` darf seinen eigenen Auslöser entfernen —
+		// „Formular zurücksetzen" führt zur Auswahlseite, „Löschen" in
+		// `CleanupPanel` lässt den Knopf über `hasFindings` verschwinden. Dann
+		// gibt es kein Ziel mehr, und `focus()` auf einem abgehängten Element
+		// setzt den Fokus auf `<body>`. Das ist nicht nur nutzlos, sondern
+		// zerstört die Platzierung, die die neue Ansicht selbst vornimmt
+		// (`ReportKindChoice` fokussiert ihre Auswahlfrage, B7). Wer gewinnt,
+		// hinge sonst an der Reihenfolge von `close`-Ereignis und Svelte-Flush —
+		// in Chromium gemessen geht es gut aus, zugesichert ist es nirgends.
+		if (triggerElement?.isConnected) {
+			triggerElement.focus();
+		}
 		triggerElement = null;
 	}
 </script>

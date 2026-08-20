@@ -258,6 +258,34 @@ describe('ConfirmDialog — Barrierefreiheit', () => {
 		await vi.waitFor(() => expect(document.activeElement).toBe(trigger));
 	});
 
+	/* Ein `onConfirm` darf seinen eigenen Auslöser abräumen — „Formular
+	   zurücksetzen" führt zur Auswahlseite, „Löschen" in `CleanupPanel` lässt den
+	   Knopf über `hasFindings` verschwinden. Ohne den `isConnected`-Guard riefe
+	   `handleClose` `focus()` auf einem abgehängten Element; der Fokus landete auf
+	   `<body>` — quer durch die Platzierung, die die neue Ansicht selbst vornimmt
+	   (`ReportKindChoice` fokussiert ihre Auswahlfrage, B7).
+
+	   Geprüft wird der Aufruf und nicht `document.activeElement`: Ein `focus()` auf
+	   ein entferntes Element bewirkt ohnehin nichts Sichtbares, das Ergebnis wäre
+	   mit und ohne Guard `<body>`. Die Zusage ist, den Fokus GAR NICHT anzufassen —
+	   nur so kann die neue Ansicht ihn behalten. */
+	it('fasst den Fokus nicht an, wenn der Trigger inzwischen entfernt wurde', async () => {
+		const trigger = triggerAnlegen();
+		const focusSpy = vi.spyOn(trigger, 'focus');
+		const onConfirm = () => trigger.remove();
+
+		const screen = await render(ConfirmDialog, { ...basisProps, show: false, onConfirm });
+		await screen.rerender({ ...basisProps, show: true, onConfirm });
+		await vi.waitFor(() => expect(dialogElement().open).toBe(true));
+		focusSpy.mockClear();
+
+		await screen.getByRole('button', { name: 'Endgültig zurücksetzen' }).click();
+
+		await vi.waitFor(() => expect(dialogElement().open).toBe(false));
+		expect(trigger.isConnected).toBe(false);
+		expect(focusSpy).not.toHaveBeenCalled();
+	});
+
 	it('gibt den Fokus auch nach ESC an den Trigger zurück', async () => {
 		const trigger = triggerAnlegen();
 		const screen = await render(ConfirmDialog, {

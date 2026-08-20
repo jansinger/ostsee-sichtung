@@ -289,7 +289,6 @@
 	"components_ui_dialog_confirmdialog_aria_label_dialog_schliessen": "Dialog schließen",
 	"components_ui_dialog_deletedialog_aria_label_dialog_schliessen": "Dialog schließen",
 	"components_ui_dialog_deletedialog_text_abbrechen": "Abbrechen",
-	"components_ui_dialog_deletedialog_text_dialog_schliessen": "Dialog schließen",
 	"components_ui_dialog_deletedialog_text_loeschen": "Löschen",
 	"components_ui_dialog_deletedialog_text_sichtung_loeschen": "Sichtung löschen",
 	"components_ui_dialog_deletedialog_text_sind_sie_sicher_dass_sie": "Sind Sie sicher, dass Sie diese Sichtung löschen möchten? Diese Aktion kann nicht rückgängig\n\t\t\tgemacht werden.",
