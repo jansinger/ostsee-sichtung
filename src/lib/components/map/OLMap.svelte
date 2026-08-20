@@ -1,14 +1,53 @@
 <script lang="ts">
 	import * as m from '$lib/paraglide/messages';
-	import { addMarker, createMap, setMapCenter } from '$lib/utils/map/openLayersHelpers';
 	import Icon from '$lib/components/Icon.svelte';
+	import { createLogger } from '$lib/logger';
 	import { untrack } from 'svelte';
 	import type { Map, MapBrowserEvent } from 'ol';
 	import type { Coordinate } from 'ol/coordinate';
 	import type Feature from 'ol/Feature';
 	import type { Point } from 'ol/geom';
 	import type BaseLayer from 'ol/layer/Base';
-	import { fromLonLat, toLonLat } from 'ol/proj';
+
+	/**
+	 * OpenLayers wird NICHT statisch importiert, sondern erst im Init-Effekt
+	 * nachgeladen. Statisch hing die Bibliothek (~276 KB roh / ~80 KB gzip) im
+	 * Initial-Bundle der Einstiegsseite, weil `LocationInput` diese Komponente
+	 * einbindet — sichtbar wird die Karte dort aber erst weit später, und auf
+	 * dem Totfund-Zweig unter Umständen nie.
+	 *
+	 * Der Umbau sitzt bewusst HIER und nicht bei den Aufrufern: So gewinnen
+	 * alle drei Einsatzorte (Meldeformular, Admin-Ansicht, Foto-EXIF-Karte)
+	 * ohne eigenes Zutun, und niemand kann den statischen Import versehentlich
+	 * über einen vierten Aufrufer zurückholen.
+	 *
+	 * `fromLonLat`/`toLonLat` landen in Modul-lokalen Handles, weil sie aus
+	 * synchronen Callbacks heraus gebraucht werden. Das ist gefahrlos: Jeder
+	 * dieser Callbacks kann erst feuern, nachdem der Init-Effekt die Karte
+	 * gebaut hat — `handleMapClick` hängt an einem Kartenevent, `moveMarkerTo`
+	 * und `updateMarker` prüfen zusätzlich auf `markerFeature` bzw. `map`.
+	 */
+	type OLProj = typeof import('ol/proj');
+	type OLHelpers = typeof import('$lib/utils/map/openLayersHelpers');
+
+	let fromLonLat: OLProj['fromLonLat'] | null = null;
+	let toLonLat: OLProj['toLonLat'] | null = null;
+	let setMapCenter: OLHelpers['setMapCenter'] | null = null;
+
+	const logger = createLogger('components:map:OLMap');
+
+	/** Solange `true`, steht der Ladehinweis anstelle der leeren Kartenfläche. */
+	let loading = $state(true);
+
+	/**
+	 * Das Nachladen kann fehlschlagen — ein Deploy wechselt die Chunk-Namen unter
+	 * einer offenen Seite, oder das Funknetz bricht weg (das Formular wird an
+	 * Deck und am Strand ausgefüllt). Ohne eigenen Zustand bliebe in genau dem
+	 * Fall der Ladehinweis für immer stehen: ein Spinner, der nie aufhört, ohne
+	 * Erklärung und ohne Ausweg. Deshalb ein sichtbarer Fehlerzustand, der auf
+	 * die Koordinatenfelder verweist — die funktionieren ohne Karte weiter.
+	 */
+	let loadError = $state(false);
 
 	let {
 		latitude = $bindable(54.5),
@@ -47,7 +86,13 @@
 	let mapElement: HTMLElement;
 	let map: Map | null = null;
 	let markerFeature: Feature | null = null;
-	let markerLayer: BaseLayer | null = null;
+	/**
+	 * `$state`, nicht `let`: Der Sichtbarkeits-Effekt weiter unten muss erneut
+	 * laufen, sobald die Ebene existiert. Seit OpenLayers nachgeladen wird,
+	 * entsteht sie erst nach einem `await` — also lange nach dem ersten
+	 * Effektlauf.
+	 */
+	let markerLayer = $state<BaseLayer | null>(null);
 
 	// Konvertiere Breiten- und Längengrad in OpenLayers-Koordinaten (lon, lat)
 	let coordinates = $derived([longitude, latitude]) as Coordinate;
@@ -75,7 +120,7 @@
 
 	/** Verschiebt die Marker-Geometrie auf die übergebene Position. */
 	function moveMarkerTo(coords: Coordinate): void {
-		if (markerFeature?.getGeometry()) {
+		if (fromLonLat && markerFeature?.getGeometry()) {
 			(markerFeature.getGeometry() as Point).setCoordinates(fromLonLat(coords));
 		}
 	}
@@ -95,7 +140,7 @@
 		longitude = lon ? parseFloat(lon.toFixed(4)) : 0;
 		latitude = lat ? parseFloat(lat.toFixed(4)) : 0;
 		moveMarkerTo(coords);
-		if (recenter && map) {
+		if (recenter && map && setMapCenter) {
 			setMapCenter(map, coords);
 		}
 		try {
@@ -126,11 +171,14 @@
 	 * nicht mitverschiebt.
 	 */
 	function handleMapClick(event: MapBrowserEvent): void {
+		// `toLonLat` steht hier immer: Das Event kann es erst geben, nachdem der
+		// Init-Effekt die Karte gebaut — und damit das Modul geladen — hat.
+		if (!toLonLat) return;
 		applyPosition(toLonLat(event.coordinate), false);
 	}
 
 	function updateMarker(coords: Coordinate) {
-		if (map && coords) {
+		if (map && coords && setMapCenter) {
 			// Rufe setMapCenter als Async-Funktion auf
 			setMapCenter(map, coords);
 			map?.updateSize();
@@ -141,7 +189,37 @@
 
 	// Modern $effect for map initialization and cleanup
 	$effect(() => {
-		if (mapElement) {
+		if (!mapElement) return;
+
+		// Diese drei bewusst SYNCHRON lesen, noch vor dem `await`: Sie sind die
+		// Abhängigkeiten, an denen der Effekt hängen soll. Nach einem `await`
+		// verfolgt Svelte keine Lesezugriffe mehr — stünden sie erst unten, wäre
+		// der Effekt still auf `mapElement` allein zusammengeschrumpft und ein
+		// Wechsel von `readonly` bliebe wirkungslos.
+		const target = mapElement;
+		const isReadonly = readonly;
+		const wantsGPS = enableGPS;
+
+		let cancelled = false;
+		loading = true;
+		loadError = false;
+
+		void (async () => {
+			const helpers = await import('$lib/utils/map/openLayersHelpers');
+			// Kein zweiter Netz-Roundtrip: `openLayersHelpers` importiert `ol/proj`
+			// selbst, das Modul steckt also schon im Graphen des Imports darüber.
+			const proj = await import('ol/proj');
+
+			// Der Effekt kann während des Nachladens schon wieder aufgeräumt
+			// worden sein (Schrittwechsel im Formular, Modal geschlossen). Dann
+			// darf hier keine Karte mehr entstehen — sie hinge an einem Element,
+			// das niemand mehr aufräumt.
+			if (cancelled) return;
+
+			fromLonLat = proj.fromLonLat;
+			toLonLat = proj.toLonLat;
+			setMapCenter = helpers.setMapCenter;
+
 			// Karte genau einmal pro Ziel-Element aufbauen: `coordinates` und `zoom`
 			// werden bewusst untracked gelesen. Sonst würde jede Koordinaten-
 			// änderung — also jedes Tippen und jedes Ziehen — die komplette Karte
@@ -151,50 +229,88 @@
 			const initialZoom = untrack(() => zoom);
 
 			// Erstelle die Karte
-			map = createMap(
-				mapElement,
+			map = helpers.createMap(
+				target,
 				initial,
 				initialZoom,
-				!readonly && enableGPS, // GPS nur wenn nicht readonly und explizit aktiviert
-				readonly ? undefined : handleGPSPosition // GPS-Callback nur wenn nicht readonly
+				!isReadonly && wantsGPS, // GPS nur wenn nicht readonly und explizit aktiviert
+				isReadonly ? undefined : handleGPSPosition // GPS-Callback nur wenn nicht readonly
 			);
 
 			// Füge den initialen Marker hinzu
-			const marker = addMarker(
+			const marker = helpers.addMarker(
 				map,
 				initial,
-				!readonly, // Marker ist verschiebbar, wenn die Karte nicht schreibgeschützt ist
-				readonly ? undefined : updateMarkerPosition
+				!isReadonly, // Marker ist verschiebbar, wenn die Karte nicht schreibgeschützt ist
+				isReadonly ? undefined : updateMarkerPosition
 			);
 
 			markerFeature = marker.feature;
+			// Die Sichtbarkeit setzt der Effekt weiter unten — er läuft an, sobald
+			// diese Zuweisung erfolgt. Hier stand früher ein eigenes
+			// `setVisible(untrack(() => hasPosition))`; das ist mit `$state` doppelt
+			// gemoppelt und wäre eine zweite Quelle für dieselbe Aussage.
 			markerLayer = marker.layer;
-			// Untracked: sonst hinge der Aufbau-Effekt an `hasPosition` und die
-			// erste gewählte Position würde die Karte komplett neu erzeugen.
-			markerLayer.setVisible(untrack(() => hasPosition));
 
-			if (!readonly) {
+			if (!isReadonly) {
 				map.on('singleclick', handleMapClick);
 			}
 
-			// Cleanup function (replaces onDestroy)
-			return () => {
-				if (map) {
-					map.dispose();
-					map = null;
-					markerFeature = null;
-					markerLayer = null;
-				}
-			};
-		}
+			loading = false;
+		})().catch((error) => {
+			// `void` allein hätte die Rejection verschluckt: Es gibt keinen
+			// `hooks.client.ts`, der unbehandelte Rejections auffinge.
+			if (cancelled) return;
+			logger.error({ error }, 'OpenLayers konnte nicht nachgeladen werden');
 
-		// Return undefined if mapElement is not available yet
-		return;
+			// Der Fehlschlag muss nicht der Import gewesen sein: Scheitert erst
+			// `addMarker` oder ein Schritt danach, steht bereits eine
+			// funktionsfähige Karte samt Listenern im DOM — unter dem
+			// Fehler-Overlay, aber am Leben. Der Cleanup-Return läuft in diesem
+			// Pfad nicht, also hier aufräumen.
+			map?.dispose();
+			map = null;
+			markerFeature = null;
+			markerLayer = null;
+
+			loadError = true;
+			loading = false;
+		});
+
+		// Cleanup function (replaces onDestroy)
+		return () => {
+			cancelled = true;
+			if (map) {
+				map.dispose();
+				map = null;
+				markerFeature = null;
+				markerLayer = null;
+			}
+		};
 	});
 
-	// Marker erst zeigen, wenn eine echte Position vorliegt.
+	/**
+	 * Marker erst zeigen, wenn eine echte Position vorliegt.
+	 *
+	 * Beide Werte werden ABSICHTLICH erst in lokale Variablen gelesen. Die
+	 * naheliegende Kurzform ist eine Falle:
+	 *
+	 *     markerLayer?.setVisible(hasPosition);   // ❌
+	 *
+	 * Ist `markerLayer` null, bricht der Optional-Chaining-Ausdruck ab, **bevor**
+	 * `hasPosition` ausgewertet wird. Der Effekt liest die Abhängigkeit dann nie
+	 * und läuft nie wieder — er ist ab dem ersten Durchlauf tot.
+	 *
+	 * Solange die Karte synchron entstand, fiel das nicht auf: Der Aufbau-Effekt
+	 * läuft zuerst und hatte die Ebene bereits gesetzt. Seit dem Nachladen ist
+	 * sie beim ersten Durchlauf null — der Marker blieb dadurch für immer
+	 * unsichtbar, auch nachdem der Melder eine Stelle angetippt hatte
+	 * (`e2e/form-map-pan-zoom.spec.ts` fing es als leeres Kartenbild).
+	 */
 	$effect(() => {
-		markerLayer?.setVisible(hasPosition);
+		const ebene = markerLayer;
+		const sichtbar = hasPosition;
+		ebene?.setVisible(sichtbar);
 	});
 
 	// Reactive effect for coordinate updates
@@ -217,7 +333,47 @@
 		? m.components_map_olmap_aria_label_interaktive_karte_der_sichtungen()
 		: m.components_map_olmap_aria_label_interaktive_karte_zur_position()}
 	tabindex="0"
-></div>
+>
+	{#if loading}
+		<!--
+			Der Ladehinweis liegt INNERHALB des Kartenziels, nicht daneben:
+			`.ol-map-container` ist bereits `position: relative` und hat eine feste
+			Höhe (`--map-height`, Default 400px) — ein Wrapper wäre also nur ein
+			zusätzlicher Kasten ohne Wirkung. OpenLayers hängt sein `.ol-viewport`
+			per `appendChild` an, räumt vorhandene Kinder also nicht ab; Svelte
+			entfernt hier umgekehrt nur die eigenen Knoten. Beide kommen sich nicht
+			ins Gehege.
+
+			`role="status"` statt eines rein visuellen Spinners: Ohne Textmeldung
+			bliebe für Screenreader-Nutzer 400 px Leerfläche ohne jede Erklärung.
+		-->
+		<div
+			class="bg-base-200/60 text-base-content absolute inset-0 flex items-center justify-center gap-2 text-sm"
+			role="status"
+			data-testid="map-loading"
+		>
+			<span class="loading loading-spinner loading-sm" aria-hidden="true"></span>
+			<span>{m.components_map_olmap_text_karte_wird_geladen()}</span>
+		</div>
+	{:else if loadError}
+		<!--
+			`role="alert"` statt `status`: Der Melder muss das hier mitbekommen,
+			ohne die Kartenfläche abzusuchen — ohne Karte ist die Positionsangabe
+			nur noch über die Koordinatenfelder möglich.
+
+			`text-base-content` auf der getönten Fläche, NICHT `*-content`: Das
+			gehört laut design-system.md ausschließlich auf Vollton-Flächen.
+		-->
+		<div
+			class="bg-warning/10 text-base-content absolute inset-0 flex items-center justify-center gap-2 p-4 text-center text-sm"
+			role="alert"
+			data-testid="map-load-error"
+		>
+			<Icon icon="lucide:triangle-alert" class="h-5 w-5 shrink-0" aria-hidden="true" />
+			<span>{m.components_map_olmap_text_karte_konnte_nicht_geladen_werden()}</span>
+		</div>
+	{/if}
+</div>
 
 {#if !readonly}
 	<div class="alert mt-2 mb-0" role="status">

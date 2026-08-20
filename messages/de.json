@@ -92,6 +92,8 @@
 	"components_map_loadingoverlay_text_tastaturkuerzel_hinweis": "Tastaturkürzel: Karte fokussieren, dann diese Taste drücken:",
 	"components_map_olmap_aria_label_interaktive_karte_der_sichtungen": "Interaktive Karte der Sichtungen",
 	"components_map_olmap_aria_label_interaktive_karte_zur_position": "Interaktive Karte zur Positionsauswahl. Pfeiltasten zum Verschieben, Plus/Minus zum Zoomen.",
+	"components_map_olmap_text_karte_konnte_nicht_geladen_werden": "Karte konnte nicht geladen werden. Bitte laden Sie die Seite neu — die Koordinaten lassen sich auch von Hand eintragen.",
+	"components_map_olmap_text_karte_wird_geladen": "Karte wird geladen …",
 	"components_map_olmap_text_noch_keine_position_gewaehlt_tippen_sie": "Noch keine Position gewählt. Tippen Sie auf die Karte, um die Stelle zu markieren, an der Sie das Tier gesehen haben.",
 	"components_map_olmap_text_tippen_sie_auf_die_karte_gps": "Tippen Sie auf die Karte oder ziehen Sie den Marker an die Stelle, an der Sie das Tier gesehen haben. Der GPS-Button übernimmt Ihre aktuelle Position.",
 	"components_map_olmap_text_tippen_sie_auf_die_karte_oder_ziehen_sie": "Tippen Sie auf die Karte oder ziehen Sie den Marker an die Stelle, an der Sie das Tier gesehen haben.",
