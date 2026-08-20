@@ -1814,7 +1814,7 @@ kollabiert Whitespace beim Rendern), aber `e2e/about-page.spec.ts` prüfte mit
 normalisiert das offenbar NICHT wie das String-Matching von `getByText`.
 
 Behoben mit einem einzigen Template-Literal-Ausdruck
-(`` {`${m.…tech_version()} ${data.version}`} ``) statt zwei benachbarter
+(``{`${m.…tech_version()} ${data.version}`}``) statt zwei benachbarter
 Mustaches — dadurch entsteht nur EIN Textknoten mit garantiertem Leerzeichen,
 unabhängig davon, wie Prettier die Zeilen umbricht (zwei Versuche mit
 Leerzeichen zwischen den Mustaches auf einer Zeile scheiterten daran, dass
@@ -1924,12 +1924,12 @@ Schlüsselmengen identisch, kein Server-/Export-/Legacy-Modul berührt). Dabei
 Er behauptete pauschal, die sechs Ternaries seien „beide Zweige übersetzt".
 Tatsächlich trugen **vier von sechs hartcodiertes Deutsch**:
 
-| Datei | Text |
-| --- | --- |
-| `OLMap.svelte:216` | `'Interaktive Karte zur Positionsauswahl. …'` |
-| `MapPanel.svelte:130` | `` `${title} verkleinern` / `${title} vergrößern` `` |
-| `FormSteps.svelte:68` | `'Bitte füllen Sie zuerst die vorherigen Schritte aus'` |
-| `DropzoneEnhanced.svelte:1065` | vier Zweige, u. a. `'Medien hochladen'` |
+| Datei                          | Text                                                    |
+| ------------------------------ | ------------------------------------------------------- |
+| `OLMap.svelte:216`             | `'Interaktive Karte zur Positionsauswahl. …'`           |
+| `MapPanel.svelte:130`          | `` `${title} verkleinern` / `${title} vergrößern` ``    |
+| `FormSteps.svelte:68`          | `'Bitte füllen Sie zuerst die vorherigen Schritte aus'` |
+| `DropzoneEnhanced.svelte:1065` | vier Zweige, u. a. `'Medien hochladen'`                 |
 
 Entstanden durch **Verallgemeinerung von den zwei selbst angefassten Fällen
 auf alle sechs** — dieselbe Fehlerklasse wie die vier zu groben Buchführungen
@@ -2083,10 +2083,10 @@ beschädigen können. Behoben: Jeder `$`-Schlüssel ist Format-Metadaten und wir
 
 **2. DeepL trifft die Fachbegriffe nicht.** Ohne Kontext wurde
 
-| Deutsch | DeepL | im Projekt |
-| --- | --- | --- |
-| „einer **Sichtung** zugeordnet" | assigned to a *review* | *sighting* |
-| „Die **Meldung** enthält bereits {used} MB" | The *message* already contains | *report* |
+| Deutsch                                     | DeepL                          | im Projekt |
+| ------------------------------------------- | ------------------------------ | ---------- |
+| „einer **Sichtung** zugeordnet"             | assigned to a _review_         | _sighting_ |
+| „Die **Meldung** enthält bereits {used} MB" | The _message_ already contains | _report_   |
 
 Beides weicht von den rund 170 von Hand übersetzten Botschaften ab. Behoben über
 ein **DeepL-Glossar**, das pro Lauf angelegt und danach wieder gelöscht wird
@@ -2107,7 +2107,7 @@ wiederkehren. Das Glossar senkt das, ersetzt aber die Durchsicht nicht.
 ## Zweiter und dritter Trockenlauf: das Glossar wirkt, die Stichprobe war schlecht gewählt
 
 **Nach dem Glossar** (`--limit 20`, dieselben `api_*`-Segmente): „Sichtung" →
-*sighting*, „Meldung" → *report*. Beide Fachfehler behoben, Platzhalter
+_sighting_, „Meldung" → _report_. Beide Fachfehler behoben, Platzhalter
 unverändert, `$schema` verschwunden.
 
 **Die Stichprobe taugte aber nichts.** Die Schlüssel sind alphabetisch sortiert,
@@ -2120,12 +2120,12 @@ gibt es jetzt `--filter <präfix>`.
 dann den erwarteten Befund — und zwar einen, den kein einzelnes Segment für
 sich zeigt:
 
-| Schlüssel | Deutsch | DeepL |
-| --- | --- | --- |
-| `boatdrive_label` | Bootsantrieb | Boat **propulsion** |
-| `boatdrive_meta_helptext` | Welcher **Antrieb** … | Which **drive system** … |
-| `boatdrive_meta_valuetext` | Die **Antriebsart** … | type of **propulsion** |
-| `boatdrivetext_label` | Sonstiger **Antrieb** | Other **drive systems** |
+| Schlüssel                  | Deutsch               | DeepL                    |
+| -------------------------- | --------------------- | ------------------------ |
+| `boatdrive_label`          | Bootsantrieb          | Boat **propulsion**      |
+| `boatdrive_meta_helptext`  | Welcher **Antrieb** … | Which **drive system** … |
+| `boatdrive_meta_valuetext` | Die **Antriebsart** … | type of **propulsion**   |
+| `boatdrivetext_label`      | Sonstiger **Antrieb** | Other **drive systems**  |
 
 Das Feld hieße „Boat propulsion", der Hilfetext direkt darunter fragte nach
 einem „drive system" — zwei Begriffe für dieselbe Sache, sichtbar untereinander.
@@ -2147,7 +2147,7 @@ gelesen.
 
 ## Vierter Trockenlauf: das Glossar hat den Fehler behoben — und einen neuen erzeugt
 
-Nach der Glossar-Erweiterung ist „Antrieb" durchgängig *propulsion*
+Nach der Glossar-Erweiterung ist „Antrieb" durchgängig _propulsion_
 (`propulsion system`, `propulsion type`, `boat propulsion system`) und der
 Numerus-Fehler weg („Other forms of propulsion" statt „Other drive systems").
 
@@ -2180,3 +2180,70 @@ Korrektur an der Maschinenübersetzung kann eine neue Fehlerklasse öffnen. Der
 Glossar-Eintrag hat die Terminologie vereinheitlicht und dabei die
 Groß-/Kleinschreibung gebrochen. Deshalb bleibt der Trockenlauf der
 Normalbetrieb und `--write` die Ausnahme, die man vorher liest.
+
+---
+
+# Nachtrag 2026-08-20 — nachgemessener Stand
+
+Dieses Protokoll endet mit dem vierten DeepL-Trockenlauf. Seither ist die
+Vorübersetzung tatsächlich geschrieben und über **#867** (`complete DE/EN stage 2 —
+layer C, rollout and full pretranslation`) auf `main` gelandet. Der zuletzt
+protokollierte Übersetzungsgrad ist damit überholt.
+
+## Der Übersetzungsgrad liegt bei 95,3 %, nicht bei 11,8 %
+
+Nachgerechnet gegen `messages/de.json` und `messages/en.json`:
+
+```
+Schlüssel gesamt:            1327
+identisch mit dem Deutschen:   63
+→ übersetzt:                95,3 %
+```
+
+Befund 3 weiter oben („Der Übersetzungsgrad liegt bei 11,8 % — der Rollout-Flip kam zu
+früh") beschreibt den Stand **vor** der Vorübersetzung und ist als Momentaufnahme
+richtig, als Lagebeschreibung aber nicht mehr gültig. Die Entscheidung, den Flip stehen
+zu lassen, hat sich damit im Nachhinein getragen.
+
+**Die 63 verbliebenen Identitäten sind überwiegend keine Lücke**, sondern Wörter, die in
+beiden Sprachen gleich lauten — Stichprobe: `Offline`, `MB`, `ASCOBANS`, `HELCOM`,
+`Start`, `Filter`, `Cluster`, `ESC`. Eine Zählung „identisch = unübersetzt" überschätzt
+die Restarbeit hier systematisch; wer die Zahl fortschreibt, sollte diese Klasse vorher
+aussortieren.
+
+## Die im Protokoll offen gelassenen Guard-Lücken sind geschlossen
+
+Der Abschnitt „Was der Guard strukturell nicht sieht (unverändert offen)" nennt drei
+Punkte. Zwei davon sind erledigt:
+
+- `popupContent.ts` — die Stelle nimmt jetzt einen `translations`-Parameter entgegen
+  (`src/lib/map/popupContent.ts:98`: `speciesName(props, translations, …)`), der
+  deutsche Fallback ist kein hartcodierter Anzeigetext mehr.
+- `speciesIdentification.ts` — die Datei zieht ihre Texte über
+  `$lib/paraglide/messages` und `memoizePerLocale()` aus dem Botschaftskatalog
+  (`src/lib/report/formOptions/speciesIdentification.ts:8-10`). Die 316 deutschen
+  Fachtext-Literale sind damit weg.
+- Die dritte Zeile („die 1124 Schlüssel, deren `en.json`-Wert dem deutschen
+  entspricht") ist durch die Messung oben ersetzt: es sind 63.
+
+## Was weiterhin offen ist
+
+Beides unverändert, beides **wartet auf eine Zulieferung von außen** und nicht auf Code:
+
+1. **Der Datenschutz-Abschnitt auf `/en/about`.** Die sieben
+   `routes_about_page_privacy_*`-Schlüssel tragen in `en.json` weiterhin den deutschen
+   Wortlaut — nachgeprüft, nicht angenommen. Begründung unverändert die aus
+   `translationRolloutStage.ts`: eine ungeprüfte englische Fassung würde dasselbe
+   Fehlermuster wiederholen, das `docs/archive/DATENSCHUTZ_ABGLEICH_DMM_2026-08-02.md`
+   auf Deutsch korrigiert hat.
+2. **Fachliche Abnahmen.** `I18N_ARTNAMEN_VORSCHLAG.md` (Museum) und
+   `I18N_EINWILLIGUNGEN_VORSCHLAG.md` (Datenschutz) sind weiterhin Vorschläge.
+
+## Und der Punkt, der beim Lesen dieses Protokolls leicht untergeht
+
+`/en` ist ausgeliefert, indexierbar und zu 95 % übersetzt — **aber für Besucher nicht
+erreichbar.** `src/routes/+layout.server.ts:50` setzt
+`showLanguageSwitcher: isSuperAdminUser(locals.user)`. Das ist so gewollt und in
+`translationRolloutStage.ts` dokumentiert; es ist aber der eine Schalter, der zwischen
+dem heutigen Stand und einem englischen Go-Live steht. Wer ihn umlegt, ändert das
+Prädikat dort — nicht `TRANSLATION_ROLLOUT_COMPLETE`.

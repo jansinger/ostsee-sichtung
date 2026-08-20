@@ -1,8 +1,16 @@
 # Mehrsprachigkeit DE/EN — Arbeitsstand
 
-Alles zur laufenden i18n-Umstellung liegt hier. Etappe 0 (Paraglide, Routing) ist
-umgesetzt und archiviert (`docs/archive/PLAN_MEHRSPRACHIGKEIT_ETAPPE0_2026-08-10.md`);
-Etappe 1 ist in Arbeit, Etappe 2 geplant.
+Alles zur i18n-Umstellung liegt hier. Etappe 0 (Paraglide, Routing) ist umgesetzt und
+archiviert (`docs/archive/PLAN_MEHRSPRACHIGKEIT_ETAPPE0_2026-08-10.md`); **Etappen 1 und 2
+sind umgesetzt und gemerged** (#861, #864, #867).
+
+**Stand 2026-08-20 (nachgemessen):** 95,3 % der 1327 Botschaften sind übersetzt (63
+identisch mit dem Deutschen, überwiegend legitim — `Offline`, `MB`, `HELCOM`, `Filter`).
+`/en` ist ausgeliefert und indexierbar, aber **für Besucher nicht erreichbar**: der
+Sprachumschalter ist über `showLanguageSwitcher` in `src/routes/+layout.server.ts:50` auf
+Superadmins beschränkt. Offen bleiben der Datenschutz-Abschnitt auf `/en/about` sowie die
+fachlichen Abnahmen für Artnamen und Einwilligungstexte. Details im Nachtrag am Ende von
+`ARBEITSPROTOKOLL_ETAPPE1.md`.
 
 | Datei                                                     | Inhalt                                                                                       |
 | --------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
