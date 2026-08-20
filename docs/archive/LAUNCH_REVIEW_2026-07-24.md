@@ -293,9 +293,31 @@ Folge: **kein `REINDEX` auf Produktion nötig.** Lokal lohnt er sich, ist aber e
 Instanz-Wartung und keine Schema-Änderung — also nichts, was dieses Repository
 festhalten müsste.
 
-Nicht belastbar aus derselben Abfrage: die Scan-Zähler. `idx_weather_data_gin` und
-`idx_weather_fetched` stehen auf Produktion bei 0 Scans, was nach totem Index
-aussieht. `stats_reset` ist dort aber `NULL` und `idx_sichtungsdatum` zählt nur 460
-Scans (lokal 10.934) — das Zählfenster ist also kurz und seine Länge unbekannt. Zum
-Entfernen eines Index reicht das nicht; dafür müsste man `pg_postmaster_start_time()`
-kennen und über eine bekannte Zeitspanne erneut messen.
+### Offener Faden: möglicherweise ungenutzte Weather-Indizes
+
+Dieselbe Abfrage zeigt `idx_weather_data_gin` (608 kB) und `idx_weather_fetched`
+(168 kB) auf Produktion bei **0 Scans**. Das Zählfenster ist bekannt: der Postmaster
+läuft seit 2026-08-19 04:06, also rund 36 Stunden — zu kurz, um daraus allein auf
+einen toten Index zu schließen.
+
+Strukturell sieht es allerdings danach aus:
+
+- `weather_data` steht in `src/` in genau **einer** Art von `WHERE`, nämlich
+  `IS NOT NULL` (`weatherDeduplication.ts:62,187,195`). Ein GIN-Index kann
+  `IS NOT NULL` nicht bedienen. Nachgemessen mit `enable_seqscan = off`: Der Planner
+  greift auch dann nicht auf `idx_weather_data_gin` zurück, sondern auf das partielle
+  `idx_position_date_weather`, dessen eigene `WHERE`-Klausel das Prädikat impliziert.
+- `weather_fetched_at` kommt in `src/` in **keinem** `WHERE` vor, nur in
+  Select-Listen und Insert-Werten.
+
+**Trotzdem kein Grund, sie zu entfernen — und der Grund dafür ist wichtiger als der
+Befund selbst:** `idx_weather_provider` steht auf Produktion bei 64 Scans (lokal 804),
+obwohl auch diese Spalte in `src/` in keinem `WHERE` auftaucht. Es liest also etwas
+auf dieser Datenbank, das nicht in diesem Repository steht — plausibel das Altsystem,
+das auf derselben DB liegt. Eine Code-Analyse über `src/` kann einen Index hier
+folglich **nicht** für tot erklären.
+
+Nächster Schritt, falls jemand die 776 kB heben will: Scan-Zähler über eine bekannte,
+längere Spanne messen (`pg_stat_reset_single_table_counters()` auf `sichtungen`, dann
+nach ein paar Wochen erneut sehen) und parallel klären, welche Abfragen das Altsystem
+auf `sichtungen` fährt.
