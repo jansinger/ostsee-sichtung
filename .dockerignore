@@ -119,6 +119,7 @@ src/tools
 # und greift damit nur im Wurzelverzeichnis.
 !src/tools/vite-stable-dep-hash.ts
 !src/tools/dev-server-identity.ts
+!src/tools/olOptimizeDeps.ts
 scripts/*
 !scripts/docker-*.sh
 !scripts/docker-migrate.ts

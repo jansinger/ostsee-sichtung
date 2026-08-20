@@ -158,8 +158,8 @@ Legacy-Routen mit durchgängigem try/catch + Ergebnis-Limit 1000; CI deckt Lint/
 6. Postgres ohne explizite Pool-/Timeout-Config (`db/index.ts:42`) → Connection-Exhaustion-Risiko
    auf Serverless. `postgres(url, { max, idle_timeout, connect_timeout })`.
 7. Kein Graceful-Shutdown (SIGTERM) → abrupter Abbruch laufender Requests bei Deploy.
-8. OpenLayers statisch in die Startseite gebundelt (`LocationInput.svelte` → `OLMap`) → großes
-   Initial-Bundle. Lazy `import()`.
+8. ~~OpenLayers statisch in die Startseite gebundelt (`LocationInput.svelte` → `OLMap`) → großes
+   Initial-Bundle. Lazy `import()`.~~ — **erledigt 2026-08-20**, siehe Nachtrag unten.
 
 ### LOW
 
@@ -248,6 +248,104 @@ verworfen. Ebenfalls mit #567: die verbindliche Kurzform `.claude/rules/design-s
 Anmerkung zum Zeitpunkt: #567 hat `createForm` um einen `touched`-Store erweitert, der das
 grüne Häkchen steuert (`touched && hasValue && !hasError` in `FieldRenderer`). Doku-Aussagen
 über ein „fehlendes `touched`" beziehen sich auf den Stand **vor** #567.
+
+### Nachtrag 2026-08-20 — Produktion MEDIUM 8 erledigt ✅
+
+OpenLayers hängt nicht mehr im Initial-Bundle der Einstiegsseite.
+
+Der Umbau sitzt in `src/lib/components/map/OLMap.svelte`, nicht bei den Aufrufern: Die
+beiden statischen Wert-Importe (`$lib/utils/map/openLayersHelpers` und `ol/proj`) sind in
+den bereits vorhandenen Init-`$effect` hinter `await import(...)` gewandert. Damit gewinnen
+alle drei Einsatzorte auf einmal — Meldeformular (`LocationInput`), Admin-Ansicht
+(`AdminSightingView`) und Foto-EXIF-Karte (`DropzoneEnhanced`) —, und ein künftiger vierter
+Aufrufer kann den statischen Import nicht versehentlich zurückholen. Die `import type`-Zeilen
+bleiben stehen; sie verschwinden beim Kompilieren ohnehin.
+
+Solange der Chunk lädt, steht im Kartenfeld ein Ladehinweis (`data-testid="map-loading"`,
+`role="status"`, Text aus `components_map_olmap_text_karte_wird_geladen`) — 400 px Leerfläche
+ohne Erklärung wären für Screenreader-Nutzer nichts gewesen.
+
+**Gemessen**, nicht geschätzt: statische Chunk-Hülle der Einstiegsseite (Route-Node `/`
+plus Root-Layout plus Client-Entry, `npm run build`, dynamische Kanten bewusst nicht verfolgt):
+
+|               | roh                      | gzip                    |
+| ------------- | ------------------------ | ----------------------- |
+| vorher        | 1.282.052 B              | 411.564 B               |
+| nachher       | 973.863 B                | 321.968 B               |
+| **Differenz** | **−308.189 B (−24,0 %)** | **−89.596 B (−21,8 %)** |
+
+Der OpenLayers-Chunk (vorher 276.331 B roh / 79.895 B gzip) ist aus der statischen Hülle
+verschwunden und wird jetzt als eigener Lazy-Chunk (263.130 B) nachgeladen.
+
+Zwei Dinge, die bei der Messung auffielen und die man beim nächsten Anlauf nicht neu
+herleiten muss:
+
+- `src/lib/utils/format/formatLocation.ts` importiert `toStringHDMS` aus `ol/coordinate` und
+  läuft synchron auf der Einstiegsseite (`SubmissionSuccess`, `DropzoneEnhanced`). Das ist
+  **kein** übersehener Rest: Rollup trennt `ol/coordinate` samt Kleinkram in einen eigenen
+  6.179-B-Chunk ab, der eager bleibt, während die 263 KB Karten-Laufzeit lazy sind. Wer diese
+  6 KB für den vergessenen statischen Import hält, baut `formatLocation` unnötig um.
+- Zwei aufeinanderfolgende `await import(...)` statt `Promise.all` kosten hier keinen zweiten
+  Roundtrip: `openLayersHelpers` importiert `ol/proj` selbst, das Modul steckt also schon im
+  Graphen des ersten Imports.
+
+Schlägt das Nachladen fehl — ein Deploy wechselt die Chunk-Namen unter einer offenen Seite,
+oder das Funknetz bricht weg —, erscheint statt des Spinners eine Fehlermeldung
+(`data-testid="map-load-error"`, `role="alert"`), die auf die Koordinatenfelder verweist.
+Ohne diese Behandlung bliebe der Spinner für immer stehen: `void (async () => …)()`
+verschluckt die Rejection, und einen `hooks.client.ts`, der sie auffinge, gibt es in diesem
+Projekt nicht.
+
+Abgesichert durch vier Dateien:
+
+| Datei                             | Was sie hält                                                                       |
+| --------------------------------- | ---------------------------------------------------------------------------------- |
+| `OLMapSsr.test.ts`                | Ladehinweis steht schon im SSR-Markup — also ab dem ersten Bild, ohne JavaScript   |
+| `OLMap.svelte.test.ts`            | Karte, GPS-Control und `tabindex="0"`/`role="application"` überleben das Nachladen |
+| `OLMapLoadFailure.svelte.test.ts` | Fehlschlag zeigt den Fehlerzustand statt eines endlosen Spinners                   |
+| `olmapLazyImport.test.ts`         | Guard gegen den statischen Wert-Import; `import type` bleibt erlaubt               |
+
+Der Quelltext-Guard sieht allerdings nur die **direkten** Importe von `OLMap.svelte`. Wer
+OpenLayers transitiv zurückholt, kommt an ihm vorbei — nachgemessen: mit einem
+`import … from '$lib/map/extentUtils'` (importiert selbst `ol/proj`) bleibt
+`olmapLazyImport.test.ts` **grün**, während die Karten-Laufzeit wieder eager in der
+Einstiegsseite liegt.
+
+Deshalb rechnet `src/tools/checkEntryBundle.ts` zusätzlich auf dem **gebauten Chunk-Graphen**
+(`.svelte-kit/output/client/.vite/manifest.json`) und läuft in CI hinter `npm run build`
+(`npm run check:bundle`). Es prüft gestaffelt:
+
+1. **Struktur:** Der Chunk zu `openLayersHelpers.ts` muss von der Einstiegsseite aus
+   ausschließlich dynamisch erreichbar sein.
+2. **Schnittmenge:** Was sich die statische Hülle mit der Karten-Laufzeit teilt, darf 25.000 B
+   roh nicht überschreiten.
+3. **Gesamtgewicht:** Die statische Hülle bleibt unter 340.000 B gzip.
+
+Punkt 2 ist der empfindliche — und der Grund, warum es ihn neben Punkt 3 gibt. Gemessen am
+2026-08-20:
+
+| Stand                                      | Schnittmenge | Hülle gzip |
+| ------------------------------------------ | ------------ | ---------- |
+| aufgeteilt (Soll)                          | 21.253 B     | 321.968 B  |
+| mit `import … from '$lib/map/extentUtils'` | 31.185 B     | 326.140 B  |
+
+Der Umweg kostet an der Schnittmenge 9,9 KB, am Gesamtgewicht aber nur 4,2 KB gzip — im
+Gesamtbudget wäre er untergegangen.
+
+Zwei Punkte, die beim Weiterarbeiten leicht schiefgehen:
+
+- **Die Schnittmenge ist nicht „so viel OpenLayers liegt eager herum".** Das Manifest sagt
+  nicht, welches Modul in welchem Chunk steckt; gemessen werden zwei Hüllen. In den 21 KB
+  stecken auch harmlose App-Chunks, die `openLayersHelpers` seinerseits importiert (Logger,
+  Karten-Tokens, Meldungen). Wer sie für reines OpenLayers hält, sucht an der falschen Stelle.
+- **Fehlt das Manifest, bricht das Skript ab**, statt die Prüfung zu überspringen. Ein
+  Wächter, der sich bei fehlender Eingabe still grün meldet, sieht nach Abdeckung aus und
+  liefert keine.
+
+Die Graph-Rechnung selbst steht in `src/tools/entryBundleClosure.ts` und ist an konstruierten
+Manifesten geprüft (`entryBundleClosure.test.ts`, in `test:quick`) — inklusive des Rückfalls,
+den sie fangen soll. Ein Wächter, der nur gegen den konformen Ist-Zustand läuft, belegt über
+die Regel selbst nichts.
 
 ---
 
