@@ -172,16 +172,18 @@ Legacy-Routen mit durchgängigem try/catch + Ergebnis-Limit 1000; CI deckt Lint/
   - **Das Prädikat ist nicht selektiv.** 19.289 von 19.953 Zeilen (96,7 %) sind
     freigegeben; die Karten-Grundmenge liefert 18.892 von 19.953 (94,7 %). Einen Btree
     über ein Prädikat, das fast jede Zeile trifft, wählt kein kostenbasierter Planner.
-  - **Der Plan ändert sich nicht.** Mit angelegtem Kandidaten — partiell
-    (`(freigegeben_am) WHERE freigegeben_am IS NOT NULL`) wie zusammengesetzt
-    (`(sichtungsdatum) WHERE freigegeben_am IS NOT NULL`) — bleibt die Abfrage hinter
-    `GET /api/map/sightings` ein **Seq Scan**: 1.805 Buffer, ~11–16 ms.
+  - **Der Plan ändert sich nicht.** Geprüft wurden zwei Kandidaten, beide partiell und
+    beide einspaltig — einer auf der Filterspalte
+    (`(freigegeben_am) WHERE freigegeben_am IS NOT NULL`), einer auf der Sortierspalte
+    (`(sichtungsdatum) WHERE freigegeben_am IS NOT NULL`). Mit keinem von beiden wird die
+    Abfrage hinter `GET /api/map/sightings` etwas anderes als ein **Seq Scan**: 1.805
+    Buffer, ~11–16 ms.
   - **Erzwungen wird es schlechter.** Mit `enable_seqscan = off` wählt der Planner einen
     Bitmap Heap Scan (12,5 ms gegen 11,5 ms). Als geordneter Index Scan — der einzige
     Weg, der den Sort sparen würde — kostet er 17.391 statt 1.805 Buffer, also 9,6× so
     viel I/O. Der Planner-Cost sagt dasselbe: 7.908 gegen 3.391.
   - **Der scheinbare Gewinn beim Jahresfilter war Bloat, nicht der Index.** Der
-    zusammengesetzte Kandidat sah bei `?year=2025` zunächst 2,7× schneller aus (0,40 ms
+    Kandidat auf `sichtungsdatum` sah bei `?year=2025` zunächst 2,7× schneller aus (0,40 ms
     gegen 1,1–2,5 ms). Ursache ist nicht der neue Index, sondern der vorhandene
     `idx_sichtungsdatum`: Ein bloßes `REINDEX` darauf liefert dieselben 0,44 ms. Der
     Kandidat wäre das Duplikat eines Index, der lediglich Wartung braucht (896 kB
@@ -318,6 +320,7 @@ das auf derselben DB liegt. Eine Code-Analyse über `src/` kann einen Index hier
 folglich **nicht** für tot erklären.
 
 Nächster Schritt, falls jemand die 776 kB heben will: Scan-Zähler über eine bekannte,
-längere Spanne messen (`pg_stat_reset_single_table_counters()` auf `sichtungen`, dann
-nach ein paar Wochen erneut sehen) und parallel klären, welche Abfragen das Altsystem
+längere Spanne messen (`SELECT pg_stat_reset_single_table_counters('sichtungen'::regclass);`
+— die Funktion verlangt die Tabellen-OID, ohne Argument existiert sie nicht —, dann nach
+ein paar Wochen erneut sehen) und parallel klären, welche Abfragen das Altsystem
 auf `sichtungen` fährt.
