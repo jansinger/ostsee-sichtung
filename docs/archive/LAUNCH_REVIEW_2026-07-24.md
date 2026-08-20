@@ -265,9 +265,37 @@ schlicht nicht angefasst.
 | ------------------------------------------------------ | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | Produktion LOW — „Kein Index auf `sightings.verified`" | **Geprüft, verworfen** | Spalte überholt (`geprueft` wird nicht mehr gelesen); auf `freigegeben_am` misst der Index keinen Gewinn — siehe Abschnitt 3, LOW |
 
-Nebenbefund aus derselben Messung, **nicht** Teil dieses Punktes und hier nicht
-behoben: `idx_sichtungsdatum` ist auf der lokalen DB rund 2× aufgebläht (896 kB gegen
-440 kB frisch gebaut) und kostet dadurch beim Jahresfilter etwa 1–2 ms. Ein
-`REINDEX INDEX CONCURRENTLY idx_sichtungsdatum` wäre eine reine Wartungsmaßnahme auf
-der jeweiligen Instanz, keine Schema-Änderung — ob die Produktionsdatenbank denselben
-Bloat trägt, ist von hier aus nicht gemessen (Port dort nicht freigegeben).
+Nebenbefund aus derselben Messung, **nicht** Teil dieses Punktes: `idx_sichtungsdatum`
+ist auf der lokalen DB rund 2× aufgebläht (896 kB gegen 440 kB frisch gebaut) und
+kostet dadurch beim Jahresfilter etwa 1–2 ms.
+
+**Produktion trägt diesen Bloat nicht — nachgemessen am 2026-08-20** (`sudo docker exec`
+auf `ostsee-tiere-db-1`, rein lesend über `pg_class`/`pg_stat_user_indexes`; der
+DB-Port ist dort weiterhin nicht freigegeben). Maßstab ist Byte pro Zeile, weil sich
+ein Index auf Produktion nicht probeweise neu bauen lässt:
+
+| `idx_sichtungsdatum`           | Größe  | Byte/Zeile | Faktor gegen frisch |
+| ------------------------------ | ------ | ---------- | ------------------- |
+| frisch gebaut (lokal)          | 440 kB | 22,6       | 1,00                |
+| **Produktion** (19.880 Zeilen) | 600 kB | **30,9**   | **1,37**            |
+| lokal, Ist-Zustand             | 896 kB | 46,0       | 2,04                |
+
+Das gilt nicht nur für diesen Index: **jeder** Index auf `sichtungen` ist auf
+Produktion etwa halb so groß pro Zeile wie lokal (`geom_sichtungen` 49,9 gegen 97,3;
+`idx_year_sichtungen` 27,2 gegen 52,1; `idx_weather_fetched` 8,7 gegen 21,3). Der
+Bloat ist damit ein Artefakt der **lokalen** Datenbank, keine Eigenschaft der
+Anwendung: Lokal stehen 66.056 Updates auf 19.953 Zeilen, davon nur 41 % HOT — jedes
+der übrigen hat in jedem Index einen neuen Eintrag hinterlassen. Das sind die
+Massenkorrekturen, die bewusst nur lokal gefahren wurden (u. a. `bootsantrieb` 0→5
+über 5.858 Zeilen).
+
+Folge: **kein `REINDEX` auf Produktion nötig.** Lokal lohnt er sich, ist aber eine
+Instanz-Wartung und keine Schema-Änderung — also nichts, was dieses Repository
+festhalten müsste.
+
+Nicht belastbar aus derselben Abfrage: die Scan-Zähler. `idx_weather_data_gin` und
+`idx_weather_fetched` stehen auf Produktion bei 0 Scans, was nach totem Index
+aussieht. `stats_reset` ist dort aber `NULL` und `idx_sichtungsdatum` zählt nur 460
+Scans (lokal 10.934) — das Zählfenster ist also kurz und seine Länge unbekannt. Zum
+Entfernen eines Index reicht das nicht; dafür müsste man `pg_postmaster_start_time()`
+kennen und über eine bekannte Zeitspanne erneut messen.
