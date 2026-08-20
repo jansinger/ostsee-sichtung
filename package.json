@@ -1,7 +1,7 @@
 {
 	"name": "ostsee-tiere",
 	"private": true,
-	"version": "2.23.0",
+	"version": "2.23.1",
 	"description": "Ostsee-Tiere - Marine animal sighting reporting platform for the Baltic Sea",
 	"license": "MIT",
 	"type": "module",
@@ -41,7 +41,7 @@
 		"test:coverage": "vitest run --coverage --project server",
 		"test:e2e": "playwright test",
 		"test:e2e:shards": "bash scripts/e2e-shards.sh --check",
-	"check:bundle": "node src/tools/checkEntryBundle.ts",
+		"check:bundle": "node src/tools/checkEntryBundle.ts",
 		"db:start": "docker compose up -d",
 		"db:stop": "docker compose down",
 		"db:push": "drizzle-kit push",
