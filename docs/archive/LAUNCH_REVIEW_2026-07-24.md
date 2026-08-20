@@ -155,13 +155,18 @@ vorbildlich; Fokus-Management beim Schrittwechsel; ARIA-Grundgerüst (`aria-desc
 
 ### HIGH (vor Launch)
 
-1. **✅ behoben** _(`support@example.com` kommt in `src/` nicht mehr vor.)_
+1. **✅ behoben** _(`grep -r "support@example.com" src/` → 0 Treffer.)_
    **Platzhalter-Support-Adresse** `mailto:support@example.com` auf der Fehlerseite
    (`+error.svelte:188`). Echte Adresse einsetzen.
 2. **✅ behoben** _(`DeleteDialog.svelte` nutzt natives `<dialog>` mit
    `showModal()`/`close()` — Fokus-Trap und ESC kommen damit vom Browser. Die
-   Tailwind-4-Altlasten sind projektweit weg: `bg-opacity-*` und `*-focus` liefern in
-   `src/` 0 Treffer.)_
+   Tailwind-4-Altlasten sind projektweit weg — geprüft mit zwei Mustern, die
+   ausschließlich Utility-Klassen treffen:
+   `grep -rn "bg-opacity-" src/` und
+   `grep -rnE "(bg|text|border|ring|outline)-(primary|secondary|accent|neutral|info|success|warning|error|base)-focus" src/`,
+   beide 0 Treffer. Ein wörtliches `-focus` trifft dagegen einen Fundort, der nichts
+   mit DaisyUI zu tun hat: den axe-Regelnamen `aria-hidden-focus` in einem Kommentar
+   in `SightingsMapView.svelte:1033`.)_
    **Lösch-Dialog visuell defekt + nicht barrierefrei.** `bg-opacity-50` existiert in Tailwind 4
    nicht mehr → Backdrop deckend schwarz; kein `<dialog>`/`aria-modal`/Fokus-Trap/ESC
    (`ui/Dialog/DeleteDialog.svelte:19`). Auf natives `<dialog>`-Muster (wie Spam-Check-Modal) +
@@ -196,7 +201,7 @@ vorbildlich; Fokus-Management beim Schrittwechsel; ARIA-Grundgerüst (`aria-desc
 9. **✅ behoben** _(die verbliebenen `tabindex="-1"` in `src/` sind durchweg gewollte
    Fokusziele — Skip-Ziel der Karte, Formularcontainer, Panel-Griff — keine Tooltips.)_
    Tooltip-Inhalte per Tastatur unerreichbar (`tabindex="-1"`).
-10. **✅ behoben** _(`text-gray-` liefert in `src/` 0 Treffer.)_
+10. **✅ behoben** _(`grep -r -- "text-gray-" src/` → 0 Treffer.)_
     Hardcodierte Farben (`text-gray-*` etc.) auf Rand-Seiten (`about`, `docs`, `admin/settings`, Karten-UI).
 11. **✅ behoben** _(`OLMap.svelte:219` setzt `tabindex="0"`, bewusst mit
     `svelte-ignore a11y_no_noninteractive_tabindex` und Begründung im Markup.)_
