@@ -6,6 +6,7 @@
 	 * wenn ein Befund vorliegt — sonst löscht ein Admin blind.
 	 */
 	import Icon from '$lib/components/Icon.svelte';
+	import ConfirmDialog from '$lib/components/ui/Dialog/ConfirmDialog.svelte';
 
 	type CleanupReport = {
 		retentionHours: number;
@@ -40,11 +41,11 @@
 		}
 	}
 
-	function confirmCleanup() {
-		if (confirm('Verwaiste Uploads endgültig löschen? Das lässt sich nicht rückgängig machen.')) {
-			run(true);
-		}
-	}
+	/**
+	 * Rückfrage über `ConfirmDialog` statt `window.confirm` — derselbe Weg wie
+	 * bei `ResetSettingsButton` nebenan (UX MEDIUM 13, Dialog-Konsolidierung).
+	 */
+	let zeigeBestaetigung = $state(false);
 </script>
 
 <section class="card bg-base-100 border-base-300 shadow-raised border">
@@ -61,9 +62,16 @@
 			<button class="btn btn-primary" disabled={busy} onclick={() => run(false)}>
 				Vorschau laden
 			</button>
+			<!-- „Löschen", nicht „Endgültig löschen": Der Knopf löscht nichts, er
+			     stellt die Rückfrage. „Endgültig" steht auf dem Knopf im Dialog,
+			     der es tatsächlich auslöst — wie bei ResetSettingsButton. -->
 			{#if hasFindings}
-				<button class="btn btn-outline btn-error btn-sm" disabled={busy} onclick={confirmCleanup}>
-					Endgültig löschen
+				<button
+					class="btn btn-outline btn-error btn-sm"
+					disabled={busy}
+					onclick={() => (zeigeBestaetigung = true)}
+				>
+					Löschen
 				</button>
 			{/if}
 		</div>
@@ -91,3 +99,14 @@
 		{/if}
 	</div>
 </section>
+
+<ConfirmDialog
+	bind:show={zeigeBestaetigung}
+	title="Verwaiste Uploads löschen"
+	message="Verwaiste Uploads endgültig löschen?"
+	detail="Das lässt sich nicht rückgängig machen."
+	confirmLabel="Endgültig löschen"
+	cancelLabel="Abbrechen"
+	closeLabel="Dialog schließen"
+	onConfirm={() => run(true)}
+/>

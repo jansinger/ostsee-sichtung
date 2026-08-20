@@ -73,6 +73,23 @@ export class FormPage {
 	}
 
 	/**
+	 * Setzt das Formular zurück — inklusive der Rückfrage.
+	 *
+	 * Die lief bis UX MEDIUM 13 über `window.confirm`, und die Specs stellten
+	 * sie über `page.once('dialog', …)` ein. Seit der Dialog-Konsolidierung ist
+	 * es `ConfirmDialog`, also ein Knopf im DOM. Der Weg steht deshalb hier und
+	 * nicht zweimal im Spec: Ein `getByRole('button', { name: /zurücksetzen/i })`
+	 * trifft jetzt zwei Knöpfe — den Auslöser und den im Dialog — und liefe in
+	 * Playwrights Strict-Mode-Fehler.
+	 */
+	async resetForm() {
+		await this.page.getByRole('button', { name: /^(Formular zurücksetzen|Reset form)$/ }).click();
+		await this.page
+			.getByRole('button', { name: /^(Endgültig zurücksetzen|Reset permanently)$/ })
+			.click();
+	}
+
+	/**
 	 * Der Knopf trägt ein `aria-label`, und das schlägt seinen sichtbaren Text
 	 * als barrierefreien Namen. Deutsch fiel das nie auf: „Schritt
 	 * überspringen" ist zufällig Teilkette von „Diesen optionalen Schritt

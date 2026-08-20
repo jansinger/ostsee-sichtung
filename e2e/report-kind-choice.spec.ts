@@ -284,8 +284,7 @@ test.describe('„Formular zurücksetzen" kehrt zur Auswahl zurück (B1)', () =>
 		// der Totfund-Block rendert ausschließlich dafür.
 		await expect(page.getByTestId('field-deadCondition')).toBeVisible();
 
-		page.once('dialog', (dialog) => dialog.accept());
-		await page.getByRole('button', { name: 'Formular zurücksetzen' }).click();
+		await new FormPage(page).resetForm();
 
 		await expect(page.getByTestId('report-kind-choice')).toBeVisible();
 		// Ohne das holte ein Reload denselben verlassenen Zweig sofort zurück —

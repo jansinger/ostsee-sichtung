@@ -1,7 +1,10 @@
-import { describe, expect, it } from 'vitest';
-import { page } from 'vitest/browser';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { page, userEvent } from 'vitest/browser';
 import { renderWithFormContext } from '$lib/report/components/testing/renderWithFormContext.testutil';
 import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
+import { loadUserContactData, saveUserContactData } from '$lib/storage/localStorage';
+import type { UserContactData } from '$lib/types';
+import { clearAllToasts, getToasts } from '$lib/stores/toastState.svelte';
 import type { SightingFormData, UploadedFileInfo } from '$lib/types';
 import Step4Contact from './Step4Contact.svelte';
 
@@ -246,5 +249,123 @@ describe('Step4Contact — mediaConsent steht in der Einwilligungsgruppe, nicht 
 		expect(mediaGroup).not.toBeNull();
 		expect(mediaGroup?.querySelector('h4')).not.toBeNull();
 		expect(mediaGroup).toBe(nameGroup);
+	});
+});
+
+/**
+ * Das Löschen der gespeicherten Kontaktdaten fragte über `window.confirm` nach.
+ * Der native Dialog ist auf dem Telefon nicht gestaltbar, nennt die App als
+ * Absender („localhost sagt …") und blockiert den Hauptthread — und im iframe
+ * auf meeresmuseum.de darf der Browser ihn ganz unterdrücken, womit gelöscht
+ * würde, ohne dass jemand gefragt wurde. Ersetzt wird er durch `ConfirmDialog`,
+ * denselben Weg wie beim Zurücksetzen in `FormActions.svelte`.
+ *
+ * Gemockt wird hier nichts: Der Browser-Lauf hat echten Storage (den
+ * `vitest-setup-client.ts` vor jedem Test leert) und einen echten Toast-Store.
+ * Ein Mock auf `$lib/storage/localStorage` müsste alle Exporte nachbilden, die
+ * die Komponente *und* `resetSavedContactData` benutzen — geprüft wird so
+ * stattdessen die Wirkung: Sind die Daten hinterher wirklich weg?
+ */
+const GESPEICHERTE_KONTAKTDATEN = {
+	firstName: 'Max',
+	lastName: 'Mustermann',
+	email: 'max@example.com'
+} as UserContactData;
+
+function renderMitGespeichertenKontaktdaten(): void {
+	saveUserContactData(GESPEICHERTE_KONTAKTDATEN);
+	renderStep4();
+}
+
+const loeschenAusloeser = () => page.getByRole('button', { name: /^Kontaktdaten löschen$/i });
+const endgueltigLoeschen = () => page.getByRole('button', { name: /^Endgültig löschen$/i });
+
+/** Liest den echten Storage — leer heißt: `clearUserContactData` ist gelaufen. */
+function gespeicherterVorname(): string {
+	return loadUserContactData().firstName ?? '';
+}
+
+describe('Step4Contact — Bestätigungsdialog statt window.confirm', () => {
+	beforeEach(() => {
+		clearAllToasts();
+	});
+
+	it('zeigt den Auslöser, solange Kontaktdaten gespeichert sind', async () => {
+		renderMitGespeichertenKontaktdaten();
+
+		await expect.element(loeschenAusloeser()).toBeInTheDocument();
+	});
+
+	it('ruft window.confirm nicht mehr auf', async () => {
+		const confirmSpy = vi.spyOn(window, 'confirm');
+		renderMitGespeichertenKontaktdaten();
+
+		await loeschenAusloeser().click();
+
+		expect(confirmSpy).not.toHaveBeenCalled();
+		confirmSpy.mockRestore();
+	});
+
+	it('öffnet den Dialog, ohne schon zu löschen', async () => {
+		renderMitGespeichertenKontaktdaten();
+
+		await loeschenAusloeser().click();
+
+		await expect.element(endgueltigLoeschen()).toBeInTheDocument();
+		expect(gespeicherterVorname()).toBe('Max');
+	});
+
+	// Der Dialog muss die Folge nennen: die Daten sind bei der nächsten
+	// Sichtung erneut einzugeben.
+	it('nennt Überschrift und Folge im Dialog', async () => {
+		renderMitGespeichertenKontaktdaten();
+
+		await loeschenAusloeser().click();
+
+		const dialog = document.querySelector('dialog');
+		expect(dialog).not.toBeNull();
+		expect(dialog?.textContent).toMatch(/Gespeicherte Kontaktdaten löschen/i);
+		expect(dialog?.textContent).toMatch(/nächsten Sichtung erneut/i);
+	});
+
+	it('löscht erst nach der Bestätigung und meldet das als Erfolg', async () => {
+		renderMitGespeichertenKontaktdaten();
+
+		await loeschenAusloeser().click();
+		await endgueltigLoeschen().click();
+
+		expect(gespeicherterVorname()).toBe('');
+		expect(getToasts().map((t) => t.type)).toContain('success');
+	});
+
+	it('blendet den Auslöser nach dem Löschen aus', async () => {
+		renderMitGespeichertenKontaktdaten();
+
+		await loeschenAusloeser().click();
+		await endgueltigLoeschen().click();
+
+		await vi.waitFor(() => expect(loeschenAusloeser().elements()).toHaveLength(0));
+	});
+
+	it('löscht beim Abbrechen nicht und lässt den Auslöser stehen', async () => {
+		renderMitGespeichertenKontaktdaten();
+
+		await loeschenAusloeser().click();
+		await page.getByRole('button', { name: /^Abbrechen$/i }).click();
+
+		expect(gespeicherterVorname()).toBe('Max');
+		await expect.element(loeschenAusloeser()).toBeInTheDocument();
+	});
+
+	it('löscht beim Schließen per ESC nicht', async () => {
+		renderMitGespeichertenKontaktdaten();
+
+		await loeschenAusloeser().click();
+		await vi.waitFor(() => expect(document.querySelector('dialog')?.open).toBe(true));
+
+		await userEvent.keyboard('{Escape}');
+
+		await vi.waitFor(() => expect(document.querySelector('dialog')?.open).toBe(false));
+		expect(gespeicherterVorname()).toBe('Max');
 	});
 });

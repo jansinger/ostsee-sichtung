@@ -664,7 +664,7 @@
 	</div>
 
 	<!-- Destruktive Aktion ans Seitenende, weg vom prominentesten Platz oben rechts
-	     (X2 im Admin-Improvements-Spec): eigener Bestätigungsdialog statt confirm(). -->
+	     (X2 im Admin-Improvements-Spec): Bestätigungsdialog statt confirm(). -->
 	<div class="mt-6 flex justify-end">
 		<ResetSettingsButton onReset={resetToDefaults} />
 	</div>

@@ -126,10 +126,9 @@ test.describe('Formular — Auto-Save & Restore', () => {
 		await expectCurrentStep(page, /Angaben zum Tier/i);
 
 		// Click reset button — a confirm() dialog now guards the reset, accept it
-		const resetBtn = page.getByRole('button', { name: /zurücksetzen/i });
+		const resetBtn = page.getByRole('button', { name: 'Formular zurücksetzen', exact: true });
 		await expect(resetBtn).toBeVisible();
-		page.once('dialog', (dialog) => dialog.accept());
-		await resetBtn.click();
+		await formPage.resetForm();
 
 		// B1: nach dem Reset erscheint die Einstiegsseite, nicht mehr Schritt 1 —
 		// der Zweig ist Teil dessen, was "zurückgesetzt" bedeutet.

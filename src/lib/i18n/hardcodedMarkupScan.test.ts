@@ -144,7 +144,13 @@ describe('Mechanisch — der Extraktor findet in Schicht C nichts mehr', () => {
 		// +1 seit dem 2026-08-14: `routes/barrierefreiheit/+page.svelte` — die
 		// Erklärung zur Barrierefreiheit (§ 14 LBGG M-V), vollständig über
 		// Paraglide-Botschaften.
-		expect(svelteFiles()).toHaveLength(88);
+		//
+		// +1 seit dem 2026-08-20: `ConfirmDialog.svelte` — der allgemeine
+		// Bestätigungsdialog, herausgezogen aus `DeleteDialog.svelte` (UX
+		// MEDIUM 13). Auch hier ist der Zuwachs ein Umzug und keine neue
+		// Übersetzungsarbeit: Die Komponente trägt keinen eigenen Anzeigetext,
+		// sondern bekommt Überschrift, Text und Beschriftungen als Props.
+		expect(svelteFiles()).toHaveLength(89);
 	});
 });
 
@@ -205,8 +211,21 @@ const OPEN_SKIP_LEDGER: Readonly<Record<string, number>> = {
 	'dynamic-attribute': 6,
 	/** Reine Satzzeichen, Symbole, Zahlen — Struktur, wird nie übersetzt. */
 	'no-letter-group': 45,
-	/** Attributwert ohne jeden statischen Text (`title={file.name}`) — nie Übersetzungsarbeit. */
-	'attribute-no-static-text': 24
+	/**
+	 * Attributwert ohne jeden statischen Text (`title={file.name}`) — nie
+	 * Übersetzungsarbeit.
+	 *
+	 * +1 seit dem 2026-08-20 (24 → 25): `aria-label={closeLabel}` in
+	 * `ConfirmDialog.svelte`. Die Stelle ist nicht neu, sie hat nur die
+	 * Kategorie gewechselt: In `DeleteDialog.svelte` stand dort ein direktes
+	 * `aria-label={m.…()}` und zählte als `already-translated`. Seit der
+	 * Dialog-Konsolidierung reicht der allgemeine Dialog die Beschriftung als
+	 * Prop durch, und ein durchgereichter Ausdruck ist für den Sammler
+	 * definitionsgemäß kein statischer Text. Übersetzt wird sie unverändert —
+	 * beim Löschen weiter über den `deletedialog`-Schlüssel, sonst über den
+	 * Default `components_ui_dialog_confirmdialog_aria_label_dialog_schliessen`.
+	 */
+	'attribute-no-static-text': 25
 };
 
 describe('Bestandszähler der offenen Handarbeit', () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { page } from 'vitest/browser';
+import { page, userEvent } from 'vitest/browser';
 import { renderWithFormContext } from '$lib/report/components/testing/renderWithFormContext.testutil';
 import type { SightingFormData } from '$lib/types';
 import FormActions from './FormActions.svelte';
@@ -55,5 +55,92 @@ describe('FormActions — Rückmeldung steht neben „Zurücksetzen"', () => {
 		await page.getByRole('button', { name: /ändern/i }).click();
 
 		expect(onchangekind).toHaveBeenCalledOnce();
+	});
+});
+
+/**
+ * Das Zurücksetzen fragte bislang über `window.confirm` nach. Der native Dialog
+ * ist auf dem Telefon nicht gestaltbar, nennt die App als Absender („localhost
+ * sagt …") und blockiert den Hauptthread — und im iframe auf meeresmuseum.de
+ * kann der Browser ihn ganz unterdrücken. Dann liefe das Zurücksetzen entweder
+ * ungefragt oder gar nicht. Ersetzt wird er durch `ConfirmDialog`, denselben
+ * Bestätigungsweg wie beim Löschen im Admin-Bereich.
+ */
+function renderMitReset(onReset = vi.fn()): ReturnType<typeof vi.fn> {
+	renderWithFormContext(FormActions, {
+		overrides: { isDead: false },
+		props: { onReset, onchangekind: vi.fn() }
+	});
+	return onReset;
+}
+
+const zuruecksetzenKnopf = () =>
+	page.getByRole('button', { name: /^Formular zurücksetzen$/i });
+const bestaetigenKnopf = () => page.getByRole('button', { name: /endgültig zurücksetzen/i });
+
+describe('FormActions — Bestätigungsdialog statt window.confirm', () => {
+	it('ruft window.confirm nicht mehr auf', async () => {
+		const confirmSpy = vi.spyOn(window, 'confirm');
+		renderMitReset();
+
+		await zuruecksetzenKnopf().click();
+
+		expect(confirmSpy).not.toHaveBeenCalled();
+		confirmSpy.mockRestore();
+	});
+
+	it('öffnet den Dialog, ohne schon zurückzusetzen', async () => {
+		const onReset = renderMitReset();
+
+		await zuruecksetzenKnopf().click();
+
+		await expect.element(bestaetigenKnopf()).toBeInTheDocument();
+		expect(onReset).not.toHaveBeenCalled();
+	});
+
+	// Der Text muss beide Folgen nennen: dass auch die gespeicherten Eingaben
+	// verschwinden und dass das nicht rückgängig zu machen ist.
+	it('nennt den gespeicherten Stand und die Unumkehrbarkeit', async () => {
+		renderMitReset();
+
+		await zuruecksetzenKnopf().click();
+
+		const dialog = document.querySelector('dialog');
+		expect(dialog).not.toBeNull();
+		expect(dialog?.textContent).toMatch(/gespeichert/i);
+		expect(dialog?.textContent).toMatch(/rückgängig/i);
+	});
+
+	it('setzt erst zurück, wenn im Dialog bestätigt wird', async () => {
+		const onReset = renderMitReset();
+
+		await zuruecksetzenKnopf().click();
+		await bestaetigenKnopf().click();
+
+		expect(onReset).toHaveBeenCalledOnce();
+	});
+
+	it('setzt beim Abbrechen nicht zurück', async () => {
+		const onReset = renderMitReset();
+
+		await zuruecksetzenKnopf().click();
+		await page.getByRole('button', { name: /^Abbrechen$/i }).click();
+
+		expect(onReset).not.toHaveBeenCalled();
+		await vi.waitFor(() =>
+			expect(document.querySelector('dialog')?.open ?? false).toBe(false)
+		);
+	});
+
+	it('setzt beim Schließen per ESC nicht zurück', async () => {
+		const onReset = renderMitReset();
+
+		await zuruecksetzenKnopf().click();
+		await vi.waitFor(() => expect(document.querySelector('dialog')?.open).toBe(true));
+
+		await userEvent.keyboard('{Escape}');
+
+		await vi.waitFor(() => expect(document.querySelector('dialog')?.open).toBe(false));
+		expect(onReset).not.toHaveBeenCalled();
 	});
 });
