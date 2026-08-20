@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.23.1](https://github.com/jansinger/ostsee-tiere/compare/v2.23.0...v2.23.1) (2026-08-20)
+
+
+### Performance Improvements
+
+* **map:** load OpenLayers lazily in OLMap ([#901](https://github.com/jansinger/ostsee-tiere/issues/901)) ([ce6f618](https://github.com/jansinger/ostsee-tiere/commit/ce6f618d51af8951755243eab49b6c89a081c084))
+
+
+### Documentation
+
+* **db:** measure the freigegeben_am index instead of adding it ([#902](https://github.com/jansinger/ostsee-tiere/issues/902)) ([1c8e443](https://github.com/jansinger/ostsee-tiere/commit/1c8e443ca647a7d3b7adbad8811531bd23582c0d))
+* **docs:** verifizierten go-live-stand in launch-review und i18n-protokoll nachtragen ([#905](https://github.com/jansinger/ostsee-tiere/issues/905)) ([71fc2c0](https://github.com/jansinger/ostsee-tiere/commit/71fc2c06602989c104bd46ad15fdb28fcc4d87e6))
+
+
+### Code Refactoring
+
+* **ui:** consolidate confirmation dialogs into ConfirmDialog ([#904](https://github.com/jansinger/ostsee-tiere/issues/904)) ([fa3d898](https://github.com/jansinger/ostsee-tiere/commit/fa3d8989ef9a721b01da061a6afa917fc629c6b7))
+
 ## [2.23.0](https://github.com/jansinger/ostsee-tiere/compare/v2.22.1...v2.23.0) (2026-08-19)
 
 
