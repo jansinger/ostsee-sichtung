@@ -278,10 +278,47 @@ Abgesichert durch vier Dateien:
 | `OLMapLoadFailure.svelte.test.ts` | Fehlschlag zeigt den Fehlerzustand statt eines endlosen Spinners                   |
 | `olmapLazyImport.test.ts`         | Guard gegen den statischen Wert-Import; `import type` bleibt erlaubt               |
 
-Der Guard hat eine bekannte Grenze: Er sieht nur die **direkten** Importe von
-`OLMap.svelte`. Wer OpenLayers transitiv zurückholt — etwa über `$lib/map/extentUtils`, das
-seinerseits `ol/proj` statisch importiert —, kommt an ihm vorbei. Dicht wäre erst eine
-Assertion über die Chunk-Hülle aus dem Vite-Manifest; die Messung dafür steht oben.
+Der Quelltext-Guard sieht allerdings nur die **direkten** Importe von `OLMap.svelte`. Wer
+OpenLayers transitiv zurückholt, kommt an ihm vorbei — nachgemessen: mit einem
+`import … from '$lib/map/extentUtils'` (importiert selbst `ol/proj`) bleibt
+`olmapLazyImport.test.ts` **grün**, während die Karten-Laufzeit wieder eager in der
+Einstiegsseite liegt.
+
+Deshalb rechnet `src/tools/checkEntryBundle.ts` zusätzlich auf dem **gebauten Chunk-Graphen**
+(`.svelte-kit/output/client/.vite/manifest.json`) und läuft in CI hinter `npm run build`
+(`npm run check:bundle`). Es prüft gestaffelt:
+
+1. **Struktur:** Der Chunk zu `openLayersHelpers.ts` muss von der Einstiegsseite aus
+   ausschließlich dynamisch erreichbar sein.
+2. **Schnittmenge:** Was sich die statische Hülle mit der Karten-Laufzeit teilt, darf 25.000 B
+   roh nicht überschreiten.
+3. **Gesamtgewicht:** Die statische Hülle bleibt unter 340.000 B gzip.
+
+Punkt 2 ist der empfindliche — und der Grund, warum es ihn neben Punkt 3 gibt. Gemessen am
+2026-08-20:
+
+| Stand                                      | Schnittmenge | Hülle gzip |
+| ------------------------------------------ | ------------ | ---------- |
+| aufgeteilt (Soll)                          | 21.253 B     | 321.968 B  |
+| mit `import … from '$lib/map/extentUtils'` | 31.185 B     | 326.140 B  |
+
+Der Umweg kostet an der Schnittmenge 9,9 KB, am Gesamtgewicht aber nur 4,2 KB gzip — im
+Gesamtbudget wäre er untergegangen.
+
+Zwei Punkte, die beim Weiterarbeiten leicht schiefgehen:
+
+- **Die Schnittmenge ist nicht „so viel OpenLayers liegt eager herum".** Das Manifest sagt
+  nicht, welches Modul in welchem Chunk steckt; gemessen werden zwei Hüllen. In den 21 KB
+  stecken auch harmlose App-Chunks, die `openLayersHelpers` seinerseits importiert (Logger,
+  Karten-Tokens, Meldungen). Wer sie für reines OpenLayers hält, sucht an der falschen Stelle.
+- **Fehlt das Manifest, bricht das Skript ab**, statt die Prüfung zu überspringen. Ein
+  Wächter, der sich bei fehlender Eingabe still grün meldet, sieht nach Abdeckung aus und
+  liefert keine.
+
+Die Graph-Rechnung selbst steht in `src/tools/entryBundleClosure.ts` und ist an konstruierten
+Manifesten geprüft (`entryBundleClosure.test.ts`, in `test:quick`) — inklusive des Rückfalls,
+den sie fangen soll. Ein Wächter, der nur gegen den konformen Ist-Zustand läuft, belegt über
+die Regel selbst nichts.
 
 ---
 

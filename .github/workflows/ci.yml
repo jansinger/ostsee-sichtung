@@ -218,6 +218,15 @@ jobs:
       - name: Build application
         run: npm run build
 
+      # Muss NACH dem Build stehen: Die Prüfung rechnet auf dem Chunk-Graphen
+      # aus `.svelte-kit/output/client/.vite/manifest.json`, den erst `vite
+      # build` erzeugt. Deshalb hängt sie hier und nicht in `test:quick` —
+      # dort wäre ein Build zehn zusätzliche Sekunden für ein Gate, das in
+      # siebzig durchlaufen soll. Fehlt das Manifest, bricht das Skript ab,
+      # statt sich still grün zu melden.
+      - name: Check entry-page bundle
+        run: npm run check:bundle
+
       - name: Security audit
         run: npm audit --audit-level=high
         continue-on-error: true

@@ -18,8 +18,20 @@ import { describe, expect, it } from 'vitest';
  * oder auffällt. Genau deshalb steht hier ein Wächter über dem Quelltext: Der
  * Fehlermodus ist eine stille Verschlechterung, kein Fehler.
  *
- * Der Test ist also KEIN sinnloser Textabgleich. Wer ihn löscht, entfernt die
- * einzige Stelle, an der die Bundle-Zusage überhaupt geprüft wird.
+ * Der Test ist also KEIN sinnloser Textabgleich — aber er ist auch nicht der
+ * Beleg für die Bundle-Zusage, und das ist wichtig zu wissen:
+ *
+ * **Er sieht nur die direkten Importe DIESER Datei.** Wer OpenLayers über einen
+ * Umweg zurückholt — ein `import … from '$lib/map/extentUtils'` etwa, das
+ * seinerseits `ol/proj` statisch importiert —, kommt an ihm vorbei. Nachgemessen
+ * am 2026-08-20: In genau diesem Fall bleibt dieser Test grün, während die
+ * Karten-Laufzeit wieder eager in der Einstiegsseite liegt.
+ *
+ * Den Fall fängt `src/tools/checkEntryBundle.ts`, das nach dem Build auf dem
+ * echten Chunk-Graphen rechnet (in CI hinter `npm run build`). Dieser Test hier
+ * ist die schnelle Vorwarnung in `test:quick`: Er braucht keinen Build und nennt
+ * den wahrscheinlichsten Rückfall beim Namen, bevor die Pipeline überhaupt
+ * anläuft.
  *
  * Ausdrücklich erlaubt bleiben `import type`-Zeilen: Sie werden beim Kompilieren
  * restlos entfernt und tragen kein Byte ins Bundle.
