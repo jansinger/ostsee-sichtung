@@ -1,6 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
 import { FormPage } from './pages/FormPage';
-import { blockTileHosts, createMapCanvasProbe, FORM_TILE_HOSTS } from './helpers/mapCanvas';
+import {
+	blockTileHosts,
+	createMapCanvasProbe,
+	FORM_TILE_HOSTS,
+	waitForOlMapReady
+} from './helpers/mapCanvas';
 
 /**
  * Derselbe Defekt wie in `e2e/map-pan-zoom.spec.ts`, eine Karte weiter: Das
@@ -165,7 +170,10 @@ async function mapPoint(
  * stehen auf Schritt 1 dauerhaft offen.
  */
 async function oeffneKarteMitMarker(page: Page): Promise<void> {
-	await expect(page.locator('.ol-map-container')).toBeVisible();
+	// Zuerst auf die fertige Karte warten, nicht nur auf den Container: Seit
+	// OpenLayers nachgeladen wird, steht das `div` schon da, während der Chunk
+	// noch unterwegs ist. Begründung in `waitForOlMapReady`.
+	await waitForOlMapReady(page);
 
 	// `press('Tab')` gehört dazu: `LocationInput.svelte` übernimmt die Zahl im
 	// `onchange`-Handler, und der feuert an einem `type="number"`-Feld erst beim
@@ -179,6 +187,9 @@ async function oeffneKarteMitMarker(page: Page): Promise<void> {
 	// Der Marker hängt an `hasPosition` — erst wenn beide Werte stehen. Der Fokus
 	// liegt jetzt auf dem Feld hinter der Länge, also außerhalb der Karte: genau
 	// der Ausgangszustand, den die Tests unten brauchen.
+	//
+	// Dieses Attribut belegt NICHT, dass die Karte gezeichnet ist — es kommt aus
+	// den Koordinatenfeldern. Dafür steht `waitForOlMapReady` oben.
 	await expect(page.locator('.ol-map-container')).toHaveAttribute('data-position', 'set');
 }
 

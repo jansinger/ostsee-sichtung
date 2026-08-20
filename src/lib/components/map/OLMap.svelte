@@ -86,7 +86,13 @@
 	let mapElement: HTMLElement;
 	let map: Map | null = null;
 	let markerFeature: Feature | null = null;
-	let markerLayer: BaseLayer | null = null;
+	/**
+	 * `$state`, nicht `let`: Der Sichtbarkeits-Effekt weiter unten muss erneut
+	 * laufen, sobald die Ebene existiert. Seit OpenLayers nachgeladen wird,
+	 * entsteht sie erst nach einem `await` — also lange nach dem ersten
+	 * Effektlauf.
+	 */
+	let markerLayer = $state<BaseLayer | null>(null);
 
 	// Konvertiere Breiten- und Längengrad in OpenLayers-Koordinaten (lon, lat)
 	let coordinates = $derived([longitude, latitude]) as Coordinate;
@@ -240,10 +246,11 @@
 			);
 
 			markerFeature = marker.feature;
+			// Die Sichtbarkeit setzt der Effekt weiter unten — er läuft an, sobald
+			// diese Zuweisung erfolgt. Hier stand früher ein eigenes
+			// `setVisible(untrack(() => hasPosition))`; das ist mit `$state` doppelt
+			// gemoppelt und wäre eine zweite Quelle für dieselbe Aussage.
 			markerLayer = marker.layer;
-			// Untracked: sonst hinge der Aufbau-Effekt an `hasPosition` und die
-			// erste gewählte Position würde die Karte komplett neu erzeugen.
-			markerLayer.setVisible(untrack(() => hasPosition));
 
 			if (!isReadonly) {
 				map.on('singleclick', handleMapClick);
@@ -255,6 +262,17 @@
 			// `hooks.client.ts`, der unbehandelte Rejections auffinge.
 			if (cancelled) return;
 			logger.error({ error }, 'OpenLayers konnte nicht nachgeladen werden');
+
+			// Der Fehlschlag muss nicht der Import gewesen sein: Scheitert erst
+			// `addMarker` oder ein Schritt danach, steht bereits eine
+			// funktionsfähige Karte samt Listenern im DOM — unter dem
+			// Fehler-Overlay, aber am Leben. Der Cleanup-Return läuft in diesem
+			// Pfad nicht, also hier aufräumen.
+			map?.dispose();
+			map = null;
+			markerFeature = null;
+			markerLayer = null;
+
 			loadError = true;
 			loading = false;
 		});
@@ -271,9 +289,28 @@
 		};
 	});
 
-	// Marker erst zeigen, wenn eine echte Position vorliegt.
+	/**
+	 * Marker erst zeigen, wenn eine echte Position vorliegt.
+	 *
+	 * Beide Werte werden ABSICHTLICH erst in lokale Variablen gelesen. Die
+	 * naheliegende Kurzform ist eine Falle:
+	 *
+	 *     markerLayer?.setVisible(hasPosition);   // ❌
+	 *
+	 * Ist `markerLayer` null, bricht der Optional-Chaining-Ausdruck ab, **bevor**
+	 * `hasPosition` ausgewertet wird. Der Effekt liest die Abhängigkeit dann nie
+	 * und läuft nie wieder — er ist ab dem ersten Durchlauf tot.
+	 *
+	 * Solange die Karte synchron entstand, fiel das nicht auf: Der Aufbau-Effekt
+	 * läuft zuerst und hatte die Ebene bereits gesetzt. Seit dem Nachladen ist
+	 * sie beim ersten Durchlauf null — der Marker blieb dadurch für immer
+	 * unsichtbar, auch nachdem der Melder eine Stelle angetippt hatte
+	 * (`e2e/form-map-pan-zoom.spec.ts` fing es als leeres Kartenbild).
+	 */
 	$effect(() => {
-		markerLayer?.setVisible(hasPosition);
+		const ebene = markerLayer;
+		const sichtbar = hasPosition;
+		ebene?.setVisible(sichtbar);
 	});
 
 	// Reactive effect for coordinate updates

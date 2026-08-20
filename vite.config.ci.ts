@@ -11,6 +11,7 @@ import Icons from 'unplugin-icons/vite';
 import { defineConfig, searchForWorkspaceRoot } from 'vite';
 import { CI_DEV_HOST, ciDevPort, devServerIdentity } from './src/tools/dev-server-identity';
 import { stableDepHash } from './src/tools/vite-stable-dep-hash';
+import { OL_OPTIMIZE_DEPS } from './src/tools/olOptimizeDeps';
 
 /**
  * In Git-Worktrees liegt das installierte node_modules außerhalb des
@@ -84,7 +85,13 @@ export default defineConfig({
 		// Pre-bundle these dependencies to avoid CommonJS issues
 		include: [
 			'yup',
-			'ol',
+			/* Die `ol/*`-Unterpfade einzeln — `'ol'` allein deckt nur den
+			   Paket-Einstieg ab. Seit `OLMap.svelte` die Helfer dynamisch
+			   nachlädt, findet Vites Scanner sie sonst erst zur Laufzeit und
+			   optimiert mitten im Testlauf nach; die Folge sind `effect_orphan`
+			   in fremden Komponenten. Begründung und Nachstellung in
+			   `src/tools/olOptimizeDeps.ts`. */
+			...OL_OPTIMIZE_DEPS,
 			'@turf/boolean-point-in-polygon',
 			'@turf/helpers',
 			'drizzle-orm',

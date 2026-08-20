@@ -18,14 +18,23 @@ import OLMap from './OLMap.svelte';
  * ohne echten Fehler um. Serverseitig gibt es diesen Wettlauf nicht: Dort läuft
  * der `$effect` überhaupt nicht.
  */
+/** Das öffnende `<div …>`-Tag des Ladehinweises aus dem SSR-Markup. */
+function ladehinweisTag(body: string): string | null {
+	return body.match(/<div[^>]*data-testid="map-loading"[^>]*>/)?.[0] ?? null;
+}
+
 describe('OLMap — Ladehinweis steht schon im SSR-Markup', () => {
 	it('rendert den Ladehinweis ohne jedes JavaScript', () => {
 		const { body } = render(OLMap, { props: { latitude: 54.5, longitude: 13.5 } });
 
 		expect(body).toContain('data-testid="map-loading"');
-		// Als Statusmeldung ausgezeichnet — ein rein visueller Spinner wäre für
-		// Screenreader nichts.
-		expect(body).toContain('role="status"');
+
+		// Die Rolle am Ladehinweis SELBST prüfen, nicht irgendwo im Dokument:
+		// Der Hinweis-Alert unter der Karte trägt ebenfalls `role="status"`, ein
+		// freies `toContain('role="status"')` wäre also auch dann grün, wenn der
+		// Ladehinweis seine Rolle verliert.
+		expect(ladehinweisTag(body), 'öffnendes Tag des Ladehinweises').not.toBeNull();
+		expect(ladehinweisTag(body)).toContain('role="status"');
 	});
 
 	/**

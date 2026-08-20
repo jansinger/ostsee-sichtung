@@ -32,6 +32,37 @@ export type MapScope = Page | Frame;
  * trugen und bereits auseinanderzudriften begannen.
  */
 
+/**
+ * Wartet, bis eine `OLMap`-Karte tatsächlich gezeichnet ist.
+ *
+ * Seit `OLMap.svelte` OpenLayers per `await import(...)` nachlädt, ist der
+ * Container **sofort** da, die Karte aber noch nicht: Das `div.ol-map-container`
+ * wird serverseitig gerendert und trägt bis zum Eintreffen des Chunks nur den
+ * Ladehinweis.
+ *
+ * Damit taugt keines der beiden bisher üblichen Signale mehr als Beleg dafür,
+ * dass gemessen werden kann:
+ *
+ * - `.ol-map-container` ist sichtbar, sobald HTML da ist — auch ganz ohne
+ *   JavaScript.
+ * - `data-position="set"` hängt an `hasPosition`, also an den
+ *   Koordinatenfeldern. Es kippt, sobald der Melder Zahlen einträgt, und sagt
+ *   über die Karte nichts.
+ *
+ * Wer darauf misst, fingerprintet ein Canvas, das es noch nicht gibt, oder ein
+ * leeres — der Test scheitert dann mit „Karte zeichnet nichts", und die Ursache
+ * steht nicht im Fehlerbild.
+ *
+ * Gewartet wird auf das Verschwinden des Ladehinweises UND auf das von
+ * OpenLayers erzeugte `.ol-viewport`. Beides zusammen, weil jedes für sich zu
+ * früh grün wäre: Der Hinweis fehlt auch, bevor die Komponente hydriert hat.
+ */
+export async function waitForOlMapReady(scope: MapScope): Promise<void> {
+	await expect(scope.locator('.ol-map-container')).toBeVisible();
+	await expect(scope.locator('[data-testid="map-loading"]')).toHaveCount(0);
+	await expect(scope.locator('.ol-viewport').first()).toBeVisible();
+}
+
 export type CanvasState = { hash: number; distinct: number };
 
 export type MapCanvasProbeOptions = {

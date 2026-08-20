@@ -53,6 +53,29 @@ function isOpenLayersModule(specifier: string): boolean {
  */
 type StaticImport = { statement: string; specifier: string; isTypeOnly: boolean };
 
+/**
+ * Reiner Typ-Import? Beide Schreibweisen zählen:
+ *
+ *     import type { Map } from 'ol';        // Klausel beginnt mit `type`
+ *     import { type Map } from 'ol';        // jede Benennung trägt `type`
+ *
+ * Ein gemischter Import (`import { type Map, createMap }`) ist ausdrücklich
+ * KEIN Typ-Import — er zieht Laufzeitcode nach sich und muss auffallen.
+ */
+function istNurTyp(clause: string): boolean {
+	const getrimmt = clause.trim();
+	if (/^type\s/.test(getrimmt)) return true;
+	if (!getrimmt.startsWith('{') || !getrimmt.endsWith('}')) return false;
+
+	const benennungen = getrimmt
+		.slice(1, -1)
+		.split(',')
+		.map((teil) => teil.trim())
+		.filter((teil) => teil !== '');
+
+	return benennungen.length > 0 && benennungen.every((teil) => /^type\s/.test(teil));
+}
+
 function staticImports(code: string): StaticImport[] {
 	const pattern = /^[ \t]*import\s+(?:([\s\S]*?)\s+from\s+)?['"]([^'"]+)['"];?/gm;
 	const found: StaticImport[] = [];
@@ -61,7 +84,7 @@ function staticImports(code: string): StaticImport[] {
 		found.push({
 			statement: match[0].trim(),
 			specifier: match[2] ?? '',
-			isTypeOnly: /^type\s/.test(clause.trim())
+			isTypeOnly: istNurTyp(clause)
 		});
 	}
 	return found;
@@ -101,6 +124,10 @@ describe('OLMap.svelte — OpenLayers wird nachgeladen, nicht statisch importier
 			"import { createMap } from '$lib/utils/map/openLayersHelpers';",
 			"import type { Map } from 'ol';",
 			"import type { Coordinate } from 'ol/coordinate';",
+			// Inline-Schreibweise: ebenfalls reiner Typ-Import.
+			"import { type Point } from 'ol/geom';",
+			// Gemischt: zieht Laufzeitcode nach sich, zählt deshalb als Wert-Import.
+			"import { type View, Map as OLMap } from 'ol/Map';",
 			"import * as m from '$lib/paraglide/messages';"
 		].join('\n');
 
@@ -111,9 +138,10 @@ describe('OLMap.svelte — OpenLayers wird nachgeladen, nicht statisch importier
 
 		expect(werteImporte.map((entry) => entry.specifier)).toEqual([
 			'ol/proj',
-			'$lib/utils/map/openLayersHelpers'
+			'$lib/utils/map/openLayersHelpers',
+			'ol/Map'
 		]);
-		expect(typImporte.map((entry) => entry.specifier)).toEqual(['ol', 'ol/coordinate']);
+		expect(typImporte.map((entry) => entry.specifier)).toEqual(['ol', 'ol/coordinate', 'ol/geom']);
 	});
 
 	/**
