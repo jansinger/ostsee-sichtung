@@ -164,7 +164,34 @@ Legacy-Routen mit durchgängigem try/catch + Ergebnis-Limit 1000; CI deckt Lint/
 ### LOW
 
 - In-Memory-Rate-Limit nicht Multi-Instanz-fähig (siehe Security #3).
-- Kein Index auf `sightings.verified` trotz häufigem Filter.
+- ~~Kein Index auf `sightings.verified` trotz häufigem Filter.~~ **Geprüft 2026-08-20 —
+  bewusst nicht angelegt.** Der Punkt nannte die falsche Spalte: `geprueft` wird seit
+  2026-08 nicht mehr gelesen (Guard: `verifiedReadScan.test.ts`); der öffentliche Filter
+  ist `freigegeben_am IS NOT NULL`. Auf **diese** Spalte trägt ein Index nicht — gemessen
+  mit `EXPLAIN (ANALYZE, BUFFERS)` gegen die lokale DB (19.953 Zeilen, 14 MB Heap):
+  - **Das Prädikat ist nicht selektiv.** 19.289 von 19.953 Zeilen (96,7 %) sind
+    freigegeben; die Karten-Grundmenge liefert 18.892 von 19.953 (94,7 %). Einen Btree
+    über ein Prädikat, das fast jede Zeile trifft, wählt kein kostenbasierter Planner.
+  - **Der Plan ändert sich nicht.** Geprüft wurden zwei Kandidaten, beide partiell und
+    beide einspaltig — einer auf der Filterspalte
+    (`(freigegeben_am) WHERE freigegeben_am IS NOT NULL`), einer auf der Sortierspalte
+    (`(sichtungsdatum) WHERE freigegeben_am IS NOT NULL`). Mit keinem von beiden wird die
+    Abfrage hinter `GET /api/map/sightings` etwas anderes als ein **Seq Scan**: 1.805
+    Buffer, ~11–16 ms.
+  - **Erzwungen wird es schlechter.** Mit `enable_seqscan = off` wählt der Planner einen
+    Bitmap Heap Scan (12,5 ms gegen 11,5 ms). Als geordneter Index Scan — der einzige
+    Weg, der den Sort sparen würde — kostet er 17.391 statt 1.805 Buffer, also 9,6× so
+    viel I/O. Der Planner-Cost sagt dasselbe: 7.908 gegen 3.391.
+  - **Der scheinbare Gewinn beim Jahresfilter war Bloat, nicht der Index.** Der
+    Kandidat auf `sichtungsdatum` sah bei `?year=2025` zunächst 2,7× schneller aus (0,40 ms
+    gegen 1,1–2,5 ms). Ursache ist nicht der neue Index, sondern der vorhandene
+    `idx_sichtungsdatum`: Ein bloßes `REINDEX` darauf liefert dieselben 0,44 ms. Der
+    Kandidat wäre das Duplikat eines Index, der lediglich Wartung braucht (896 kB
+    gegen 440 kB frisch gebaut, also gut 2× aufgebläht).
+
+  Folge: keine Schema-Änderung, keine Migration. Neu zu bewerten, sobald der Anteil
+  nicht freigegebener Meldungen deutlich steigt — erst dann wird das Prädikat selektiv.
+
 - `RUN_MIGRATIONS`/`drizzle-kit migrate` im Entrypoint läuft mangels Migrationsverzeichnis ins Leere.
 - `SKIP_DB_CHECK` nicht in `docs/ENVIRONMENT.md`.
 
@@ -229,3 +256,71 @@ grüne Häkchen steuert (`touched && hasValue && !hasError` in `FieldRenderer`).
 **Blocker (vor Go-Live):** Security HIGH 1–3, UX HIGH 1–4, Produktion HIGH 1, Tailwind-4-Altlasten
 (`bg-opacity-*`, `*-focus`). **Kurz danach:** Security MEDIUM 4–9, Produktion MEDIUM 2–7,
 UX MEDIUM 5–8. **Backlog:** restliche MEDIUM/LOW + Dev-Dependency-Updates.
+
+### Stand dieser Reihenfolge am 2026-08-20
+
+Diese Tabelle hält nur fest, was **tatsächlich nachgeprüft** wurde. Punkte ohne Zeile
+sind damit nicht als offen oder erledigt behauptet — sie wurden in diesem Durchgang
+schlicht nicht angefasst.
+
+| Punkt                                                  | Stand 2026-08-20       | Beleg                                                                                                                             |
+| ------------------------------------------------------ | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Produktion LOW — „Kein Index auf `sightings.verified`" | **Geprüft, verworfen** | Spalte überholt (`geprueft` wird nicht mehr gelesen); auf `freigegeben_am` misst der Index keinen Gewinn — siehe Abschnitt 3, LOW |
+
+Nebenbefund aus derselben Messung, **nicht** Teil dieses Punktes: `idx_sichtungsdatum`
+ist auf der lokalen DB rund 2× aufgebläht (896 kB gegen 440 kB frisch gebaut) und
+kostet dadurch beim Jahresfilter etwa 1–2 ms.
+
+**Produktion trägt diesen Bloat nicht — nachgemessen am 2026-08-20** (`sudo docker exec`
+auf `ostsee-tiere-db-1`, rein lesend über `pg_class`/`pg_stat_user_indexes`; der
+DB-Port ist dort weiterhin nicht freigegeben). Maßstab ist Byte pro Zeile, weil sich
+ein Index auf Produktion nicht probeweise neu bauen lässt:
+
+| `idx_sichtungsdatum`           | Größe  | Byte/Zeile | Faktor gegen frisch |
+| ------------------------------ | ------ | ---------- | ------------------- |
+| frisch gebaut (lokal)          | 440 kB | 22,6       | 1,00                |
+| **Produktion** (19.880 Zeilen) | 600 kB | **30,9**   | **1,37**            |
+| lokal, Ist-Zustand             | 896 kB | 46,0       | 2,04                |
+
+Das gilt nicht nur für diesen Index: **jeder** Index auf `sichtungen` ist auf
+Produktion etwa halb so groß pro Zeile wie lokal (`geom_sichtungen` 49,9 gegen 97,3;
+`idx_year_sichtungen` 27,2 gegen 52,1; `idx_weather_fetched` 8,7 gegen 21,3). Der
+Bloat ist damit ein Artefakt der **lokalen** Datenbank, keine Eigenschaft der
+Anwendung: Lokal stehen 66.056 Updates auf 19.953 Zeilen, davon nur 41 % HOT — jedes
+der übrigen hat in jedem Index einen neuen Eintrag hinterlassen. Das sind die
+Massenkorrekturen, die bewusst nur lokal gefahren wurden (u. a. `bootsantrieb` 0→5
+über 5.858 Zeilen).
+
+Folge: **kein `REINDEX` auf Produktion nötig.** Lokal lohnt er sich, ist aber eine
+Instanz-Wartung und keine Schema-Änderung — also nichts, was dieses Repository
+festhalten müsste.
+
+### Offener Faden: möglicherweise ungenutzte Weather-Indizes
+
+Dieselbe Abfrage zeigt `idx_weather_data_gin` (608 kB) und `idx_weather_fetched`
+(168 kB) auf Produktion bei **0 Scans**. Das Zählfenster ist bekannt: der Postmaster
+läuft seit 2026-08-19 04:06, also rund 36 Stunden — zu kurz, um daraus allein auf
+einen toten Index zu schließen.
+
+Strukturell sieht es allerdings danach aus:
+
+- `weather_data` steht in `src/` in genau **einer** Art von `WHERE`, nämlich
+  `IS NOT NULL` (`weatherDeduplication.ts:62,187,195`). Ein GIN-Index kann
+  `IS NOT NULL` nicht bedienen. Nachgemessen mit `enable_seqscan = off`: Der Planner
+  greift auch dann nicht auf `idx_weather_data_gin` zurück, sondern auf das partielle
+  `idx_position_date_weather`, dessen eigene `WHERE`-Klausel das Prädikat impliziert.
+- `weather_fetched_at` kommt in `src/` in **keinem** `WHERE` vor, nur in
+  Select-Listen und Insert-Werten.
+
+**Trotzdem kein Grund, sie zu entfernen — und der Grund dafür ist wichtiger als der
+Befund selbst:** `idx_weather_provider` steht auf Produktion bei 64 Scans (lokal 804),
+obwohl auch diese Spalte in `src/` in keinem `WHERE` auftaucht. Es liest also etwas
+auf dieser Datenbank, das nicht in diesem Repository steht — plausibel das Altsystem,
+das auf derselben DB liegt. Eine Code-Analyse über `src/` kann einen Index hier
+folglich **nicht** für tot erklären.
+
+Nächster Schritt, falls jemand die 776 kB heben will: Scan-Zähler über eine bekannte,
+längere Spanne messen (`SELECT pg_stat_reset_single_table_counters('sichtungen'::regclass);`
+— die Funktion verlangt die Tabellen-OID, ohne Argument existiert sie nicht —, dann nach
+ein paar Wochen erneut sehen) und parallel klären, welche Abfragen das Altsystem
+auf `sichtungen` fährt.
