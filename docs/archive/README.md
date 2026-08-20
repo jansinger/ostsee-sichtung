@@ -7,7 +7,7 @@ Code-Änderungen automatisch geladen oder aktuell gehalten.
 
 | Datei                                              | Inhalt                                                                                      |
 | -------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `LAUNCH_REVIEW_2026-07-24.md`                      | Pre-Launch-Review (Security/UX/Produktion/Deps)                                             |
+| `LAUNCH_REVIEW_2026-07-24.md`                      | Pre-Launch-Review (Security/UX/Produktion/Deps) — Status je Befund nachgetragen 2026-08-20  |
 | `UX_DESIGN_REVIEW_SICHTUNGSFORMULAR_2026-07-24.md` | UX- & Design-System-Review Sichtungsformular, mit Status je Befund                          |
 | `CODE_REVIEW_SICHTUNGSFORMULAR.md`                 | Code-Review Sichtungsformular (2026-04)                                                     |
 | `FACHREVIEW_BESTIMMUNGSHILFE_2026-07-27.md`        | Fachreview der Bestimmungshilfe für Meerestiere                                             |
