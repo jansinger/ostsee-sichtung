@@ -69,12 +69,36 @@ function seedFormWithUpload(step = 3): void {
 	);
 }
 
-function resetButton(): HTMLButtonElement {
+function buttonMitText(text: string): HTMLButtonElement {
 	const button = Array.from(document.querySelectorAll('button')).find(
-		(candidate) => candidate.textContent?.trim() === 'Formular zurücksetzen'
+		(candidate) => candidate.textContent?.trim() === text
 	);
-	if (!button) throw new Error('Schaltfläche „Formular zurücksetzen" nicht im DOM');
+	if (!button) throw new Error(`Schaltfläche „${text}" nicht im DOM`);
 	return button;
+}
+
+function resetButton(): HTMLButtonElement {
+	return buttonMitText('Formular zurücksetzen');
+}
+
+/**
+ * Die Rückfrage lief bis zur Dialog-Konsolidierung über `window.confirm`, und
+ * die Tests hier stellten sie über `vi.spyOn(window, 'confirm')` ein. Seit
+ * UX MEDIUM 13 ist es `ConfirmDialog` — ein echter Knopf im DOM statt eines
+ * gestubbten Rückgabewerts. Das ist die ehrlichere Strecke: Ein Stub hätte auch
+ * dann noch grün gemeldet, wenn die Rückfrage ganz verschwunden wäre.
+ */
+async function bestaetigeReset(): Promise<void> {
+	resetButton().click();
+	await vi.waitFor(() => buttonMitText('Endgültig zurücksetzen'));
+	buttonMitText('Endgültig zurücksetzen').click();
+}
+
+/** Gegenstück: Rückfrage öffnen und ablehnen. */
+async function lehneResetAb(): Promise<void> {
+	resetButton().click();
+	await vi.waitFor(() => buttonMitText('Abbrechen'));
+	buttonMitText('Abbrechen').click();
 }
 
 function persistedUploads(): UploadedFileInfo[] {
@@ -90,10 +114,9 @@ describe('ModernReportForm — Zurücksetzen räumt die Uploads mit auf', () => 
 
 	it('löscht die hochgeladenen Dateien vom Server', async () => {
 		seedFormWithUpload();
-		vi.spyOn(window, 'confirm').mockReturnValue(true);
 		await render(ModernReportForm);
 
-		resetButton().click();
+		await bestaetigeReset();
 
 		await vi.waitFor(() => expect(deleteMultipleFiles).toHaveBeenCalled());
 		expect(deleteMultipleFiles.mock.calls[0]?.[0]).toEqual([UPLOAD]);
@@ -107,20 +130,18 @@ describe('ModernReportForm — Zurücksetzen räumt die Uploads mit auf', () => 
 		// Aufräumens (`media:cleanup-orphans`).
 		deleteMultipleFiles.mockRejectedValueOnce(new Error('Verbindung zum Server unterbrochen'));
 		seedFormWithUpload();
-		vi.spyOn(window, 'confirm').mockReturnValue(true);
 		await render(ModernReportForm);
 
-		resetButton().click();
+		await bestaetigeReset();
 
 		await vi.waitFor(() => expect(persistedUploads()).toEqual([]));
 	});
 
 	it('löscht nichts, wenn die Rückfrage abgelehnt wird', async () => {
 		seedFormWithUpload();
-		vi.spyOn(window, 'confirm').mockReturnValue(false);
 		await render(ModernReportForm);
 
-		resetButton().click();
+		await lehneResetAb();
 
 		await vi.waitFor(() => expect(persistedUploads()).toEqual([UPLOAD]));
 		expect(deleteMultipleFiles).not.toHaveBeenCalled();
@@ -139,22 +160,20 @@ describe('ModernReportForm — Zurücksetzen räumt die Uploads mit auf', () => 
 describe('ModernReportForm — Reset meldet den Zweig-Reset an den Aufrufer (B1)', () => {
 	it('ruft onreset auf, nachdem der Formular-Zustand aufgeräumt ist', async () => {
 		seedFormWithUpload();
-		vi.spyOn(window, 'confirm').mockReturnValue(true);
 		const onreset = vi.fn();
 		await render(ModernReportForm, { onreset });
 
-		resetButton().click();
+		await bestaetigeReset();
 
 		await vi.waitFor(() => expect(onreset).toHaveBeenCalledOnce());
 	});
 
 	it('ruft onreset nicht auf, wenn die Rückfrage abgelehnt wird', async () => {
 		seedFormWithUpload();
-		vi.spyOn(window, 'confirm').mockReturnValue(false);
 		const onreset = vi.fn();
 		await render(ModernReportForm, { onreset });
 
-		resetButton().click();
+		await lehneResetAb();
 
 		await vi.waitFor(() => expect(persistedUploads()).toEqual([UPLOAD]));
 		expect(onreset).not.toHaveBeenCalled();

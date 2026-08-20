@@ -49,25 +49,22 @@ export function resetSavedContactData(
 }
 
 /**
- * Fragt den Nutzer über das native `confirm()` und löscht bei Bestätigung die
- * gespeicherten Kontaktdaten inklusive der zugehörigen Formularfelder. Zeigt
- * anschließend einen Erfolgs-Toast an.
+ * Löscht die gespeicherten Kontaktdaten inklusive der zugehörigen
+ * Formularfelder und meldet das mit einem Erfolgs-Toast.
  *
- * Einheitliche Implementierung für alle Aufrufer (aktuell: Step4Contact).
- *
- * @returns `true` wenn die Löschung durchgeführt wurde, `false` wenn der
- * Nutzer den Dialog abgebrochen hat.
+ * **Die Rückfrage steht bewusst nicht mehr hier.** Bis zur
+ * Dialog-Konsolidierung (UX MEDIUM 13) hieß diese Funktion
+ * `confirmAndClearContactData` und rief `window.confirm`; ihr Rückgabewert sagte
+ * dem Aufrufer, ob der Nutzer bestätigt hat. Ein `ConfirmDialog` beantwortet
+ * seine Frage aber nicht synchron im Funktionsaufruf, sondern über einen
+ * Callback — die Rückfrage gehört damit dorthin, wo der Dialog steht
+ * (`Step4Contact.svelte`), und hier bleibt die Wirkung. Deshalb auch kein
+ * Rückgabewert mehr: Wer diese Funktion ruft, hat die Bestätigung bereits.
  */
-export function confirmAndClearContactData(
+export function clearContactDataWithFeedback(
 	formValues: Record<string, unknown>,
 	updateField: UpdateContactField
-): boolean {
-	if (!confirm(clearContactDataConfirmMessage())) {
-		return false;
-	}
-
+): void {
 	resetSavedContactData(formValues, updateField);
 	createToast('success', clearContactDataSuccessMessage());
-
-	return true;
 }

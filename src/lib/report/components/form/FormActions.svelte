@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as m from '$lib/paraglide/messages';
 	import { getFormContext } from '$lib/report/formContext';
+	import ConfirmDialog from '$lib/components/ui/Dialog/ConfirmDialog.svelte';
 	import ReportKindFeedback from '$lib/report/components/ReportKindFeedback.svelte';
 
 	// `onCancel` bleibt Teil der Props für Abwärtskompatibilität mit
@@ -31,13 +32,16 @@
 
 	const { isSubmitting } = getFormContext();
 
-	function handleReset() {
-		if (
-			confirm(m.report_components_form_formactions_text_moechten_sie_das_formular_wirklich_zurue())
-		) {
-			onReset();
-		}
-	}
+	/**
+	 * Rückfrage über `ConfirmDialog` statt `window.confirm`. Der native Dialog
+	 * war auf dem Telefon nicht gestaltbar, nannte die App als Absender
+	 * („localhost sagt …") und blockierte den Hauptthread — und im iframe auf
+	 * meeresmuseum.de darf der Browser ihn ganz unterdrücken, womit das
+	 * Zurücksetzen entweder ungefragt oder gar nicht liefe. Es ist derselbe
+	 * Bestätigungsweg wie beim Löschen im Admin-Bereich; eine eigene Variante
+	 * gibt es hier bewusst nicht.
+	 */
+	let zeigeBestaetigung = $state(false);
 </script>
 
 <!-- Form Actions -->
@@ -57,9 +61,23 @@
 	<button
 		type="button"
 		class="btn btn-outline btn-error btn-sm w-full md:w-auto"
-		onclick={handleReset}
+		onclick={() => (zeigeBestaetigung = true)}
 		disabled={$isSubmitting}
 	>
 		{m.report_components_form_formactions_text_formular_zuruecksetzen()}
 	</button>
 </div>
+
+<!-- Der Dialog nennt beide Folgen: die Eingaben im Formular UND den auf dem
+     Gerät gespeicherten Zwischenstand, den `onReset` mit abräumt. Wer nur
+     „Daten gehen verloren" liest, rechnet nicht damit, dass auch die
+     Wiederaufnahme beim nächsten Besuch weg ist. -->
+<ConfirmDialog
+	bind:show={zeigeBestaetigung}
+	title={m.report_components_form_formactions_text_formular_zuruecksetzen()}
+	message={m.report_components_form_formactions_text_moechten_sie_das_formular_wirklich_zurue()}
+	detail={m.report_components_form_formactions_text_auch_der_gespeicherte_zwischenstand()}
+	confirmLabel={m.report_components_form_formactions_text_endgueltig_zuruecksetzen()}
+	cancelLabel={m.report_components_form_formactions_text_abbrechen()}
+	onConfirm={onReset}
+/>

@@ -117,7 +117,8 @@ vorbildlich; Fokus-Management beim Schrittwechsel; ARIA-Grundgerüst (`aria-desc
 11. Karte nicht per Tastatur wählbar (`OLMap.svelte` ohne `tabindex`) — abgemildert durch manuelle
     Koordinatenfelder, dort aber Label-Mismatch `for="dd-latitude"` vs. `id="latitude"`.
 12. Admin-Tabellen-Sortierung nicht barrierefrei (`<th onclick>` ohne Button/`aria-sort`).
-13. Drei parallele Dialog-Systeme + native `confirm()`/`alert()` — konsolidieren.
+13. ~~Drei parallele Dialog-Systeme + native `confirm()`/`alert()` — konsolidieren.~~
+    **Dialog-Systeme behoben am 2026-08-20; ein Rest bleibt, siehe Nachtrag unten.**
 14. Erfolgsseite: Tierart hart auf 0/1/2 gemappt statt `getSpeciesLabel()`; Tippfehler "gehen"→"geben";
     Text "Upload per E-Mail" widerspricht Direkt-Upload (`SubmissionSuccess.svelte`).
 15. Landmarks/Skip-Link fehlen; `admin/+layout.svelte` verschachtelt `<main>` in `<main>`.
@@ -221,6 +222,46 @@ verworfen. Ebenfalls mit #567: die verbindliche Kurzform `.claude/rules/design-s
 Anmerkung zum Zeitpunkt: #567 hat `createForm` um einen `touched`-Store erweitert, der das
 grüne Häkchen steuert (`touched && hasValue && !hasError` in `FieldRenderer`). Doku-Aussagen
 über ein „fehlendes `touched`" beziehen sich auf den Stand **vor** #567.
+
+### Nachtrag 2026-08-20 zu UX MEDIUM 13 — Dialoge konsolidiert ✅
+
+Es gibt jetzt **genau ein** Dialog-Bauteil: `src/lib/components/ui/Dialog/ConfirmDialog.svelte`
+(natives `<dialog>` mit `showModal()`, damit Fokus-Trap, ESC und Top-Layer vom Browser
+kommen). `DeleteDialog.svelte` und `admin/settings/ResetSettingsButton.svelte` tragen nur
+noch ihre Texte und nutzen es; die Prop-Schnittstelle von `DeleteDialog` blieb unverändert,
+die Aufrufstellen merken nichts davon.
+
+Der Anlass war `FormActions.svelte`, die letzte Stelle im **Meldeformular** mit
+`window.confirm()`. Sie fragt jetzt über denselben Dialog nach und nennt dabei zusätzlich,
+was der Rückfragetext vorher verschwieg: Der Reset löscht nicht nur die Eingaben, sondern
+auch den auf dem Gerät gespeicherten Zwischenstand, und das ist nicht rückgängig zu machen.
+
+`ResetSettingsButton.svelte` war beim Umbau eine wörtliche Kopie von `DeleteDialog.svelte`
+— gleicher `$effect`, gleicher Backdrop, gleicher Kommentar. Die Kopie war der eigentliche
+Befund hinter „drei parallele Systeme"; ohne die gemeinsame Komponente wäre der Umbau von
+`FormActions` die vierte geworden.
+
+**Was der Punkt außerdem nannte, und was davon offen bleibt.** Von den `confirm()`-Aufrufen,
+die der Punkt mitmeinte, steht noch **einer** — und der bewusst:
+
+`AdminSightingEditForm.svelte:144` fragt beim Verlassen der Seite nach und ist an
+`beforeunload` gekoppelt. Dort gehört der Dialog dem Browser; ein eigener käme gar nicht
+mehr zur Anzeige (Begründung im Code, abgesichert in `AdminSightingEditForm.svelte.test.ts`).
+
+Am selben Tag ebenfalls umgestellt wurden `admin/settings/CleanupPanel.svelte` und
+`report/clearContactData.ts` — zwei Anmerkungen dazu, weil beide mehr als einen Import
+verschoben haben:
+
+- **Bei `CleanupPanel` wanderte „endgültig" vom Auslöser auf den bestätigenden Knopf.** Der
+  Auslöser hieß „Endgültig löschen", löschte aber nichts, sondern öffnete nur die
+  Rückfrage. Er heißt jetzt „Löschen", der Knopf im Dialog „Endgültig löschen" — dieselbe
+  Aufteilung wie bei `ResetSettingsButton` („Zurücksetzen" → „Endgültig zurücksetzen").
+- **Bei `clearContactData` verschob sich eine Zuständigkeit.** `confirmAndClearContactData`
+  bündelte Rückfrage, Löschung und Toast und meldete per `boolean` zurück, ob bestätigt
+  wurde. Ein `ConfirmDialog` beantwortet seine Frage aber nicht synchron im Funktionsaufruf,
+  sondern über einen Callback. Die Rückfrage sitzt deshalb jetzt in `Step4Contact.svelte`,
+  wo der Dialog steht; die Funktion heißt `clearContactDataWithFeedback`, trägt nur noch
+  die Wirkung und gibt nichts mehr zurück.
 
 ---
 

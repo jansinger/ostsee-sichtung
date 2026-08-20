@@ -8,9 +8,8 @@ vi.mock('$lib/stores/toastState.svelte', () => ({ createToast }));
 
 import { USER_CONTACT_FIELDS } from '$lib/report/formConfig';
 import {
-	clearContactDataConfirmMessage,
 	clearContactDataSuccessMessage,
-	confirmAndClearContactData,
+	clearContactDataWithFeedback,
 	resetSavedContactData
 } from './clearContactData';
 
@@ -46,46 +45,41 @@ describe('resetSavedContactData', () => {
 	});
 });
 
-describe('confirmAndClearContactData', () => {
+/**
+ * Die Rückfrage ist aus dieser Datei verschwunden: Sie lief über
+ * `window.confirm`, und der native Dialog ist auf dem Telefon nicht
+ * gestaltbar, nennt die App als Absender („localhost sagt …") und darf im
+ * iframe auf meeresmuseum.de ganz unterdrückt werden — dann liefe das Löschen
+ * entweder ungefragt oder gar nicht. Gefragt wird jetzt eine Ebene höher über
+ * `ConfirmDialog` (`Step4Contact.svelte`); hier bleibt die Ausführung.
+ */
+describe('clearContactDataWithFeedback', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 	});
 
-	it('fragt den Nutzer mit dem einheitlichen Bestätigungstext', () => {
-		const confirmSpy = vi.fn().mockReturnValue(false);
-		vi.stubGlobal('confirm', confirmSpy);
-
-		confirmAndClearContactData({}, vi.fn());
-
-		expect(confirmSpy).toHaveBeenCalledWith(clearContactDataConfirmMessage());
-		vi.unstubAllGlobals();
-	});
-
-	it('löscht Kontaktdaten und zeigt einen Erfolgs-Toast, wenn der Nutzer bestätigt', () => {
-		vi.stubGlobal('confirm', vi.fn().mockReturnValue(true));
+	it('löscht die gespeicherten Kontaktdaten und setzt die Felder zurück', () => {
 		const updateField = vi.fn();
 
-		const result = confirmAndClearContactData({ firstName: 'Max' }, updateField);
+		clearContactDataWithFeedback({ firstName: 'Max' }, updateField);
 
-		expect(result).toBe(true);
 		expect(clearUserContactData).toHaveBeenCalledOnce();
 		expect(updateField).toHaveBeenCalledWith('firstName', '');
-		expect(createToast).toHaveBeenCalledWith('success', clearContactDataSuccessMessage());
-
-		vi.unstubAllGlobals();
 	});
 
-	it('tut nichts und gibt false zurück, wenn der Nutzer den Dialog abbricht', () => {
-		vi.stubGlobal('confirm', vi.fn().mockReturnValue(false));
-		const updateField = vi.fn();
+	it('zeigt einen Erfolgs-Toast', () => {
+		clearContactDataWithFeedback({}, vi.fn());
 
-		const result = confirmAndClearContactData({}, updateField);
+		expect(createToast).toHaveBeenCalledWith('success', clearContactDataSuccessMessage());
+	});
 
-		expect(result).toBe(false);
-		expect(clearUserContactData).not.toHaveBeenCalled();
-		expect(updateField).not.toHaveBeenCalled();
-		expect(createToast).not.toHaveBeenCalled();
+	it('fragt nicht mehr über window.confirm nach', () => {
+		const confirmSpy = vi.fn().mockReturnValue(true);
+		vi.stubGlobal('confirm', confirmSpy);
 
+		clearContactDataWithFeedback({}, vi.fn());
+
+		expect(confirmSpy).not.toHaveBeenCalled();
 		vi.unstubAllGlobals();
 	});
 });

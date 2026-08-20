@@ -5,7 +5,11 @@
 <script lang="ts">
 	import * as m from '$lib/paraglide/messages';
 	import Icon from '$lib/components/Icon.svelte';
-	import { confirmAndClearContactData } from '$lib/report/clearContactData';
+	import ConfirmDialog from '$lib/components/ui/Dialog/ConfirmDialog.svelte';
+	import {
+		clearContactDataConfirmMessage,
+		clearContactDataWithFeedback
+	} from '$lib/report/clearContactData';
 	import { getFormContext } from '$lib/report/formContext';
 	import { hasUploadedMedia, isFromLand } from '$lib/report/formConfig';
 	import { loadUserContactData } from '$lib/storage/localStorage';
@@ -51,10 +55,17 @@
 		hasSavedContactData = !!(savedData.firstName || savedData.lastName || savedData.email);
 	});
 
+	/**
+	 * Rückfrage über `ConfirmDialog` statt `window.confirm` (UX MEDIUM 13).
+	 * Der Dialog liegt hier und nicht in `clearContactData.ts`: Er antwortet
+	 * über einen Callback, nicht als Rückgabewert eines Aufrufs — Begründung
+	 * dort im Docblock von `clearContactDataWithFeedback`.
+	 */
+	let zeigeBestaetigung = $state(false);
+
 	function clearContactData() {
-		if (confirmAndClearContactData($form, updateField)) {
-			hasSavedContactData = false;
-		}
+		clearContactDataWithFeedback($form, updateField);
+		hasSavedContactData = false;
 	}
 </script>
 
@@ -135,7 +146,7 @@
 							<button
 								type="button"
 								class="btn btn-outline btn-error btn-sm"
-								onclick={clearContactData}
+								onclick={() => (zeigeBestaetigung = true)}
 							>
 								<Icon icon="lucide:trash-2" width="14" />
 								{m.report_components_steps_step4contact_text_kontaktdaten_loeschen()}
@@ -293,3 +304,12 @@
 		</div>
 	</div>
 </div>
+
+<ConfirmDialog
+	bind:show={zeigeBestaetigung}
+	title={m.report_components_steps_step4contact_text_gespeicherte_kontaktdaten_loeschen()}
+	message={clearContactDataConfirmMessage()}
+	confirmLabel={m.report_components_steps_step4contact_text_endgueltig_loeschen()}
+	cancelLabel={m.report_components_steps_step4contact_text_abbrechen()}
+	onConfirm={clearContactData}
+/>
