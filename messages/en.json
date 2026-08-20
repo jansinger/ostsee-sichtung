@@ -92,6 +92,8 @@
 	"components_map_loadingoverlay_text_tastaturkuerzel_hinweis": "Keyboard shortcut: focus the map, then press this key:",
 	"components_map_olmap_aria_label_interaktive_karte_der_sichtungen": "Interactive map of the sightings",
 	"components_map_olmap_aria_label_interaktive_karte_zur_position": "Interactive map for choosing a position. Arrow keys to pan, plus/minus to zoom.",
+	"components_map_olmap_text_karte_konnte_nicht_geladen_werden": "The map could not be loaded. Please reload the page — you can also enter the coordinates by hand.",
+	"components_map_olmap_text_karte_wird_geladen": "Loading map …",
 	"components_map_olmap_text_noch_keine_position_gewaehlt_tippen_sie": "No location has been selected yet. Tap the map to mark the spot where you saw the animal.",
 	"components_map_olmap_text_tippen_sie_auf_die_karte_gps": "Tap the map or drag the marker to the spot where you saw the animal. The GPS button will use your current location.",
 	"components_map_olmap_text_tippen_sie_auf_die_karte_oder_ziehen_sie": "Tap the map or drag the marker to the spot where you saw the animal.",
